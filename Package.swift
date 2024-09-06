@@ -13,7 +13,7 @@ let package = Package(
         .target(name: "Either", dependencies: ["FP"]),
         .target(name: "Operators", dependencies: ["FP"]),
         .testTarget(name: "FPTests", dependencies: ["FP"]),
-        .testTarget(name: "EitherTests", dependencies: ["Either"]),
+        .testTarget(name: "EitherTests", dependencies: ["Either", "Operators", "FP"]),
         .testTarget(name: "OperatorsTests", dependencies: ["Operators"])
     ]
 )
