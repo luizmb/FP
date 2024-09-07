@@ -9,6 +9,10 @@ public extension Either {
 public struct ResultEitherBridge<Success, Failure> {
     public let parallel: () -> Either<Success, Failure>
     public let crossover: () -> Either<Failure, Success>
+
+    public func callAsFunction() -> Either<Failure, Success> { 
+        crossover()
+    }
 }
 
 public extension Result {
