@@ -1,72 +1,52 @@
+import FP
 import Foundation
 
 #if canImport(Operators)
-import Operators
-// (<*>) :: Either e (a -> b) -> Either e a -> Either e b
-public func <*> <E, A, B>(_ lhs: Either<E, (A) -> B>, _ rhs: Either<E, A>) -> Either<E, B> {
-    switch (lhs, rhs) {
-    case
-        let (.left(value), .left),
-        let (.left(value), .right),
-        let (.right, .left(value)):
-        .left(value)
-    case let (.right(fn), .right(value)):
-        .right(fn(value))
+    import Operators
+    // (<*>) :: Either a (b0 -> b) -> Either a b0 -> Either a b
+    public func <*> <A, B0, B>(_ lhs: Either<A, (B0) -> B>, _ rhs: Either<A, B0>) -> Either<A, B> {
+        .specialRightRight(lhs: lhs, rhs: rhs, handling: call)
     }
-}
 
-// (*>) :: Either e a -> Either e b -> Either e b
-public func *> <E, A, B>(_ lhs: Either<E, A>, _ rhs: Either<E, B>) -> Either<E, B> {
-    switch (lhs, rhs) {
-    case
-        let (.left(value), .left),
-        let (.left(value), .right),
-        let (.right, .left(value)):
-        .left(value)
-    case let (.right, .right(value)):
-        .right(value)
+    // (*>) :: Either a ignore -> Either a b -> Either a b
+    public func *> <A, Ignore, B>(_ lhs: Either<A, Ignore>, _ rhs: Either<A, B>) -> Either<A, B> {
+        .specialRightRight(lhs: lhs, rhs: rhs, handling: untuple(\.1))
     }
-}
 
-// (<*) :: Either e a -> Either e b -> Either e a
-public func <* <E, A, B>(_ lhs: Either<E, A>, _ rhs: Either<E, B>) -> Either<E, A> {
-    switch (lhs, rhs) {
-    case
-        let (.left(value), .left),
-        let (.left(value), .right),
-        let (.right, .left(value)):
-        .left(value)
-    case let (.right(value), .right):
-        .right(value)
+    // (<*) :: Either a b -> Either a ignore -> Either a b
+    public func <* <A, B, Ignore>(_ lhs: Either<A, B>, _ rhs: Either<A, Ignore>) -> Either<A, B> {
+        .specialRightRight(lhs: lhs, rhs: rhs, handling: untuple(\.0))
     }
-}
 #endif
 
 public extension Either {
-    // liftA2 :: (a -> b -> c) -> Either e a -> Either e b -> Either e c
-    static func liftA2 <A, B>(_ fn: @escaping (A, B) -> U) -> (Either<T, A>, Either<T, B>) -> Either<T, U> {
+    // liftA2 :: (b1 -> b2 -> b) -> Either a b1 -> Either a b2 -> Either a b
+    static func liftA2<B1, B2>(_ fn: @escaping (B1, B2) -> B) -> (
+        Either<A, B1>, Either<A, B2>
+    ) -> Either<A, B> {
         { eitherA, eitherB in
-            switch (eitherA, eitherB) {
-            case
-                let (.left(value), .left),
-                let (.left(value), .right),
-                let (.right, .left(value)):
-                .left(value)
-            case let (.right(a), .right(b)):
-                .right(fn(a, b))
-            }
+            .specialRightRight(lhs: eitherA, rhs: eitherB, handling: fn)
         }
     }
 
-    static func zip<A, B>(_ lhs: Either<T, A>, _ rhs: Either<T, B>) -> Either<T, U> where U == (A, B) {
-        switch (lhs, rhs) {
-        case
-            let (.left(value), .left),
-            let (.left(value), .right),
-            let (.right, .left(value)):
-            .left(value)
-        case let (.right(a), .right(b)):
-            .right((a, b))
-        }
+    static func zip<B1, B2>(_ lhs: Either<A, B1>, _ rhs: Either<A, B2>) -> Either<A, B>
+    where B == (B1, B2) {
+        .liftA2(tuple)(lhs, rhs)
+    }
+}
+
+extension Either {
+    fileprivate static func specialRightRight<Ba, Bb>(
+        lhs: Either<A, Ba>, 
+        rhs: Either<A, Bb>,
+        handling: @escaping (Ba, Bb) -> B
+    ) -> Either<A, B> {
+        .match(
+            lhs, rhs,
+            caseLeftLeft: withArg(\.0)(Either.left),
+            caseLeftRight: withArg(\.0)(Either.left),
+            caseRightLeft: withArg(\.1)(Either.left),
+            caseRightRight: untuple(compose(handling, Either.right))
+        )
     }
 }

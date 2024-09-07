@@ -1,8 +1,20 @@
 import Foundation
 
+public enum Of<T> {}
+public enum Of2<T, U> {}
+public enum Of3<T, U, V> {}
+
+public func absurd<T>(_ never: Never) -> T { }
+public extension Of {
+    static func absurd(_ never: Never) -> T { }
+}
+
 public func ignore() { }
 public func ignore<T>(_ t: T) { }
-public func ignore<T>(of: T.Type) -> (T) -> Void { { _ in } }
+
+public extension Of {
+    static func ignore() -> (T) -> Void { FP.ignore }
+}
 
 /// Ignores the data provided and returns a constant value.
 /// Useful for passing a constant values to places that expect closures that provide
@@ -30,10 +42,28 @@ public func const<each Ignore, Return>(
     { (_: repeat each Ignore) in returnValue }
 }
 
+public extension Of {
+    static func const<Return>(_ returnValue: Return) -> (T) -> Return {
+        FP.const(returnValue)
+    }
+}
+
+public extension Of2 {
+    static func const(_ returnValue: U) -> (T) -> U {
+        FP.const(returnValue)
+    }
+}
+
 /// Identify function of a value, returning the unmodified value
 /// Useful in function composition and represents the arrow pointing to itself category.
 public func identity<T>(_ value: T) -> T {
     value
+}
+
+public extension Of {
+    static func identity(_ value: T) -> T {
+        FP.identity(value)
+    }
 }
 
 /// Curries a given function that accepts two parameters
@@ -49,6 +79,23 @@ public func curry<A, B, C>(
             function(a, b)
         }
     }
+}
+
+public func curryT<A, B, C>(
+    _ function: @escaping ((A, B)) -> C
+) -> (A) -> (B) -> C {
+    { (a: A) -> (B) -> C in
+        { (b: B) -> C in
+            function((a, b))
+        }
+    }
+}
+
+public func partialApply<A, B, C>(
+    _ function: @escaping (A, B) -> C,
+    _ value: A
+) -> (B) -> C {
+    curry(function)(value)
 }
 
 /// Opposite of curry, takes a function that returns another function
@@ -116,6 +163,21 @@ public func flip<A, B, C>(
     }
 }
 
+public func partialApplyFlip<A, B, C>(
+    _ function: @escaping (A, B) -> C,
+    _ value: B
+) -> (A) -> C {
+    flip(function)(value)
+}
+
+public func flipU<A, B, C>(
+    _ function: @escaping (A, B) -> C
+) -> (B, A) -> C {
+    { (b: B, a: A) -> C in
+        function(a, b)
+    }
+}
+
 public func flip<A, B, C>(
     _ function: @escaping (A) -> (B) -> C
 ) -> (B) -> (A) -> C {
@@ -124,6 +186,18 @@ public func flip<A, B, C>(
             function(a)(b)
         }
     }
+}
+
+public func tuple<A, B>(_ a: A, _ b: B) -> (A, B) {
+    (a, b)
+}
+
+public func tuple<A, B, C>(_ fn: @escaping (A, B) -> C) -> ((A, B)) -> C {
+    { tuple in fn(tuple.0, tuple.1) }
+}
+
+public func untuple<A, B, C>(_ fn: @escaping ((A, B)) -> C) -> (A, B) -> C {
+    { a, b in fn((a, b)) }
 }
 
 /// Allows for transforming a function to a similar function but with more arguments by specyfing
@@ -139,9 +213,7 @@ public func flip<A, B, C>(
 public func withArg<Arg1, Arg2, Picked, Return>(
     _ pickArgument: @escaping ((Arg1, Arg2)) -> Picked
 ) -> (@escaping (Picked) -> Return) -> (Arg1, Arg2) -> Return {
-    { f in
-        { f(pickArgument(($0, $1))) }
-    }
+    curryT(compose(compose, untuple))(pickArgument)
 }
 
 /// It returns a function that calls `fatalError`, regardless of the parameters provided.
@@ -163,4 +235,59 @@ public func fail<T, each U>(
     { (_: repeat each U) -> T in
         fatalError(message, file: file, line: line)
     }
+}
+
+public func compose<A, B, C>(_ ab: @escaping (A) -> B, _ bc: @escaping (B) -> C) -> (A) -> C {
+    { a in 
+        bc(ab(a))
+    }
+}
+
+public extension Of3 {
+    static func compose(_ fn1: @escaping (T) -> U, _ fn2: @escaping (U) -> V) -> (T) -> V {
+        FP.compose(fn1, fn2)
+    }
+}
+
+public func compose3<A, B, C, D>(
+    _ ab: @escaping (A) -> B, 
+    _ bc: @escaping (B) -> C,
+    _ cd: @escaping (C) -> D
+) -> (A) -> D {
+    { a in 
+        cd(bc(ab(a)))
+    }
+}
+
+public func compose4<A, B, C, D, E>(
+    _ ab: @escaping (A) -> B, 
+    _ bc: @escaping (B) -> C,
+    _ cd: @escaping (C) -> D,
+    _ de: @escaping (D) -> E
+) -> (A) -> E {
+    { a in 
+        de(cd(bc(ab(a))))
+    }
+}
+
+public func apply<A, B>(
+    _ value: A,
+    _ fn: (A) -> B
+) -> B {
+    fn(value)
+}
+
+public func call<A, B>(
+    _ fn: (A) -> B,
+    _ value: A
+) -> B {
+    fn(value)
+}
+
+public func call<A, B>() -> ((A) -> B, A) -> B {
+    call
+}
+
+public func call<A, B, C>(then transform: @escaping (B) -> C) -> (@escaping (A) -> B, A) -> C {
+    uncurry(partialApplyFlip(compose, transform))
 }

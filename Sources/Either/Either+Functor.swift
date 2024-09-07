@@ -1,69 +1,57 @@
 import Foundation
+import FP
 
 #if canImport(Operators)
 import Operators
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
-public func <£> <A0, A, B>(_ transform: @escaping (B) -> A0, _ either: Either<A, B>) -> Either<A, A0> {
+public func <£> <B1, A, B>(_ transform: @escaping (B) -> B1, _ either: Either<A, B>) -> Either<A, B1> 
+where B: Sendable, B1: Sendable, A: Sendable {
     .fmap(transform)(either)
 }
 
 // ($>) :: Either a b -> a0 -> Either a a0
-public func £> <A0, A, B>(_ either: Either<A, B>, _ value: A0) -> Either<A, A0> {
-    switch either {
-    case let .left(a): .left(a)
-    case .right: .right(value)
-    }
+public func £> <B1, A, B>(_ either: Either<A, B>, _ value: B1) -> Either<A, B1> {
+    either.match(caseLeft: Either.left, caseRight: const(.right(value)))
 }
 
 // (<$) :: a0 -> Either a b -> Either a a0
-public func <£ <A0, A, B>(_ value: A0, _ either: Either<A, B>) -> Either<A, A0> {
-    switch either {
-    case let .left(a): .left(a)
-    case .right: .right(value)
-    }
+public func <£ <B1, A, B>(_ value: B1, _ either: Either<A, B>) -> Either<A, B1> {
+    either £> value
 }
 #endif
 
 public extension Either {
-    static func fmap<T0>(
-        _ fn: @escaping (T0) -> U
-    ) -> (Either<T, T0>) -> Either<T, U> {
-        { eitherTT0 in
-            eitherTT0.mapRight(fn)
-        }
+    static func fmap<B0>(
+        _ fn: @escaping (B0) -> B
+    ) -> (Either<A, B0>) -> Either<A, B> where Self: Sendable {
+        { previous in previous.mapRight(fn) }
     }
 
-    func mapLeft<Z>(
-        _ lf: (T) -> Z
-    ) -> Either<Z, U> {
-        switch self {
-        case let .left(left):
-            return .left(lf(left))
-        case let .right(right):
-            return .right(right)
-        }
+    func mapLeft<A1>(
+        _ lf: @escaping (A) -> A1
+    ) -> Either<A1, B> {
+        match(
+            caseLeft: compose(lf, Either<A1, B>.left),
+            caseRight: Either<A1, B>.right
+        )
     }
 
-    func mapRight<Z>(
-        _ rf: (U) -> Z
-    ) -> Either<T, Z> {
-        switch self {
-        case let .left(left):
-            return .left(left)
-        case let .right(right):
-            return .right(rf(right))
-        }
+    func mapRight<B1>(
+        _ rf: @escaping (B) -> B1
+    ) -> Either<A, B1> {
+        match(
+            caseLeft: Either<A, B1>.left,
+            caseRight: compose(rf, Either<A, B1>.right)
+        )
     }
 
-    func bimap<T1, U1>(
-        _ lf: (T) -> T1,
-        _ rf: (U) -> U1
-    ) -> Either<T1, U1> {
-        switch self {
-        case let .left(left):
-            return .left(lf(left))
-        case let .right(right):
-            return .right(rf(right))
-        }
+    func bimap<A1, B1>(
+        _ lf: @escaping (A) -> A1,
+        _ rf: @escaping (B) -> B1
+    ) -> Either<A1, B1> {
+        match(
+            caseLeft: compose(lf, Either<A1, B1>.left),
+            caseRight: compose(rf, Either<A1, B1>.right)
+        )
     }
 }

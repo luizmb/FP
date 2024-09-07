@@ -1,19 +1,21 @@
 import Foundation
 
 public extension Either {
-    func result() -> Result<U, T> where T: Error {
-        switch self {
-        case let .left(error): .failure(error)
-        case let .right(success): .success(success)
-        }
+    func result() -> Result<B, A> where A: Error {
+        Result.from(self.inverted())
     }
 }
 
+public struct ResultEitherBridge<Success, Failure> {
+    public let parallel: () -> Either<Success, Failure>
+    public let crossover: () -> Either<Failure, Success>
+}
+
 public extension Result {
-    func either() -> Either<Failure, Success> {
-        switch self {
-        case let .success(right): .right(right)
-        case let .failure(left): .left(left)
-        }
+    var either: ResultEitherBridge<Success, Failure> {
+        .init(
+            parallel: { Either.from(self) },
+            crossover: { Either.from(self).inverted() }
+        )
     }
 }
