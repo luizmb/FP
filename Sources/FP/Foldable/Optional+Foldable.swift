@@ -44,15 +44,3 @@ public extension Optional {
         }
     }
 }
-
-// Something to help with readability and descriptiveness
-// eg: `if myOptionalValue.isNotNil { foo() }`
-public extension Optional {
-    var isNil: Bool {
-        self == nil
-    }
-
-    var isNotNil: Bool {
-        self != nil
-    }
-}

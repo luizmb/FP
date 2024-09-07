@@ -29,9 +29,32 @@ public extension Either {
         }
     }
 
-    static func zip<B1, B2>(_ lhs: Either<A, B1>, _ rhs: Either<A, B2>) -> Either<A, B>
-    where B == (B1, B2) {
-        .liftA2(tuple)(lhs, rhs)
+    fileprivate struct UnexpectedLeftError<L: Sendable>: Error {
+        let left: L
+    }
+
+    static func zip<B1, B2, each Bx>(
+        _ first: Either<A, B1>,
+        _ second: Either<A, B2>,
+        _ additional: repeat Either<A, (each Bx)>
+    ) -> Either<A, B>
+    where B == (B1, B2, repeat each Bx), A: Sendable {
+        func pickRight<L, R>(_ either: Either<L, R>) -> Result<R, UnexpectedLeftError<L>> {
+            switch either {
+            case let .left(left): .failure(UnexpectedLeftError(left: left))
+            case let .right(right): .success(right)
+            }
+        }
+
+        do {
+            return Either.right((
+                try pickRight(first).get(),
+                try pickRight(second).get(),
+                repeat try pickRight(each additional).get()
+            ))
+        } catch {
+            return Either.left(error.left)
+        }
     }
 }
 

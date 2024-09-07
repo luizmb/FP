@@ -1,20 +1,22 @@
 import Foundation
 
 public extension Optional {
+    // liftA2 :: (b1 -> b2 -> b) -> Either a b1 -> Either a b2 -> Either a b
+    static func liftA2<A1, A2>(_ fn: @escaping (A1, A2) -> A) -> (
+        Optional<A1>, Optional<A2>
+    ) -> Optional<A> {
+        { optionalA, optionalB in
+            Optional<(A1, A2)>.zip(optionalA, optionalB).map(fn)
+        }
+    }
+
     fileprivate struct UnwrapError: Error {}
-    /// Similar to zip(array1, array2) and Publishers.Zip(p1, p2), it will
-    /// try to unwrap both sides, if any is nil, return nil. If both are
-    /// present, the return will be a tuple with the unwrapped values.
-    /// Typically used together with map:
-    /// ```
-    /// Optional.zip(possibleInteger1, possibleInteger2).map(+) ?? fallback
-    /// Optional.zip(possibleInteger1, possibleInteger2, possibleInteger3, possibleInteger4).map(+) ?? fallback
-    /// ```
-    static func zip<SecondWrapped, each AdditionalWrapped>(
-        _ firstOptional: Wrapped?,
-        _ secondOptional: SecondWrapped?,
-        _ additionalOptional: repeat (each AdditionalWrapped)?
-    ) -> (Wrapped, SecondWrapped, repeat each AdditionalWrapped)? {
+    static func zip<A1, A2, each Ax>(
+        _ first: A1?,
+        _ second: A2?,
+        _ additional: repeat (each Ax)?
+    ) -> A? 
+    where A == (A1, A2, repeat each Ax) {
         func unwrap<T>(_ t: T?) throws -> T {
             guard let t else { throw UnwrapError() }
             return t
@@ -22,9 +24,9 @@ public extension Optional {
 
         do {
             return try (
-                unwrap(firstOptional),
-                unwrap(secondOptional),
-                repeat unwrap(each additionalOptional)
+                unwrap(first),
+                unwrap(second),
+                repeat unwrap(each additional)
             )
         } catch {
             return nil
