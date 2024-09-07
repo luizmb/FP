@@ -1,4 +1,5 @@
 import Foundation
+import FP
 
 public extension Either {
     func result() -> Result<B, A> where A: Error {
@@ -6,17 +7,9 @@ public extension Either {
     }
 }
 
-public struct ResultEitherBridge<Success, Failure> {
-    public let parallel: () -> Either<Success, Failure>
-    public let crossover: () -> Either<Failure, Success>
-
-    public func callAsFunction() -> Either<Failure, Success> { 
-        crossover()
-    }
-}
 
 public extension Result {
-    var either: ResultEitherBridge<Success, Failure> {
+    var either: SumTypeCopyStrategy<Either<Success, Failure>, Either<Failure, Success>> {
         .init(
             parallel: { Either.from(self) },
             crossover: { Either.from(self).inverted() }

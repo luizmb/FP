@@ -1,13 +1,13 @@
 import Foundation
 import FP
 
-public enum Either<A, B> {
+public enum Either<A, B>: SumType2 {
     case left(A)
     case right(B)
 }
 
-extension Either: SumType2 {
-    public func match<C>(caseLeft: (A) -> C, caseRight: (B) -> C) -> C {
+public extension Either {
+    func match<C>(caseLeft: (A) -> C, caseRight: (B) -> C) -> C {
         switch self {
         case let .left(left): caseLeft(left)
         case let .right(right): caseRight(right)

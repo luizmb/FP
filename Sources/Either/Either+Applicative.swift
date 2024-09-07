@@ -15,7 +15,7 @@ import Foundation
 
     // (<*) :: Either a b -> Either a ignore -> Either a b
     public func <* <A, B, Ignore>(_ lhs: Either<A, B>, _ rhs: Either<A, Ignore>) -> Either<A, B> {
-        .specialRightRight(lhs: lhs, rhs: rhs, handling: untuple(\.0))
+        rhs *> lhs
     }
 #endif
 
