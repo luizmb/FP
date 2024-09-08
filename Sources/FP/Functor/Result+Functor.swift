@@ -1,10 +1,10 @@
 import Foundation
 
 public extension Result {
-    static func fmap<A0>(
-        _ fn: @escaping (A0) -> A
-    ) -> (Result<A0, B>) -> Result<A, B> where Self: Sendable {
-        { previous in previous.mapLeft(fn) }
+    static func fmap<A1>(
+        _ fn: @escaping (A) -> A1
+    ) -> (Result<A, B>) -> Result<A1, B> where Self: Sendable {
+        { $0.mapLeft(fn) }
     }
 
     func mapLeft<A1>(

@@ -2,7 +2,6 @@
 import FP
 import Operators
 import Testing
-import Combine
 
 @Test func bimapLeft() async throws {
     let sut = Either<String, Int>.left("subject under test")

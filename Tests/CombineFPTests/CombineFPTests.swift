@@ -1,8 +1,5 @@
-@testable import Either
-import FP
-import Operators
+@testable import CombineFP
 import Testing
-import Combine
 
 @Test func example() async throws {
 }

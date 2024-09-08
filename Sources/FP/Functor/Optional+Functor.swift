@@ -1,9 +1,9 @@
 import Foundation
 
 public extension Optional {
-    static func fmap<A0>(
-        _ fn: @escaping (A0) -> A
-    ) -> (Optional<A0>) -> Optional<A> where Self: Sendable {
-        { previous in previous.map(fn) }
+    static func fmap<A1>(
+        _ fn: @escaping (A) -> A1
+    ) -> (A?) -> A1? where Self: Sendable {
+        { $0.map(fn) }
     }
 }

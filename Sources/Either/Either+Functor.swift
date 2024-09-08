@@ -6,7 +6,7 @@ import Operators
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
 public func <£> <B1, A, B>(_ transform: @escaping (B) -> B1, _ either: Either<A, B>) -> Either<A, B1> 
 where B: Sendable, B1: Sendable, A: Sendable {
-    .fmap(transform)(either)
+    Either<A, B>.fmap(transform)(either)
 }
 
 // ($>) :: Either a b -> a0 -> Either a a0
@@ -21,10 +21,10 @@ public func <£ <B1, A, B>(_ value: B1, _ either: Either<A, B>) -> Either<A, B1>
 #endif
 
 public extension Either {
-    static func fmap<B0>(
-        _ fn: @escaping (B0) -> B
-    ) -> (Either<A, B0>) -> Either<A, B> where Self: Sendable {
-        { previous in previous.mapRight(fn) }
+    static func fmap<B1>(
+        _ fn: @escaping (B) -> B1
+    ) -> (Either<A, B>) -> Either<A, B1> where Self: Sendable {
+        { $0.mapRight(fn) }
     }
 
     func mapLeft<A1>(

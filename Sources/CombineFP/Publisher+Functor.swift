@@ -12,7 +12,7 @@ public func <£> <A1, A, B: Error>(
     _ publisher: any Publisher<A, B>
 ) -> any Publisher<A1, B> 
 where B: Sendable, A1: Sendable, A: Sendable {
-    Result<A1, B>.Publisher.fmap(transform)(publisher)
+    Result<A, B>.Publisher.fmap(transform)(publisher)
 }
 
 // ($>) :: Either a b -> a0 -> Either a a0
@@ -41,10 +41,10 @@ public extension Publisher {
         Result<A, B>.failure(b).publisher
     }
 
-    static func fmap<A0>(
-        _ fn: @escaping (A0) -> A
-    ) -> (any Publisher<A0, Failure>) -> any Publisher<A, Failure> {
-        { previous in previous.eraseToAnyPublisher().map(fn) }
+    static func fmap<A1>(
+        _ fn: @escaping (A) -> A1
+    ) -> (any Publisher<A, Failure>) -> any Publisher<A1, Failure> {
+        { $0.eraseToAnyPublisher().map(fn) }
     }
 
     func mapLeft<A1>(
