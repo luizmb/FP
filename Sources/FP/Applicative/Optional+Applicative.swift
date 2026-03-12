@@ -15,7 +15,7 @@ public extension Optional {
         _ first: A1?,
         _ second: A2?,
         _ additional: repeat (each Ax)?
-    ) -> A? 
+    ) -> A?
     where A == (A1, A2, repeat each Ax) {
         func unwrap<T>(_ t: T?) throws -> T {
             guard let t else { throw UnwrapError() }

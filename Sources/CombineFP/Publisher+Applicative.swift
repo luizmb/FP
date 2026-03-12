@@ -16,7 +16,7 @@ public extension Publisher {
                 .map(fn)
         }
     }
-    
+
     static func zip<A1, A2>(_ lhs: any Publisher<A1, B>, _ rhs: any Publisher<A2, B>) -> any Publisher<A, B>
     where A == (A1, A2) {
         Publishers.Zip(lhs.eraseToAnyPublisher(), rhs.eraseToAnyPublisher())

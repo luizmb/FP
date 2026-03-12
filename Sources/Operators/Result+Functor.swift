@@ -1,7 +1,7 @@
 import FP
 
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
-public func <£> <A1, A, B>(_ transform: @escaping (A) -> A1, _ result: Result<A, B>) -> Result<A1, B> 
+public func <£> <A1, A, B>(_ transform: @escaping (A) -> A1, _ result: Result<A, B>) -> Result<A1, B>
 where B: Sendable, A1: Sendable, A: Sendable {
     Result<A, B>.fmap(transform)(result)
 }

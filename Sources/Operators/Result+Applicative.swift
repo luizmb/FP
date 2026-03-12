@@ -18,7 +18,7 @@ public func <* <A, B, Ignore>(_ lhs: Result<A, B>, _ rhs: Result<Ignore, B>) -> 
 
 extension Result {
     fileprivate static func specialLeftLeft<Aa, Ab>(
-        lhs: Result<Aa, B>, 
+        lhs: Result<Aa, B>,
         rhs: Result<Ab, B>,
         handling: @escaping (Aa, Ab) -> A
     ) -> Result<A, B> {
