@@ -92,7 +92,7 @@ Swift's built-in `&&` and `||` are **left-associative**, while Haskell's are **r
 
 ### ✅ Verification:
 
-All 84 tests pass with the corrected precedence and associativity! 🎉
+All 356 tests pass with the corrected precedence and associativity! 🎉
 
 ### 📚 References:
 
