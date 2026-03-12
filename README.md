@@ -149,22 +149,42 @@ let readerAsync: Reader<Config, AsyncStream<Int>> = Reader { env in
 let mapped = readerAsync.mapT { $0 * 2 }
 ```
 
-### Function Composition
+### Function Composition & Tacit Programming
+
+The library encourages point-free (tacit) style with utilities like `curry`, `flip`, and composition operators:
 
 ```swift
-let addOne: (Int) -> Int = { $0 + 1 }
-let double: (Int) -> Int = { $0 * 2 }
+import FP  // For curry, flip, compose utilities
 
-// Forward composition
-let f = addOne >>> double
-f(5)  // 12
+// Tacit style with curry
+let double = curry(*)(2)  // (Int) -> Int
+let increment = curry(+)(1)  // (Int) -> Int
 
-// Backward composition
-let g = double <<< addOne
-g(5)  // 12
+// Composition
+let addOneThenDouble = increment >>> double
+addOneThenDouble(5)  // 12
 
-// Pipe operator
-5 |> addOne |> double  // 12
+// Pipe operator for data flow
+5 |> increment |> double  // 12
+
+// With operators (operators first!)
+let array = [1, 2, 3]
+
+// ❌ Avoid: Methods with lambdas
+array.map { $0 + 1 }.map { $0 * 2 }
+
+// ✅ Better: Operators
+{ $0 + 1 } <£> array <£> { $0 * 2 }
+
+// ✅✅ Best: Tacit + operators
+increment <£> array <£> double
+// Or composed:
+(increment >>> double) <£> array  // [4, 6, 8]
+
+// Currying for partial application
+let multiply = curry(*)
+let multiplyBy3 = multiply(3)
+multiplyBy3 <£> [1, 2, 3]  // [3, 6, 9]
 ```
 
 ### Semigroup
@@ -280,15 +300,22 @@ import ConcurrencyFP
 
 ## Claude AI Skills
 
-The `docs/claude-skills/` directory contains AI-powered development assistance for using this library:
+AI-powered development assistance organized by audience:
 
-- **add-monad-support**: Implement Functor/Applicative/Monad for custom types
-- **create-readert-transformer**: Build ReaderT transformers for custom monads
-- **convert-to-functional**: Refactor imperative code to functional style
-- **explain-operators**: Understand and debug operator compositions
-- **reader-monad-guide**: Learn and apply Reader monad patterns
+**For Library Users** (`docs/claude-skills/users/`):
+- **getting-started** ⭐ - Learn operators and tacit programming
+- **convert-to-functional** - Refactor to operators + point-free style
+- **explain-operators** - Debug operator compositions
+- **reader-monad-guide** - Dependency injection patterns
+- **make-type-composable** - Make custom types work with operators
 
-See [docs/claude-skills/README.md](docs/claude-skills/README.md) for usage instructions.
+**For Library Contributors** (`docs/claude-skills/contributors/`):
+- **add-monad-support** - Implement type classes in library
+- **create-readert-transformer** - Create new transformers
+
+**Philosophy**: Operators first (`<£>`, `>>-`, `>=>`), tacit programming when clear (`(*2)`, `(+1)`), compose everything (`>>>`, `|>`).
+
+See [docs/claude-skills/README.md](docs/claude-skills/README.md) for detailed usage.
 
 ## Design Principles
 

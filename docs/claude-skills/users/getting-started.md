@@ -9,7 +9,7 @@ You are helping a developer learn and use the FP library for functional programm
 ### Key Principles
 
 1. **Operators First**: Use `<£>` not `.fmap()`, use `>>-` not `.flatMap()`
-2. **Tacit When Clear**: Use `curry(*)(2)` not `{ $0 * 2 }`, use `(+1)` not `{ $0 + 1 }`
+2. **Tacit When Clear**: Use `curry(*)(2)` not `{ $0 * 2 }`, use `curry(+)(1)` not `{ $0 + 1 }`
 3. **Compose Everything**: Build complex functions from simple pieces with `>>>`, `<<<`, `|>`
 
 When using this library:
@@ -17,7 +17,7 @@ When using this library:
 - ✅ **Use operators**: `<£>`, `<*>`, `>>-`, `>=>` for composition
 - ✅ **Prefer tacit style**: Use library utilities like `curry`, `flip`, `compose` instead of explicit lambdas
 - ❌ **Avoid function versions**: Don't use `.fmap()`, `.bind()` when operators are available
-- ❌ **Avoid explicit lambdas**: Don't use `{ $0 + 1 }` when `(+1)` or `curry(+)(1)` works
+- ❌ **Avoid explicit lambdas**: Don't use `{ $0 + 1 }` when `curry(+)(1)` or method references work
 
 ### Quick Start Guide
 
@@ -56,16 +56,15 @@ add5(3)  // 8
 let double = curry(*)(2)  // (Int) -> Int
 let increment = curry(+)(1)  // (Int) -> Int
 
-// Even shorter: Swift supports some operator sections
-let increment = (+1)  // (Int) -> Int
-let double = (*2)     // (Int) -> Int
+// Note: Swift doesn't support operator sections like (+1) or (*2)
+// Use curry or flip for partial application
 
 // compose: Chain functions
-let addOneThenDouble = (+1) >>> (*2)  // (Int) -> Int
+let addOneThenDouble = curry(+)(1) >>> curry(*)(2)  // (Int) -> Int
 addOneThenDouble(5)  // 12
 
 // |> pipe operator: Apply value to functions
-let result = 5 |> (+1) |> (*2)  // 12
+let result = 5 |> curry(+)(1) |> curry(*)(2)  // 12
 
 // flip: Reverse parameter order
 let subtract = curry(-)(10)  // Subtracts FROM 10
@@ -81,13 +80,13 @@ subtractFlipped(15)  // 5 (15 - 10)
 array.map { $0 * 2 }
 
 // ✅ Tacit (clearer intent)
-(*2) <£> array
+curry(*)(2) <£> array
 
 // ❌ Nested lambdas
 array.map { $0 + 1 }.map { $0 * 2 }
 
 // ✅ Composition
-(+1) >>> (*2) <£> array
+curry(+)(1) >>> curry(*)(2) <£> array
 ```
 
 #### Step 3: Basic Operators
@@ -95,7 +94,7 @@ array.map { $0 + 1 }.map { $0 * 2 }
 **Functor** (`<£>`) - Transform values in containers:
 ```swift
 // Optional - tacit style
-let doubled = (*2) <£> Optional(5)  // Optional(10)
+let doubled = curry(*)(2) <£> Optional(5)  // Optional(10)
 
 // Array - tacit style
 let squared = { $0 * $0 } <£> [1, 2, 3]  // [1, 4, 9]
@@ -162,18 +161,18 @@ array.map { $0 * 2 }.flatMap { [$0, $0 + 1] }
 { $0 * 2 } <£> array >>- { [$0, $0 + 1] }
 
 // ✅✅ Best: Tacit + operators
-let double = (*2)
+let double = curry(*)(2)
 let expand: (Int) -> [Int] = { [$0, $0 + 1] }
 double <£> array >>- expand
 
 // Or inline tacit where clear
-(*2) <£> array >>- { [$0, $0 + 1] }
+curry(*)(2) <£> array >>- { [$0, $0 + 1] }
 // Result: [2, 3, 4, 5, 6, 7]
 ```
 
 **Tacit style decision tree**:
-- Simple arithmetic? Use tacit: `(*2)`, `(+1)`, `(-5)`
-- Function composition? Use tacit: `f >>> g`, `(+1) >>> (*2)`
+- Simple arithmetic? Use tacit: `curry(*)(2)`, `curry(+)(1)`, `curry(-)(5)`
+- Function composition? Use tacit: `f >>> g`, `curry(+)(1) >>> curry(*)(2)`
 - Method reference? Use tacit: `String.uppercased`, `\.count`
 - Complex logic? Lambda is fine: `{ guard $0 > 0 else { return nil }; return $0 }`
 
