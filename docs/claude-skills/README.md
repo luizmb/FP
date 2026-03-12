@@ -6,7 +6,7 @@ AI-powered development assistance for using and extending the FP (Functional Pro
 
 This library encourages:
 1. **Operators over methods**: Use `<£>` not `.fmap()`, use `>>-` not `.flatMap()`
-2. **Tacit (point-free) style**: Use `curry(*)` not `{ $0 * $1 }`, use `(+1)` not `{ $0 + 1 }`
+2. **Tacit (point-free) style**: Use `2 |> curry(*)` not `{ $0 * 2 }` - prefer `|>` over nested parentheses
 3. **Composition**: Build complex functions from simple pieces
 
 Example:
@@ -17,9 +17,9 @@ array.map { $0 * 2 }.flatMap { [$0, $0 + 1] }
 // ✅ Better: Operators with lambdas
 { $0 * 2 } <£> array >>- { [$0, $0 + 1] }
 
-// ✅✅ Best: Tacit style with operators
-let double = curry(*)(2)
-let expand = { [$ 0, $0 + 1] }  // Some cases still need lambdas
+// ✅✅ Best: Tacit style with operators (use |> curry)
+let double = 2 |> curry(*)
+let expand = { [$0, $0 + 1] }  // Some cases still need lambdas
 double <£> array >>- expand
 ```
 
@@ -118,11 +118,11 @@ compose    // Function composition (also >>> and <<<)
 // Explicit lambda
 { $0 * 2 }
 
-// Tacit with curry
-curry(*)(2)
-
-// Or using partial application
+// ✅ Tacit (preferred with |>)
 2 |> curry(*)
+
+// Also valid but less preferred (nested parens)
+curry(*)(2)
 ```
 
 **Addition**:
@@ -130,8 +130,8 @@ curry(*)(2)
 // Explicit
 { $0 + 1 }
 
-// Tacit
-curry(+)(1)
+// ✅ Tacit (preferred with |>)
+1 |> curry(+)
 
 // Or
 (+1)  // Swift supports this directly!

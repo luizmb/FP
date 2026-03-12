@@ -156,9 +156,9 @@ The library encourages point-free (tacit) style with utilities like `curry`, `fl
 ```swift
 import FP  // For curry, flip, compose utilities
 
-// Tacit style with curry
-let double = curry(*)(2)  // (Int) -> Int
-let increment = curry(+)(1)  // (Int) -> Int
+// Tacit style: Use |> curry (cleaner than nested parentheses)
+let double = 2 |> curry(*)  // (Int) -> Int
+let increment = 1 |> curry(+)  // (Int) -> Int
 
 // Composition
 let addOneThenDouble = increment >>> double
@@ -173,7 +173,7 @@ let array = [1, 2, 3]
 // ❌ Avoid: Methods with lambdas
 array.map { $0 + 1 }.map { $0 * 2 }
 
-// ✅ Better: Operators
+// ✅ Better: Operators with lambdas
 { $0 + 1 } <£> array <£> { $0 * 2 }
 
 // ✅✅ Best: Tacit + operators
@@ -181,9 +181,8 @@ increment <£> array <£> double
 // Or composed:
 (increment >>> double) <£> array  // [4, 6, 8]
 
-// Currying for partial application
-let multiply = curry(*)
-let multiplyBy3 = multiply(3)
+// Prefer |> for partial application
+let multiplyBy3 = 3 |> curry(*)
 multiplyBy3 <£> [1, 2, 3]  // [3, 6, 9]
 ```
 

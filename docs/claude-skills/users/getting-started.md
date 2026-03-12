@@ -52,26 +52,26 @@ let addCurried: (Int) -> (Int) -> Int = curry(+)
 let add5 = addCurried(5)  // (Int) -> Int
 add5(3)  // 8
 
-// Shorter: partial application
-let double = curry(*)(2)  // (Int) -> Int
-let increment = curry(+)(1)  // (Int) -> Int
+// Preferred: Use |> to apply first argument (cleaner than nested parens)
+let double = 2 |> curry(*)  // (Int) -> Int
+let increment = 1 |> curry(+)  // (Int) -> Int
 
-// Note: Swift doesn't support operator sections like (+1) or (*2)
-// Use curry or flip for partial application
+// Note: Swift doesn't support operator sections like Haskell's (+1) or (*2)
+// Use |> curry pattern for partial application
 
 // compose: Chain functions
-let addOneThenDouble = curry(+)(1) >>> curry(*)(2)  // (Int) -> Int
+let addOneThenDouble = increment >>> double  // (Int) -> Int
 addOneThenDouble(5)  // 12
 
 // |> pipe operator: Apply value to functions
-let result = 5 |> curry(+)(1) |> curry(*)(2)  // 12
+let result = 5 |> increment |> double  // 12
 
 // flip: Reverse parameter order
-let subtract = curry(-)(10)  // Subtracts FROM 10
-subtract(3)  // 7 (10 - 3)
+let subtractFrom10 = 10 |> curry(-)  // Subtracts FROM 10
+subtractFrom10(3)  // 7 (10 - 3)
 
-let subtractFlipped = flip(curry(-))(10)  // Subtracts 10
-subtractFlipped(15)  // 5 (15 - 10)
+let subtract10 = 10 |> flip(curry(-))  // Subtracts 10
+subtract10(15)  // 5 (15 - 10)
 ```
 
 **Use tacit style when it's clearer**:
@@ -80,25 +80,29 @@ subtractFlipped(15)  // 5 (15 - 10)
 array.map { $0 * 2 }
 
 // ✅ Tacit (clearer intent)
-curry(*)(2) <£> array
+let double = 2 |> curry(*)
+double <£> array
 
 // ❌ Nested lambdas
 array.map { $0 + 1 }.map { $0 * 2 }
 
 // ✅ Composition
-curry(+)(1) >>> curry(*)(2) <£> array
+let increment = 1 |> curry(+)
+let double = 2 |> curry(*)
+increment >>> double <£> array
 ```
 
 #### Step 3: Basic Operators
 
 **Functor** (`<£>`) - Transform values in containers:
 ```swift
-// Optional - tacit style
-let doubled = curry(*)(2) <£> Optional(5)  // Optional(10)
+// Optional - tacit style with |> curry
+let double = 2 |> curry(*)
+let doubled = double <£> Optional(5)  // Optional(10)
 
 // Array - tacit style
 let squared = { $0 * $0 } <£> [1, 2, 3]  // [1, 4, 9]
-// Note: Swift doesn't have built-in (^2), so lambda is fine here
+// Note: Swift doesn't have built-in square function, so lambda is fine
 
 // Result - using method reference
 let uppercased = String.uppercased <£> Result<String, Error>.success("hello")
@@ -160,21 +164,27 @@ array.map { $0 * 2 }.flatMap { [$0, $0 + 1] }
 // ✅ Better: Operators with lambdas
 { $0 * 2 } <£> array >>- { [$0, $0 + 1] }
 
-// ✅✅ Best: Tacit + operators
-let double = curry(*)(2)
+// ✅✅ Best: Tacit + operators (define functions with |> curry)
+let double = 2 |> curry(*)
 let expand: (Int) -> [Int] = { [$0, $0 + 1] }
 double <£> array >>- expand
-
-// Or inline tacit where clear
-curry(*)(2) <£> array >>- { [$0, $0 + 1] }
 // Result: [2, 3, 4, 5, 6, 7]
 ```
 
 **Tacit style decision tree**:
-- Simple arithmetic? Use tacit: `curry(*)(2)`, `curry(+)(1)`, `curry(-)(5)`
-- Function composition? Use tacit: `f >>> g`, `curry(+)(1) >>> curry(*)(2)`
+- Simple arithmetic? Use tacit: `2 |> curry(*)`, `1 |> curry(+)`, `5 |> curry(-)`
+- Function composition? Use tacit: `f >>> g`, `increment >>> double`
 - Method reference? Use tacit: `String.uppercased`, `\.count`
 - Complex logic? Lambda is fine: `{ guard $0 > 0 else { return nil }; return $0 }`
+
+**Prefer `|>` for currying**:
+```swift
+// ✅ Clean with |>
+let double = 2 |> curry(*)
+
+// ❌ Nested parentheses
+let double = curry(*)(2)
+```
 
 #### Step 5: Common Patterns
 
