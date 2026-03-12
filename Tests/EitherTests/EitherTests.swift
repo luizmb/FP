@@ -1,6 +1,7 @@
 @testable import Either
-import FP
+@testable import EitherOperators
 import Operators
+import FP
 import Testing
 
 @Test func bimapLeft() async throws {

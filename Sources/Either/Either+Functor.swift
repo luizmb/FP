@@ -1,25 +1,6 @@
 import Foundation
 import FP
 
-#if canImport(Operators)
-import Operators
-// (<$>) :: Functor f => (a -> b) -> f a -> f b
-public func <£> <B1, A, B>(_ transform: @escaping (B) -> B1, _ either: Either<A, B>) -> Either<A, B1> 
-where B: Sendable, B1: Sendable, A: Sendable {
-    Either<A, B>.fmap(transform)(either)
-}
-
-// ($>) :: Either a b -> a0 -> Either a a0
-public func £> <B1, A, B>(_ either: Either<A, B>, _ value: B1) -> Either<A, B1> {
-    either.match(caseLeft: Either.left, caseRight: const(.right(value)))
-}
-
-// (<$) :: a0 -> Either a b -> Either a a0
-public func <£ <B1, A, B>(_ value: B1, _ either: Either<A, B>) -> Either<A, B1> {
-    either £> value
-}
-#endif
-
 public extension Either {
     static func fmap<B1>(
         _ fn: @escaping (B) -> B1

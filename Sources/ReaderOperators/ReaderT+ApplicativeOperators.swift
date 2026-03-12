@@ -1,0 +1,121 @@
+import Foundation
+import FP
+import Reader
+import Operators
+
+// ReaderT + Optional
+
+// (<*>) :: Reader e (a -> b) -> Reader e a -> Reader e b
+public func <*> <Env, A, B>(
+    _ readerF: Reader<Env, Optional<(A) -> B>>,
+    _ readerA: Reader<Env, Optional<A>>
+) -> Reader<Env, Optional<B>> {
+    applyReaderOptional(readerF, readerA)
+}
+
+// (*>) :: Reader e a -> Reader e b -> Reader e b
+public func *> <Env, A, B>(
+    _ lhs: Reader<Env, Optional<A>>,
+    _ rhs: Reader<Env, Optional<B>>
+) -> Reader<Env, Optional<B>> {
+    Reader { env in
+        guard lhs(env) != nil else { return nil }
+        return rhs(env)
+    }
+}
+
+// (<*) :: Reader e a -> Reader e b -> Reader e a
+public func <* <Env, A, B>(
+    _ lhs: Reader<Env, Optional<A>>,
+    _ rhs: Reader<Env, Optional<B>>
+) -> Reader<Env, Optional<A>> {
+    Reader { env in
+        guard let a = lhs(env), rhs(env) != nil else { return nil }
+        return a
+    }
+}
+
+// ReaderT + Result
+
+// (<*>) :: Reader e (Result (a -> b) e) -> Reader e (Result a e) -> Reader e (Result b e)
+public func <*> <Env, A, B, E: Error>(
+    _ readerF: Reader<Env, Result<(A) -> B, E>>,
+    _ readerA: Reader<Env, Result<A, E>>
+) -> Reader<Env, Result<B, E>> {
+    applyReaderResult(readerF, readerA)
+}
+
+// (*>) :: Reader e (Result a e) -> Reader e (Result b e) -> Reader e (Result b e)
+public func *> <Env, A, B, E: Error>(
+    _ lhs: Reader<Env, Result<A, E>>,
+    _ rhs: Reader<Env, Result<B, E>>
+) -> Reader<Env, Result<B, E>> {
+    Reader { env in
+        lhs(env).flatMap { _ in rhs(env) }
+    }
+}
+
+// (<*) :: Reader e (Result a e) -> Reader e (Result b e) -> Reader e (Result a e)
+public func <* <Env, A, B, E: Error>(
+    _ lhs: Reader<Env, Result<A, E>>,
+    _ rhs: Reader<Env, Result<B, E>>
+) -> Reader<Env, Result<A, E>> {
+    Reader { env in
+        lhs(env).flatMap { a in
+            rhs(env).map { _ in a }
+        }
+    }
+}
+
+// ReaderT + Reader (nested)
+
+// (<*>) :: Reader e1 (Reader e2 (a -> b)) -> Reader e1 (Reader e2 a) -> Reader e1 (Reader e2 b)
+public func <*> <Env1, Env2, A, B>(
+    _ readerF: Reader<Env1, Reader<Env2, (A) -> B>>,
+    _ readerA: Reader<Env1, Reader<Env2, A>>
+) -> Reader<Env1, Reader<Env2, B>> {
+    applyReaderReader(readerF, readerA)
+}
+
+// (*>) :: Reader e1 (Reader e2 a) -> Reader e1 (Reader e2 b) -> Reader e1 (Reader e2 b)
+public func *> <Env1, Env2, A, B>(
+    _ lhs: Reader<Env1, Reader<Env2, A>>,
+    _ rhs: Reader<Env1, Reader<Env2, B>>
+) -> Reader<Env1, Reader<Env2, B>> {
+    liftA2ReaderReader { (_: A, b: B) in b }(lhs, rhs)
+}
+
+// (<*) :: Reader e1 (Reader e2 a) -> Reader e1 (Reader e2 b) -> Reader e1 (Reader e2 a)
+public func <* <Env1, Env2, A, B>(
+    _ lhs: Reader<Env1, Reader<Env2, A>>,
+    _ rhs: Reader<Env1, Reader<Env2, B>>
+) -> Reader<Env1, Reader<Env2, A>> {
+    liftA2ReaderReader { (a: A, _: B) in a }(lhs, rhs)
+}
+
+// ReaderT + Array
+
+// (<*>) :: Reader e [(a -> b)] -> Reader e [a] -> Reader e [b]
+public func <*> <Env, A, B>(
+    _ readerF: Reader<Env, [(A) -> B]>,
+    _ readerA: Reader<Env, [A]>
+) -> Reader<Env, [B]> {
+    applyReaderArray(readerF, readerA)
+}
+
+// (*>) :: Reader e [a] -> Reader e [b] -> Reader e [b]
+public func *> <Env, A, B>(
+    _ lhs: Reader<Env, [A]>,
+    _ rhs: Reader<Env, [B]>
+) -> Reader<Env, [B]> {
+    liftA2ReaderArray { (_: A, b: B) in b }(lhs, rhs)
+}
+
+// (<*) :: Reader e [a] -> Reader e [b] -> Reader e [a]
+public func <* <Env, A, B>(
+    _ lhs: Reader<Env, [A]>,
+    _ rhs: Reader<Env, [B]>
+) -> Reader<Env, [A]> {
+    liftA2ReaderArray { (a: A, _: B) in a }(lhs, rhs)
+}
+

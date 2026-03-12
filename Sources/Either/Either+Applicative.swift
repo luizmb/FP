@@ -1,24 +1,6 @@
 import FP
 import Foundation
 
-#if canImport(Operators)
-    import Operators
-    // (<*>) :: Either a (b0 -> b) -> Either a b0 -> Either a b
-    public func <*> <A, B0, B>(_ lhs: Either<A, (B0) -> B>, _ rhs: Either<A, B0>) -> Either<A, B> {
-        .specialRightRight(lhs: lhs, rhs: rhs, handling: call)
-    }
-
-    // (*>) :: Either a ignore -> Either a b -> Either a b
-    public func *> <A, Ignore, B>(_ lhs: Either<A, Ignore>, _ rhs: Either<A, B>) -> Either<A, B> {
-        .specialRightRight(lhs: lhs, rhs: rhs, handling: untuple(\.1))
-    }
-
-    // (<*) :: Either a b -> Either a ignore -> Either a b
-    public func <* <A, B, Ignore>(_ lhs: Either<A, B>, _ rhs: Either<A, Ignore>) -> Either<A, B> {
-        rhs *> lhs
-    }
-#endif
-
 public extension Either {
     // liftA2 :: (b1 -> b2 -> b) -> Either a b1 -> Either a b2 -> Either a b
     static func liftA2<B1, B2>(_ fn: @escaping (B1, B2) -> B) -> (
@@ -56,11 +38,9 @@ public extension Either {
             return Either.left(error.left)
         }
     }
-}
 
-extension Either {
-    fileprivate static func specialRightRight<Ba, Bb>(
-        lhs: Either<A, Ba>, 
+    static func specialRightRight<Ba, Bb>(
+        lhs: Either<A, Ba>,
         rhs: Either<A, Bb>,
         handling: @escaping (Ba, Bb) -> B
     ) -> Either<A, B> {

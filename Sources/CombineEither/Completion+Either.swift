@@ -1,4 +1,5 @@
-#if canImport(Combine) && canImport(Either)
+#if canImport(Combine)
+import CombineFP
 import Combine
 import Either
 import Foundation
