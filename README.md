@@ -278,6 +278,18 @@ import ConcurrencyFP
 - [IMPLEMENTATION_SUMMARY.md](IMPLEMENTATION_SUMMARY.md) - Complete feature list
 - [PRECEDENCE_CORRECTIONS.md](PRECEDENCE_CORRECTIONS.md) - Operator precedence details
 
+## Claude AI Skills
+
+The `docs/claude-skills/` directory contains AI-powered development assistance for using this library:
+
+- **add-monad-support**: Implement Functor/Applicative/Monad for custom types
+- **create-readert-transformer**: Build ReaderT transformers for custom monads
+- **convert-to-functional**: Refactor imperative code to functional style
+- **explain-operators**: Understand and debug operator compositions
+- **reader-monad-guide**: Learn and apply Reader monad patterns
+
+See [docs/claude-skills/README.md](docs/claude-skills/README.md) for usage instructions.
+
 ## Design Principles
 
 1. **Type Safety**: Leverage Swift's type system with generic constraints
