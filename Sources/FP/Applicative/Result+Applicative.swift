@@ -1,12 +1,12 @@
 import Foundation
 
 public extension Result {
-    // liftA2 :: (b1 -> b2 -> b) -> Either a b1 -> Either a b2 -> Either a b
+    // liftA2 :: (a1 -> a2 -> a) -> Result<a1, b> -> Result<a2, b> -> Result<a, b>
     static func liftA2<A1, A2>(_ fn: @escaping (A1, A2) -> A) -> (
         Result<A1, B>, Result<A2, B>
     ) -> Result<A, B> {
         { resultA, resultB in
-            .specialLeftLeft(lhs: resultA, rhs: resultB, handling: fn)
+            resultA.flatMap { a in resultB.map { b in fn(a, b) } }
         }
     }
 
@@ -29,21 +29,5 @@ public extension Result {
         } catch {
             return Result.failure(error)
         }
-    }
-}
-
-extension Result {
-    fileprivate static func specialLeftLeft<Aa, Ab>(
-        lhs: Result<Aa, B>,
-        rhs: Result<Ab, B>,
-        handling: @escaping (Aa, Ab) -> A
-    ) -> Result<A, B> {
-        .match(
-            lhs, rhs,
-            caseLeftLeft: untuple(compose(handling, Result.left)),
-            caseLeftRight: withArg(\.1)(Result.right),
-            caseRightLeft: withArg(\.0)(Result.right),
-            caseRightRight: withArg(\.0)(Result.right)
-        )
     }
 }

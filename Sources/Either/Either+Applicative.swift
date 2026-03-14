@@ -39,7 +39,7 @@ public extension Either {
         }
     }
 
-    static func specialRightRight<Ba, Bb>(
+    private static func specialRightRight<Ba, Bb>(
         lhs: Either<A, Ba>,
         rhs: Either<A, Bb>,
         handling: @escaping (Ba, Bb) -> B

@@ -21,8 +21,7 @@ public func >=> <A, B0, B, B1>(
 }
 
 // (<&>) :: Functor f => f a -> (a -> b) -> f b
-public func <&> <A, B, B1>(_ either: Either<A, B>, _ transform: @escaping (B) -> B1) -> Either<A, B1>
-where A: Sendable, B: Sendable, B1: Sendable {
+public func <&> <A, B, B1>(_ either: Either<A, B>, _ transform: @escaping (B) -> B1) -> Either<A, B1> {
     either.mapRight(transform)
 }
 

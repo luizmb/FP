@@ -1,7 +1,7 @@
 import Foundation
 
 public extension Optional {
-    // liftA2 :: (b1 -> b2 -> b) -> Either a b1 -> Either a b2 -> Either a b
+    // liftA2 :: (a1 -> a2 -> a) -> Optional<a1> -> Optional<a2> -> Optional<a>
     static func liftA2<A1, A2>(_ fn: @escaping (A1, A2) -> A) -> (
         Optional<A1>, Optional<A2>
     ) -> Optional<A> {

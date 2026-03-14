@@ -4,7 +4,7 @@ import FP
 public extension Either {
     static func fmap<B1>(
         _ fn: @escaping (B) -> B1
-    ) -> (Either<A, B>) -> Either<A, B1> where Self: Sendable {
+    ) -> (Either<A, B>) -> Either<A, B1> {
         { $0.mapRight(fn) }
     }
 

@@ -3,7 +3,7 @@ import Foundation
 public extension Result {
     static func fmap<A1>(
         _ fn: @escaping (A) -> A1
-    ) -> (Result<A, B>) -> Result<A1, B> where Self: Sendable {
+    ) -> (Result<A, B>) -> Result<A1, B> {
         { $0.mapLeft(fn) }
     }
 
