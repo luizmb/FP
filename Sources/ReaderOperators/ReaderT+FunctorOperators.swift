@@ -12,14 +12,12 @@ where A: Sendable, B: Sendable {
     reader.mapT(transform)
 }
 
-// ($>) :: Either a b -> a0 -> Either a a0
+// ($>) :: f a -> b -> f b
 public func £> <A1, A, Env>(_ reader: Reader<Env, Optional<A>>, _ value: A1) -> Reader<Env, Optional<A1>> {
-    Reader { env in
-        reader(env) £> value
-    }
+    reader.replaceOutputT(value)
 }
 
-// (<$) :: a0 -> Either a b -> Either a a0
+// (<$) :: a -> f b -> f a
 public func <£ <A1, A, Env>(_ value: A1, _ reader: Reader<Env, Optional<A>>) -> Reader<Env, Optional<A1>> {
     reader £> value
 }
@@ -33,14 +31,12 @@ where A: Sendable, B: Sendable {
     reader.mapT(transform)
 }
 
-// ($>) :: Either a b -> a0 -> Either a a0
+// ($>) :: f a -> b -> f b
 public func £> <A1, A, B, Env>(_ reader: Reader<Env, Result<A, B>>, _ value: A1) -> Reader<Env, Result<A1, B>> {
-    Reader { env in
-        reader(env) £> value
-    }
+    reader.replaceOutputT(value)
 }
 
-// (<$) :: a0 -> Either a b -> Either a a0
+// (<$) :: a -> f b -> f a
 public func <£ <A1, A, B, Env>(_ value: A1, _ reader: Reader<Env, Result<A, B>>) -> Reader<Env, Result<A1, B>> {
     reader £> value
 }
@@ -55,7 +51,7 @@ public func <£> <A, B, Env1, Env2>(_ transform: @escaping (A) -> B, _ reader: R
 
 // ($>) :: f a -> b -> f b
 public func £> <A, B, Env1, Env2>(_ reader: Reader<Env1, Reader<Env2, A>>, _ value: B) -> Reader<Env1, Reader<Env2, B>> {
-    reader.mapT { _ in value }
+    reader.mapT(const(value))
 }
 
 // (<$) :: a -> f b -> f a
@@ -73,11 +69,10 @@ public func <£> <A, B, Env>(_ transform: @escaping (A) -> B, _ reader: Reader<E
 
 // ($>) :: f a -> b -> f b
 public func £> <A, B, Env>(_ reader: Reader<Env, [A]>, _ value: B) -> Reader<Env, [B]> {
-    reader.mapT { _ in value }
+    reader.mapT(const(value))
 }
 
 // (<$) :: a -> f b -> f a
 public func <£ <A, B, Env>(_ value: A, _ reader: Reader<Env, [B]>) -> Reader<Env, [A]> {
     reader £> value
 }
-

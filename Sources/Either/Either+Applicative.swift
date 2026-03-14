@@ -11,6 +11,23 @@ public extension Either {
         }
     }
 
+    /// apply :: Either<a, (b0 -> b)> -> Either<a, b0> -> Either<a, b>
+    static func apply<B0>(_ functions: Either<A, (B0) -> B>, _ values: Either<A, B0>) -> Either<A, B> {
+        functions.flatMap { fn in values.mapRight(fn) }
+    }
+
+    /// seqRight :: Either<a, b> -> Either<a, c> -> Either<a, c>
+    /// Run both, discard the left result, return the right
+    func seqRight<C>(_ rhs: Either<A, C>) -> Either<A, C> {
+        flatMap { _ in rhs }
+    }
+
+    /// seqLeft :: Either<a, b> -> Either<a, c> -> Either<a, b>
+    /// Run both, return the left result
+    func seqLeft<C>(_ rhs: Either<A, C>) -> Either<A, B> {
+        flatMap { b in rhs.mapRight { _ in b } }
+    }
+
     fileprivate struct UnexpectedLeftError<L: Sendable>: Error {
         let left: L
     }

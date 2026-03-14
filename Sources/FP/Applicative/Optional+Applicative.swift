@@ -10,6 +10,23 @@ public extension Optional {
         }
     }
 
+    /// apply :: Optional<(a -> b)> -> Optional<a> -> Optional<b>
+    static func apply<A>(_ functions: Optional<(A) -> Wrapped>, _ values: Optional<A>) -> Optional<Wrapped> {
+        functions.flatMap { fn in values.map(fn) }
+    }
+
+    /// seqRight :: Optional<a> -> Optional<b> -> Optional<b>
+    /// Run both, discard the left result, return the right
+    func seqRight<A>(_ rhs: Optional<A>) -> Optional<A> {
+        flatMap { _ in rhs }
+    }
+
+    /// seqLeft :: Optional<a> -> Optional<b> -> Optional<a>
+    /// Run both, return the left result
+    func seqLeft<Ignore>(_ rhs: Optional<Ignore>) -> Optional<Wrapped> {
+        flatMap { a in rhs.map { _ in a } }
+    }
+
     fileprivate struct UnwrapError: Error {}
     static func zip<A1, A2, each Ax>(
         _ first: A1?,

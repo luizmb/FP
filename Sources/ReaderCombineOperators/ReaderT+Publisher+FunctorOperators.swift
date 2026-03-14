@@ -6,6 +6,7 @@ import Combine
 import CombineFP
 import Operators
 import CombineOperators
+import ReaderCombineFP
 
 // ReaderT + Publisher
 
@@ -21,11 +22,7 @@ where A: Sendable, B: Sendable {
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func £> <A1, A, B: Error, Env>(_ reader: Reader<Env, any Publisher<A, B>>, _ value: A1)
 -> Reader<Env, any Publisher<A1, B>> {
-    Reader { env in
-        let publisher: any Publisher<A, B> = reader(env)
-        let result: any Publisher<A1, B> = publisher £> value
-        return result
-    }
+    reader.replaceOutputT(value)
 }
 
 // (<$) :: a0 -> Either a b -> Either a a0

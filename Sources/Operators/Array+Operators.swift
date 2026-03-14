@@ -4,12 +4,12 @@ import FP
 
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
 public func <£> <A, A1>(_ transform: @escaping (A) -> A1, _ array: [A]) -> [A1] {
-    array.map(transform)
+    Array.fmap(transform)(array)
 }
 
 // ($>) :: Functor f => f a -> b -> f b
 public func £> <A, A1>(_ array: [A], _ value: A1) -> [A1] {
-    array.map { _ in value }
+    Array<A>.fmap(const(value))(array)
 }
 
 // (<$) :: a -> f b -> f a
@@ -19,7 +19,7 @@ public func <£ <A, A1>(_ value: A1, _ array: [A]) -> [A1] {
 
 // (<&>) :: Functor f => f a -> (a -> b) -> f b
 public func <&> <A, A1>(_ array: [A], _ transform: @escaping (A) -> A1) -> [A1] {
-    array.map(transform)
+    Array.fmap(transform)(array)
 }
 
 // MARK: - Applicative
@@ -31,12 +31,12 @@ public func <*> <A, A1>(_ functions: [(A) -> A1], _ values: [A]) -> [A1] {
 
 // (*>) :: [a] -> [b] -> [b]
 public func *> <A, A1>(_ lhs: [A], _ rhs: [A1]) -> [A1] {
-    lhs.flatMap { _ in rhs }
+    lhs.seqRight(rhs)
 }
 
 // (<*) :: [a] -> [b] -> [a]
 public func <* <A, A1>(_ lhs: [A], _ rhs: [A1]) -> [A] {
-    lhs.flatMap { a in rhs.map { _ in a } }
+    lhs.seqLeft(rhs)
 }
 
 // MARK: - Monad

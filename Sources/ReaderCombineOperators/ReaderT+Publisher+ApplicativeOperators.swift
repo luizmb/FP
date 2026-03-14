@@ -23,12 +23,7 @@ public func *> <Env, A, B, E: Error>(
     _ lhs: Reader<Env, any Publisher<A, E>>,
     _ rhs: Reader<Env, any Publisher<B, E>>
 ) -> Reader<Env, any Publisher<B, E>> {
-    Reader { env in
-        lhs(env).eraseToAnyPublisher()
-            .zip(rhs(env).eraseToAnyPublisher())
-            .map(\.1)
-            .eraseToAnyPublisher()
-    }
+    seqRightReaderPublisher(lhs, rhs)
 }
 
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
@@ -36,12 +31,7 @@ public func <* <Env, A, B, E: Error>(
     _ lhs: Reader<Env, any Publisher<A, E>>,
     _ rhs: Reader<Env, any Publisher<B, E>>
 ) -> Reader<Env, any Publisher<A, E>> {
-    Reader { env in
-        lhs(env).eraseToAnyPublisher()
-            .zip(rhs(env).eraseToAnyPublisher())
-            .map(\.0)
-            .eraseToAnyPublisher()
-    }
+    seqLeftReaderPublisher(lhs, rhs)
 }
 
 #endif

@@ -18,18 +18,7 @@ public func *> <A: Sendable, B: Sendable>(
     _ lhs: AsyncStream<A>,
     _ rhs: AsyncStream<B>
 ) -> AsyncStream<B> {
-    AsyncStream<B> { continuation in
-        Task { @Sendable in
-            var lhsIter = lhs.makeAsyncIterator()
-            var rhsIter = rhs.makeAsyncIterator()
-
-            while let _ = await lhsIter.next(),
-                  let b = await rhsIter.next() {
-                continuation.yield(b)
-            }
-            continuation.finish()
-        }
-    }
+    AsyncStream<B>.seqRight(lhs, rhs)
 }
 
 // (<*) :: f a -> f b -> f a

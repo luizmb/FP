@@ -10,6 +10,23 @@ public extension Result {
         }
     }
 
+    /// apply :: Result<(a -> b), e> -> Result<a, e> -> Result<b, e>
+    static func apply<A>(_ functions: Result<(A) -> Success, Failure>, _ values: Result<A, Failure>) -> Result<Success, Failure> {
+        functions.flatMap { fn in values.map(fn) }
+    }
+
+    /// seqRight :: Result<a, e> -> Result<b, e> -> Result<b, e>
+    /// Run both, discard the left result, return the right
+    func seqRight<A>(_ rhs: Result<A, Failure>) -> Result<A, Failure> {
+        flatMap { _ in rhs }
+    }
+
+    /// seqLeft :: Result<a, e> -> Result<b, e> -> Result<a, e>
+    /// Run both, return the left result
+    func seqLeft<Ignore>(_ rhs: Result<Ignore, Failure>) -> Result<Success, Failure> {
+        flatMap { a in rhs.map { _ in a } }
+    }
+
     static func zip<A1, A2, each Ax>(
         _ first: Result<A1, B>,
         _ second: Result<A2, B>,

@@ -12,7 +12,7 @@ public func >>- <A, A1, B: Error, P: Publisher>(
     _ fn: @escaping (A) -> P
 ) -> any Publisher<A1, B>
 where P.Output == A1, P.Failure == B {
-    publisher.eraseToAnyPublisher().flatMap(fn).eraseToAnyPublisher()
+    AnyPublisher<A, B>.bind(fn)(publisher)
 }
 
 // (-<<) :: (a -> m b) -> m a -> m b
@@ -22,7 +22,7 @@ public func -<< <A, A1, B: Error, P: Publisher>(
     _ publisher: any Publisher<A, B>
 ) -> any Publisher<A1, B>
 where P.Output == A1, P.Failure == B {
-    publisher.eraseToAnyPublisher().flatMap(fn).eraseToAnyPublisher()
+    AnyPublisher<A, B>.bind(fn)(publisher)
 }
 
 // (>=>) :: (a -> m b) -> (b -> m c) -> a -> m c
@@ -41,7 +41,7 @@ public func <&> <A, A1, B: Error>(
     _ publisher: any Publisher<A, B>,
     _ transform: @escaping (A) -> A1
 ) -> any Publisher<A1, B> {
-    publisher.eraseToAnyPublisher().map(transform)
+    AnyPublisher<A, B>.fmap(transform)(publisher)
 }
 
 #endif

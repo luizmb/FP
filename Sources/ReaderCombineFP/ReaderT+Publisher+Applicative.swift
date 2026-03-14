@@ -33,4 +33,32 @@ public func liftA2ReaderPublisher<Env, A, B, C, E: Error>(
     }
 }
 
+/// seqRight for ReaderT Publisher
+@available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
+public func seqRightReaderPublisher<Env, A, B, E: Error>(
+    _ lhs: Reader<Env, any Publisher<A, E>>,
+    _ rhs: Reader<Env, any Publisher<B, E>>
+) -> Reader<Env, any Publisher<B, E>> {
+    Reader { env in
+        lhs(env).eraseToAnyPublisher()
+            .zip(rhs(env).eraseToAnyPublisher())
+            .map(\.1)
+            .eraseToAnyPublisher()
+    }
+}
+
+/// seqLeft for ReaderT Publisher
+@available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
+public func seqLeftReaderPublisher<Env, A, B, E: Error>(
+    _ lhs: Reader<Env, any Publisher<A, E>>,
+    _ rhs: Reader<Env, any Publisher<B, E>>
+) -> Reader<Env, any Publisher<A, E>> {
+    Reader { env in
+        lhs(env).eraseToAnyPublisher()
+            .zip(rhs(env).eraseToAnyPublisher())
+            .map(\.0)
+            .eraseToAnyPublisher()
+    }
+}
+
 #endif

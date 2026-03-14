@@ -41,6 +41,11 @@ public extension Publisher {
         map(lf)
             .mapError(rf)
     }
+
+    /// replaceOutput :: Publisher<a, e> -> b -> Publisher<b, e>
+    func replaceOutput<A1>(_ value: A1) -> any Publisher<A1, Failure> {
+        eraseToAnyPublisher().map { _ in value }
+    }
 }
 
 #endif

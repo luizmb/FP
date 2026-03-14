@@ -45,6 +45,26 @@ public extension AsyncStream where Element: Sendable {
         }
     }
 
+    /// seqRight :: AsyncStream<a> -> AsyncStream<b> -> AsyncStream<b>
+    /// Run both concurrently, discard left values, yield right values
+    static func seqRight<A: Sendable, B: Sendable>(
+        _ lhs: AsyncStream<A>,
+        _ rhs: AsyncStream<B>
+    ) -> AsyncStream<B> {
+        AsyncStream<B> { continuation in
+            Task { @Sendable in
+                var lhsIter = lhs.makeAsyncIterator()
+                var rhsIter = rhs.makeAsyncIterator()
+
+                while let _ = await lhsIter.next(),
+                      let b = await rhsIter.next() {
+                    continuation.yield(b)
+                }
+                continuation.finish()
+            }
+        }
+    }
+
     /// Zip two streams into a stream of tuples
     static func zip<A: Sendable, B: Sendable>(
         _ streamA: AsyncStream<A>,

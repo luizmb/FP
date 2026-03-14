@@ -14,6 +14,11 @@ public extension Reader {
         { $0.mapT(fn) }
     }
 
+    /// replaceOutputT :: Reader<e, a?> -> b -> Reader<e, b?>
+    func replaceOutputT<A, B>(_ value: B) -> Reader<Environment, B?> where Output == A? {
+        mapReader { $0.map { _ in value } }
+    }
+
     // ReaderT + Result
     func mapT<A, B, E: Error>(_ fn: @escaping (A) -> B) -> Reader<Environment, Result<B, E>>
     where Output == Result<A, E>, A: Sendable {
@@ -25,6 +30,11 @@ public extension Reader {
     ) -> (Reader<Environment, Result<A, E>>) -> Reader<Environment, Result<B, E>>
     where A: Sendable, Output == Result<A, E> {
         { $0.mapT(fn) }
+    }
+
+    /// replaceOutputT :: Reader<e, Result<a, err>> -> b -> Reader<e, Result<b, err>>
+    func replaceOutputT<A, B, E: Error>(_ value: B) -> Reader<Environment, Result<B, E>> where Output == Result<A, E> {
+        mapReader { $0.map { _ in value } }
     }
 
     // ReaderT + Reader (nested)

@@ -31,6 +31,22 @@ public func liftA2ReaderOptional<Env, A, B, C>(
     }
 }
 
+/// seqRight for ReaderT Optional
+public func seqRightReaderOptional<Env, A, B>(
+    _ lhs: Reader<Env, Optional<A>>,
+    _ rhs: Reader<Env, Optional<B>>
+) -> Reader<Env, Optional<B>> {
+    Reader { env in lhs(env).seqRight(rhs(env)) }
+}
+
+/// seqLeft for ReaderT Optional
+public func seqLeftReaderOptional<Env, A, B>(
+    _ lhs: Reader<Env, Optional<A>>,
+    _ rhs: Reader<Env, Optional<B>>
+) -> Reader<Env, Optional<A>> {
+    Reader { env in lhs(env).seqLeft(rhs(env)) }
+}
+
 // ReaderT + Result
 
 /// Apply for ReaderT Result
@@ -58,6 +74,22 @@ public func liftA2ReaderResult<Env, A, B, C, E: Error>(
             }
         }
     }
+}
+
+/// seqRight for ReaderT Result
+public func seqRightReaderResult<Env, A, B, E: Error>(
+    _ lhs: Reader<Env, Result<A, E>>,
+    _ rhs: Reader<Env, Result<B, E>>
+) -> Reader<Env, Result<B, E>> {
+    Reader { env in lhs(env).seqRight(rhs(env)) }
+}
+
+/// seqLeft for ReaderT Result
+public func seqLeftReaderResult<Env, A, B, E: Error>(
+    _ lhs: Reader<Env, Result<A, E>>,
+    _ rhs: Reader<Env, Result<B, E>>
+) -> Reader<Env, Result<A, E>> {
+    Reader { env in lhs(env).seqLeft(rhs(env)) }
 }
 
 // ReaderT + Reader (nested)
@@ -95,6 +127,22 @@ public func liftA2ReaderReader<Env1, Env2, A, B, C>(
     }
 }
 
+/// seqRight for ReaderT Reader (nested)
+public func seqRightReaderReader<Env1, Env2, A, B>(
+    _ lhs: Reader<Env1, Reader<Env2, A>>,
+    _ rhs: Reader<Env1, Reader<Env2, B>>
+) -> Reader<Env1, Reader<Env2, B>> {
+    liftA2ReaderReader { (_: A, b: B) in b }(lhs, rhs)
+}
+
+/// seqLeft for ReaderT Reader (nested)
+public func seqLeftReaderReader<Env1, Env2, A, B>(
+    _ lhs: Reader<Env1, Reader<Env2, A>>,
+    _ rhs: Reader<Env1, Reader<Env2, B>>
+) -> Reader<Env1, Reader<Env2, A>> {
+    liftA2ReaderReader { (a: A, _: B) in a }(lhs, rhs)
+}
+
 // ReaderT + Array
 
 /// Apply for ReaderT Array
@@ -126,4 +174,20 @@ public func liftA2ReaderArray<Env, A, B, C>(
             }
         }
     }
+}
+
+/// seqRight for ReaderT Array
+public func seqRightReaderArray<Env, A, B>(
+    _ lhs: Reader<Env, [A]>,
+    _ rhs: Reader<Env, [B]>
+) -> Reader<Env, [B]> {
+    Reader { env in lhs(env).seqRight(rhs(env)) }
+}
+
+/// seqLeft for ReaderT Array
+public func seqLeftReaderArray<Env, A, B>(
+    _ lhs: Reader<Env, [A]>,
+    _ rhs: Reader<Env, [B]>
+) -> Reader<Env, [A]> {
+    Reader { env in lhs(env).seqLeft(rhs(env)) }
 }

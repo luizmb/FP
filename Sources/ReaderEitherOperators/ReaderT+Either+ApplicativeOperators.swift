@@ -21,9 +21,7 @@ public func *> <Env, L, A, B>(
     _ lhs: Reader<Env, Either<L, A>>,
     _ rhs: Reader<Env, Either<L, B>>
 ) -> Reader<Env, Either<L, B>> {
-    Reader { env in
-        lhs(env).flatMap { _ in rhs(env) }
-    }
+    seqRightReaderEither(lhs, rhs)
 }
 
 // (<*) :: Reader e (Either l a) -> Reader e (Either l b) -> Reader e (Either l a)
@@ -31,9 +29,5 @@ public func <* <Env, L, A, B>(
     _ lhs: Reader<Env, Either<L, A>>,
     _ rhs: Reader<Env, Either<L, B>>
 ) -> Reader<Env, Either<L, A>> {
-    Reader { env in
-        lhs(env).flatMap { a in
-            rhs(env).mapRight { _ in a }
-        }
-    }
+    seqLeftReaderEither(lhs, rhs)
 }
