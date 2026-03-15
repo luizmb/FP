@@ -1,6 +1,5 @@
 import Foundation
 import FP
-import Reader
 
 public extension Reader {
     // ReaderT + AsyncSequence

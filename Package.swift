@@ -17,11 +17,7 @@ let package = Package(
         .library(name: "EitherOperators", targets: ["EitherOperators"]),
         .library(name: "ReaderOperators", targets: ["ReaderOperators"]),
         .library(name: "ReaderEither", targets: ["ReaderEither"]),
-        .library(name: "ReaderEitherOperators", targets: ["ReaderEitherOperators"]),
-        .library(name: "ReaderCombineFP", targets: ["ReaderCombineFP"]),
-        .library(name: "ReaderCombineOperators", targets: ["ReaderCombineOperators"]),
-        .library(name: "ReaderConcurrencyFP", targets: ["ReaderConcurrencyFP"]),
-        .library(name: "ReaderConcurrencyOperators", targets: ["ReaderConcurrencyOperators"])
+        .library(name: "ReaderEitherOperators", targets: ["ReaderEitherOperators"])
     ],
     targets: [
         .target(name: "FP"),
@@ -32,10 +28,6 @@ let package = Package(
         .target(name: "ReaderOperators", dependencies: ["Reader", "Operators"]),
         .target(name: "ReaderEither", dependencies: ["Reader", "Either"]),
         .target(name: "ReaderEitherOperators", dependencies: ["ReaderEither", "Reader", "Either", "EitherOperators", "Operators"]),
-        .target(name: "ReaderCombineFP", dependencies: ["Reader", "FP"]),
-        .target(name: "ReaderCombineOperators", dependencies: ["ReaderCombineFP", "Reader", "FP", "Operators"]),
-        .target(name: "ReaderConcurrencyFP", dependencies: ["Reader", "FP"]),
-        .target(name: "ReaderConcurrencyOperators", dependencies: ["ReaderConcurrencyFP", "Reader", "FP", "Operators"]),
         .testTarget(name: "FPTests", dependencies: ["FP"]),
         .testTarget(name: "EitherTests", dependencies: ["Either", "FP"]),
         .testTarget(name: "ReaderTests", dependencies: ["Reader", "FP"]),
@@ -43,10 +35,6 @@ let package = Package(
         .testTarget(name: "EitherOperatorsTests", dependencies: ["Either", "EitherOperators", "Operators", "FP"]),
         .testTarget(name: "ReaderOperatorsTests", dependencies: ["Reader", "ReaderOperators", "Operators", "FP"]),
         .testTarget(name: "ReaderEitherTests", dependencies: ["Reader", "Either", "ReaderEither", "FP"]),
-        .testTarget(name: "ReaderEitherOperatorsTests", dependencies: ["Reader", "Either", "ReaderEither", "ReaderEitherOperators", "Operators", "EitherOperators", "FP"]),
-        .testTarget(name: "ReaderCombineFPTests", dependencies: ["Reader", "FP", "ReaderCombineFP"]),
-        .testTarget(name: "ReaderCombineOperatorsTests", dependencies: ["Reader", "FP", "ReaderCombineFP", "ReaderCombineOperators", "Operators"]),
-        .testTarget(name: "ReaderConcurrencyFPTests", dependencies: ["Reader", "FP", "ReaderConcurrencyFP"]),
-        .testTarget(name: "ReaderConcurrencyOperatorsTests", dependencies: ["Reader", "FP", "ReaderConcurrencyFP", "ReaderConcurrencyOperators", "Operators"])
+        .testTarget(name: "ReaderEitherOperatorsTests", dependencies: ["Reader", "Either", "ReaderEither", "ReaderEitherOperators", "Operators", "EitherOperators", "FP"])
     ]
 )

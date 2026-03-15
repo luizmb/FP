@@ -1,7 +1,6 @@
 import Foundation
 import FP
 import Reader
-import ReaderConcurrencyFP
 import Operators
 
 // ReaderT + AsyncSequence

@@ -1,12 +1,9 @@
 import XCTest
 import Combine
 @testable import Reader
-@testable import FP
-@testable import ReaderCombineFP
-@testable import ReaderCombineOperators
-@testable import Operators
-@testable import Operators
 import FP
+@testable import ReaderOperators
+import Operators
 
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 @MainActor

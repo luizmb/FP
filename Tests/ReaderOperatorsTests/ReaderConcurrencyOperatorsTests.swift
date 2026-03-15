@@ -1,11 +1,8 @@
 import XCTest
 @testable import Reader
-@testable import FP
-@testable import ReaderConcurrencyFP
-@testable import ReaderConcurrencyOperators
-@testable import Operators
-@testable import Operators
 import FP
+@testable import ReaderOperators
+import Operators
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 final class ReaderConcurrencyOperatorsTests: XCTestCase {
@@ -100,7 +97,7 @@ final class ReaderConcurrencyOperatorsTests: XCTestCase {
     // MARK: - Applicative Operators
 
     func testApplicativeOperatorSequenceRight() async throws {
-        let readerA = Reader<Environment, AsyncStream<Int>> { env in
+        let readerA = Reader<Environment, AsyncStream<Int>> { _ in
             AsyncStream { continuation in
                 continuation.yield(1)
                 continuation.yield(2)
@@ -138,7 +135,7 @@ final class ReaderConcurrencyOperatorsTests: XCTestCase {
             }
         }
 
-        let readerB = Reader<Environment, AsyncStream<Int>> { env in
+        let readerB = Reader<Environment, AsyncStream<Int>> { _ in
             AsyncStream { continuation in
                 continuation.yield(1)
                 continuation.yield(2)
