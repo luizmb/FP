@@ -167,8 +167,8 @@ userName(Config(multiplier: -1))  // nil
 // Reader<Env, Result<A, E>> — may fail with a typed error
 // Reader<Env, [A]>           — may return multiple results
 // Reader<Env, Either<L, R>>  — left/right choice
-// Reader<Env, AsyncStream<A>> — async sequence of values  (requires ReaderConcurrencyFP)
-// Reader<Env, AnyPublisher<A,E>> — reactive stream        (requires ReaderCombineFP)
+// Reader<Env, AsyncStream<A>>     — async sequence of values
+// Reader<Env, AnyPublisher<A,E>> — reactive stream (Apple platforms)
 ```
 
 ---

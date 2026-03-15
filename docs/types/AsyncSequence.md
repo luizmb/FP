@@ -122,8 +122,8 @@ let pipeline = expand >=> doubled
 Combine `Reader` and `AsyncStream` to describe environment-dependent async sequences.
 
 ```swift
-import ReaderConcurrencyFP
-import ReaderConcurrencyOperators
+import Reader
+import ReaderOperators
 
 protocol EventSource {
     func events() -> AsyncStream<Event>
@@ -153,6 +153,6 @@ import FP        // Named functions (apply, seqRight, bind…)
 import Operators  // Operators (<£>, <*>, >>-, >=>…)
 
 // For ReaderT + AsyncStream:
-import ReaderConcurrencyFP
-import ReaderConcurrencyOperators
+import Reader
+import ReaderOperators
 ```

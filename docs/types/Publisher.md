@@ -129,8 +129,8 @@ AnyPublisher.kleisli(fetchUser, fetchProfile)(42)
 Combine `Reader` and `Publisher` to describe environment-dependent reactive computations. A typical use case is injecting a networking protocol so the real implementation and a test mock are swapped at the call site without changing any logic.
 
 ```swift
-import ReaderCombineFP
-import ReaderCombineOperators
+import Reader
+import ReaderOperators
 
 protocol HTTPClient {
     func get(_ path: String) -> AnyPublisher<Data, Error>
@@ -168,6 +168,6 @@ import FP        // Named functions (fmap, apply, seqRight, bind…)
 import Operators  // Operators (<£>, <*>, >>-, >=>…)
 
 // For ReaderT + Publisher:
-import ReaderCombineFP
-import ReaderCombineOperators
+import Reader
+import ReaderOperators
 ```

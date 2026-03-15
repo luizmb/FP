@@ -15,26 +15,17 @@ This document provides a comprehensive overview of all functional programming fe
 The library follows a modular design with separation between implementations and operators:
 
 ### Core Modules
-- **FP**: Foundation types (Optional, Result, Array) with Functor/Applicative/Monad
-- **Either**: Sum type with full type class support
-- **Reader**: Reader monad for dependency injection
-- **Operators**: Operators for core types
-
-### Concurrency Modules
-- **ConcurrencyFP**: AsyncSequence Functor, Applicative, Monad primitives
-- **ConcurrencyOperators**: Operators for async sequences
-- **ReaderConcurrencyFP**: ReaderT + AsyncSequence transformers
-- **ReaderConcurrencyOperators**: Operators for async transformers
-
-### Combine Modules (Apple Platforms)
-- **CombineFP**: Publisher Functor, Applicative, Monad
-- **CombineOperators**: Operators for publishers
-- **CombineEither**: Publisher + Either bridge
-- **ReaderCombineFP**: ReaderT + Publisher transformers
-- **ReaderCombineOperators**: Operators for publisher transformers
+- **FP**: Foundation types (Optional, Result, Array, Traversable) with Functor/Applicative/Monad;
+  also contains AsyncSequence and Publisher (via `#if canImport(Combine)`) support
+- **Either**: Sum type with full type class support;
+  includes `Completion+Either` (Combine, `#if canImport`) and `AsyncThrowingStream+Either` bridge
+- **Reader**: Reader monad for dependency injection;
+  includes `ReaderT+Publisher` (Combine, `#if canImport`) and `ReaderT+AsyncSequence` transformers
+- **Operators**: Operators for core types; includes AsyncSequence and Publisher operator files
 
 ### Reader Transformer Modules
-- **ReaderOperators**: ReaderT operators for Optional, Result, Array, nested Reader
+- **ReaderOperators**: ReaderT operators for Optional, Result, Array, nested Reader,
+  Publisher (`#if canImport(Combine)`), and AsyncStream
 - **ReaderEither**: ReaderT + Either implementations
 - **ReaderEitherOperators**: Operators for Either transformers
 
@@ -171,43 +162,43 @@ The library follows a modular design with separation between implementations and
 
 ### 5. AsyncSequence - Complete Type Class Support
 
-**Functor** (`Sources/ConcurrencyFP/AsyncSequence+Functor.swift`):
+**Functor** (`Sources/FP/Concurrency/AsyncSequence+Functor.swift`):
 - ✅ `fmap` - Async map
 - Platform: macOS 10.15+, iOS 13.0+
 
-**Applicative** (`Sources/ConcurrencyFP/AsyncSequence+Applicative.swift`):
+**Applicative** (`Sources/FP/Concurrency/AsyncSequence+Applicative.swift`):
 - ✅ `liftA2` - Lift binary function
 - ✅ `zip` - Zip two async sequences
 - Platform: macOS 10.15+, iOS 13.0+
 
-**Monad** (`Sources/ConcurrencyFP/AsyncSequence+Monad.swift`):
+**Monad** (`Sources/FP/Concurrency/AsyncSequence+Monad.swift`):
 - ✅ `bind` - Async flatMap
 - ✅ `kleisli` - Kleisli composition
 - ✅ `kleisliBack` - Reverse Kleisli composition
 - Platform: macOS 10.15+, iOS 13.0+
 
-**Operators** (`Sources/ConcurrencyOperators/*.swift`):
+**Operators** (`Sources/Operators/Concurrency/*.swift`):
 - ✅ `<£>`, `£>`, `<£` - Functor operators (with Sendable constraints)
 - ✅ `>>-`, `-<<`, `>=>` - Monad operators
 
 ### 6. Publisher - Complete Type Class Support (Apple Platforms)
 
-**Functor** (`Sources/CombineFP/Publisher+Functor.swift`):
+**Functor** (`Sources/FP/Combine/Publisher+Functor.swift`):
 - ✅ `fmap` - Map over publisher values
 - Platform: macOS 13.0+, iOS 16.0+ (parameterized existentials)
 
-**Applicative** (`Sources/CombineFP/Publisher+Applicative.swift`):
+**Applicative** (`Sources/FP/Combine/Publisher+Applicative.swift`):
 - ✅ `liftA2` - Lift binary function
 - ✅ `zip` - Zip two publishers
 - Platform: macOS 13.0+, iOS 16.0+
 
-**Monad** (`Sources/CombineFP/Publisher+Monad.swift`):
+**Monad** (`Sources/FP/Combine/Publisher+Monad.swift`):
 - ✅ `bind` - Publisher flatMap
 - ✅ `kleisli` - Kleisli composition
 - ✅ `kleisliBack` - Reverse Kleisli composition
 - Platform: macOS 13.0+, iOS 16.0+
 
-**Operators** (`Sources/CombineOperators/*.swift`):
+**Operators** (`Sources/Operators/Combine/*.swift`):
 - ✅ `<£>`, `£>`, `<£`, `<&>` - Functor operators
 - ✅ `<*>`, `*>`, `<*` - Applicative operators
 - ✅ `>>-`, `-<<`, `>=>` - Monad operators
@@ -273,18 +264,18 @@ Complete monad transformer implementations for composing Reader with other monad
 - ✅ Monad: `flatMapT`, `bindT`
 - ✅ Operators in `Sources/ReaderOperators/ReaderT+*.swift`
 
-### ReaderT + AsyncSequence (`Sources/ReaderConcurrencyFP/*.swift`)
+### ReaderT + AsyncSequence (`Sources/Reader/Concurrency/*.swift`)
 - ✅ Functor: `mapT` (with Sendable constraints)
 - ✅ Applicative: `liftA2ReaderAsyncStream`
 - ✅ Monad: `flatMapT`, `bindReaderAsyncStream`
-- ✅ Operators in `Sources/ReaderConcurrencyOperators/*.swift`
+- ✅ Operators in `Sources/ReaderOperators/Concurrency/*.swift`
 - Platform: macOS 10.15+, iOS 13.0+
 
-### ReaderT + Publisher (`Sources/ReaderCombineFP/*.swift`)
+### ReaderT + Publisher (`Sources/Reader/Combine/*.swift`)
 - ✅ Functor: `mapT`
 - ✅ Applicative: `liftA2ReaderPublisher`
 - ✅ Monad: `flatMapT`, `bindReaderPublisher`
-- ✅ Operators in `Sources/ReaderCombineOperators/*.swift`
+- ✅ Operators in `Sources/ReaderOperators/Combine/*.swift`
 - Platform: macOS 13.0+, iOS 16.0+
 - Conditional compilation: `#if canImport(Combine)`
 
@@ -389,7 +380,7 @@ swift test
 
 ## Key Design Decisions
 
-1. **Module Separation**: Clear separation between implementation modules (FP, ConcurrencyFP, etc.) and operator modules (Operators, ConcurrencyOperators, etc.)
+1. **Module Separation**: Clear separation between implementation modules (FP, Either, Reader, etc.) and operator modules (Operators, EitherOperators, ReaderOperators, etc.). Platform-specific features live inside the same module, guarded by `#if canImport(Combine)` and `@available`.
 
 2. **Operator Precedence**: Matches Haskell precedence and associativity exactly. Uses `>>-` instead of `>>=` to avoid conflict with Swift's bitwise operator.
 
