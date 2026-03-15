@@ -1,13 +1,30 @@
 import Foundation
 
 public extension Result {
-    // liftA2 :: (b1 -> b2 -> b) -> Either a b1 -> Either a b2 -> Either a b
+    // liftA2 :: (a1 -> a2 -> a) -> Result<a1, b> -> Result<a2, b> -> Result<a, b>
     static func liftA2<A1, A2>(_ fn: @escaping (A1, A2) -> A) -> (
         Result<A1, B>, Result<A2, B>
     ) -> Result<A, B> {
         { resultA, resultB in
-            .specialLeftLeft(lhs: resultA, rhs: resultB, handling: fn)
+            resultA.flatMap { a in resultB.map { b in fn(a, b) } }
         }
+    }
+
+    /// apply :: Result<(a -> b), e> -> Result<a, e> -> Result<b, e>
+    static func apply<A>(_ functions: Result<(A) -> Success, Failure>, _ values: Result<A, Failure>) -> Result<Success, Failure> {
+        functions.flatMap { fn in values.map(fn) }
+    }
+
+    /// seqRight :: Result<a, e> -> Result<b, e> -> Result<b, e>
+    /// Run both, discard the left result, return the right
+    func seqRight<A>(_ rhs: Result<A, Failure>) -> Result<A, Failure> {
+        flatMap { _ in rhs }
+    }
+
+    /// seqLeft :: Result<a, e> -> Result<b, e> -> Result<a, e>
+    /// Run both, return the left result
+    func seqLeft<Ignore>(_ rhs: Result<Ignore, Failure>) -> Result<Success, Failure> {
+        flatMap { a in rhs.map { _ in a } }
     }
 
     static func zip<A1, A2, each Ax>(
@@ -29,21 +46,5 @@ public extension Result {
         } catch {
             return Result.failure(error)
         }
-    }
-}
-
-extension Result {
-    fileprivate static func specialLeftLeft<Aa, Ab>(
-        lhs: Result<Aa, B>, 
-        rhs: Result<Ab, B>,
-        handling: @escaping (Aa, Ab) -> A
-    ) -> Result<A, B> {
-        .match(
-            lhs, rhs,
-            caseLeftLeft: untuple(compose(handling, Result.left)),
-            caseLeftRight: withArg(\.1)(Result.right),
-            caseRightLeft: withArg(\.0)(Result.right),
-            caseRightRight: withArg(\.0)(Result.right)
-        )
     }
 }

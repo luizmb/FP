@@ -5,9 +5,10 @@ infix operator <*>: FunctorOps                      // Haskell Applicative Funct
 infix operator *>: FunctorOps                       // Haskell Applicative Functor Chain Discarding lhs
 infix operator <*: FunctorOps                       // Haskell Applicative Functor Chain Discarding rhs
 infix operator <|>: AlternativePrecedence           // Haskell Or/Alternative
-infix operator >=>: KleisliCompositionLeft
-infix operator >>=: KleisliCompositionLeft          // Haskell Bind
-infix operator =<<: KleisliCompositionRight
+infix operator >=>: KleisliCompositionRight         // Haskell Kleisli composition (infixr 1)
+infix operator <=<: KleisliCompositionRight         // Haskell reverse Kleisli composition (infixr 1)
+infix operator >>-: MonadBindLeft                   // Haskell Bind (infixl 1) - using >>- to avoid conflict with Swift's >>= bitwise operator
+infix operator -<<: KleisliCompositionRight         // Haskell flipped Bind (infixr 1)
 
 infix operator ≅: ComparisonPrecedence
 infix operator ±: RangeFormationPrecedence
@@ -231,7 +232,7 @@ infix operator <£: FunctorOps
 /// Right 4
 /// ```
 /// https://hackage.haskell.org/package/base-4.20.0.1/docs/Data-Functor.html#v:-60--38--62-
-infix operator <&>: KleisliCompositionLeft
+infix operator <&>: MonadBindLeft
 
 /// Raised to the power of ^^ - infixr 8
 /// ```swift

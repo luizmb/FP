@@ -238,7 +238,7 @@ public func fail<T, each U>(
 }
 
 public func compose<A, B, C>(_ ab: @escaping (A) -> B, _ bc: @escaping (B) -> C) -> (A) -> C {
-    { a in 
+    { a in
         bc(ab(a))
     }
 }
@@ -250,22 +250,22 @@ public extension Of3 {
 }
 
 public func compose3<A, B, C, D>(
-    _ ab: @escaping (A) -> B, 
+    _ ab: @escaping (A) -> B,
     _ bc: @escaping (B) -> C,
     _ cd: @escaping (C) -> D
 ) -> (A) -> D {
-    { a in 
+    { a in
         cd(bc(ab(a)))
     }
 }
 
 public func compose4<A, B, C, D, E>(
-    _ ab: @escaping (A) -> B, 
+    _ ab: @escaping (A) -> B,
     _ bc: @escaping (B) -> C,
     _ cd: @escaping (C) -> D,
     _ de: @escaping (D) -> E
 ) -> (A) -> E {
-    { a in 
+    { a in
         de(cd(bc(ab(a))))
     }
 }

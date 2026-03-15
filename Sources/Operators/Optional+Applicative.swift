@@ -1,17 +1,17 @@
 import FP
 import Foundation
 
-// (<*>) :: Either a (b0 -> b) -> Either a b0 -> Either a b
+// (<*>) :: Optional<(a -> b)> -> Optional<a> -> Optional<b>
 public func <*> <A, A0>(_ lhs: Optional<(A0) -> A>, _ rhs: Optional<A0>) -> Optional<A> {
-    Optional<((A0) -> A, A0)>.zip(lhs, rhs).map(call)
+    Optional<A>.apply(lhs, rhs)
 }
 
-// (*>) :: Either a ignore -> Either a b -> Either a b
+// (*>) :: Optional<a> -> Optional<b> -> Optional<b>
 public func *> <A, Ignore>(_ lhs: Optional<Ignore>, _ rhs: Optional<A>) -> Optional<A> {
-    Optional<(Ignore, A)>.zip(lhs, rhs).map(untuple(\.1))
+    lhs.seqRight(rhs)
 }
 
-// (<*) :: Either a b -> Either a ignore -> Either a b
+// (<*) :: Optional<a> -> Optional<b> -> Optional<a>
 public func <* <A, Ignore>(_ lhs: Optional<A>, _ rhs: Optional<Ignore>) -> Optional<A> {
-    rhs *> lhs
+    lhs.seqLeft(rhs)
 }

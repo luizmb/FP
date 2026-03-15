@@ -2,8 +2,9 @@
 // https://developer.apple.com/documentation/swift/operator-declarations
 
 // 9: Function composition >>> <<<
+// Note: In Haskell, both . and >>> are right-associative (infixr)
 precedencegroup FunctionCompositionForward {
-    associativity: left
+    associativity: right
     higherThan: FunctionCompositionBackwards
 }
 
@@ -49,7 +50,8 @@ precedencegroup AppendToList {
 
 // 4: ComparisonPrecedence == <=
 
-// 4: Functor Ops <£> £> <£ <&>
+// 4: Functor/Applicative Ops <£> £> <£ <*> *> <*
+// Note: <&> is at precedence 1 (KleisliCompositionLeft), not here
 
 precedencegroup FunctorOps {
     associativity: left
@@ -67,16 +69,18 @@ precedencegroup AlternativePrecedence {
 
 // 2: LogicalDisjunctionPrecedence ||
 
-// 1: Monadic ops >=> >>= =<<
-
-precedencegroup KleisliCompositionLeft {
-    associativity: left
-    lowerThan: LogicalDisjunctionPrecedence
-    higherThan: KleisliCompositionRight
-}
+// 1: Monadic ops >=> >>- -<<
+// In Haskell: >>=, >> are infixl 1 (left-associative)
+//             >=>, =<< are infixr 1 (right-associative)
 
 precedencegroup KleisliCompositionRight {
     associativity: right
+    lowerThan: LogicalDisjunctionPrecedence
+    higherThan: MonadBindLeft
+}
+
+precedencegroup MonadBindLeft {
+    associativity: left
     higherThan: TernaryPrecedence
 }
 
