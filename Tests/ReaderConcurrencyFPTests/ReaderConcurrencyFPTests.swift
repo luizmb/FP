@@ -1,6 +1,6 @@
 import XCTest
 @testable import Reader
-@testable import ConcurrencyFP
+@testable import FP
 @testable import ReaderConcurrencyFP
 import FP
 

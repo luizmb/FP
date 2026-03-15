@@ -1,5 +1,5 @@
 #if canImport(Combine)
-import CombineFP
+import FP
 import Combine
 import Either
 import Foundation

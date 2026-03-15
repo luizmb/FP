@@ -2,7 +2,6 @@
 import FP
 import Reader
 import Combine
-import CombineFP
 import ReaderCombineFP
 import Operators
 

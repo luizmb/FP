@@ -3,7 +3,6 @@ import Foundation
 import FP
 import Reader
 import Combine
-import CombineFP
 
 public extension Reader {
     // ReaderT + Publisher

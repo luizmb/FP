@@ -1,9 +1,7 @@
 #if canImport(Combine)
-import CombineFP
 import Combine
 import Foundation
 import FP
-import Operators
 
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)

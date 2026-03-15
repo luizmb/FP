@@ -149,8 +149,8 @@ let testStream = eventNames(StubEventSource(events: [testEvent]))
 ## Module
 
 ```swift
-import ConcurrencyFP        // Named functions (apply, seqRight, bind…)
-import ConcurrencyOperators  // Operators (<£>, <*>, >>-, >=>…)
+import FP        // Named functions (apply, seqRight, bind…)
+import Operators  // Operators (<£>, <*>, >>-, >=>…)
 
 // For ReaderT + AsyncStream:
 import ReaderConcurrencyFP

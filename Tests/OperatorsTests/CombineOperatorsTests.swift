@@ -1,7 +1,7 @@
 import XCTest
 import Combine
-@testable import CombineFP
-@testable import CombineOperators
+@testable import FP
+@testable import Operators
 import Operators
 import FP
 

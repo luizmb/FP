@@ -1,9 +1,7 @@
 #if canImport(Combine)
-import CombineFP
 import Combine
 import FP
 import Foundation
-import Operators
 
 // (<*>) :: Publisher<(a -> b), e> -> Publisher<a, e> -> Publisher<b, e>
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)

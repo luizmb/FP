@@ -1,7 +1,6 @@
 import Foundation
 import FP
 import Reader
-import ConcurrencyFP
 
 public extension Reader {
     // ReaderT + AsyncSequence

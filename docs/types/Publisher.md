@@ -164,8 +164,8 @@ let testPublisher = userNames(StubHTTPClient(response: testData))
 ## Module
 
 ```swift
-import CombineFP        // Named functions (fmap, apply, seqRight, bind…)
-import CombineOperators  // Operators (<£>, <*>, >>-, >=>…)
+import FP        // Named functions (fmap, apply, seqRight, bind…)
+import Operators  // Operators (<£>, <*>, >>-, >=>…)
 
 // For ReaderT + Publisher:
 import ReaderCombineFP

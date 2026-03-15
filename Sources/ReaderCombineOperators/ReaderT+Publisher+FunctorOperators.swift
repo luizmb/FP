@@ -3,9 +3,7 @@ import Foundation
 import FP
 import Reader
 import Combine
-import CombineFP
 import Operators
-import CombineOperators
 import ReaderCombineFP
 
 // ReaderT + Publisher

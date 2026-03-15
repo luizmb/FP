@@ -33,10 +33,7 @@ import Operators    // Operators for core types
 For specific features:
 ```swift
 import ReaderOperators        // Reader + ReaderT operators
-import ConcurrencyFP          // AsyncSequence support
-import ConcurrencyOperators   // Async operators
-import CombineFP              // Publisher support (Apple platforms)
-import CombineOperators       // Combine operators
+// AsyncSequence and Publisher support is included in FP and Operators
 ```
 
 #### Step 2: Tacit Programming Utilities

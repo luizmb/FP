@@ -1,10 +1,10 @@
 import XCTest
 import Combine
 @testable import Reader
-@testable import CombineFP
+@testable import FP
 @testable import ReaderCombineFP
 @testable import ReaderCombineOperators
-@testable import CombineOperators
+@testable import Operators
 @testable import Operators
 import FP
 

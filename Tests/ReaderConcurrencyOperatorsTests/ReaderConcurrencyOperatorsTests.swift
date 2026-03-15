@@ -1,9 +1,9 @@
 import XCTest
 @testable import Reader
-@testable import ConcurrencyFP
+@testable import FP
 @testable import ReaderConcurrencyFP
 @testable import ReaderConcurrencyOperators
-@testable import ConcurrencyOperators
+@testable import Operators
 @testable import Operators
 import FP
 

@@ -1,6 +1,6 @@
 import XCTest
 import Combine
-@testable import CombineFP
+@testable import FP
 @testable import Either
 @testable import CombineEither
 import FP
