@@ -1,9 +1,7 @@
 #if canImport(Combine)
 import FP
 import Combine
-import Either
 import Foundation
-import FP
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public extension Either {

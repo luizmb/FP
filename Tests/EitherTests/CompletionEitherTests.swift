@@ -2,8 +2,7 @@ import XCTest
 import Combine
 @testable import FP
 @testable import Either
-@testable import CombineEither
-import FP
+
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 @MainActor
