@@ -47,20 +47,20 @@ public extension Either {
     /// (<|>) :: m a -> m a -> m a
     static func alt(_ lhs: Either<A, B>, _ rhs: @autoclosure () -> Either<A, B>) -> Either<A, B> {
         lhs.match(
-            caseLeft: { _ in rhs() },
-            caseRight: { _ in lhs }
+            caseLeft: const(rhs()),
+            caseRight: const(lhs)
         )
     }
 
     /// Monadic join - flattens nested Eithers
     /// join :: m (m a) -> m a
     static func join<B1>(_ nested: Either<A, Either<A, B1>>) -> Either<A, B1> where B == Either<A, B1> {
-        nested.flatMap { $0 }
+        nested.flatMap(identity)
     }
 
     /// Discards the right value, keeping only the structure
     /// void :: m a -> m ()
     func void() -> Either<A, Void> {
-        mapRight { _ in () }
+        mapRight(const(()))
     }
 }

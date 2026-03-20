@@ -16,7 +16,7 @@ public func £> <S: AsyncSequence, T: Sendable>(
     _ sequence: S,
     _ value: T
 ) -> AsyncThrowingMapSequence<S, T> {
-    sequence.map { _ in value }
+    sequence.map(const(value))
 }
 
 // (<$) :: b -> f a -> f b

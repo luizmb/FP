@@ -14,6 +14,6 @@ public extension Optional {
     // sequence :: Result<a,e>? -> Result<a?,e>
     // sequence = traverse id
     func sequence<A, E: Error>() -> Result<A?, E> where Wrapped == Result<A, E> {
-        traverse { $0 }
+        traverse(identity)
     }
 }

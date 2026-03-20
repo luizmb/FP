@@ -42,13 +42,13 @@ public extension Optional {
     /// Monadic join - flattens nested Optionals
     /// join :: m (m a) -> m a
     static func join<A1>(_ nested: A1??) -> A1? {
-        nested.flatMap { $0 }
+        nested.flatMap(identity)
     }
 
     /// Discards the value, keeping only the structure
     /// void :: m a -> m ()
     func void() -> Void? {
-        map { _ in () }
+        map(ignore)
     }
 
     /// Filter with a predicate

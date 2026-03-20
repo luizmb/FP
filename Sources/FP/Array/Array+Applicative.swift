@@ -25,18 +25,18 @@ public extension Array {
     /// seqRight :: [a] -> [b] -> [b]
     /// Cartesian product, keeping right values
     func seqRight<A>(_ rhs: [A]) -> [A] {
-        flatMap { _ in rhs }
+        flatMap(const(rhs))
     }
 
     /// seqLeft :: [a] -> [b] -> [a]
     /// Cartesian product, keeping left values
     func seqLeft<Ignore>(_ rhs: [Ignore]) -> [Element] {
-        flatMap { a in rhs.map { _ in a } }
+        flatMap { a in rhs.map(const(a)) }
     }
 
     /// zip :: [a] -> [b] -> [(a, b)]
     static func zip<A1, A2>(_ lhs: [A1], _ rhs: [A2]) -> [Element]
     where Element == (A1, A2) {
-        Swift.zip(lhs, rhs).map { $0 }
+        Swift.zip(lhs, rhs).map(identity)
     }
 }

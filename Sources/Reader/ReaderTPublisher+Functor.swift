@@ -23,7 +23,7 @@ public extension Reader {
     @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
     func replaceOutputT<A, B, E: Error>(_ value: B) -> Reader<Environment, any Publisher<B, E>>
     where Output == any Publisher<A, E> {
-        mapReader { $0.eraseToAnyPublisher().map { _ in value }.eraseToAnyPublisher() }
+        mapReader { $0.eraseToAnyPublisher().map(const(value)).eraseToAnyPublisher() }
     }
 }
 

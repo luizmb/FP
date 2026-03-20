@@ -18,13 +18,13 @@ public extension Optional {
     /// seqRight :: Optional<a> -> Optional<b> -> Optional<b>
     /// Run both, discard the left result, return the right
     func seqRight<A>(_ rhs: Optional<A>) -> Optional<A> {
-        flatMap { _ in rhs }
+        flatMap(const(rhs))
     }
 
     /// seqLeft :: Optional<a> -> Optional<b> -> Optional<a>
     /// Run both, return the left result
     func seqLeft<Ignore>(_ rhs: Optional<Ignore>) -> Optional<Wrapped> {
-        flatMap { a in rhs.map { _ in a } }
+        flatMap { a in rhs.map(const(a)) }
     }
 
     fileprivate struct UnwrapError: Error {}

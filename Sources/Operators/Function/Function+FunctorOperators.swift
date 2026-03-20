@@ -18,7 +18,7 @@ public func £> <A, B, C>(
     _ f: @escaping (A) -> B,
     _ value: C
 ) -> (A) -> C {
-    { _ in value }
+    const(value)
 }
 
 /// Flipped map replace operator for functions

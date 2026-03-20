@@ -24,15 +24,15 @@ public func <> <A>(_ lhs: A?, _ rhs: A?) -> A? {
 /// (<>) :: Result a e -> Result a e -> Result a e
 public func <> <A, E>(_ lhs: Result<A, E>, _ rhs: Result<A, E>) -> Result<A, E> {
     switch lhs {
-    case .success: return lhs
-    case .failure: return rhs
+    case .success: lhs
+    case .failure: rhs
     }
 }
 
 /// Semigroup concatenation for dictionaries (merge, preferring right side for conflicts)
 /// (<>) :: Dict k v -> Dict k v -> Dict k v
 public func <> <K, V>(_ lhs: [K: V], _ rhs: [K: V]) -> [K: V] {
-    lhs.merging(rhs) { _, rhs in rhs }
+    lhs.merging(rhs, uniquingKeysWith: withArg(\.1)(identity))
 }
 
 /// Semigroup concatenation for Sets

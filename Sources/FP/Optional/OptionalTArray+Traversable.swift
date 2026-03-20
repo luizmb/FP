@@ -14,6 +14,6 @@ public extension Optional {
     // sequence :: [a]? -> [a?]
     // sequence = traverse id
     func sequence<A>() -> [A?] where Wrapped == [A] {
-        traverse { $0 }
+        traverse(identity)
     }
 }

@@ -55,7 +55,7 @@ public extension Reader {
     /// Asks for the environment
     /// ask :: m env
     static var ask: Reader<Environment, Environment> {
-        Reader<Environment, Environment> { $0 }
+        Reader<Environment, Environment>(identity)
     }
 
     /// Retrieves a function of the environment
@@ -67,7 +67,7 @@ public extension Reader {
     /// Discards the output, keeping only the structure
     /// void :: m a -> m ()
     func void() -> Reader<Environment, Void> {
-        mapReader { _ in () }
+        mapReader(ignore)
     }
 
     /// Executes a computation in a modified environment

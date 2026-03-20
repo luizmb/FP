@@ -17,6 +17,6 @@ public extension Reader {
 
     /// replaceOutputT :: Reader<e, Result<a, err>> -> b -> Reader<e, Result<b, err>>
     func replaceOutputT<A, B, E: Error>(_ value: B) -> Reader<Environment, Result<B, E>> where Output == Result<A, E> {
-        mapReader { $0.map { _ in value } }
+        mapReader { $0.map(const(value)) }
     }
 }

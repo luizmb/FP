@@ -9,11 +9,18 @@ public extension Of {
     static func absurd(_ never: Never) -> T { }
 }
 
-public func ignore() { }
-public func ignore<T>(_ t: T) { }
+public func ignore<each T>(_ t: repeat each T) { }
 
 public extension Of {
     static func ignore() -> (T) -> Void { FP.ignore }
+}
+
+public extension Of2 {
+    static func ignore() -> (T, U) -> Void { FP.ignore }
+}
+
+public extension Of3 {
+    static func ignore() -> (T, U, V) -> Void { FP.ignore }
 }
 
 /// Ignores the data provided and returns a constant value.
@@ -42,6 +49,15 @@ public func const<each Ignore, Return>(
     { (_: repeat each Ignore) in returnValue }
 }
 
+/// Sendable variant of `const` for contexts requiring `@Sendable` closures
+/// (e.g. AsyncSequence.map). When `Return` is `Sendable`, this overload is
+/// preferred by the compiler in `@Sendable`-requiring positions.
+public func const<Ignore, Return: Sendable>(
+    _ returnValue: Return
+) -> @Sendable (Ignore) -> Return {
+    { _ in returnValue }
+}
+
 public extension Of {
     static func const<Return>(_ returnValue: Return) -> (T) -> Return {
         FP.const(returnValue)
@@ -50,6 +66,12 @@ public extension Of {
 
 public extension Of2 {
     static func const(_ returnValue: U) -> (T) -> U {
+        FP.const(returnValue)
+    }
+}
+
+public extension Of3 {
+    static func const(_ returnValue: V) -> (T, U) -> V {
         FP.const(returnValue)
     }
 }

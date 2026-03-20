@@ -18,13 +18,13 @@ public extension Result {
     /// seqRight :: Result<a, e> -> Result<b, e> -> Result<b, e>
     /// Run both, discard the left result, return the right
     func seqRight<A>(_ rhs: Result<A, Failure>) -> Result<A, Failure> {
-        flatMap { _ in rhs }
+        flatMap(const(rhs))
     }
 
     /// seqLeft :: Result<a, e> -> Result<b, e> -> Result<a, e>
     /// Run both, return the left result
     func seqLeft<Ignore>(_ rhs: Result<Ignore, Failure>) -> Result<Success, Failure> {
-        flatMap { a in rhs.map { _ in a } }
+        flatMap { a in rhs.map(const(a)) }
     }
 
     static func zip<A1, A2, each Ax>(

@@ -1,7 +1,7 @@
 /// Sequence a list of optionals
 /// sequence :: [a?] -> [a]?
 public func sequence<A>(_ optionals: [A?]) -> [A]? {
-    optionals.traverse { $0 }
+    optionals.traverse(identity)
 }
 
 /// Map and sequence

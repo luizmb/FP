@@ -42,19 +42,19 @@ public extension Array {
     /// Concatenates an array of arrays
     /// concat :: [[a]] -> [a]
     static func concat(_ arrays: [[Element]]) -> [Element] {
-        arrays.flatMap { $0 }
+        arrays.flatMap(identity)
     }
 
     /// Monadic join - flattens nested arrays
     /// join :: m (m a) -> m a
     static func join(_ nested: [[Element]]) -> [Element] {
-        nested.flatMap { $0 }
+        nested.flatMap(identity)
     }
 
     /// Discards the values, keeping only the structure
     /// void :: m a -> m ()
     func void() -> [Void] {
-        map { _ in () }
+        map(ignore)
     }
 
     /// Monadic filter (curried version)

@@ -19,13 +19,13 @@ public extension Either {
     /// seqRight :: Either<a, b> -> Either<a, c> -> Either<a, c>
     /// Run both, discard the left result, return the right
     func seqRight<C>(_ rhs: Either<A, C>) -> Either<A, C> {
-        flatMap { _ in rhs }
+        flatMap(const(rhs))
     }
 
     /// seqLeft :: Either<a, b> -> Either<a, c> -> Either<a, b>
     /// Run both, return the left result
     func seqLeft<C>(_ rhs: Either<A, C>) -> Either<A, B> {
-        flatMap { b in rhs.mapRight { _ in b } }
+        flatMap { b in rhs.mapRight(const(b)) }
     }
 
     fileprivate struct UnexpectedLeftError<L: Sendable>: Error {

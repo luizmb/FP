@@ -45,12 +45,12 @@ public extension Result {
     /// Monadic join - flattens nested Results
     /// join :: m (m a) -> m a
     static func join<A>(_ nested: Result<Result<A, Failure>, Failure>) -> Result<A, Failure> {
-        nested.flatMap { $0 }
+        nested.flatMap(identity)
     }
 
     /// Discards the success value, keeping only the structure
     /// void :: m a -> m ()
     func void() -> Result<Void, Failure> {
-        map { _ in () }
+        map(ignore)
     }
 }
