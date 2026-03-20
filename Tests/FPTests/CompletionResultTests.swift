@@ -1,11 +1,10 @@
-import XCTest
+import Testing
 import Combine
 @testable import FP
 import FP
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 @MainActor
-final class CompletionResultTests: XCTestCase {
+@Suite struct CompletionResultTests {
 
     enum TestError: Error, Equatable {
         case test
@@ -14,55 +13,55 @@ final class CompletionResultTests: XCTestCase {
 
     // MARK: - Result to Completion
 
-    func testResultSuccessToCompletion() {
+    @Test func resultSuccessToCompletion() {
         let result: Result<Void, TestError> = .success(())
         let completion = result.completion()
 
         if case .finished = completion {
             // Success
         } else {
-            XCTFail("Expected .finished")
+            Issue.record("Expected .finished")
         }
     }
 
-    func testResultFailureToCompletion() {
+    @Test func resultFailureToCompletion() {
         let result: Result<Void, TestError> = .failure(.test)
         let completion = result.completion()
 
         if case .failure(let error) = completion {
-            XCTAssertEqual(error, .test)
+            #expect(error == .test)
         } else {
-            XCTFail("Expected .failure")
+            Issue.record("Expected .failure")
         }
     }
 
     // MARK: - Completion to Result
 
-    func testCompletionFinishedToResult() {
+    @Test func completionFinishedToResult() {
         let completion: Subscribers.Completion<TestError> = .finished
         let result = completion.result
 
         if case .success = result {
             // Success
         } else {
-            XCTFail("Expected .success")
+            Issue.record("Expected .success")
         }
     }
 
-    func testCompletionFailureToResult() {
+    @Test func completionFailureToResult() {
         let completion: Subscribers.Completion<TestError> = .failure(.test)
         let result = completion.result
 
         if case .failure(let error) = result {
-            XCTAssertEqual(error, .test)
+            #expect(error == .test)
         } else {
-            XCTFail("Expected .failure")
+            Issue.record("Expected .failure")
         }
     }
 
     // MARK: - Round Trip Tests
 
-    func testRoundTripResultToCompletionToResult() {
+    @Test func roundTripResultToCompletionToResult() {
         let original: Result<Void, TestError> = .success(())
         let completion = original.completion()
         let result = completion.result
@@ -70,23 +69,23 @@ final class CompletionResultTests: XCTestCase {
         if case .success = result {
             // Success
         } else {
-            XCTFail("Expected success after round trip")
+            Issue.record("Expected success after round trip")
         }
     }
 
-    func testRoundTripResultFailureToCompletionToResult() {
+    @Test func roundTripResultFailureToCompletionToResult() {
         let original: Result<Void, TestError> = .failure(.test)
         let completion = original.completion()
         let result = completion.result
 
         if case .failure(let error) = result {
-            XCTAssertEqual(error, .test)
+            #expect(error == .test)
         } else {
-            XCTFail("Expected failure after round trip")
+            Issue.record("Expected failure after round trip")
         }
     }
 
-    func testRoundTripCompletionFinishedToResultToCompletion() {
+    @Test func roundTripCompletionFinishedToResultToCompletion() {
         let original: Subscribers.Completion<TestError> = .finished
         let result = original.result
         let completion = result.completion()
@@ -94,19 +93,19 @@ final class CompletionResultTests: XCTestCase {
         if case .finished = completion {
             // Success
         } else {
-            XCTFail("Expected .finished after round trip")
+            Issue.record("Expected .finished after round trip")
         }
     }
 
-    func testRoundTripCompletionFailureToResultToCompletion() {
+    @Test func roundTripCompletionFailureToResultToCompletion() {
         let original: Subscribers.Completion<TestError> = .failure(.test)
         let result = original.result
         let completion = result.completion()
 
         if case .failure(let error) = completion {
-            XCTAssertEqual(error, .test)
+            #expect(error == .test)
         } else {
-            XCTFail("Expected .failure after round trip")
+            Issue.record("Expected .failure after round trip")
         }
     }
 }

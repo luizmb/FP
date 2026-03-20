@@ -1,36 +1,36 @@
-import XCTest
+import Testing
 @testable import FP
 @testable import Operators
 
-final class FunctionCompositionTests: XCTestCase {
+@Suite struct FunctionCompositionTests {
 
     // MARK: - Composition Operators
 
-    func testForwardComposition() {
+    @Test func forwardComposition() {
         let addOne: (Int) -> Int = { $0 + 1 }
         let double: (Int) -> Int = { $0 * 2 }
 
         let composed = addOne >>> double
-        XCTAssertEqual(composed(5), 12) // (5 + 1) * 2 = 12
+        #expect(composed(5) == 12) // (5 + 1) * 2 = 12
     }
 
-    func testBackwardComposition() {
+    @Test func backwardComposition() {
         let addOne: (Int) -> Int = { $0 + 1 }
         let double: (Int) -> Int = { $0 * 2 }
 
         let composed = double <<< addOne
-        XCTAssertEqual(composed(5), 12) // (5 + 1) * 2 = 12
+        #expect(composed(5) == 12) // (5 + 1) * 2 = 12
     }
 
-    func testBackwardCompositionAlternativeSymbol() {
+    @Test func backwardCompositionAlternativeSymbol() {
         let addOne: (Int) -> Int = { $0 + 1 }
         let double: (Int) -> Int = { $0 * 2 }
 
         let composed = double • addOne
-        XCTAssertEqual(composed(5), 12)
+        #expect(composed(5) == 12)
     }
 
-    func testCompositionAssociativity() {
+    @Test func compositionAssociativity() {
         let f: (Int) -> Int = { $0 + 1 }
         let g: (Int) -> Int = { $0 * 2 }
         let h: (Int) -> Int = { $0 - 3 }
@@ -38,62 +38,62 @@ final class FunctionCompositionTests: XCTestCase {
         let left = (f >>> g) >>> h
         let right = f >>> (g >>> h)
 
-        XCTAssertEqual(left(5), right(5))
+        #expect(left(5) == right(5))
     }
 
     // MARK: - Application Operators
 
-    func testFunctionApplicationPound() {
+    @Test func functionApplicationPound() {
         let addOne: (Int) -> Int = { $0 + 1 }
 
-        XCTAssertEqual(addOne £ 5, 6)
+        #expect((addOne £ 5) == 6)
     }
 
-    func testFunctionApplicationAngle() {
+    @Test func functionApplicationAngle() {
         let addOne: (Int) -> Int = { $0 + 1 }
 
-        XCTAssertEqual(addOne <| 5, 6)
+        #expect((addOne <| 5) == 6)
     }
 
-    func testFlippedFunctionApplication() {
+    @Test func flippedFunctionApplication() {
         let addOne: (Int) -> Int = { $0 + 1 }
 
-        XCTAssertEqual(5 |> addOne, 6)
+        #expect((5 |> addOne) == 6)
     }
 
-    func testPipeChaining() {
+    @Test func pipeChaining() {
         let addOne: (Int) -> Int = { $0 + 1 }
         let double: (Int) -> Int = { $0 * 2 }
         let triple: (Int) -> Int = { $0 * 3 }
 
         let result = 5 |> addOne |> double |> triple
-        XCTAssertEqual(result, 36) // ((5 + 1) * 2) * 3 = 36
+        #expect(result == 36) // ((5 + 1) * 2) * 3 = 36
     }
 
-    func testFunctionApplicationVsComposition() {
+    @Test func functionApplicationVsComposition() {
         let addOne: (Int) -> Int = { $0 + 1 }
         let double: (Int) -> Int = { $0 * 2 }
 
         // Using composition
         let composed = addOne >>> double
-        XCTAssertEqual(composed(5), 12)
+        #expect(composed(5) == 12)
 
         // Using pipe
         let piped = 5 |> addOne |> double
-        XCTAssertEqual(piped, 12)
+        #expect(piped == 12)
 
         // They should be equivalent
-        XCTAssertEqual(composed(5), piped)
+        #expect(composed(5) == piped)
     }
 
-    func testCompositionIdentity() {
+    @Test func compositionIdentity() {
         let f: (Int) -> Int = { $0 * 2 }
         let id: (Int) -> Int = { $0 }
 
         // f >>> id = f
-        XCTAssertEqual((f >>> id)(5), f(5))
+        #expect((f >>> id)(5) == f(5))
 
         // id >>> f = f
-        XCTAssertEqual((id >>> f)(5), f(5))
+        #expect((id >>> f)(5) == f(5))
     }
 }

@@ -12,7 +12,7 @@ public extension Result {
 
     /// apply :: Result<(a -> b), e> -> Result<a, e> -> Result<b, e>
     static func apply<A>(_ functions: Result<(A) -> Success, Failure>, _ values: Result<A, Failure>) -> Result<Success, Failure> {
-        functions.flatMap { fn in values.map(fn) }
+        functions.flatMap(values.map)
     }
 
     /// seqRight :: Result<a, e> -> Result<b, e> -> Result<b, e>

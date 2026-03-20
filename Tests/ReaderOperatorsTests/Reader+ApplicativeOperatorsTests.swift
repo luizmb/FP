@@ -1,10 +1,10 @@
-import XCTest
+import Testing
 @testable import FP
 @testable import Reader
 @testable import ReaderOperators
 import Operators
 
-final class ReaderApplicativeTests: XCTestCase {
+@Suite struct ReaderApplicativeTests {
 
     struct Environment {
         let multiplier: Int
@@ -13,7 +13,7 @@ final class ReaderApplicativeTests: XCTestCase {
 
     // MARK: - Basic Applicative Tests
 
-    func testApply() {
+    @Test func apply() {
         let readerFn = Reader<Environment, (Int) -> Int> { env in
             { value in value * env.multiplier }
         }
@@ -21,10 +21,10 @@ final class ReaderApplicativeTests: XCTestCase {
 
         let result = readerFn <*> readerValue
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(result(env), 15) // 3 * 5
+        #expect(result(env) == 15) // 3 * 5
     }
 
-    func testLiftA2() {
+    @Test func liftA2() {
         let reader1 = Reader<Environment, Int> { env in env.multiplier }
         let reader2 = Reader<Environment, Int> { env in env.addend }
 
@@ -32,22 +32,22 @@ final class ReaderApplicativeTests: XCTestCase {
         let combined = Reader<Environment, Int>.liftA2(add)(reader1, reader2)
 
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(combined(env), 8)
+        #expect(combined(env) == 8)
     }
 
     // MARK: - Applicative Laws
 
-    func testApplicativeIdentityLaw() {
+    @Test func applicativeIdentityLaw() {
         // pure id <*> v = v
         let value = Reader<Environment, Int> { env in env.multiplier }
         let identity = Reader<Environment, (Int) -> Int> { _ in { $0 } }
         let result = identity <*> value
 
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(result(env), value(env))
+        #expect(result(env) == value(env))
     }
 
-    func testApplicativeCompositionLaw() {
+    @Test func applicativeCompositionLaw() {
         // pure (.) <*> u <*> v <*> w = u <*> (v <*> w)
         let u = Reader<Environment, (Int) -> String> { _ in { "\($0)" } }
         let v = Reader<Environment, (Int) -> Int> { env in { $0 * env.multiplier } }
@@ -65,10 +65,10 @@ final class ReaderApplicativeTests: XCTestCase {
         let right = u <*> vw
 
         let env = Environment(multiplier: 2, addend: 5)
-        XCTAssertEqual(left(env), right(env))
+        #expect(left(env) == right(env))
     }
 
-    func testApplicativeHomomorphismLaw() {
+    @Test func applicativeHomomorphismLaw() {
         // pure f <*> pure x = pure (f x)
         let f: (Int) -> Int = { $0 * 2 }
         let x = 5
@@ -80,10 +80,10 @@ final class ReaderApplicativeTests: XCTestCase {
         let right = Reader<Environment, Int> { _ in f(x) }
 
         let env = Environment(multiplier: 1, addend: 1)
-        XCTAssertEqual(left(env), right(env))
+        #expect(left(env) == right(env))
     }
 
-    func testApplicativeInterchangeLaw() {
+    @Test func applicativeInterchangeLaw() {
         // u <*> pure y = pure ($ y) <*> u
         let u = Reader<Environment, (Int) -> Int> { env in { $0 * env.multiplier } }
         let y = 5
@@ -96,35 +96,35 @@ final class ReaderApplicativeTests: XCTestCase {
         let right = pureApply <*> u
 
         let env = Environment(multiplier: 2, addend: 3)
-        XCTAssertEqual(left(env), right(env))
+        #expect(left(env) == right(env))
     }
 
     // MARK: - Applicative Operators
 
-    func testApplyOperator() {
+    @Test func applyOperator() {
         let readerFn = Reader<Environment, (Int) -> Int> { _ in { $0 * 2 } }
         let readerValue = Reader<Environment, Int> { env in env.multiplier }
 
         let result = readerFn <*> readerValue
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(result(env), 10)
+        #expect(result(env) == 10)
     }
 
-    func testSequenceRight() {
+    @Test func sequenceRight() {
         let reader1 = Reader<Environment, Int> { env in env.multiplier }
         let reader2 = Reader<Environment, Int> { env in env.addend }
 
         let result = reader1 *> reader2
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(result(env), 3)
+        #expect(result(env) == 3)
     }
 
-    func testSequenceLeft() {
+    @Test func sequenceLeft() {
         let reader1 = Reader<Environment, Int> { env in env.multiplier }
         let reader2 = Reader<Environment, Int> { env in env.addend }
 
         let result = reader1 <* reader2
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(result(env), 5)
+        #expect(result(env) == 5)
     }
 }

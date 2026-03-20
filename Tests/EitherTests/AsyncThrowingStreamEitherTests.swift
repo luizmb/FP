@@ -1,8 +1,7 @@
-import XCTest
+import Testing
 @testable import Either
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-final class AsyncThrowingStreamEitherTests: XCTestCase {
+@Suite struct AsyncThrowingStreamEitherTests {
 
     struct TestError: Error, Equatable {
         let message: String
@@ -11,7 +10,7 @@ final class AsyncThrowingStreamEitherTests: XCTestCase {
 
     // MARK: - toEitherStream
 
-    func testToEitherStreamAllElements() async {
+    @Test func toEitherStreamAllElements() async {
         let stream = AsyncThrowingStream<Int, any Error> { continuation in
             continuation.yield(1)
             continuation.yield(2)
@@ -24,13 +23,13 @@ final class AsyncThrowingStreamEitherTests: XCTestCase {
             results.append(value)
         }
 
-        XCTAssertEqual(results.count, 3)
-        XCTAssertEqual(results[0].right, 1)
-        XCTAssertEqual(results[1].right, 2)
-        XCTAssertEqual(results[2].right, 3)
+        #expect(results.count == 3)
+        #expect(results[0].right == 1)
+        #expect(results[1].right == 2)
+        #expect(results[2].right == 3)
     }
 
-    func testToEitherStreamWithError() async {
+    @Test func toEitherStreamWithError() async {
         let stream = AsyncThrowingStream<Int, any Error> { continuation in
             continuation.yield(1)
             continuation.finish(throwing: TestError.fail)
@@ -41,16 +40,16 @@ final class AsyncThrowingStreamEitherTests: XCTestCase {
             results.append(value)
         }
 
-        XCTAssertEqual(results.count, 2)
-        XCTAssertEqual(results[0].right, 1)
+        #expect(results.count == 2)
+        #expect(results[0].right == 1)
         guard case .left(let error) = results[1] else {
-            XCTFail("Expected .left error")
+            Issue.record("Expected .left error")
             return
         }
-        XCTAssertEqual(error as? TestError, .fail)
+        #expect(error as? TestError == .fail)
     }
 
-    func testToEitherStreamEmpty() async {
+    @Test func toEitherStreamEmpty() async {
         let stream = AsyncThrowingStream<Int, any Error> { continuation in
             continuation.finish()
         }
@@ -60,12 +59,12 @@ final class AsyncThrowingStreamEitherTests: XCTestCase {
             results.append(value)
         }
 
-        XCTAssertTrue(results.isEmpty)
+        #expect(results.isEmpty)
     }
 
     // MARK: - toThrowingStream
 
-    func testToThrowingStreamAllRights() async throws {
+    @Test func toThrowingStreamAllRights() async throws {
         let stream = AsyncStream<Either<TestError, Int>> { continuation in
             continuation.yield(.right(1))
             continuation.yield(.right(2))
@@ -78,10 +77,10 @@ final class AsyncThrowingStreamEitherTests: XCTestCase {
             results.append(value)
         }
 
-        XCTAssertEqual(results, [1, 2, 3])
+        #expect(results == [1, 2, 3])
     }
 
-    func testToThrowingStreamLeftThrows() async {
+    @Test func toThrowingStreamLeftThrows() async {
         let stream = AsyncStream<Either<TestError, Int>> { continuation in
             continuation.yield(.right(1))
             continuation.yield(.left(.fail))
@@ -99,16 +98,16 @@ final class AsyncThrowingStreamEitherTests: XCTestCase {
         } catch let error as TestError {
             caughtError = error
         } catch {
-            XCTFail("Unexpected error: \(error)")
+            Issue.record("Unexpected error: \(error)")
         }
 
-        XCTAssertEqual(results, [1])
-        XCTAssertEqual(caughtError, .fail)
+        #expect(results == [1])
+        #expect(caughtError == .fail)
     }
 
     // MARK: - Round trip
 
-    func testRoundTripThroughEitherStream() async throws {
+    @Test func roundTripThroughEitherStream() async throws {
         let stream = AsyncThrowingStream<Int, any Error> { continuation in
             continuation.yield(10)
             continuation.yield(20)
@@ -120,10 +119,10 @@ final class AsyncThrowingStreamEitherTests: XCTestCase {
             results.append(value)
         }
 
-        XCTAssertEqual(results, [10, 20])
+        #expect(results == [10, 20])
     }
 
-    func testRoundTripErrorThroughEitherStream() async {
+    @Test func roundTripErrorThroughEitherStream() async {
         let stream = AsyncThrowingStream<Int, any Error> { continuation in
             continuation.yield(10)
             continuation.finish(throwing: TestError.fail)
@@ -139,10 +138,10 @@ final class AsyncThrowingStreamEitherTests: XCTestCase {
         } catch let error as TestError {
             caughtError = error
         } catch {
-            XCTFail("Unexpected error: \(error)")
+            Issue.record("Unexpected error: \(error)")
         }
 
-        XCTAssertEqual(results, [10])
-        XCTAssertEqual(caughtError, .fail)
+        #expect(results == [10])
+        #expect(caughtError == .fail)
     }
 }

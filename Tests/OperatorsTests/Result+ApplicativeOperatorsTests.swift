@@ -1,8 +1,8 @@
-import XCTest
+import Testing
 @testable import FP
 @testable import Operators
 
-final class ResultApplicativeTests: XCTestCase {
+@Suite struct ResultApplicativeTests {
 
     enum TestError: Error, Equatable {
         case error1
@@ -11,64 +11,64 @@ final class ResultApplicativeTests: XCTestCase {
 
     // MARK: - Basic Applicative Tests
 
-    func testApply() {
+    @Test func apply() {
         let fn: Result<(Int) -> Int, TestError> = .success({ $0 * 2 })
         let value: Result<Int, TestError> = .success(5)
         let result = fn <*> value
-        XCTAssertEqual(try? result.get(), 10)
+        #expect((try? result.get()) == 10)
 
         let failureFn: Result<(Int) -> Int, TestError> = .failure(.error1)
         let failureResult = failureFn <*> value
-        XCTAssertThrowsError(try failureResult.get())
+        #expect(throws: (any Error).self) { try failureResult.get() }
 
         let failureValue: Result<Int, TestError> = .failure(.error2)
         let failureValueResult = fn <*> failureValue
-        XCTAssertThrowsError(try failureValueResult.get())
+        #expect(throws: (any Error).self) { try failureValueResult.get() }
     }
 
-    func testLiftA2() {
+    @Test func liftA2() {
         let add: (Int, Int) -> Int = { $0 + $1 }
         let lifted = Result<Int, TestError>.liftA2(add)
 
         let value1: Result<Int, TestError> = .success(5)
         let value2: Result<Int, TestError> = .success(3)
-        XCTAssertEqual(try? lifted(value1, value2).get(), 8)
+        #expect((try? lifted(value1, value2).get()) == 8)
 
         let failure1: Result<Int, TestError> = .failure(.error1)
-        XCTAssertThrowsError(try lifted(failure1, value2).get())
+        #expect(throws: (any Error).self) { try lifted(failure1, value2).get() }
 
         let failure2: Result<Int, TestError> = .failure(.error2)
-        XCTAssertThrowsError(try lifted(value1, failure2).get())
+        #expect(throws: (any Error).self) { try lifted(value1, failure2).get() }
     }
 
-    func testZip() {
+    @Test func zip() {
         let value1: Result<Int, TestError> = .success(5)
         let value2: Result<String, TestError> = .success("test")
         let result = Result<(Int, String), TestError>.zip(value1, value2)
 
         if case .success(let tuple) = result {
-            XCTAssertEqual(tuple.0, 5)
-            XCTAssertEqual(tuple.1, "test")
+            #expect(tuple.0 == 5)
+            #expect(tuple.1 == "test")
         } else {
-            XCTFail("Expected success value")
+            Issue.record("Expected success value")
         }
 
         let failure1: Result<Int, TestError> = .failure(.error1)
         let failureResult = Result<(Int, String), TestError>.zip(failure1, value2)
-        XCTAssertThrowsError(try failureResult.get())
+        #expect(throws: (any Error).self) { try failureResult.get() }
     }
 
     // MARK: - Applicative Laws
 
-    func testApplicativeIdentityLaw() {
+    @Test func applicativeIdentityLaw() {
         // pure id <*> v = v
         let value: Result<Int, TestError> = .success(5)
         let identity: Result<(Int) -> Int, TestError> = .success({ $0 })
         let result = identity <*> value
-        XCTAssertEqual(try? result.get(), try? value.get())
+        #expect((try? result.get()) == (try? value.get()))
     }
 
-    func testApplicativeCompositionLaw() {
+    @Test func applicativeCompositionLaw() {
         // pure (.) <*> u <*> v <*> w = u <*> (v <*> w)
         let u: Result<(Int) -> String, TestError> = .success({ "\($0)" })
         let v: Result<(Int) -> Int, TestError> = .success({ $0 * 2 })
@@ -85,10 +85,10 @@ final class ResultApplicativeTests: XCTestCase {
         let vw = v <*> w
         let right = u <*> vw
 
-        XCTAssertEqual(try? left.get(), try? right.get())
+        #expect((try? left.get()) == (try? right.get()))
     }
 
-    func testApplicativeHomomorphismLaw() {
+    @Test func applicativeHomomorphismLaw() {
         // pure f <*> pure x = pure (f x)
         let f: (Int) -> Int = { $0 * 2 }
         let x = 5
@@ -98,10 +98,10 @@ final class ResultApplicativeTests: XCTestCase {
         let left = pureF <*> pureX
         let right: Result<Int, TestError> = .success(f(x))
 
-        XCTAssertEqual(try? left.get(), try? right.get())
+        #expect((try? left.get()) == (try? right.get()))
     }
 
-    func testApplicativeInterchangeLaw() {
+    @Test func applicativeInterchangeLaw() {
         // u <*> pure y = pure ($ y) <*> u
         let u: Result<(Int) -> Int, TestError> = .success({ $0 * 2 })
         let y = 5
@@ -113,41 +113,41 @@ final class ResultApplicativeTests: XCTestCase {
         let pureApply: Result<(@escaping (Int) -> Int) -> Int, TestError> = .success(applyTo)
         let right = pureApply <*> u
 
-        XCTAssertEqual(try? left.get(), try? right.get())
+        #expect((try? left.get()) == (try? right.get()))
     }
 
     // MARK: - Applicative Operators
 
-    func testApplyOperator() {
+    @Test func applyOperator() {
         let fn: Result<(Int) -> Int, TestError> = .success({ $0 * 2 })
         let value: Result<Int, TestError> = .success(5)
         let result = fn <*> value
-        XCTAssertEqual(try? result.get(), 10)
+        #expect((try? result.get()) == 10)
 
         let failure: Result<Int, TestError> = .failure(.error1)
         let failureResult = fn <*> failure
-        XCTAssertThrowsError(try failureResult.get())
+        #expect(throws: (any Error).self) { try failureResult.get() }
     }
 
-    func testSequenceRight() {
+    @Test func sequenceRight() {
         let value1: Result<Int, TestError> = .success(5)
         let value2: Result<Int, TestError> = .success(10)
         let result = value1 *> value2
-        XCTAssertEqual(try? result.get(), 10)
+        #expect((try? result.get()) == 10)
 
         let failure: Result<Int, TestError> = .failure(.error1)
-        XCTAssertThrowsError(try (failure *> value2).get())
-        XCTAssertThrowsError(try (value1 *> failure).get())
+        #expect(throws: (any Error).self) { try (failure *> value2).get() }
+        #expect(throws: (any Error).self) { try (value1 *> failure).get() }
     }
 
-    func testSequenceLeft() {
+    @Test func sequenceLeft() {
         let value1: Result<Int, TestError> = .success(5)
         let value2: Result<Int, TestError> = .success(10)
         let result = value1 <* value2
-        XCTAssertEqual(try? result.get(), 5)
+        #expect((try? result.get()) == 5)
 
         let failure: Result<Int, TestError> = .failure(.error1)
-        XCTAssertThrowsError(try (failure <* value2).get())
-        XCTAssertThrowsError(try (value1 <* failure).get())
+        #expect(throws: (any Error).self) { try (failure <* value2).get() }
+        #expect(throws: (any Error).self) { try (value1 <* failure).get() }
     }
 }

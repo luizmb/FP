@@ -1,43 +1,43 @@
-import XCTest
+import Testing
 @testable import FP
 @testable import Operators
 
-final class OptionalFunctorTests: XCTestCase {
+@Suite struct OptionalFunctorTests {
 
     // MARK: - Basic Functor Tests
 
-    func testFmap() {
+    @Test func fmap() {
         let value: Int? = 5
         let result = value.map { $0 * 2 }
-        XCTAssertEqual(result, 10)
+        #expect(result == 10)
 
         let none: Int? = nil
         let noneResult = none.map { $0 * 2 }
-        XCTAssertNil(noneResult)
+        #expect(noneResult == nil)
     }
 
-    func testCurriedFmap() {
+    @Test func curriedFmap() {
         let double: (Int) -> Int = { $0 * 2 }
         let fmap = Optional<Int>.fmap(double)
 
-        XCTAssertEqual(fmap(5), 10)
-        XCTAssertNil(fmap(nil))
+        #expect(fmap(5) == 10)
+        #expect(fmap(nil) == nil)
     }
 
     // MARK: - Functor Laws
 
-    func testFunctorIdentityLaw() {
+    @Test func functorIdentityLaw() {
         // fmap id == id
         let value: Int? = 5
         let none: Int? = nil
 
         let identity: (Int) -> Int = { $0 }
 
-        XCTAssertEqual(value.map(identity), value)
-        XCTAssertEqual(none.map(identity), none)
+        #expect(value.map(identity) == value)
+        #expect(none.map(identity) == none)
     }
 
-    func testFunctorCompositionLaw() {
+    @Test func functorCompositionLaw() {
         // fmap (g . f) == fmap g . fmap f
         let value: Int? = 5
 
@@ -47,48 +47,48 @@ final class OptionalFunctorTests: XCTestCase {
         let composed = value.map(compose(f, g))
         let separate = value.map(f).map(g)
 
-        XCTAssertEqual(composed, separate)
+        #expect(composed == separate)
     }
 
     // MARK: - Functor Operators
 
-    func testFmapOperator() {
+    @Test func fmapOperator() {
         let value: Int? = 5
         let result = { $0 * 2 } <£> value
-        XCTAssertEqual(result, 10)
+        #expect(result == 10)
 
         let none: Int? = nil
         let noneResult = { $0 * 2 } <£> none
-        XCTAssertNil(noneResult)
+        #expect(noneResult == nil)
     }
 
-    func testMapReplaceOperator() {
+    @Test func mapReplaceOperator() {
         let value: Int? = 5
         let result = value £> 99
-        XCTAssertEqual(result, 99)
+        #expect(result == 99)
 
         let none: Int? = nil
         let noneResult = none £> 99
-        XCTAssertNil(noneResult)
+        #expect(noneResult == nil)
     }
 
-    func testMapReplaceFlippedOperator() {
+    @Test func mapReplaceFlippedOperator() {
         let value: Int? = 5
         let result = 42 <£ value
-        XCTAssertEqual(result, 42)
+        #expect(result == 42)
 
         let none: Int? = nil
         let noneResult = 42 <£ none
-        XCTAssertNil(noneResult)
+        #expect(noneResult == nil)
     }
 
-    func testFlippedFmapOperator() {
+    @Test func flippedFmapOperator() {
         let value: Int? = 5
         let result = value <&> { $0 * 2 }
-        XCTAssertEqual(result, 10)
+        #expect(result == 10)
 
         let none: Int? = nil
         let noneResult = none <&> { $0 * 2 }
-        XCTAssertNil(noneResult)
+        #expect(noneResult == nil)
     }
 }

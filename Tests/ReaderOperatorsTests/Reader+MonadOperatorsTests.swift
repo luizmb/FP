@@ -1,10 +1,10 @@
-import XCTest
+import Testing
 @testable import FP
 @testable import Reader
 @testable import ReaderOperators
 import Operators
 
-final class ReaderMonadTests: XCTestCase {
+@Suite struct ReaderMonadTests {
 
     struct Environment {
         let multiplier: Int
@@ -13,7 +13,7 @@ final class ReaderMonadTests: XCTestCase {
 
     // MARK: - FlatMap Tests
 
-    func testFlatMap() {
+    @Test func flatMap() {
         let reader1 = Reader<Environment, Int> { env in env.multiplier }
         let reader2: (Int) -> Reader<Environment, Int> = { value in
             Reader { env in value * env.addend }
@@ -22,10 +22,10 @@ final class ReaderMonadTests: XCTestCase {
         let result = reader1.flatMap(reader2)
         let env = Environment(multiplier: 5, addend: 3)
 
-        XCTAssertEqual(result(env), 15) // 5 * 3
+        #expect(result(env) == 15) // 5 * 3
     }
 
-    func testBind() {
+    @Test func bind() {
         let reader = Reader<Environment, Int> { env in env.multiplier }
         let transform: (Int) -> Reader<Environment, Int> = { value in
             Reader { env in value + env.addend }
@@ -34,12 +34,12 @@ final class ReaderMonadTests: XCTestCase {
         let result = Reader.bind(transform)(reader)
         let env = Environment(multiplier: 5, addend: 3)
 
-        XCTAssertEqual(result(env), 8) // 5 + 3
+        #expect(result(env) == 8) // 5 + 3
     }
 
     // MARK: - Kleisli Composition Tests
 
-    func testKleisliComposition() {
+    @Test func kleisliComposition() {
         let getMultiplier: (Int) -> Reader<Environment, Int> = { value in
             Reader { env in value * env.multiplier }
         }
@@ -51,12 +51,12 @@ final class ReaderMonadTests: XCTestCase {
         let composed = Reader.kleisli(getMultiplier, addAddend)
         let env = Environment(multiplier: 2, addend: 10)
 
-        XCTAssertEqual(composed(5)(env), 20) // (5 * 2) + 10
+        #expect(composed(5)(env) == 20) // (5 * 2) + 10
     }
 
     // MARK: - Join Tests
 
-    func testJoin() {
+    @Test func join() {
         let nested = Reader<Environment, Reader<Environment, Int>> { env in
             Reader { _ in env.multiplier * 2 }
         }
@@ -64,29 +64,29 @@ final class ReaderMonadTests: XCTestCase {
         let flattened = Reader.join(nested)
         let env = Environment(multiplier: 5, addend: 3)
 
-        XCTAssertEqual(flattened(env), 10)
+        #expect(flattened(env) == 10)
     }
 
     // MARK: - Ask/Asks Tests
 
-    func testAsk() {
+    @Test func ask() {
         let reader = Reader<Environment, Environment>.ask
         let env = Environment(multiplier: 5, addend: 3)
 
-        XCTAssertEqual(reader(env).multiplier, 5)
-        XCTAssertEqual(reader(env).addend, 3)
+        #expect(reader(env).multiplier == 5)
+        #expect(reader(env).addend == 3)
     }
 
-    func testAsks() {
+    @Test func asks() {
         let reader = Reader<Environment, Int>.asks { $0.multiplier }
         let env = Environment(multiplier: 5, addend: 3)
 
-        XCTAssertEqual(reader(env), 5)
+        #expect(reader(env) == 5)
     }
 
     // MARK: - Local Tests
 
-    func testLocal() {
+    @Test func local() {
         let reader = Reader<Environment, Int> { env in
             env.multiplier + env.addend
         }
@@ -97,13 +97,13 @@ final class ReaderMonadTests: XCTestCase {
 
         let env = Environment(multiplier: 5, addend: 3)
 
-        XCTAssertEqual(reader(env), 8) // 5 + 3
-        XCTAssertEqual(modified(env), 13) // (5 * 2) + 3
+        #expect(reader(env) == 8) // 5 + 3
+        #expect(modified(env) == 13) // (5 * 2) + 3
     }
 
     // MARK: - Monad Laws Tests
 
-    func testLeftIdentity() {
+    @Test func leftIdentity() {
         // return a >>= f = f a
         let a = 5
         let f: (Int) -> Reader<Environment, Int> = { value in
@@ -114,10 +114,10 @@ final class ReaderMonadTests: XCTestCase {
         let right = f(a)
 
         let env = Environment(multiplier: 2, addend: 3)
-        XCTAssertEqual(left(env), right(env))
+        #expect(left(env) == right(env))
     }
 
-    func testRightIdentity() {
+    @Test func rightIdentity() {
         // m >>= return = m
         let m = Reader<Environment, Int> { env in env.multiplier }
         let pureFunc: (Int) -> Reader<Environment, Int> = { value in
@@ -127,10 +127,10 @@ final class ReaderMonadTests: XCTestCase {
         let left = m.flatMap(pureFunc)
 
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(left(env), m(env))
+        #expect(left(env) == m(env))
     }
 
-    func testAssociativity() {
+    @Test func associativity() {
         // (m >>= f) >>= g = m >>= (\x -> f x >>= g)
         let m = Reader<Environment, Int> { env in env.multiplier }
         let f: (Int) -> Reader<Environment, Int> = { value in
@@ -144,6 +144,6 @@ final class ReaderMonadTests: XCTestCase {
         let right = m.flatMap { x in f(x).flatMap(g) }
 
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(left(env), right(env))
+        #expect(left(env) == right(env))
     }
 }

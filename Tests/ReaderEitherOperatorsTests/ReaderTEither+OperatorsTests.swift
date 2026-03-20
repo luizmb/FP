@@ -1,4 +1,4 @@
-import XCTest
+import Testing
 @testable import Reader
 @testable import Either
 @testable import ReaderEither
@@ -7,7 +7,7 @@ import XCTest
 @testable import Operators
 import FP
 
-final class ReaderEitherOperatorsTests: XCTestCase {
+@Suite struct ReaderEitherOperatorsTests {
 
     struct Environment {
         let multiplier: Int
@@ -15,7 +15,7 @@ final class ReaderEitherOperatorsTests: XCTestCase {
 
     // MARK: - Functor Operators
 
-    func testFunctorOperatorFmap() {
+    @Test func functorOperatorFmap() {
         let reader = Reader<Environment, Either<String, Int>> { env in
             .right(env.multiplier)
         }
@@ -23,10 +23,10 @@ final class ReaderEitherOperatorsTests: XCTestCase {
         let mapped = { $0 * 2 } <£> reader
 
         let env = Environment(multiplier: 5)
-        XCTAssertEqual(mapped(env), .right(10))
+        #expect(mapped(env) == .right(10))
     }
 
-    func testFunctorOperatorReplace() {
+    @Test func functorOperatorReplace() {
         let reader = Reader<Environment, Either<String, Int>> { env in
             .right(env.multiplier)
         }
@@ -34,12 +34,12 @@ final class ReaderEitherOperatorsTests: XCTestCase {
         let replaced = reader £> 42
 
         let env = Environment(multiplier: 5)
-        XCTAssertEqual(replaced(env), .right(42))
+        #expect(replaced(env) == .right(42))
     }
 
     // MARK: - Applicative Operators
 
-    func testApplicativeOperatorApply() {
+    @Test func applicativeOperatorApply() {
         let readerFn = Reader<Environment, Either<String, (Int) -> Int>> { env in
             .right({ $0 + env.multiplier })
         }
@@ -51,10 +51,10 @@ final class ReaderEitherOperatorsTests: XCTestCase {
         let result = readerFn <*> readerValue
 
         let env = Environment(multiplier: 5)
-        XCTAssertEqual(result(env), .right(15))
+        #expect(result(env) == .right(15))
     }
 
-    func testApplicativeOperatorSequenceRight() {
+    @Test func applicativeOperatorSequenceRight() {
         let reader1 = Reader<Environment, Either<String, Int>> { _ in
             .right(5)
         }
@@ -66,10 +66,10 @@ final class ReaderEitherOperatorsTests: XCTestCase {
         let result = reader1 *> reader2
 
         let env = Environment(multiplier: 1)
-        XCTAssertEqual(result(env), .right(10))
+        #expect(result(env) == .right(10))
     }
 
-    func testApplicativeOperatorSequenceLeft() {
+    @Test func applicativeOperatorSequenceLeft() {
         let reader1 = Reader<Environment, Either<String, Int>> { _ in
             .right(5)
         }
@@ -81,6 +81,6 @@ final class ReaderEitherOperatorsTests: XCTestCase {
         let result = reader1 <* reader2
 
         let env = Environment(multiplier: 1)
-        XCTAssertEqual(result(env), .right(5))
+        #expect(result(env) == .right(5))
     }
 }

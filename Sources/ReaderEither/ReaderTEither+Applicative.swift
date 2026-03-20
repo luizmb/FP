@@ -11,9 +11,7 @@ public func applyReaderEither<Env, L, A, B>(
     _ readerA: Reader<Env, Either<L, A>>
 ) -> Reader<Env, Either<L, B>> {
     Reader { env in
-        readerF(env).flatMap { fn in
-            readerA(env).mapRight(fn)
-        }
+        readerF(env).flatMap(readerA(env).mapRight)
     }
 }
 
@@ -23,11 +21,7 @@ public func liftA2ReaderEither<Env, L, A, B, C>(
 ) -> (Reader<Env, Either<L, A>>, Reader<Env, Either<L, B>>) -> Reader<Env, Either<L, C>> {
     { readerA, readerB in
         Reader { env in
-            readerA(env).flatMap { a in
-                readerB(env).mapRight { b in
-                    fn(a, b)
-                }
-            }
+            Either.liftA2(fn)(readerA(env), readerB(env))
         }
     }
 }

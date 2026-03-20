@@ -1,112 +1,113 @@
-import XCTest
+import Testing
+import Foundation
 @testable import FP
 
-final class MonadUtilitiesTests: XCTestCase {
+@Suite struct MonadUtilitiesTests {
 
     // MARK: - Join Tests
 
-    func testOptionalJoin() {
+    @Test func optionalJoin() {
         let nested: Int?? = .some(.some(5))
-        XCTAssertEqual(Optional<Int>.join(nested), 5)
+        #expect(Optional<Int>.join(nested) == 5)
 
         let nestedNone: Int?? = .some(.none)
-        XCTAssertNil(Optional<Int>.join(nestedNone))
+        #expect(Optional<Int>.join(nestedNone) == nil)
 
         let outerNone: Int?? = .none
-        XCTAssertNil(Optional<Int>.join(outerNone))
+        #expect(Optional<Int>.join(outerNone) == nil)
     }
 
     // MARK: - Void Tests
 
-    func testOptionalVoid() {
+    @Test func optionalVoid() {
         let some: Int? = 5
         let voided = some.void()
-        XCTAssertNotNil(voided)
+        #expect(voided != nil)
 
         let none: Int? = nil
-        XCTAssertNil(none.void())
+        #expect(none.void() == nil)
     }
 
-    func testResultVoid() {
+    @Test func resultVoid() {
         let success: Result<Int, NSError> = .success(5)
         let voided = success.void()
-        XCTAssertNoThrow(try voided.get())
+        #expect(throws: Never.self) { try voided.get() }
 
         let failure: Result<Int, NSError> = .failure(NSError(domain: "test", code: 1))
-        XCTAssertThrowsError(try failure.void().get())
+        #expect(throws: (any Error).self) { try failure.void().get() }
     }
 
-    func testArrayVoid() {
+    @Test func arrayVoid() {
         let array = [1, 2, 3]
         let voided = array.void()
-        XCTAssertEqual(voided.count, 3)
+        #expect(voided.count == 3)
     }
 
     // MARK: - Filter Tests
 
-    func testOptionalFilter() {
+    @Test func optionalFilter() {
         let value: Int? = 5
-        XCTAssertEqual(value.filter { $0 > 3 }, 5)
-        XCTAssertNil(value.filter { $0 > 10 })
+        #expect(value.filter { $0 > 3 } == 5)
+        #expect(value.filter { $0 > 10 } == nil)
 
         let none: Int? = nil
-        XCTAssertNil(none.filter { $0 > 3 })
+        #expect(none.filter { $0 > 3 } == nil)
     }
 
-    func testArrayFilterM() {
+    @Test func arrayFilterM() {
         let array = [1, 2, 3, 4, 5]
         let isEven = { $0 % 2 == 0 }
 
         let result = Array.filterM(isEven)(array)
-        XCTAssertEqual(result, [2, 4])
+        #expect(result == [2, 4])
     }
 
     // MARK: - Sequence Tests
 
-    func testSequenceOptionals() {
+    @Test func sequenceOptionals() {
         let allSome: [Int?] = [1, 2, 3]
-        XCTAssertEqual(sequence(allSome), [1, 2, 3])
+        #expect(sequence(allSome) == [1, 2, 3])
 
         let withNone: [Int?] = [1, nil, 3]
-        XCTAssertNil(sequence(withNone))
+        #expect(sequence(withNone) == nil)
 
         let empty: [Int?] = []
-        XCTAssertEqual(sequence(empty), [])
+        #expect(sequence(empty) == [])
     }
 
-    func testSequenceResults() {
+    @Test func sequenceResults() {
         let allSuccess: [Result<Int, NSError>] = [.success(1), .success(2), .success(3)]
-        XCTAssertEqual(try? sequence(allSuccess).get(), [1, 2, 3])
+        #expect((try? sequence(allSuccess).get()) == [1, 2, 3])
 
         let withFailure: [Result<Int, NSError>] = [
             .success(1),
             .failure(NSError(domain: "test", code: 1)),
             .success(3)
         ]
-        XCTAssertThrowsError(try sequence(withFailure).get())
+        #expect(throws: (any Error).self) { try sequence(withFailure).get() }
 
         let empty: [Result<Int, NSError>] = []
-        XCTAssertEqual(try? sequence(empty).get(), [])
+        #expect((try? sequence(empty).get()) == [])
     }
 
     // MARK: - Traverse Tests
 
-    func testTraverseOptional() {
+    @Test func traverseOptional() {
         let safeDivide: (Int) -> Int? = { divisor in
             divisor != 0 ? .some(10 / divisor) : .none
         }
 
         let values = [1, 2, 5]
-        XCTAssertEqual(traverse(safeDivide)(values), [10, 5, 2])
+        #expect(traverse(safeDivide)(values) == [10, 5, 2])
 
         let withZero = [1, 0, 5]
-        XCTAssertNil(traverse(safeDivide)(withZero))
+        #expect(traverse(safeDivide)(withZero) == nil)
 
         let empty: [Int] = []
-        XCTAssertEqual(traverse(safeDivide)(empty), [])
+        #expect(traverse(safeDivide)(empty) == [])
     }
 
-    func testTraverseResult() {
+    @Test func traverseResult() {
         let safeParse: (String) -> Result<Int, NSError> = { str in
             guard let int = Int(str) else {
                 return .failure(NSError(domain: "parse", code: 1))
@@ -115,32 +116,32 @@ final class MonadUtilitiesTests: XCTestCase {
         }
 
         let validStrings = ["1", "2", "3"]
-        XCTAssertEqual(try? traverse(safeParse)(validStrings).get(), [1, 2, 3])
+        #expect((try? traverse(safeParse)(validStrings).get()) == [1, 2, 3])
 
         let withInvalid = ["1", "invalid", "3"]
-        XCTAssertThrowsError(try traverse(safeParse)(withInvalid).get())
+        #expect(throws: (any Error).self) { try traverse(safeParse)(withInvalid).get() }
 
         let empty: [String] = []
-        XCTAssertEqual(try? traverse(safeParse)(empty).get(), [])
+        #expect((try? traverse(safeParse)(empty).get()) == [])
     }
 
     // MARK: - Traverse Identity Law
 
-    func testTraverseIdentityLaw() {
+    @Test func traverseIdentityLaw() {
         // traverse pure = pure
         let values = [1, 2, 3]
         let identity: (Int) -> Int? = { .some($0) }
 
-        XCTAssertEqual(traverse(identity)(values), [1, 2, 3])
+        #expect(traverse(identity)(values) == [1, 2, 3])
     }
 
     // MARK: - Sequence/Traverse Relationship
 
-    func testSequenceTraverseRelationship() {
+    @Test func sequenceTraverseRelationship() {
         // sequence = traverse id
         let optionals: [Int?] = [1, 2, 3]
         let identity: (Int?) -> Int? = { $0 }
 
-        XCTAssertEqual(sequence(optionals), traverse(identity)(optionals))
+        #expect(sequence(optionals) == traverse(identity)(optionals))
     }
 }

@@ -13,7 +13,7 @@ public extension Either {
 
     /// apply :: Either<a, (b0 -> b)> -> Either<a, b0> -> Either<a, b>
     static func apply<B0>(_ functions: Either<A, (B0) -> B>, _ values: Either<A, B0>) -> Either<A, B> {
-        functions.flatMap { fn in values.mapRight(fn) }
+        functions.flatMap(values.mapRight)
     }
 
     /// seqRight :: Either<a, b> -> Either<a, c> -> Either<a, c>

@@ -1,11 +1,10 @@
-import XCTest
+import Testing
 import Combine
 @testable import Reader
 import FP
 
-@available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 @MainActor
-final class ReaderCombineFPTests: XCTestCase {
+@Suite struct ReaderCombineFPTests {
 
     struct Environment {
         let multiplier: Int
@@ -17,8 +16,8 @@ final class ReaderCombineFPTests: XCTestCase {
 
     // MARK: - ReaderT + Publisher Functor Tests
 
-    func testMapT() {
-        let expectation = expectation(description: "Publisher completes")
+    @Test func mapT() {
+        guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
         let reader = Reader<Environment, any Publisher<Int, TestError>> { env in
             Just(env.multiplier)
                 .setFailureType(to: TestError.self)
@@ -29,21 +28,22 @@ final class ReaderCombineFPTests: XCTestCase {
 
         let env = Environment(multiplier: 5)
         var cancellables = Set<AnyCancellable>()
+        var capturedValue: Int?
 
         mapped(env)
             .sink(
-                receiveCompletion: { _ in expectation.fulfill() },
-                receiveValue: { value in XCTAssertEqual(value, 10) }
+                receiveCompletion: ignore,
+                receiveValue: { value in capturedValue = value }
             )
             .store(in: &cancellables)
 
-        wait(for: [expectation], timeout: 1.0)
+        #expect(capturedValue == 10)
     }
 
     // MARK: - ReaderT + Publisher Applicative Tests
 
-    func testApplyReaderPublisher() {
-        let expectation = expectation(description: "Publisher completes")
+    @Test func apply() {
+        guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
         let readerFn = Reader<Environment, any Publisher<(Int) -> Int, TestError>> { env in
             Just({ $0 + env.multiplier })
                 .setFailureType(to: TestError.self)
@@ -60,21 +60,22 @@ final class ReaderCombineFPTests: XCTestCase {
 
         let env = Environment(multiplier: 5)
         var cancellables = Set<AnyCancellable>()
+        var capturedValue: Int?
 
         result(env)
             .sink(
-                receiveCompletion: { _ in expectation.fulfill() },
-                receiveValue: { value in XCTAssertEqual(value, 15) }
+                receiveCompletion: { _ in },
+                receiveValue: { value in capturedValue = value }
             )
             .store(in: &cancellables)
 
-        wait(for: [expectation], timeout: 1.0)
+        #expect(capturedValue == 15)
     }
 
     // MARK: - ReaderT + Publisher Monad Tests
 
-    func testFlatMapT() {
-        let expectation = expectation(description: "Publisher completes")
+    @Test func flatMapT() {
+        guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
         let reader = Reader<Environment, any Publisher<Int, TestError>> { env in
             Just(env.multiplier)
                 .setFailureType(to: TestError.self)
@@ -91,14 +92,15 @@ final class ReaderCombineFPTests: XCTestCase {
 
         let env = Environment(multiplier: 5)
         var cancellables = Set<AnyCancellable>()
+        var capturedValue: String?
 
         bound(env)
             .sink(
-                receiveCompletion: { _ in expectation.fulfill() },
-                receiveValue: { value in XCTAssertEqual(value, "10") }
+                receiveCompletion: { _ in },
+                receiveValue: { value in capturedValue = value }
             )
             .store(in: &cancellables)
 
-        wait(for: [expectation], timeout: 1.0)
+        #expect(capturedValue == "10")
     }
 }

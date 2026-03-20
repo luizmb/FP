@@ -1,56 +1,57 @@
-import XCTest
+import Testing
+import Foundation
 @testable import FP
 @testable import Operators
 
-final class SemigroupTests: XCTestCase {
+@Suite struct SemigroupTests {
 
-    func testArraySemigroup() {
+    @Test func arraySemigroup() {
         let arr1 = [1, 2, 3]
         let arr2 = [4, 5, 6]
 
-        XCTAssertEqual(arr1 <> arr2, [1, 2, 3, 4, 5, 6])
+        #expect((arr1 <> arr2) == [1, 2, 3, 4, 5, 6])
     }
 
-    func testStringSemigroup() {
-        XCTAssertEqual("Hello, " <> "World!", "Hello, World!")
+    @Test func stringSemigroup() {
+        #expect(("Hello, " <> "World!") == "Hello, World!")
     }
 
-    func testOptionalSemigroup() {
+    @Test func optionalSemigroup() {
         let some: Int? = 5
         let none: Int? = nil
 
-        XCTAssertEqual(some <> none, 5)
-        XCTAssertEqual(none <> some, 5)
-        XCTAssertEqual(some <> 10, 5)
-        XCTAssertNil(none <> nil)
+        #expect((some <> none) == 5)
+        #expect((none <> some) == 5)
+        #expect((some <> 10) == 5)
+        #expect((none <> nil) == nil)
     }
 
-    func testResultSemigroup() {
+    @Test func resultSemigroup() {
         let success1: Result<Int, NSError> = .success(5)
         let success2: Result<Int, NSError> = .success(10)
         let failure: Result<Int, NSError> = .failure(NSError(domain: "test", code: 1))
 
-        XCTAssertEqual(try? (success1 <> success2).get(), 5)
-        XCTAssertEqual(try? (failure <> success2).get(), 10)
-        XCTAssertEqual(try? (success1 <> failure).get(), 5)
+        #expect((try? (success1 <> success2).get()) == 5)
+        #expect((try? (failure <> success2).get()) == 10)
+        #expect((try? (success1 <> failure).get()) == 5)
     }
 
-    func testSetSemigroup() {
+    @Test func setSemigroup() {
         let set1: Set<Int> = [1, 2, 3]
         let set2: Set<Int> = [3, 4, 5]
 
-        XCTAssertEqual(set1 <> set2, [1, 2, 3, 4, 5])
+        #expect((set1 <> set2) == [1, 2, 3, 4, 5])
     }
 
-    func testDictionarySemigroup() {
+    @Test func dictionarySemigroup() {
         let dict1 = ["a": 1, "b": 2]
         let dict2 = ["b": 3, "c": 4]
 
         let result = dict1 <> dict2
-        XCTAssertEqual(result, ["a": 1, "b": 3, "c": 4])
+        #expect(result == ["a": 1, "b": 3, "c": 4])
     }
 
-    func testSemigroupAssociativity() {
+    @Test func semigroupAssociativity() {
         // (a <> b) <> c = a <> (b <> c)
         let a = [1, 2]
         let b = [3, 4]
@@ -59,31 +60,31 @@ final class SemigroupTests: XCTestCase {
         let left = (a <> b) <> c
         let right = a <> (b <> c)
 
-        XCTAssertEqual(left, right)
+        #expect(left == right)
     }
 
-    func testFunctionSemigroupArray() {
+    @Test func functionSemigroupArray() {
         let f: (Int) -> [Int] = { [$0] }
         let g: (Int) -> [Int] = { [$0 * 2] }
 
         let combined = f <> g
-        XCTAssertEqual(combined(5), [5, 10])
+        #expect(combined(5) == [5, 10])
     }
 
-    func testFunctionSemigroupString() {
+    @Test func functionSemigroupString() {
         let f: (String) -> String = { "Hello, \($0)" }
         let g: (String) -> String = { "! Welcome, \($0)" }
 
         let combined = f <> g
-        XCTAssertEqual(combined("World"), "Hello, World! Welcome, World")
+        #expect(combined("World") == "Hello, World! Welcome, World")
     }
 
-    func testFunctionSemigroupOptional() {
+    @Test func functionSemigroupOptional() {
         let f: (Int) -> Int? = { $0 > 0 ? $0 : nil }
         let g: (Int) -> Int? = { $0 * 2 }
 
         let combined = f <> g
-        XCTAssertEqual(combined(5), 5)
-        XCTAssertEqual(combined(-1), -2)
+        #expect(combined(5) == 5)
+        #expect(combined(-1) == -2)
     }
 }

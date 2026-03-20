@@ -1,14 +1,13 @@
-import XCTest
+import Testing
 @testable import FP
 @testable import Operators
 import Operators
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-final class AsyncSequenceTests: XCTestCase {
+@Suite struct AsyncSequenceTests {
 
     // MARK: - Functor Tests
 
-    func testAsyncSequenceFmap() async throws {
+    @Test func asyncSequenceFmap() async throws {
         let sequence = AsyncStream<Int> { continuation in
             continuation.yield(1)
             continuation.yield(2)
@@ -23,10 +22,10 @@ final class AsyncSequenceTests: XCTestCase {
             results.append(value)
         }
 
-        XCTAssertEqual(results, [2, 4, 6])
+        #expect(results == [2, 4, 6])
     }
 
-    func testAsyncStreamFmapCurried() async throws {
+    @Test func asyncStreamFmapCurried() async throws {
         let sequence = AsyncStream<Int> { continuation in
             continuation.yield(1)
             continuation.yield(2)
@@ -43,10 +42,10 @@ final class AsyncSequenceTests: XCTestCase {
             results.append(value)
         }
 
-        XCTAssertEqual(results, [2, 4, 6])
+        #expect(results == [2, 4, 6])
     }
 
-    func testFunctorOperators() async throws {
+    @Test func functorOperators() async throws {
         let sequence = AsyncStream<Int> { continuation in
             continuation.yield(1)
             continuation.yield(2)
@@ -59,10 +58,10 @@ final class AsyncSequenceTests: XCTestCase {
         for try await value in doubled {
             results.append(value)
         }
-        XCTAssertEqual(results, [2, 4])
+        #expect(results == [2, 4])
     }
 
-    func testMapReplace() async throws {
+    @Test func mapReplace() async throws {
         let sequence = AsyncStream<Int> { continuation in
             continuation.yield(1)
             continuation.yield(2)
@@ -75,12 +74,12 @@ final class AsyncSequenceTests: XCTestCase {
         for try await value in replaced {
             results.append(value)
         }
-        XCTAssertEqual(results, [99, 99])
+        #expect(results == [99, 99])
     }
 
     // MARK: - Monad Tests
 
-    func testAsyncSequenceBind() async throws {
+    @Test func asyncSequenceBind() async throws {
         let sequence = AsyncStream<Int> { continuation in
             continuation.yield(1)
             continuation.yield(2)
@@ -100,10 +99,10 @@ final class AsyncSequenceTests: XCTestCase {
             results.append(value)
         }
 
-        XCTAssertEqual(results, [1, 10, 2, 20])
+        #expect(results == [1, 10, 2, 20])
     }
 
-    func testMonadBindOperator() async throws {
+    @Test func monadBindOperator() async throws {
         let sequence = AsyncStream<Int> { continuation in
             continuation.yield(1)
             continuation.yield(2)
@@ -122,10 +121,10 @@ final class AsyncSequenceTests: XCTestCase {
         for try await value in expanded {
             results.append(value)
         }
-        XCTAssertEqual(results, [2, 4])
+        #expect(results == [2, 4])
     }
 
-    func testFlippedFmapOperator() async throws {
+    @Test func flippedFmapOperator() async throws {
         let sequence = AsyncStream<Int> { continuation in
             continuation.yield(1)
             continuation.yield(2)
@@ -138,12 +137,12 @@ final class AsyncSequenceTests: XCTestCase {
         for try await value in doubled {
             results.append(value)
         }
-        XCTAssertEqual(results, [2, 4])
+        #expect(results == [2, 4])
     }
 
     // MARK: - Applicative Tests
 
-    func testLiftA2() async throws {
+    @Test func liftA2() async throws {
         let stream1 = AsyncStream<Int> { continuation in
             continuation.yield(1)
             continuation.yield(2)
@@ -163,10 +162,10 @@ final class AsyncSequenceTests: XCTestCase {
         for await value in result {
             results.append(value)
         }
-        XCTAssertEqual(results, [11, 22])
+        #expect(results == [11, 22])
     }
 
-    func testZip() async throws {
+    @Test func zip() async throws {
         let stream1 = AsyncStream<Int> { continuation in
             continuation.yield(1)
             continuation.yield(2)
@@ -185,14 +184,14 @@ final class AsyncSequenceTests: XCTestCase {
             results.append(pair)
         }
 
-        XCTAssertEqual(results.count, 2)
-        XCTAssertEqual(results[0].0, 1)
-        XCTAssertEqual(results[0].1, "a")
-        XCTAssertEqual(results[1].0, 2)
-        XCTAssertEqual(results[1].1, "b")
+        #expect(results.count == 2)
+        #expect(results[0].0 == 1)
+        #expect(results[0].1 == "a")
+        #expect(results[1].0 == 2)
+        #expect(results[1].1 == "b")
     }
 
-    func testApply() async throws {
+    @Test func apply() async throws {
         let functions = AsyncStream<@Sendable (Int) -> Int> { continuation in
             let double: @Sendable (Int) -> Int = { $0 * 2 }
             let addTen: @Sendable (Int) -> Int = { $0 + 10 }
@@ -212,6 +211,6 @@ final class AsyncSequenceTests: XCTestCase {
         for await value in result {
             results.append(value)
         }
-        XCTAssertEqual(results, [10, 13])
+        #expect(results == [10, 13])
     }
 }

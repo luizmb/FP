@@ -1,46 +1,46 @@
-import XCTest
+import Testing
 @testable import FP
 
-final class ArrayApplicativeTests: XCTestCase {
+@Suite struct ArrayApplicativeTests {
 
-    func testLiftA2() {
+    @Test func liftA2() {
         let arr1 = [1, 2]
         let arr2 = [10, 20]
         let add = { (a: Int, b: Int) in a + b }
 
         let result = Array.liftA2(add)(arr1, arr2)
-        XCTAssertEqual(result, [11, 21, 12, 22])
+        #expect(result == [11, 21, 12, 22])
     }
 
-    func testApply() {
+    @Test func apply() {
         let functions: [(Int) -> Int] = [{ $0 * 2 }, { $0 + 10 }]
         let values = [1, 2, 3]
 
         let result = Array.apply(functions, values)
-        XCTAssertEqual(result, [2, 4, 6, 11, 12, 13])
+        #expect(result == [2, 4, 6, 11, 12, 13])
     }
 
-    func testZip() {
+    @Test func zip() {
         let arr1 = [1, 2, 3]
         let arr2 = ["a", "b", "c"]
 
         let result = Array.zip(arr1, arr2)
-        XCTAssertEqual(result.count, 3)
-        XCTAssertEqual(result[0].0, 1)
-        XCTAssertEqual(result[0].1, "a")
-        XCTAssertEqual(result[2].0, 3)
-        XCTAssertEqual(result[2].1, "c")
+        #expect(result.count == 3)
+        #expect(result[0].0 == 1)
+        #expect(result[0].1 == "a")
+        #expect(result[2].0 == 3)
+        #expect(result[2].1 == "c")
     }
 
-    func testApplicativeIdentityLaw() {
+    @Test func applicativeIdentityLaw() {
         // pure id <*> v = v
         let array = [1, 2, 3]
-        let identity: [(Int) -> Int] = [{ $0 }]
+        let identityArr: [(Int) -> Int] = [identity]
 
-        XCTAssertEqual(Array.apply(identity, array), array)
+        #expect(Array.apply(identityArr, array) == array)
     }
 
-    func testApplicativeCompositionLaw() {
+    @Test func applicativeCompositionLaw() {
         // Simplified composition law test: u <*> (v <*> w) should work
         let u: [(Int) -> Int] = [{ $0 * 2 }]
         let v: [(Int) -> Int] = [{ $0 + 1 }]
@@ -50,6 +50,6 @@ final class ArrayApplicativeTests: XCTestCase {
         let vw = Array.apply(v, w)  // [6]
         let result = Array.apply(u, vw)  // [12]
 
-        XCTAssertEqual(result, [12])
+        #expect(result == [12])
     }
 }
