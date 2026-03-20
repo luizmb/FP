@@ -103,9 +103,9 @@ func processData() -> String {
         >>- validate
         <£> transform
 
-    return result.fold(
-        onSuccess: { $0 },
-        onFailure: { "Error: \($0)" }
+    return result.match(
+        caseLeft: { $0 },
+        caseRight: { "Error: \($0)" }
     )
 }
 
@@ -220,9 +220,9 @@ func parseNumbers(_ input: String) -> ([Int], [String]) {
 extension Array where Element: EitherProtocol {
     func partitionEithers() -> ([Element.LeftType], [Element.RightType]) {
         reduce(into: ([], [])) { result, either in
-            either.fold(
-                ifLeft: { result.0.append($0) },
-                ifRight: { result.1.append($0) }
+            either.match(
+                caseLeft: { result.0.append($0) },
+                caseRight: { result.1.append($0) }
             )
         }
     }

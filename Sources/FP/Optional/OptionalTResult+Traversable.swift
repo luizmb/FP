@@ -1,0 +1,19 @@
+public extension Optional {
+    // traverse :: (a -> Result<b,e>) -> a? -> Result<b?,e>
+    // traverse _ Nothing  = Right Nothing
+    // traverse f (Just a) = fmap Just (f a)
+    func traverse<B, E: Error>(_ f: (Wrapped) -> Result<B, E>) -> Result<B?, E> {
+        switch self {
+        case .none:
+            .success(.none)
+        case .some(let a):
+            f(a).map(Optional<B>.some)
+        }
+    }
+
+    // sequence :: Result<a,e>? -> Result<a?,e>
+    // sequence = traverse id
+    func sequence<A, E: Error>() -> Result<A?, E> where Wrapped == Result<A, E> {
+        traverse(identity)
+    }
+}

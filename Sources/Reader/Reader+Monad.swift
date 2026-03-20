@@ -55,13 +55,19 @@ public extension Reader {
     /// Asks for the environment
     /// ask :: m env
     static var ask: Reader<Environment, Environment> {
-        Reader<Environment, Environment> { $0 }
+        Reader<Environment, Environment>(identity)
     }
 
     /// Retrieves a function of the environment
     /// asks :: (env -> a) -> m a
     static func asks<O>(_ fn: @escaping (Environment) -> O) -> Reader<Environment, O> {
         Reader<Environment, O>(fn)
+    }
+
+    /// Discards the output, keeping only the structure
+    /// void :: m a -> m ()
+    func void() -> Reader<Environment, Void> {
+        mapReader(ignore)
     }
 
     /// Executes a computation in a modified environment
