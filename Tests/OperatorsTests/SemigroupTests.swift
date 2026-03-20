@@ -42,4 +42,37 @@ import Foundation
 
         #expect(left == right)
     }
+
+    // MARK: - Optional (Semigroup when Wrapped: Semigroup)
+
+    @Test func optionalSemigroup() {
+        let some: String? = "hello"
+        let none: String? = nil
+        #expect((some <> none) == "hello")
+        #expect((none <> some) == "hello")
+        #expect((some <> .some(" world")) == "hello world")
+        #expect((none <> none) == nil)
+    }
+
+    // MARK: - Bool.Monoids wrappers
+
+    @Test func boolAndSemigroup() {
+        #expect((Bool.Monoids.And(true) <> .init(false)) == .init(false))
+        #expect((Bool.Monoids.And(true) <> .init(true)) == .init(true))
+    }
+
+    @Test func boolOrSemigroup() {
+        #expect((Bool.Monoids.Or(false) <> .init(true)) == .init(true))
+        #expect((Bool.Monoids.Or(false) <> .init(false)) == .init(false))
+    }
+
+    // MARK: - Numeric wrappers
+
+    @Test func intSum() {
+        #expect((Int.Monoids.Sum(3) <> .init(4)) == .init(7))
+    }
+
+    @Test func intProduct() {
+        #expect((Int.Monoids.Product(3) <> .init(4)) == .init(12))
+    }
 }
