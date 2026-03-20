@@ -6,13 +6,16 @@ A `Result` is either `.success(value)` or `.failure(error)`. The operators let y
 
 ---
 
-## `<£>` — Map
+## `<£>` and `<&>` — Map
 
-Apply a function to the success value. Failures pass through unchanged.
+Apply a function to the success value. `<£>` puts the function on the left; `<&>` puts the result on the left.
 
 ```swift
 { $0 * 2 } <£> Result<Int, Error>.success(5)   // .success(10)
 { $0 * 2 } <£> Result<Int, Error>.failure(err) // .failure(err)
+
+Result<Int, Error>.success(5)   <&> { $0 * 2 }  // .success(10)
+Result<Int, Error>.failure(err) <&> { $0 * 2 }  // .failure(err)
 
 // Named function
 Result<Int, Error>.fmap { $0 * 2 }(.success(5))  // .success(10)
@@ -33,17 +36,6 @@ Result<Int, Error>.failure(err) £> "done"  // .failure(err)
 
 // Named function
 Result<Int, Error>.fmap(const("done"))(.success(42))  // .success("done")
-```
-
----
-
-## `<&>` — Flipped map
-
-Same as `<£>` with the result on the left. Reads naturally left-to-right.
-
-```swift
-Result<Int, Error>.success(5) <&> { $0 * 2 }    // .success(10)
-Result<Int, Error>.failure(err) <&> { $0 * 2 }  // .failure(err)
 ```
 
 ---
@@ -82,9 +74,9 @@ Result.success("a").seqLeft(.success("b"))   // .success("a")
 
 ---
 
-## `>>-` — Bind (flatMap)
+## `>>-` and `-<<` — Bind (flatMap)
 
-Chain operations that each may fail. Stops at the first failure.
+Chain operations that each may fail. `>>-` puts the container on the left; `-<<` puts the function on the left.
 
 ```swift
 func parse(_ s: String) -> Result<Int, MyError> {
@@ -94,25 +86,16 @@ func validate(_ n: Int) -> Result<Int, MyError> {
     n > 0 ? .success(n) : .failure(.outOfRange)
 }
 
-Result.success("42") >>- parse    // .success(42)   — wait, parse takes String
 Result.success("42") >>- { parse($0) } >>- validate  // .success(42)
 Result.success("-1") >>- { parse($0) } >>- validate  // .failure(.outOfRange)
 Result.success("??") >>- { parse($0) }               // .failure(.invalidInput)
 
+validate -<< Result.success(42)   // .success(42)
+validate -<< Result.success(-1)   // .failure(.outOfRange)
+
 // Named function
 Result.bind(validate)(Result.success(42))  // .success(42)
 Result.success(42).flatMap(validate)       // .success(42)
-```
-
----
-
-## `-<<` — Flipped bind
-
-Same as `>>-` with arguments reversed.
-
-```swift
-validate -<< Result.success(42)   // .success(42)
-validate -<< Result.success(-1)   // .failure(.outOfRange)
 ```
 
 ---

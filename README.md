@@ -76,18 +76,22 @@ All operators work uniformly across `Optional`, `Result`, `Array`, `Either`, `Re
 
 ---
 
-### `<£>` — Map (fmap)
+### `<£>` and `<&>` — Map (fmap) and flipped map
 
-Apply a plain function to a value inside a container.
+Apply a plain function to a value inside a container. `<£>` puts the function on the left; `<&>` puts the container on the left — use whichever reads more naturally.
 
 ```swift
 { $0 * 2 } <£> Optional(5)          // Optional(10)
 { $0 * 2 } <£> [1, 2, 3]            // [2, 4, 6]
 { $0 * 2 } <£> Result.success(5)    // .success(10)
 { $0 * 2 } <£> Either.right(5)      // .right(10)
+
+Optional(5)       <&> { $0 * 2 }    // Optional(10)
+Result.success(5) <&> { $0 * 2 }    // .success(10)
+[1, 2, 3]         <&> { $0 * 2 }    // [2, 4, 6]
 ```
 
-→ [Optional](docs/types/Optional.md#-map) · [Result](docs/types/Result.md#-map) · [Array](docs/types/Array.md#-map) · [Either](docs/types/Either.md#-map) · [Reader](docs/types/Reader.md#-map) · [Publisher](docs/types/Publisher.md#-map) · [AsyncSequence](docs/types/AsyncSequence.md#-map)
+→ [Optional](docs/types/Optional.md#-and--map) · [Result](docs/types/Result.md#-and--map) · [Array](docs/types/Array.md#-and--map) · [Either](docs/types/Either.md#-and--map) · [Reader](docs/types/Reader.md#-and--map) · [Publisher](docs/types/Publisher.md#-and--map) · [AsyncSequence](docs/types/AsyncSequence.md#-and--map)
 
 ---
 
@@ -102,18 +106,6 @@ Optional(42) £> "done"            // Optional("done")
 ```
 
 → [Optional](docs/types/Optional.md#-and--replace) · [Result](docs/types/Result.md#-and--replace) · [Array](docs/types/Array.md#-and--replace) · [Either](docs/types/Either.md#-and--replace) · [Reader](docs/types/Reader.md#-and--replace) · [Publisher](docs/types/Publisher.md#-and--replace)
-
----
-
-### `<&>` — Flipped map
-
-Same as `<£>` with the container on the left. Reads naturally in pipelines.
-
-```swift
-Optional(5)       <&> { $0 * 2 }   // Optional(10)
-Result.success(5) <&> { $0 * 2 }   // .success(10)
-[1, 2, 3]         <&> { $0 * 2 }   // [2, 4, 6]
-```
 
 ---
 
@@ -146,29 +138,21 @@ Result.success("a") <* .success("b")  // .success("a")
 
 ---
 
-### `>>-` — Bind (flatMap)
+### `>>-` and `-<<` — Bind (flatMap) and flipped bind
 
-Chain operations where each step may fail, produce multiple values, or have other effects.
+Chain operations where each step may fail, produce multiple values, or have other effects. `>>-` puts the container on the left; `-<<` puts the function on the left.
 
 ```swift
 Optional("42") >>- { Int($0) }                   // Optional(42)
 Optional("??") >>- { Int($0) }                   // nil
 [1, 2, 3]      >>- { [$0, $0 * 10] }            // [1, 10, 2, 20, 3, 30]
 Result.success("42") >>- { parse($0) }           // .success(42)  or .failure(…)
+
+{ Int($0) }       -<< Optional("42")             // Optional(42)
+{ [$0, $0 * 10] } -<< [1, 2, 3]                 // [1, 10, 2, 20, 3, 30]
 ```
 
-→ [Optional](docs/types/Optional.md#--bind-flatmap) · [Result](docs/types/Result.md#--bind-flatmap) · [Array](docs/types/Array.md#--bind-flatmap) · [Either](docs/types/Either.md#--bind-flatmap) · [Reader](docs/types/Reader.md#--bind-flatmap) · [Publisher](docs/types/Publisher.md#--bind-flatmap) · [AsyncSequence](docs/types/AsyncSequence.md#--bind-flatmap)
-
----
-
-### `-<<` — Flipped bind
-
-Same as `>>-` with arguments reversed. Useful when naming the function first.
-
-```swift
-{ Int($0) }       -<< Optional("42")    // Optional(42)
-{ [$0, $0 * 10] } -<< [1, 2, 3]        // [1, 10, 2, 20, 3, 30]
-```
+→ [Optional](docs/types/Optional.md#---and---bind-flatmap) · [Result](docs/types/Result.md#---and---bind-flatmap) · [Array](docs/types/Array.md#---and---bind-flatmap) · [Either](docs/types/Either.md#---and---bind-flatmap) · [Reader](docs/types/Reader.md#---and---bind-flatmap) · [Publisher](docs/types/Publisher.md#---and---bind-flatmap) · [AsyncSequence](docs/types/AsyncSequence.md#---and---bind-flatmap)
 
 ---
 
@@ -190,15 +174,25 @@ parsePositive("??")   // nil
 
 ---
 
-### `>>>` and `|>` — Function composition and pipe
+### `>>>` — Function composition
+
+Compose two functions left-to-right. `f >>> g` is equivalent to `{ g(f($0)) }`.
 
 ```swift
 let addOne  = { (x: Int) in x + 1 }
 let double  = { (x: Int) in x * 2 }
 
 let pipeline = addOne >>> double
-pipeline(5)          // 12
+pipeline(5)   // 12  (add one → double)
+```
 
+---
+
+### `|>` — Pipe
+
+Apply a value to a function left-to-right. Reads as a data pipeline.
+
+```swift
 5 |> addOne |> double  // 12
 ```
 
@@ -229,6 +223,62 @@ Optional(1)   <|> Optional(3)    // Optional(1)
 
 ---
 
+## Monad Transformers
+
+Every type can act as the **outer** layer of a transformer stack, threading another monad's effects through it. All stacks have the same three operations: `mapT` (Functor), `liftA2*` (Applicative), and `flatMapT` (Monad). All existing operators — `<£>`, `<*>`, `>>-`, `>=>` — are overloaded to work on each stack.
+
+### T-naming convention
+
+| Swift type | Transformer name | Haskell equivalent |
+|---|---|---|
+| `[A]?` | `OptionalTArray` | `ListT Maybe` |
+| `Result<A,E>?` | `OptionalTResult` | `ExceptT e Maybe` |
+| `Either<L,A>?` | `OptionalTEither` | `ExceptT l Maybe` |
+| `[A?]` | `ArrayTOptional` | `MaybeT []` |
+| `[Result<A,E>]` | `ArrayTResult` | `ExceptT e []` |
+| `[Either<L,A>]` | `ArrayTEither` | `ExceptT l []` |
+| `Either<L, A?>` | `EitherTOptional` | `MaybeT (Either l)` |
+| `Either<L, [A]>` | `EitherTArray` | `ListT (Either l)` |
+| `AnyPublisher<A?,E>` | `PublisherTOptional` | `MaybeT Publisher` |
+| `AnyPublisher<[A],E>` | `PublisherTArray` | `ListT Publisher` |
+| `AsyncStream<A?>` | `AsyncSequenceTOptional` | `MaybeT AsyncStream` |
+| `AsyncStream<[A]>` | `AsyncSequenceTArray` | `ListT AsyncStream` |
+| … and more | | |
+
+```swift
+// [A]? — OptionalTArray (ListT Maybe)
+// mapT maps inside the Array, leaving the Optional layer alone
+let xs: [Int]? = [1, 2, 3]
+xs.mapT { $0 * 2 }          // Optional([2, 4, 6])
+(nil as [Int]?).mapT { $0 * 2 }  // nil
+
+// flatMapT: nil propagates; each element can produce [B]?
+xs.flatMapT { n in n > 1 ? [n, n * 10] : nil }  // nil (nil short-circuits)
+xs.flatMapT { n in [n, n * 10] }                 // Optional([1, 10, 2, 20, 3, 30])
+
+// [A?] — ArrayTOptional (MaybeT [])
+// nil elements stay nil, non-nil elements are transformed
+let ys: [Int?] = [1, nil, 3]
+ys.mapT { $0 * 2 }           // [Optional(2), nil, Optional(6)]
+ys.flatMapT { n in [n, n + 1] }  // [Optional(1), Optional(2), nil, Optional(3), Optional(4)]
+
+// [Either<L,A>] — ArrayTEither (ExceptT l [])
+// .left propagates; .right elements proceed
+let zs: [Either<String, Int>] = [.right(1), .left("err"), .right(3)]
+zs.mapT { $0 * 2 }              // [.right(2), .left("err"), .right(6)]
+zs.flatMapT { n in [.right(n * 2)] }  // [.right(2), .left("err"), .right(6)]
+
+// Either<L, [A]> — EitherTArray (ListT (Either l))
+// flatMapT applies fn to each element and combines results
+let e: Either<String, [Int]> = .right([1, 2, 3])
+flatMapTEitherArray(e) { n in .right([n, n * 10]) }
+// .right([1, 10, 2, 20, 3, 30])
+```
+
+→ [Optional transformers](docs/types/Optional.md#monad-transformers) · [Array transformers](docs/types/Array.md#monad-transformers) · [Either transformers](docs/types/Either.md#monad-transformers) · [Publisher transformers](docs/types/Publisher.md#monad-transformers) · [AsyncSequence transformers](docs/types/AsyncSequence.md#monad-transformers)
+
+---
+
 ## Traverse
 
 Useful for **inverting nested structures** — turning an `Array` of `Optional` elements into a single `Optional` wrapping an `Array`, and similar inversions.
@@ -252,11 +302,11 @@ Useful for **inverting nested structures** — turning an `Array` of `Optional` 
 
 ## Testing
 
-378 tests covering functor/applicative/monad laws, all operators, and all transformer combinations.
+548 tests covering functor/applicative/monad laws, all operators, and all transformer combinations.
 
 ```bash
 swift test
-# Executed 378 tests, with 0 failures
+# Executed 548 tests, with 0 failures
 ```
 
 ---

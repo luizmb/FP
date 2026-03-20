@@ -16,7 +16,7 @@ public func *> <Env, A, B>(
     _ rhs: Reader<Env, AsyncStream<B>>
 ) -> Reader<Env, AsyncMapSequence<AsyncStream<(A, B)>, B>>
 where A: Sendable, B: Sendable {
-    liftA2ReaderAsyncStream { (_: A, b: B) in b }(lhs, rhs)
+    seqRightReaderAsyncStream(lhs, rhs)
 }
 
 // (<*) :: Reader e (AsyncStream a) -> Reader e (AsyncStream b) -> Reader e (AsyncStream a)
@@ -26,5 +26,5 @@ public func <* <Env, A, B>(
     _ rhs: Reader<Env, AsyncStream<B>>
 ) -> Reader<Env, AsyncMapSequence<AsyncStream<(A, B)>, A>>
 where A: Sendable, B: Sendable {
-    liftA2ReaderAsyncStream { (a: A, _: B) in a }(lhs, rhs)
+    seqLeftReaderAsyncStream(lhs, rhs)
 }

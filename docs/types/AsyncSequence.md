@@ -8,15 +8,15 @@ An `AsyncStream<Element>` emits values asynchronously over time. The operators l
 
 ---
 
-## `<£>` — Map
+## `<£>` and `<&>` — Map
 
-Apply an async function to every emitted element.
+Apply a function to every emitted element. `<£>` puts the function on the left; `<&>` puts the stream on the left.
 
 ```swift
 let numbers = AsyncStream<Int> { c in c.yield(1); c.yield(2); c.yield(3); c.finish() }
 
-let doubled = { (n: Int) async -> Int in n * 2 } <£> numbers
-// emits 2, 4, 6
+{ (n: Int) async -> Int in n * 2 } <£> numbers   // emits 2, 4, 6
+numbers <&> { (n: Int) async -> Int in n * 2 }   // emits 2, 4, 6
 
 // Named function — uses AsyncSequence.map under the hood
 numbers.map { $0 * 2 }
@@ -31,16 +31,6 @@ Replace every emitted element with a constant.
 ```swift
 numbers £> "tick"    // emits "tick", "tick", "tick"
 "tick" <£ numbers    // same
-```
-
----
-
-## `<&>` — Flipped map
-
-Same as `<£>` with the stream on the left.
-
-```swift
-numbers <&> { (n: Int) async -> Int in n * 2 }   // emits 2, 4, 6
 ```
 
 ---
@@ -81,22 +71,14 @@ AsyncStream<String>.seqRight(numbers, letters)
 
 ---
 
-## `>>-` — Bind (flatMap)
+## `>>-` and `-<<` — Bind (flatMap)
 
-For each emitted element, produce a new async sequence and flatten the results.
+For each emitted element, produce a new async sequence and flatten the results. `>>-` puts the stream on the left; `-<<` puts the function on the left.
 
 ```swift
 numbers >>- { n in AsyncStream<Int> { c in c.yield(n); c.yield(n * 10); c.finish() } }
 // emits 1, 10, 2, 20, 3, 30
-```
 
----
-
-## `-<<` — Flipped bind
-
-Same as `>>-` with arguments reversed.
-
-```swift
 { n in AsyncStream<Int> { c in c.yield(n * 2); c.finish() } } -<< numbers
 // emits 2, 4, 6
 ```
@@ -146,11 +128,113 @@ let testStream = eventNames(StubEventSource(events: [testEvent]))
 
 ---
 
+## Monad Transformers
+
+AsyncStream can be the outer layer of a transformer stack. The transformer name is `AsyncSequenceT{Inner}`.
+
+### `AsyncSequenceTOptional` — `AsyncStream<A?>`
+
+AsyncStream emitting optional values. `nil` elements stay `nil`.
+
+```swift
+import FP
+
+let stream = AsyncStream<Int?> { c in
+    c.yield(1); c.yield(nil); c.yield(3); c.finish()
+}
+
+// mapT — transform inner Optional without affecting the stream layer
+let doubled = mapTAsyncStreamOptional({ $0 * 2 }, stream)
+// emits Optional(2), nil, Optional(6)
+
+// liftA2 — zip two streams and combine inner Optional values
+let sa = AsyncStream<Int?>.just(Optional(3))
+let sb = AsyncStream<Int?>.just(Optional(4))
+liftA2AsyncStreamOptional(+)(sa, sb)   // emits Optional(7)
+
+// flatMapT — each Optional element produces a new AsyncStream<B?>
+let bound = flatMapTAsyncStreamOptional(stream) { n in
+    AsyncStream<Int?>.just(Optional(n * 2))
+}
+// emits Optional(2), nil, Optional(6)
+
+// Operators
+{ $0 * 2 } <£> stream   // emits Optional(2), nil, Optional(6)
+stream >>- { n in AsyncStream<Int?>.just(n.map { $0 + 1 }) }
+```
+
+### `AsyncSequenceTArray` — `AsyncStream<[A]>`
+
+AsyncStream emitting arrays. Inner elements are transformed as a group.
+
+```swift
+import FP
+
+let stream = AsyncStream<[Int]> { c in
+    c.yield([1, 2]); c.yield([3, 4]); c.finish()
+}
+
+mapTAsyncStreamArray({ $0 * 2 }, stream)
+// emits [2, 4], [6, 8]
+
+// liftA2 — zip and combine with Array.liftA2
+let sa = AsyncStream<[Int]>.just([1, 2])
+let sb = AsyncStream<[Int]>.just([10, 20])
+liftA2AsyncStreamArray(+)(sa, sb)   // emits [11, 21, 12, 22]
+
+{ $0 * 2 } <£> stream   // emits [2, 4], [6, 8]
+```
+
+### `AsyncSequenceTResult` — `AsyncStream<Result<A,E>>`
+
+AsyncStream emitting Results. `.failure` elements propagate the inner error.
+
+```swift
+import FP
+
+let stream = AsyncStream<Result<Int, MyError>> { c in
+    c.yield(.success(5)); c.yield(.failure(.bad)); c.finish()
+}
+
+mapTAsyncStreamResult({ $0 * 2 }, stream)  // emits .success(10), .failure(.bad)
+flatMapTAsyncStreamResult(stream) { n in
+    AsyncStream<Result<String, MyError>>.just(.success("\(n)"))
+}
+// emits .success("5"), .failure(.bad)
+```
+
+### `AsyncSequenceTEither` — `AsyncStream<Either<L,A>>`
+
+AsyncStream emitting Either values.
+
+```swift
+import Either
+
+let stream = AsyncStream<Either<String, Int>> { c in
+    c.yield(.right(1)); c.yield(.left("err")); c.yield(.right(3)); c.finish()
+}
+
+mapTAsyncStreamEither({ $0 * 2 }, stream)  // emits .right(2), .left("err"), .right(6)
+flatMapTAsyncStreamEither(stream) { n in
+    AsyncStream<Either<String, Int>>.just(.right(n * 2))
+}
+// emits .right(2), .left("err"), .right(6)
+
+// Operators (EitherOperators)
+{ $0 * 2 } <£> stream
+```
+
+---
+
 ## Module
 
 ```swift
-import FP        // Named functions (apply, seqRight, bind…)
-import Operators  // Operators (<£>, <*>, >>-, >=>…)
+import FP        // Named functions (apply, seqRight, bind…) + AsyncSequenceT stacks
+import Operators  // Operators (<£>, <*>, >>-, >=>…) for AsyncStream and AsyncSequenceT stacks
+
+// For AsyncSequenceTEither:
+import Either
+import EitherOperators
 
 // For ReaderT + AsyncStream:
 import Reader

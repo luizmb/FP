@@ -14,9 +14,9 @@ greeting("Alice")  // "Hello, Alice!"
 
 ---
 
-## `<£>` — Map
+## `<£>` and `<&>` — Map
 
-Transform the output of a reader without changing what environment it needs.
+Transform the output of a reader without changing what environment it needs. `<£>` puts the function on the left; `<&>` puts the reader on the left.
 
 ```swift
 struct Config { let multiplier: Int }
@@ -24,12 +24,13 @@ struct Config { let multiplier: Int }
 let base = Reader<Config, Int> { $0.multiplier * 10 }
 
 { $0 + 1 } <£> base   // Reader that produces (multiplier * 10) + 1
+base <&> { $0 + 1 }   // same
 
 let result = ({ $0 + 1 } <£> base)(Config(multiplier: 3))  // 31
 
 // Named function
-base.mapReader { $0 + 1 }  // same as above
-base.fmap { $0 + 1 }       // same as above
+base.mapReader { $0 + 1 }
+base.fmap { $0 + 1 }
 ```
 
 ---
@@ -43,16 +44,6 @@ base £> "done"   // Reader that always produces "done", regardless of output
 "done" <£ base   // same
 
 let result = (base £> "done")(Config(multiplier: 3))  // "done"
-```
-
----
-
-## `<&>` — Flipped map
-
-Same as `<£>` with the reader on the left.
-
-```swift
-base <&> { $0 + 1 }   // same as { $0 + 1 } <£> base
 ```
 
 ---
@@ -91,15 +82,18 @@ compute.seqLeft(logStep)   // runs both, returns compute's result
 
 ---
 
-## `>>-` — Bind (flatMap)
+## `>>-` and `-<<` — Bind (flatMap)
 
-Chain readers where the next reader depends on the output of the previous one. Both share the same environment.
+Chain readers where the next reader depends on the output of the previous one. Both share the same environment. `>>-` puts the reader on the left; `-<<` puts the function on the left.
 
 ```swift
 let multiplier = Reader<Config, Int> { $0.multiplier }
 let scaled     = multiplier >>- { n in Reader<Config, Int> { env in n * env.multiplier } }
 
 scaled(Config(multiplier: 3))  // 9  (3 * 3)
+
+let scaleBy: (Int) -> Reader<Config, Int> = { n in Reader { env in n * env.multiplier } }
+let scaled2 = scaleBy -<< multiplier   // same result
 
 // Named function
 multiplier.flatMap { n in Reader { env in n * env.multiplier } }

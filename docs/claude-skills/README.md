@@ -90,11 +90,16 @@ to the new Validation type I'm adding to the library.
 ```
 
 ### 2. create-readert-transformer.md
-Create ReaderT transformers following library patterns.
+Create monad transformer stacks (ReaderT or flat OuterT{Inner}) following library patterns.
 
 ```
 Use the create-readert-transformer skill to implement ReaderT + Validation
 transformer with all operators.
+```
+
+```
+Use the create-readert-transformer skill to implement ArrayTValidation
+([Validation<E,A>]) transformer with all operators.
 ```
 
 ## Tacit Programming Utilities

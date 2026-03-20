@@ -1,0 +1,26 @@
+import Foundation
+
+// OptionalTResult: outer = Optional, inner = Result
+// Type: Result<A,E>? = Optional<Result<A,E>>
+// Haskell: ExceptT e Maybe
+
+public extension Optional {
+    /// flatMapT for Optional<Result<A,E>>
+    /// (>>=) :: Result<a,e>? -> (a -> Result<b,e>?) -> Result<b,e>?
+    /// nil       → nil
+    /// .failure  → .some(.failure(e))
+    /// .success  → fn(a)
+    func flatMapT<A, B, E: Error>(_ fn: @escaping (A) -> Result<B, E>?) -> Result<B, E>? where Wrapped == Result<A, E> {
+        flatMap { result in
+            switch result {
+            case .failure(let e): .some(.failure(e))
+            case .success(let a): fn(a)
+            }
+        }
+    }
+
+    /// Curried bindT for Optional<Result<A,E>>
+    static func bindT<A, B, E: Error>(_ fn: @escaping (A) -> Result<B, E>?) -> (Result<A, E>?) -> Result<B, E>? {
+        { opt in opt.flatMapT(fn) }
+    }
+}

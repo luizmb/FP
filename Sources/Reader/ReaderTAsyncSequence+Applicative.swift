@@ -17,3 +17,23 @@ where A: Sendable, B: Sendable, C: Sendable {
         }
     }
 }
+
+/// seqRight for ReaderT AsyncStream
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+public func seqRightReaderAsyncStream<Env, A, B>(
+    _ lhs: Reader<Env, AsyncStream<A>>,
+    _ rhs: Reader<Env, AsyncStream<B>>
+) -> Reader<Env, AsyncMapSequence<AsyncStream<(A, B)>, B>>
+where A: Sendable, B: Sendable {
+    liftA2ReaderAsyncStream { @Sendable (_: A, b: B) in b }(lhs, rhs)
+}
+
+/// seqLeft for ReaderT AsyncStream
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+public func seqLeftReaderAsyncStream<Env, A, B>(
+    _ lhs: Reader<Env, AsyncStream<A>>,
+    _ rhs: Reader<Env, AsyncStream<B>>
+) -> Reader<Env, AsyncMapSequence<AsyncStream<(A, B)>, A>>
+where A: Sendable, B: Sendable {
+    liftA2ReaderAsyncStream { @Sendable (a: A, _: B) in a }(lhs, rhs)
+}
