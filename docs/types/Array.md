@@ -155,9 +155,81 @@ Useful for **inverting nested structures** — turning an array of optionals or 
 
 ---
 
+## Monad Transformers
+
+Array can be the **outer** layer of a transformer stack. The transformer name is `ArrayT{Inner}`.
+
+### `ArrayTOptional` — `[A?]`
+
+Array of Optional values. `nil` elements stay `nil`; `some` elements are transformed.
+
+```swift
+import FP
+
+// mapT — transform non-nil elements, leave nil elements as nil
+let xs: [Int?] = [1, nil, 3]
+xs.mapT { $0 * 2 }              // [Optional(2), nil, Optional(6)]
+
+// applyArrayOptional — cartesian product with optional apply at each pair
+applyArrayOptional([Optional({ $0 * 2 }), nil], [Optional(3), Optional(4)])
+// [Optional(6), Optional(8), nil, nil]
+
+// flatMapT — nil → [nil], some(a) → fn(a)
+xs.flatMapT { n in [n, n + 1] }
+// [Optional(1), Optional(2), nil, Optional(3), Optional(4)]
+
+// Operators
+{ $0 * 2 } <£> xs               // [Optional(2), nil, Optional(6)]
+xs >>- { n in [Optional(n), nil] }
+```
+
+### `ArrayTResult` — `[Result<A,E>]`
+
+Array of Result values. `.failure` elements propagate; `.success` elements are transformed.
+
+```swift
+import FP
+
+let rs: [Result<Int, MyError>] = [.success(1), .failure(.bad), .success(3)]
+rs.mapT { $0 * 2 }              // [.success(2), .failure(.bad), .success(6)]
+
+// flatMapT — .failure → [.failure(e)], .success(a) → fn(a)
+rs.flatMapT { n in [.success(n), .success(n * 10)] }
+// [.success(1), .success(10), .failure(.bad), .success(3), .success(30)]
+
+// Operators
+{ $0 * 2 } <£> rs               // [.success(2), .failure(.bad), .success(6)]
+rs >>- { n in [.success(n * 2)] }
+```
+
+### `ArrayTEither` — `[Either<L,A>]`
+
+Array of Either values. `.left` elements propagate; `.right` elements are transformed.
+
+```swift
+import Either
+
+let es: [Either<String, Int>] = [.right(1), .left("err"), .right(3)]
+es.mapT { $0 * 2 }              // [.right(2), .left("err"), .right(6)]
+
+// flatMapT — .left(l) → [.left(l)], .right(a) → fn(a)
+es.flatMapT { n in [.right(n), .right(n * 10)] }
+// [.right(1), .right(10), .left("err"), .right(3), .right(30)]
+
+// Operators (EitherOperators)
+{ $0 * 2 } <£> es               // [.right(2), .left("err"), .right(6)]
+es >>- { n in [.right(n * 2)] }
+```
+
+---
+
 ## Module
 
 ```swift
-import FP       // Named functions (fmap, apply, seqRight, bind, kleisli…)
-import Operators // Operators (<£>, <*>, >>-, >=>…)
+import FP        // Named functions (fmap, apply, seqRight, bind, kleisli…)
+import Operators  // Operators (<£>, <*>, >>-, >=>…)
+
+// For Either-inner transformers:
+import Either
+import EitherOperators
 ```

@@ -16,12 +16,16 @@ The library follows a modular design with separation between implementations and
 
 ### Core Modules
 - **FP**: Foundation types (Optional, Result, Array, Traversable) with Functor/Applicative/Monad;
-  also contains AsyncSequence and Publisher (via `#if canImport(Combine)`) support
+  transformer stacks: OptionalTArray, OptionalTResult, ArrayTOptional, ArrayTResult;
+  PublisherT stacks (PublisherTOptional, PublisherTArray, PublisherTResult via `#if canImport(Combine)`);
+  AsyncSequenceT stacks (AsyncSequenceTOptional, AsyncSequenceTArray, AsyncSequenceTResult)
 - **Either**: Sum type with full type class support;
-  includes `Completion+Either` (Combine, `#if canImport`) and `AsyncThrowingStream+Either` bridge
+  transformer stacks: OptionalTEither, ArrayTEither, EitherTOptional, EitherTArray, EitherTResult;
+  PublisherTEither (`#if canImport(Combine)`), AsyncSequenceTEither;
+  platform bridges: `Completion+Either`, `AsyncThrowingStream+Either`
 - **Reader**: Reader monad for dependency injection;
   includes `ReaderT+Publisher` (Combine, `#if canImport`) and `ReaderT+AsyncSequence` transformers
-- **Operators**: Operators for core types; includes AsyncSequence and Publisher operator files
+- **Operators**: Operators for core types + all transformer stacks in FP module
 
 ### Reader Transformer Modules
 - **ReaderOperators**: ReaderT operators for Optional, Result, Array, nested Reader,
@@ -30,7 +34,8 @@ The library follows a modular design with separation between implementations and
 - **ReaderEitherOperators**: Operators for Either transformers
 
 ### Specialized Modules
-- **EitherOperators**: Dedicated operators for Either type
+- **EitherOperators**: Operators for Either, all EitherT stacks, OptionalTEither, ArrayTEither,
+  PublisherTEither, AsyncSequenceTEither
 
 ## Operator Precedence
 
@@ -279,6 +284,63 @@ Complete monad transformer implementations for composing Reader with other monad
 - Platform: macOS 13.0+, iOS 16.0+
 - Conditional compilation: `#if canImport(Combine)`
 
+## Monad Transformers (Non-Reader Outer)
+
+Complete Functor/Applicative/Monad transformer stacks where the **outer** monad is not Reader.
+All stacks expose `mapT` (Functor), named `liftA2*` / `apply*` (Applicative), `flatMapT` (Monad),
+and full operator coverage via the matching operator module.
+
+### Group A — FP Module (`Sources/FP/`)
+
+| Type | Name | Haskell |
+|---|---|---|
+| `[A]?` | `OptionalTArray` | `ListT Maybe` |
+| `Result<A,E>?` | `OptionalTResult` | `ExceptT e Maybe` |
+| `[A?]` | `ArrayTOptional` | `MaybeT []` |
+| `[Result<A,E>]` | `ArrayTResult` | `ExceptT e []` |
+
+Operators in `Sources/Operators/Optional/` and `Sources/Operators/Array/`.
+
+### Group B — Either Module (`Sources/Either/`)
+
+| Type | Name | Haskell |
+|---|---|---|
+| `Either<L,A>?` | `OptionalTEither` | `ExceptT l Maybe` |
+| `[Either<L,A>]` | `ArrayTEither` | `ExceptT l []` |
+| `Either<L, A?>` | `EitherTOptional` | `MaybeT (Either l)` |
+| `Either<L, [A]>` | `EitherTArray` | `ListT (Either l)` |
+| `Either<L, Result<A,E>>` | `EitherTResult` | `ExceptT e (Either l)` |
+
+Note: `EitherT*` stacks use free functions (`flatMapTEitherOptional`, `mapTEitherArray`, etc.)
+since Swift can't constrain Either's right type in extensions.
+Operators in `Sources/EitherOperators/`.
+
+### Group C — Publisher Transformers (`Sources/FP/Combine/` and `Sources/Either/`)
+
+| Type | Module | Name |
+|---|---|---|
+| `AnyPublisher<A?,E>` | FP | `PublisherTOptional` |
+| `AnyPublisher<[A],E>` | FP | `PublisherTArray` |
+| `AnyPublisher<Result<A,E2>,E>` | FP | `PublisherTResult` |
+| `AnyPublisher<Either<L,A>,E>` | Either | `PublisherTEither` |
+
+All guarded with `#if canImport(Combine)`. Operators in `Sources/Operators/Combine/` (FP stacks)
+and `Sources/EitherOperators/` (Either stack).
+
+### Group D — AsyncSequence Transformers (`Sources/FP/ModernConcurrency/` and `Sources/Either/`)
+
+| Type | Module | Name |
+|---|---|---|
+| `AsyncStream<A?>` | FP | `AsyncSequenceTOptional` |
+| `AsyncStream<[A]>` | FP | `AsyncSequenceTArray` |
+| `AsyncStream<Result<A,E>>` | FP | `AsyncSequenceTResult` |
+| `AsyncStream<Either<L,A>>` | Either | `AsyncSequenceTEither` |
+
+All guarded with `@available(macOS 10.15, iOS 13.0, ...)`. Operators in
+`Sources/Operators/ModernConcurrency/` (FP stacks) and `Sources/EitherOperators/` (Either stack).
+
+---
+
 ## Additional Features
 
 ### Function Composition (`Sources/Operators/FunctionComposition.swift`)
@@ -311,7 +373,7 @@ The `<>` operator for:
 
 ## Test Coverage
 
-**356 tests total**, all passing ✅
+**548 tests total**, all passing ✅
 
 ### Test Distribution:
 - **Core Types**: ~150 tests
@@ -375,7 +437,7 @@ swift build
 # Run all tests
 swift test
 
-# Results: 356 tests, all passing ✅
+# Results: 548 tests, all passing ✅
 ```
 
 ## Key Design Decisions
@@ -478,10 +540,11 @@ Potential additions (not yet implemented):
 ---
 
 **Total Implementation**:
-- 40+ source files
-- 70+ test files
-- 356 passing tests
+- 180+ source files
+- 100+ test files
+- 548 passing tests
 - 7 monad types with full type class support
 - 7 ReaderT transformer implementations
+- 17 additional monad transformer stacks (Groups A–D)
 - Complete operator coverage
 - Multi-platform support

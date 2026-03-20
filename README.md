@@ -229,6 +229,62 @@ Optional(1)   <|> Optional(3)    // Optional(1)
 
 ---
 
+## Monad Transformers
+
+Every type can act as the **outer** layer of a transformer stack, threading another monad's effects through it. All stacks have the same three operations: `mapT` (Functor), `liftA2*` (Applicative), and `flatMapT` (Monad). All existing operators — `<£>`, `<*>`, `>>-`, `>=>` — are overloaded to work on each stack.
+
+### T-naming convention
+
+| Swift type | Transformer name | Haskell equivalent |
+|---|---|---|
+| `[A]?` | `OptionalTArray` | `ListT Maybe` |
+| `Result<A,E>?` | `OptionalTResult` | `ExceptT e Maybe` |
+| `Either<L,A>?` | `OptionalTEither` | `ExceptT l Maybe` |
+| `[A?]` | `ArrayTOptional` | `MaybeT []` |
+| `[Result<A,E>]` | `ArrayTResult` | `ExceptT e []` |
+| `[Either<L,A>]` | `ArrayTEither` | `ExceptT l []` |
+| `Either<L, A?>` | `EitherTOptional` | `MaybeT (Either l)` |
+| `Either<L, [A]>` | `EitherTArray` | `ListT (Either l)` |
+| `AnyPublisher<A?,E>` | `PublisherTOptional` | `MaybeT Publisher` |
+| `AnyPublisher<[A],E>` | `PublisherTArray` | `ListT Publisher` |
+| `AsyncStream<A?>` | `AsyncSequenceTOptional` | `MaybeT AsyncStream` |
+| `AsyncStream<[A]>` | `AsyncSequenceTArray` | `ListT AsyncStream` |
+| … and more | | |
+
+```swift
+// [A]? — OptionalTArray (ListT Maybe)
+// mapT maps inside the Array, leaving the Optional layer alone
+let xs: [Int]? = [1, 2, 3]
+xs.mapT { $0 * 2 }          // Optional([2, 4, 6])
+(nil as [Int]?).mapT { $0 * 2 }  // nil
+
+// flatMapT: nil propagates; each element can produce [B]?
+xs.flatMapT { n in n > 1 ? [n, n * 10] : nil }  // nil (nil short-circuits)
+xs.flatMapT { n in [n, n * 10] }                 // Optional([1, 10, 2, 20, 3, 30])
+
+// [A?] — ArrayTOptional (MaybeT [])
+// nil elements stay nil, non-nil elements are transformed
+let ys: [Int?] = [1, nil, 3]
+ys.mapT { $0 * 2 }           // [Optional(2), nil, Optional(6)]
+ys.flatMapT { n in [n, n + 1] }  // [Optional(1), Optional(2), nil, Optional(3), Optional(4)]
+
+// [Either<L,A>] — ArrayTEither (ExceptT l [])
+// .left propagates; .right elements proceed
+let zs: [Either<String, Int>] = [.right(1), .left("err"), .right(3)]
+zs.mapT { $0 * 2 }              // [.right(2), .left("err"), .right(6)]
+zs.flatMapT { n in [.right(n * 2)] }  // [.right(2), .left("err"), .right(6)]
+
+// Either<L, [A]> — EitherTArray (ListT (Either l))
+// flatMapT applies fn to each element and combines results
+let e: Either<String, [Int]> = .right([1, 2, 3])
+flatMapTEitherArray(e) { n in .right([n, n * 10]) }
+// .right([1, 10, 2, 20, 3, 30])
+```
+
+→ [Optional transformers](docs/types/Optional.md#monad-transformers) · [Array transformers](docs/types/Array.md#monad-transformers) · [Either transformers](docs/types/Either.md#monad-transformers) · [Publisher transformers](docs/types/Publisher.md#monad-transformers) · [AsyncSequence transformers](docs/types/AsyncSequence.md#monad-transformers)
+
+---
+
 ## Traverse
 
 Useful for **inverting nested structures** — turning an `Array` of `Optional` elements into a single `Optional` wrapping an `Array`, and similar inversions.
@@ -252,11 +308,11 @@ Useful for **inverting nested structures** — turning an `Array` of `Optional` 
 
 ## Testing
 
-378 tests covering functor/applicative/monad laws, all operators, and all transformer combinations.
+548 tests covering functor/applicative/monad laws, all operators, and all transformer combinations.
 
 ```bash
 swift test
-# Executed 378 tests, with 0 failures
+# Executed 548 tests, with 0 failures
 ```
 
 ---

@@ -2,7 +2,7 @@
 
 ## Overview
 
-**FP** is a Swift functional programming library (~4.8K lines) providing operators, monads, and transformers inspired by Haskell. It exports 8 separate libraries and 378 comprehensive tests covering functor/applicative/monad laws.
+**FP** is a Swift functional programming library providing operators, monads, and transformers inspired by Haskell. It exports 8 separate libraries and 548 comprehensive tests covering functor/applicative/monad laws.
 
 **Philosophy**: Operators over methods, tacit (point-free) style over explicit lambdas, composition over procedural code.
 
@@ -13,7 +13,7 @@
 ### Running Tests
 
 ```bash
-# Run all tests (378 tests)
+# Run all tests (548 tests)
 swift test
 
 # Run tests for a single module
@@ -57,20 +57,26 @@ The library is organized as **8 independent products** with layered dependencies
 Core Modules:
 ├── FP
 │   ├── Optional, Result, Array extensions (Functor/Applicative/Monad)
+│   ├── Monad transformers: OptionalTArray, OptionalTResult, ArrayTOptional, ArrayTResult
+│   ├── Publisher transformers: PublisherTOptional, PublisherTArray, PublisherTResult (#if canImport)
+│   ├── AsyncStream transformers: AsyncSequenceTOptional, AsyncSequenceTArray, AsyncSequenceTResult
 │   ├── Traversable protocol (traverse/sequence)
 │   └── AsyncSequence, Publisher bridges (#if canImport)
 ├── Either
 │   ├── Sum type (Either<Left, Right>) with type class support
+│   ├── Monad transformers: OptionalTEither, ArrayTEither, EitherTOptional, EitherTArray, EitherTResult
+│   ├── Publisher+Either transformer: PublisherTEither (#if canImport)
+│   ├── AsyncStream+Either transformer: AsyncSequenceTEither
 │   └── Platform bridges (Completion+Either, AsyncThrowingStream+Either)
 ├── Reader
 │   ├── Reader<Environment, Output> monad for dependency injection
 │   └── Transformer support (ReaderT+Publisher, ReaderT+AsyncSequence)
 └── Operators
-    └── Operators for all core types (Optional, Result, Array, Either, Reader, Publisher, AsyncSequence)
+    └── Operators for all core types + transformer stacks
 
 Transformer Modules (depend on core modules):
 ├── EitherOperators
-│   └── Dedicated operators for Either
+│   └── Operators for Either, EitherT*, OptionalTEither, ArrayTEither, PublisherTEither, AsyncSequenceTEither
 ├── ReaderOperators
 │   └── ReaderT operators for Optional, Result, Array, Reader, Publisher, AsyncSequence
 ├── ReaderEither
@@ -254,7 +260,7 @@ let expand = { [$0, $0 + 1] }
 double <£> array >>- expand
 ```
 
-Tacit utilities in `FP.Functions`: `curry`, `flip`, `identity`, `const`, `compose`, `>>>`, `<<<`, `|>`
+Tacit utilities in `FP.Functions`: `curry`, `flip`, `id`, `const`, `compose`, `>>>`, `<<<`, `|>`
 
 ---
 

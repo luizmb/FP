@@ -90,11 +90,16 @@ to the new Validation type I'm adding to the library.
 ```
 
 ### 2. create-readert-transformer.md
-Create ReaderT transformers following library patterns.
+Create monad transformer stacks (ReaderT or flat OuterT{Inner}) following library patterns.
 
 ```
 Use the create-readert-transformer skill to implement ReaderT + Validation
 transformer with all operators.
+```
+
+```
+Use the create-readert-transformer skill to implement ArrayTValidation
+([Validation<E,A>]) transformer with all operators.
 ```
 
 ## Tacit Programming Utilities
@@ -104,7 +109,6 @@ The library provides utilities for point-free style (in `FP.Functions`):
 ```swift
 curry        // (A, B) -> C becomes (A) -> (B) -> C
 flip         // Reverse parameter order
-partialApply // Fix first parameter
 id           // identity function: (A) -> A (returns { $0 })
 const        // Constant function: ignores input
 compose      // Function composition (also >>> and <<<)

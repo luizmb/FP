@@ -175,9 +175,85 @@ Optional(Result<Int, Error>.success(42)).sequence()  // .success(Optional(42))
 
 ---
 
+## Monad Transformers
+
+Optional can be the **outer** layer of a transformer stack, threading another monad's effects through it. The transformer name is `OptionalT{Inner}`.
+
+### `OptionalTArray` — `[A]?`
+
+Optional wrapping an Array. `nil` propagates; `some([…])` operates on the Array.
+
+```swift
+import FP
+
+// mapT — map inside the Array
+let xs: [Int]? = [1, 2, 3]
+xs.mapT { $0 * 2 }                  // Optional([2, 4, 6])
+(nil as [Int]?).mapT { $0 * 2 }     // nil
+
+// liftA2 — combine two [A]? values
+liftA2OptionalArray(+)(Optional([1, 2]), Optional([10, 20]))
+// Optional([11, 21, 12, 22])   — Array.liftA2 under Optional
+
+// flatMapT — each element produces [B]?; nil in any result collapses to nil
+xs.flatMapT { n in [n, n * 10] }    // Optional([1, 10, 2, 20, 3, 30])
+xs.flatMapT { n in n > 1 ? [n, n * 10] : nil }  // nil
+
+// Operators
+{ $0 * 2 } <£> xs                   // Optional([2, 4, 6])
+xs >>- { n in [n, n * 10] }         // Optional([1, 10, 2, 20, 3, 30])
+```
+
+### `OptionalTResult` — `Result<A,E>?`
+
+Optional wrapping a Result. `nil` propagates; `.some(.failure(e))` also propagates.
+
+```swift
+import FP
+
+let r: Result<Int, MyError>? = .success(5)
+r.mapT { $0 * 2 }              // Optional(.success(10))
+
+let fail: Result<Int, MyError>? = .failure(.bad)
+fail.mapT { $0 * 2 }           // Optional(.failure(.bad))  — error preserved
+
+(nil as Result<Int, MyError>?).mapT { $0 * 2 }  // nil
+
+// flatMapT — nil or failure short-circuit
+r.flatMapT { n in n > 0 ? .success(n * 2) : nil }  // Optional(.success(10))
+r.flatMapT { _ in nil }                              // nil
+
+// Operators
+{ $0 * 2 } <£> r    // Optional(.success(10))
+r >>- { n in .success("\(n)") }  // Optional(.success("5"))
+```
+
+### `OptionalTEither` — `Either<L,A>?`
+
+Optional wrapping an Either. `nil` propagates; `.some(.left(l))` also propagates.
+
+```swift
+import Either
+
+let e: Either<String, Int>? = .right(5)
+e.mapT { $0 * 2 }              // Optional(.right(10))
+e.flatMapT { n in .right(n * 2) }  // Optional(.right(10))
+
+(nil as Either<String, Int>?).mapT { $0 * 2 }  // nil
+
+let left: Either<String, Int>? = .left("err")
+left.mapT { $0 * 2 }           // Optional(.left("err"))
+```
+
+---
+
 ## Module
 
 ```swift
-import FP       // Named functions (fmap, apply, seqRight, bind, kleisli…)
-import Operators // Operators (<£>, <*>, >>-, >=>…)
+import FP        // Named functions (fmap, apply, seqRight, bind, kleisli…)
+import Operators  // Operators (<£>, <*>, >>-, >=>…)
+
+// For Either-inner transformers:
+import Either
+import EitherOperators
 ```

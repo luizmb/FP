@@ -1,16 +1,28 @@
-# Create ReaderT Transformer
+# Create Monad Transformer
 
-Help implement ReaderT (Reader Transformer) for a custom inner monad, allowing composition of Reader with other monadic effects.
+Help implement a monad transformer stack — either a `ReaderT` (Reader as outer monad) or a flat transformer where another type (Optional, Array, Either, Publisher, AsyncStream) is the outer monad.
 
 ## Skill Prompt
 
-You are helping a developer create a ReaderT transformer for composing Reader with their custom monad type.
+You are helping a developer create a monad transformer following FP library conventions.
 
-### What is ReaderT?
+### Transformer Flavours
 
-ReaderT is a monad transformer that combines Reader's environment-passing with another monad's effects:
+**ReaderT (Reader as outer monad)**:
 - **Haskell**: `ReaderT r m a = r -> m a`
 - **Swift**: `Reader<Env, M<A>>` where `M` is the inner monad
+- Location: `Sources/Reader/` (implementation), `Sources/ReaderOperators/` (operators)
+
+**Flat transformer (non-Reader outer)**:
+- The outer monad wraps the inner: `Outer<Inner<A>>`
+- Examples already in the library: `[A?]` (ArrayTOptional), `[Result<A,E>]` (ArrayTResult),
+  `AnyPublisher<A?,E>` (PublisherTOptional), `AsyncStream<Either<L,A>>` (AsyncSequenceTEither)
+- Location: `Sources/FP/` or `Sources/Either/` (implementation), `Sources/Operators/` or
+  `Sources/EitherOperators/` (operators)
+- Use free functions (not extension methods) when the outer type's generic parameters
+  can't be constrained directly in an extension (e.g., `EitherT*` stacks)
+
+### What is a monad transformer?
 
 ### Instructions:
 
