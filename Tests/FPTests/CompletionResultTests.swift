@@ -16,7 +16,7 @@ final class CompletionResultTests: XCTestCase {
 
     func testResultSuccessToCompletion() {
         let result: Result<Void, TestError> = .success(())
-        let completion = result.result()
+        let completion = result.completion()
 
         if case .finished = completion {
             // Success
@@ -27,7 +27,7 @@ final class CompletionResultTests: XCTestCase {
 
     func testResultFailureToCompletion() {
         let result: Result<Void, TestError> = .failure(.test)
-        let completion = result.result()
+        let completion = result.completion()
 
         if case .failure(let error) = completion {
             XCTAssertEqual(error, .test)
@@ -36,12 +36,36 @@ final class CompletionResultTests: XCTestCase {
         }
     }
 
+    // MARK: - Completion to Result
+
+    func testCompletionFinishedToResult() {
+        let completion: Subscribers.Completion<TestError> = .finished
+        let result = completion.result
+
+        if case .success = result {
+            // Success
+        } else {
+            XCTFail("Expected .success")
+        }
+    }
+
+    func testCompletionFailureToResult() {
+        let completion: Subscribers.Completion<TestError> = .failure(.test)
+        let result = completion.result
+
+        if case .failure(let error) = result {
+            XCTAssertEqual(error, .test)
+        } else {
+            XCTFail("Expected .failure")
+        }
+    }
+
     // MARK: - Round Trip Tests
 
-    func testRoundTripSuccess() {
+    func testRoundTripResultToCompletionToResult() {
         let original: Result<Void, TestError> = .success(())
-        let completion = original.result()
-        let result = Result<Void, TestError>.from(completion)
+        let completion = original.completion()
+        let result = completion.result
 
         if case .success = result {
             // Success
@@ -50,15 +74,39 @@ final class CompletionResultTests: XCTestCase {
         }
     }
 
-    func testRoundTripFailure() {
+    func testRoundTripResultFailureToCompletionToResult() {
         let original: Result<Void, TestError> = .failure(.test)
-        let completion = original.result()
-        let result = Result<Void, TestError>.from(completion)
+        let completion = original.completion()
+        let result = completion.result
 
         if case .failure(let error) = result {
             XCTAssertEqual(error, .test)
         } else {
             XCTFail("Expected failure after round trip")
+        }
+    }
+
+    func testRoundTripCompletionFinishedToResultToCompletion() {
+        let original: Subscribers.Completion<TestError> = .finished
+        let result = original.result
+        let completion = result.completion()
+
+        if case .finished = completion {
+            // Success
+        } else {
+            XCTFail("Expected .finished after round trip")
+        }
+    }
+
+    func testRoundTripCompletionFailureToResultToCompletion() {
+        let original: Subscribers.Completion<TestError> = .failure(.test)
+        let result = original.result
+        let completion = result.completion()
+
+        if case .failure(let error) = completion {
+            XCTAssertEqual(error, .test)
+        } else {
+            XCTFail("Expected .failure after round trip")
         }
     }
 }

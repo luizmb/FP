@@ -64,6 +64,12 @@ public extension Reader {
         Reader<Environment, O>(fn)
     }
 
+    /// Discards the output, keeping only the structure
+    /// void :: m a -> m ()
+    func void() -> Reader<Environment, Void> {
+        mapReader { _ in () }
+    }
+
     /// Executes a computation in a modified environment
     /// local :: (env -> env) -> m a -> m a
     func local(_ fn: @escaping (Environment) -> Environment) -> Reader<Environment, Output> {

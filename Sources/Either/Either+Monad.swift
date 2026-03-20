@@ -51,4 +51,16 @@ public extension Either {
             caseRight: { _ in lhs }
         )
     }
+
+    /// Monadic join - flattens nested Eithers
+    /// join :: m (m a) -> m a
+    static func join<B1>(_ nested: Either<A, Either<A, B1>>) -> Either<A, B1> where B == Either<A, B1> {
+        nested.flatMap { $0 }
+    }
+
+    /// Discards the right value, keeping only the structure
+    /// void :: m a -> m ()
+    func void() -> Either<A, Void> {
+        mapRight { _ in () }
+    }
 }
