@@ -9,9 +9,7 @@ public func applyReaderResult<Env, A, B, E: Error>(
     _ readerA: Reader<Env, Result<A, E>>
 ) -> Reader<Env, Result<B, E>> {
     Reader { env in
-        readerF(env).flatMap { fn in
-            readerA(env).map(fn)
-        }
+        readerF(env).flatMap(readerA(env).map)
     }
 }
 
@@ -21,11 +19,7 @@ public func liftA2ReaderResult<Env, A, B, C, E: Error>(
 ) -> (Reader<Env, Result<A, E>>, Reader<Env, Result<B, E>>) -> Reader<Env, Result<C, E>> {
     { readerA, readerB in
         Reader { env in
-            readerA(env).flatMap { a in
-                readerB(env).map { b in
-                    fn(a, b)
-                }
-            }
+            Result.liftA2(fn)(readerA(env), readerB(env))
         }
     }
 }

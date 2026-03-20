@@ -17,9 +17,7 @@ public extension Array {
     /// Applicative apply - applies an array of functions to an array of values
     /// (<*>) :: [a -> b] -> [a] -> [b]
     static func apply<A>(_ functions: [(A) -> Element], _ values: [A]) -> [Element] {
-        functions.flatMap { fn in
-            values.map(fn)
-        }
+        functions.flatMap(values.map)
     }
 
     /// seqRight :: [a] -> [b] -> [b]

@@ -7,7 +7,7 @@ public extension AsyncSequence {
     func bind<T: AsyncSequence>(
         _ transform: @escaping @Sendable (Element) async throws -> T
     ) -> AsyncThrowingFlatMapSequence<AsyncThrowingMapSequence<Self, T>, T> {
-        map(transform).flatMap(identity)
+        map(transform).flatMap { $0 }
     }
 
     /// Curried bind for functional composition

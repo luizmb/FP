@@ -12,7 +12,7 @@ public extension Optional {
 
     /// apply :: Optional<(a -> b)> -> Optional<a> -> Optional<b>
     static func apply<A>(_ functions: Optional<(A) -> Wrapped>, _ values: Optional<A>) -> Optional<Wrapped> {
-        functions.flatMap { fn in values.map(fn) }
+        functions.flatMap(values.map)
     }
 
     /// seqRight :: Optional<a> -> Optional<b> -> Optional<b>
