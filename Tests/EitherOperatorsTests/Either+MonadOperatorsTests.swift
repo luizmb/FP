@@ -1,52 +1,52 @@
-import XCTest
+import Testing
 @testable import Either
 import FP
 @testable import EitherOperators
 import Operators
 
-final class EitherMonadTests: XCTestCase {
+@Suite struct EitherMonadTests {
 
     // MARK: - Basic Monad Tests
 
-    func testFlatMap() {
+    @Test func flatMap() {
         let value: Either<String, Int> = .right(5)
         let result = value.flatMap { x in .right(x * 2) }
-        XCTAssertEqual(result, .right(10))
+        #expect(result == .right(10))
 
         let left: Either<String, Int> = .left("error")
         let leftResult = left.flatMap { x in .right(x * 2) }
-        XCTAssertEqual(leftResult, .left("error"))
+        #expect(leftResult == .left("error"))
 
         let errorResult: Either<String, Int> = .right(5)
         let errorFlatMap = errorResult.flatMap { _ in Either<String, Int>.left("new error") }
-        XCTAssertEqual(errorFlatMap, .left("new error"))
+        #expect(errorFlatMap == .left("new error"))
     }
 
-    func testBind() {
+    @Test func bind() {
         let transform: (Int) -> Either<String, Int> = { .right($0 * 2) }
         let value: Either<String, Int> = .right(5)
         let result = Either.bind(transform)(value)
-        XCTAssertEqual(result, .right(10))
+        #expect(result == .right(10))
     }
 
-    func testJoin() {
+    @Test func join() {
         // join is flatMap with identity
         let nested: Either<String, Either<String, Int>> = .right(.right(5))
-        let result = nested.flatMap { $0 }
-        XCTAssertEqual(result, .right(5))
+        let result = nested.flatMap(identity)
+        #expect(result == .right(5))
 
         let nestedLeft: Either<String, Either<String, Int>> = .right(.left("inner error"))
-        let nestedLeftResult = nestedLeft.flatMap { $0 }
-        XCTAssertEqual(nestedLeftResult, .left("inner error"))
+        let nestedLeftResult = nestedLeft.flatMap(identity)
+        #expect(nestedLeftResult == .left("inner error"))
 
         let outerLeft: Either<String, Either<String, Int>> = .left("outer error")
-        let outerLeftResult = outerLeft.flatMap { $0 }
-        XCTAssertEqual(outerLeftResult, .left("outer error"))
+        let outerLeftResult = outerLeft.flatMap(identity)
+        #expect(outerLeftResult == .left("outer error"))
     }
 
     // MARK: - Monad Laws
 
-    func testMonadLeftIdentityLaw() {
+    @Test func monadLeftIdentityLaw() {
         // return a >>= f == f a
         let a = 5
         let f: (Int) -> Either<String, Int> = { .right($0 * 2) }
@@ -54,22 +54,22 @@ final class EitherMonadTests: XCTestCase {
         let left = Either<String, Int>.right(a).flatMap(f)
         let right = f(a)
 
-        XCTAssertEqual(left, right)
+        #expect(left == right)
     }
 
-    func testMonadRightIdentityLaw() {
+    @Test func monadRightIdentityLaw() {
         // m >>= return == m
         let m: Either<String, Int> = .right(5)
         let result = m.flatMap { Either<String, Int>.right($0) }
 
-        XCTAssertEqual(result, m)
+        #expect(result == m)
 
         let leftValue: Either<String, Int> = .left("error")
         let leftResult = leftValue.flatMap { Either<String, Int>.right($0) }
-        XCTAssertEqual(leftResult, leftValue)
+        #expect(leftResult == leftValue)
     }
 
-    func testMonadAssociativityLaw() {
+    @Test func monadAssociativityLaw() {
         // (m >>= f) >>= g == m >>= (\x -> f x >>= g)
         let m: Either<String, Int> = .right(5)
         let f: (Int) -> Either<String, Int> = { .right($0 * 2) }
@@ -78,76 +78,76 @@ final class EitherMonadTests: XCTestCase {
         let left = m.flatMap(f).flatMap(g)
         let right = m.flatMap { x in f(x).flatMap(g) }
 
-        XCTAssertEqual(left, right)
+        #expect(left == right)
     }
 
     // MARK: - Kleisli Composition
 
-    func testKleisliComposition() {
+    @Test func kleisliComposition() {
         let f: (Int) -> Either<String, Int> = { x in
             x > 0 ? .right(x * 2) : .left("negative")
         }
         let g: (Int) -> Either<String, String> = { .right("\($0)") }
 
         let composed = Either<String, Int>.kleisli(f, g)
-        XCTAssertEqual(composed(5), .right("10"))
-        XCTAssertEqual(composed(-1), .left("negative"))
+        #expect(composed(5) == .right("10"))
+        #expect(composed(-1) == .left("negative"))
     }
 
-    func testKleisliBack() {
+    @Test func kleisliBack() {
         let f: (Int) -> Either<String, Int> = { .right($0 * 2) }
         let g: (Int) -> Either<String, String> = { .right("\($0)") }
 
         let composed = Either<String, Int>.kleisliBack(g, f)
-        XCTAssertEqual(composed(5), .right("10"))
+        #expect(composed(5) == .right("10"))
     }
 
     // MARK: - Monad Operators
 
-    func testBindOperator() {
+    @Test func bindOperator() {
         let value: Either<String, Int> = .right(5)
         let result = value >>- { .right($0 * 2) }
-        XCTAssertEqual(result, .right(10))
+        #expect(result == .right(10))
 
         let left: Either<String, Int> = .left("error")
         let leftResult = left >>- { .right($0 * 2) }
-        XCTAssertEqual(leftResult, .left("error"))
+        #expect(leftResult == .left("error"))
     }
 
-    func testFlippedBindOperator() {
+    @Test func flippedBindOperator() {
         let transform: (Int) -> Either<String, Int> = { .right($0 * 2) }
         let value: Either<String, Int> = .right(5)
         let result = transform -<< value
-        XCTAssertEqual(result, .right(10))
+        #expect(result == .right(10))
     }
 
-    func testKleisliOperator() {
+    @Test func kleisliOperator() {
         let f: (Int) -> Either<String, Int> = { .right($0 * 2) }
         let g: (Int) -> Either<String, String> = { .right("\($0)") }
 
         let composed = f >=> g
-        XCTAssertEqual(composed(5), .right("10"))
+        #expect(composed(5) == .right("10"))
     }
 
-    func testKleisliBackFunction() {
+    @Test func kleisliBackFunction() {
         let f: (Int) -> Either<String, Int> = { .right($0 * 2) }
         let g: (Int) -> Either<String, String> = { .right("\($0)") }
 
         let composed = Either<String, Int>.kleisliBack(g, f)
-        XCTAssertEqual(composed(5), .right("10"))
+        #expect(composed(5) == .right("10"))
     }
 
     // MARK: - Alternative
 
-    func testAlternative() {
+    @Test func alternative() {
         let right1: Either<String, Int> = .right(5)
         let right2: Either<String, Int> = .right(10)
-        XCTAssertEqual(right1 <|> right2, .right(5))
+        #expect((right1 <|> right2) == .right(5))
 
         let left: Either<String, Int> = .left("error")
-        XCTAssertEqual(left <|> right2, .right(10))
+        #expect((left <|> right2) == .right(10))
 
         let left2: Either<String, Int> = .left("error2")
-        XCTAssertEqual(left <|> left2, .left("error2"))
+        #expect((left <|> left2) == .left("error2"))
     }
 }

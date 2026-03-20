@@ -1,30 +1,29 @@
-import XCTest
+import Testing
 @testable import FP
 
-final class ArrayFunctorTests: XCTestCase {
+@Suite struct ArrayFunctorTests {
 
-    func testFmap() {
+    @Test func fmap() {
         let array = [1, 2, 3]
         let result = Array.fmap({ $0 * 2 })(array)
-        XCTAssertEqual(result, [2, 4, 6])
+        #expect(result == [2, 4, 6])
     }
 
-    func testMapIsConsistent() {
+    @Test func mapIsConsistent() {
         let array = [1, 2, 3]
         let transform = { $0 * 2 }
 
-        XCTAssertEqual(array.map(transform), Array.fmap(transform)(array))
+        #expect(array.map(transform) == Array.fmap(transform)(array))
     }
 
-    func testFunctorIdentityLaw() {
+    @Test func functorIdentityLaw() {
         // fmap id = id
         let array = [1, 2, 3]
-        let identity: (Int) -> Int = { $0 }
 
-        XCTAssertEqual(Array.fmap(identity)(array), array)
+        #expect(Array.fmap(identity)(array) == array)
     }
 
-    func testFunctorCompositionLaw() {
+    @Test func functorCompositionLaw() {
         // fmap (f . g) = fmap f . fmap g
         let array = [1, 2, 3]
         let f = { $0 * 2 }
@@ -33,6 +32,6 @@ final class ArrayFunctorTests: XCTestCase {
         let left = Array.fmap({ x in f(g(x)) })(array)
         let right = Array.fmap(f)(Array.fmap(g)(array))
 
-        XCTAssertEqual(left, right)
+        #expect(left == right)
     }
 }

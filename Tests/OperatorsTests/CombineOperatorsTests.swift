@@ -1,64 +1,54 @@
-import XCTest
+import Testing
 import Combine
 @testable import FP
 @testable import Operators
 import Operators
 import FP
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 @MainActor
-final class PublisherTests: XCTestCase {
-    nonisolated(unsafe) var cancellables: Set<AnyCancellable> = []
-
-    override func setUp() {
-        super.setUp()
-        cancellables = []
-    }
+@Suite struct CombineOperatorsTests {
 
     // MARK: - Functor Tests
 
-    func testFmap() {
-        let expectation = expectation(description: "fmap completes")
+    @Test func fmap() {
+        var cancellables = Set<AnyCancellable>()
         let publisher = [1, 2, 3].publisher
 
         let doubled = Result<Int, Never>.Publisher.fmap { $0 * 2 }(publisher)
 
         var results: [Int] = []
         doubled.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { results.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: results.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(results, [2, 4, 6])
+        #expect(results == [2, 4, 6])
     }
 
-    func testFunctorIdentityLaw() {
-        let expectation = expectation(description: "identity law")
+    @Test func functorIdentityLaw() {
+        var cancellables = Set<AnyCancellable>()
         let publisher = [1, 2, 3].publisher
 
-        let identity: (Int) -> Int = { $0 }
         let mapped = Result<Int, Never>.Publisher.fmap(identity)(publisher)
 
         var originalResults: [Int] = []
         var mappedResults: [Int] = []
 
         publisher.sink(
-            receiveCompletion: { _ in },
-            receiveValue: { originalResults.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: originalResults.append
         ).store(in: &cancellables)
 
         mapped.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { mappedResults.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: mappedResults.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(originalResults, mappedResults)
+        #expect(originalResults == mappedResults)
     }
 
-    func testFunctorCompositionLaw() {
-        let expectation = expectation(description: "composition law")
+    @Test func functorCompositionLaw() {
+        var cancellables = Set<AnyCancellable>()
         let publisher = [1, 2, 3].publisher
 
         let f: (Int) -> Int = { $0 * 2 }
@@ -72,21 +62,20 @@ final class PublisherTests: XCTestCase {
         var separateResults: [String] = []
 
         composed.sink(
-            receiveCompletion: { _ in },
-            receiveValue: { composedResults.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: composedResults.append
         ).store(in: &cancellables)
 
         separate.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { separateResults.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: separateResults.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(composedResults, separateResults)
+        #expect(composedResults == separateResults)
     }
 
-    func testFunctorOperators() {
-        let expectation = expectation(description: "functor operators")
+    @Test func functorOperators() {
+        var cancellables = Set<AnyCancellable>()
         let publisher = [1, 2, 3].publisher
 
         // Test <£> operator
@@ -94,16 +83,15 @@ final class PublisherTests: XCTestCase {
 
         var results: [Int] = []
         doubled.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { results.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: results.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(results, [2, 4, 6])
+        #expect(results == [2, 4, 6])
     }
 
-    func testMapReplace() {
-        let expectation = expectation(description: "map replace")
+    @Test func mapReplace() {
+        var cancellables = Set<AnyCancellable>()
         let publisher = [1, 2, 3].publisher
 
         // Test £> operator
@@ -111,16 +99,15 @@ final class PublisherTests: XCTestCase {
 
         var results: [Int] = []
         replaced.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { results.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: results.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(results, [99, 99, 99])
+        #expect(results == [99, 99, 99])
     }
 
-    func testMapReplaceFlipped() {
-        let expectation = expectation(description: "map replace flipped")
+    @Test func mapReplaceFlipped() {
+        var cancellables = Set<AnyCancellable>()
         let publisher = [1, 2, 3].publisher
 
         // Test <£ operator
@@ -128,95 +115,91 @@ final class PublisherTests: XCTestCase {
 
         var results: [Int] = []
         replaced.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { results.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: results.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(results, [42, 42, 42])
+        #expect(results == [42, 42, 42])
     }
 
     // MARK: - Bimap Tests
 
-    func testMapLeft() {
-        let expectation = expectation(description: "mapLeft")
+    @Test func mapLeft() {
+        var cancellables = Set<AnyCancellable>()
         let publisher = [1, 2, 3].publisher
 
         let doubled = publisher.mapLeft { $0 * 2 }
 
         var results: [Int] = []
         doubled.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { results.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: results.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(results, [2, 4, 6])
+        #expect(results == [2, 4, 6])
     }
 
-    func testMapRight() {
+    @Test func mapRight() {
+        var cancellables = Set<AnyCancellable>()
         enum TestError: Error {
             case original
             case mapped
         }
 
-        let expectation = expectation(description: "mapRight")
         let publisher = Fail<Int, TestError>(error: .original)
 
-        let mapped = publisher.mapRight { _ in TestError.mapped }
+        let mapped = publisher.mapRight(const(TestError.mapped))
 
+        var capturedError: TestError?
         mapped.sink(
             receiveCompletion: { completion in
                 if case .failure(let error) = completion {
-                    XCTAssertEqual(error, .mapped)
+                    capturedError = error
                 }
-                expectation.fulfill()
             },
-            receiveValue: { _ in }
+            receiveValue: ignore
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
+        #expect(capturedError == .mapped)
     }
 
-    func testBimap() {
+    @Test func bimap() {
+        var cancellables = Set<AnyCancellable>()
         enum TestError: Error {
             case original
             case mapped
         }
-
-        let expectation1 = expectation(description: "bimap success")
-        let expectation2 = expectation(description: "bimap failure")
 
         let successPublisher = [1, 2, 3].publisher.setFailureType(to: TestError.self)
         let failurePublisher = Fail<Int, TestError>(error: .original)
 
-        let bimappedSuccess = successPublisher.bimap({ $0 * 2 }, { _ in TestError.mapped })
-        let bimappedFailure = failurePublisher.bimap({ $0 * 2 }, { _ in TestError.mapped })
+        let bimappedSuccess = successPublisher.bimap({ $0 * 2 }, const(TestError.mapped))
+        let bimappedFailure = failurePublisher.bimap({ $0 * 2 }, const(TestError.mapped))
 
         var results: [Int] = []
         bimappedSuccess.sink(
-            receiveCompletion: { _ in expectation1.fulfill() },
-            receiveValue: { results.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: results.append
         ).store(in: &cancellables)
 
+        var capturedError: TestError?
         bimappedFailure.sink(
             receiveCompletion: { completion in
                 if case .failure(let error) = completion {
-                    XCTAssertEqual(error, .mapped)
+                    capturedError = error
                 }
-                expectation2.fulfill()
             },
-            receiveValue: { _ in }
+            receiveValue: ignore
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(results, [2, 4, 6])
+        #expect(results == [2, 4, 6])
+        #expect(capturedError == .mapped)
     }
 
     // MARK: - Applicative Tests
 
-    func testLiftA2() {
-        let expectation = expectation(description: "liftA2")
+    @Test func basicLiftA2() {
+        var cancellables = Set<AnyCancellable>()
         let publisher1 = [1, 2].publisher
         let publisher2 = [10, 20].publisher
 
@@ -226,16 +209,15 @@ final class PublisherTests: XCTestCase {
 
         var results: [Int] = []
         result.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { results.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: results.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(results, [11, 22])
+        #expect(results == [11, 22])
     }
 
-    func testZip() {
-        let expectation = expectation(description: "zip")
+    @Test func zip() {
+        var cancellables = Set<AnyCancellable>()
         let publisher1 = [1, 2, 3].publisher
         let publisher2 = ["a", "b", "c"].publisher
 
@@ -243,23 +225,21 @@ final class PublisherTests: XCTestCase {
 
         var results: [(Int, String)] = []
         zipped.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { results.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: results.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(results.count, 3)
-        XCTAssertEqual(results[0].0, 1)
-        XCTAssertEqual(results[0].1, "a")
-        XCTAssertEqual(results[1].0, 2)
-        XCTAssertEqual(results[1].1, "b")
-        XCTAssertEqual(results[2].0, 3)
-        XCTAssertEqual(results[2].1, "c")
+        #expect(results.count == 3)
+        #expect(results[0].0 == 1)
+        #expect(results[0].1 == "a")
+        #expect(results[1].0 == 2)
+        #expect(results[1].1 == "b")
+        #expect(results[2].0 == 3)
+        #expect(results[2].1 == "c")
     }
 
-    func testApplyOperator() {
-        let expectation = expectation(description: "apply operator")
-
+    @Test func applyOperator() {
+        var cancellables = Set<AnyCancellable>()
         let functions = [{ (x: Int) in x * 2 }, { (x: Int) in x + 10 }].publisher
         let values = [5, 3].publisher
 
@@ -267,16 +247,15 @@ final class PublisherTests: XCTestCase {
 
         var results: [Int] = []
         applied.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { results.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: results.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(results, [10, 13])
+        #expect(results == [10, 13])
     }
 
-    func testSequenceRight() {
-        let expectation = expectation(description: "sequence right")
+    @Test func sequenceRight() {
+        var cancellables = Set<AnyCancellable>()
         let publisher1 = [1, 2].publisher
         let publisher2 = [10, 20].publisher
 
@@ -284,16 +263,15 @@ final class PublisherTests: XCTestCase {
 
         var results: [Int] = []
         result.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { results.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: results.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(results, [10, 20])
+        #expect(results == [10, 20])
     }
 
-    func testSequenceLeft() {
-        let expectation = expectation(description: "sequence left")
+    @Test func sequenceLeft() {
+        var cancellables = Set<AnyCancellable>()
         let publisher1 = [1, 2].publisher
         let publisher2 = [10, 20].publisher
 
@@ -301,18 +279,17 @@ final class PublisherTests: XCTestCase {
 
         var results: [Int] = []
         result.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { results.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: results.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(results, [1, 2])
+        #expect(results == [1, 2])
     }
 
     // MARK: - Monad Tests
 
-    func testBind() {
-        let expectation = expectation(description: "bind")
+    @Test func bind() {
+        var cancellables = Set<AnyCancellable>()
         let publisher = [1, 2].publisher
 
         let fn: (Int) -> AnyPublisher<Int, Never> = { value in
@@ -323,16 +300,15 @@ final class PublisherTests: XCTestCase {
 
         var results: [Int] = []
         bound.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { results.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: results.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(results, [1, 10, 2, 20])
+        #expect(results == [1, 10, 2, 20])
     }
 
-    func testBindOperator() {
-        let expectation = expectation(description: "bind operator")
+    @Test func bindOperator() {
+        var cancellables = Set<AnyCancellable>()
         let publisher = [1, 2].publisher
 
         let result = publisher >>- { value in
@@ -341,16 +317,15 @@ final class PublisherTests: XCTestCase {
 
         var results: [Int] = []
         result.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { results.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: results.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(results, [2, 4])
+        #expect(results == [2, 4])
     }
 
-    func testFlippedBindOperator() {
-        let expectation = expectation(description: "flipped bind")
+    @Test func flippedBindOperator() {
+        var cancellables = Set<AnyCancellable>()
         let publisher = [1, 2].publisher
 
         let fn: (Int) -> AnyPublisher<Int, Never> = { value in
@@ -361,17 +336,15 @@ final class PublisherTests: XCTestCase {
 
         var results: [Int] = []
         result.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { results.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: results.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(results, [3, 6])
+        #expect(results == [3, 6])
     }
 
-    func testKleisliComposition() {
-        let expectation = expectation(description: "kleisli composition")
-
+    @Test func kleisliComposition() {
+        var cancellables = Set<AnyCancellable>()
         let fn1: (Int) -> AnyPublisher<Int, Never> = { [$0 * 2].publisher.eraseToAnyPublisher() }
         let fn2: (Int) -> AnyPublisher<String, Never> = { ["\($0)"].publisher.eraseToAnyPublisher() }
 
@@ -380,17 +353,15 @@ final class PublisherTests: XCTestCase {
 
         var results: [String] = []
         result.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { results.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: results.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(results, ["10"])
+        #expect(results == ["10"])
     }
 
-    func testKleisliOperator() {
-        let expectation = expectation(description: "kleisli operator")
-
+    @Test func kleisliOperator() {
+        var cancellables = Set<AnyCancellable>()
         let fn1: (Int) -> AnyPublisher<Int, Never> = { [$0 * 2].publisher.eraseToAnyPublisher() }
         let fn2: (Int) -> AnyPublisher<String, Never> = { ["\($0)"].publisher.eraseToAnyPublisher() }
 
@@ -399,32 +370,30 @@ final class PublisherTests: XCTestCase {
 
         var results: [String] = []
         result.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { results.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: results.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(results, ["10"])
+        #expect(results == ["10"])
     }
 
-    func testFlippedFmapOperator() {
-        let expectation = expectation(description: "flipped fmap")
+    @Test func flippedFmapOperator() {
+        var cancellables = Set<AnyCancellable>()
         let publisher = [1, 2, 3].publisher
 
         let result = publisher <&> { $0 * 2 }
 
         var results: [Int] = []
         result.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { results.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: results.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(results, [2, 4, 6])
+        #expect(results == [2, 4, 6])
     }
 
-    func testMonadLeftIdentity() {
-        let expectation = expectation(description: "monad left identity")
+    @Test func monadLeftIdentity() {
+        var cancellables = Set<AnyCancellable>()
         let value = 5
 
         let f: (Int) -> AnyPublisher<Int, Never> = { [$0 * 2].publisher.eraseToAnyPublisher() }
@@ -437,21 +406,20 @@ final class PublisherTests: XCTestCase {
         var rightResults: [Int] = []
 
         left.sink(
-            receiveCompletion: { _ in },
-            receiveValue: { leftResults.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: leftResults.append
         ).store(in: &cancellables)
 
         right.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { rightResults.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: rightResults.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(leftResults, rightResults)
+        #expect(leftResults == rightResults)
     }
 
-    func testMonadRightIdentity() {
-        let expectation = expectation(description: "monad right identity")
+    @Test func monadRightIdentity() {
+        var cancellables = Set<AnyCancellable>()
         let publisher = [1, 2, 3].publisher.eraseToAnyPublisher()
 
         // m >>= return == m
@@ -461,21 +429,20 @@ final class PublisherTests: XCTestCase {
         var boundResults: [Int] = []
 
         publisher.sink(
-            receiveCompletion: { _ in },
-            receiveValue: { originalResults.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: originalResults.append
         ).store(in: &cancellables)
 
         bound.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { boundResults.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: boundResults.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(originalResults, boundResults)
+        #expect(originalResults == boundResults)
     }
 
-    func testMonadAssociativity() {
-        let expectation = expectation(description: "monad associativity")
+    @Test func monadAssociativity() {
+        var cancellables = Set<AnyCancellable>()
         let publisher = [1].publisher
 
         let f: (Int) -> AnyPublisher<Int, Never> = { [$0 * 2].publisher.eraseToAnyPublisher() }
@@ -491,16 +458,15 @@ final class PublisherTests: XCTestCase {
         var rightResults: [Int] = []
 
         left.sink(
-            receiveCompletion: { _ in },
-            receiveValue: { leftResults.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: leftResults.append
         ).store(in: &cancellables)
 
         right.sink(
-            receiveCompletion: { _ in expectation.fulfill() },
-            receiveValue: { rightResults.append($0) }
+            receiveCompletion: ignore,
+            receiveValue: rightResults.append
         ).store(in: &cancellables)
 
-        waitForExpectations(timeout: 1)
-        XCTAssertEqual(leftResults, rightResults)
+        #expect(leftResults == rightResults)
     }
 }

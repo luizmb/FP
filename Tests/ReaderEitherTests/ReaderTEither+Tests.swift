@@ -1,10 +1,10 @@
-import XCTest
+import Testing
 @testable import Reader
 @testable import Either
 @testable import ReaderEither
 import FP
 
-final class ReaderEitherTests: XCTestCase {
+@Suite struct ReaderEitherTests {
 
     struct Environment {
         let multiplier: Int
@@ -12,7 +12,7 @@ final class ReaderEitherTests: XCTestCase {
 
     // MARK: - ReaderT + Either Functor Tests
 
-    func testMapT() {
+    @Test func mapT() {
         let reader = Reader<Environment, Either<String, Int>> { env in
             .right(env.multiplier)
         }
@@ -20,10 +20,10 @@ final class ReaderEitherTests: XCTestCase {
         let mapped = reader.mapT { $0 * 2 }
 
         let env = Environment(multiplier: 5)
-        XCTAssertEqual(mapped(env), .right(10))
+        #expect(mapped(env) == .right(10))
     }
 
-    func testMapTLeft() {
+    @Test func mapTLeft() {
         let reader = Reader<Environment, Either<String, Int>> { _ in
             .left("error")
         }
@@ -31,12 +31,12 @@ final class ReaderEitherTests: XCTestCase {
         let mapped = reader.mapT { $0 * 2 }
 
         let env = Environment(multiplier: 5)
-        XCTAssertEqual(mapped(env), .left("error"))
+        #expect(mapped(env) == .left("error"))
     }
 
     // MARK: - ReaderT + Either Applicative Tests
 
-    func testApplyReaderEither() {
+    @Test func apply() {
         let readerFn = Reader<Environment, Either<String, (Int) -> Int>> { env in
             .right({ $0 + env.multiplier })
         }
@@ -48,10 +48,10 @@ final class ReaderEitherTests: XCTestCase {
         let result = applyReaderEither(readerFn, readerValue)
 
         let env = Environment(multiplier: 5)
-        XCTAssertEqual(result(env), .right(15))
+        #expect(result(env) == .right(15))
     }
 
-    func testLiftA2ReaderEither() {
+    @Test func liftA2() {
         let reader1 = Reader<Environment, Either<String, Int>> { env in
             .right(env.multiplier)
         }
@@ -64,12 +64,12 @@ final class ReaderEitherTests: XCTestCase {
         let combined = liftA2ReaderEither(add)(reader1, reader2)
 
         let env = Environment(multiplier: 5)
-        XCTAssertEqual(combined(env), .right(15))
+        #expect(combined(env) == .right(15))
     }
 
     // MARK: - ReaderT + Either Monad Tests
 
-    func testFlatMapT() {
+    @Test func flatMapT() {
         let reader = Reader<Environment, Either<String, Int>> { env in
             .right(env.multiplier)
         }
@@ -81,6 +81,6 @@ final class ReaderEitherTests: XCTestCase {
         }
 
         let env = Environment(multiplier: 5)
-        XCTAssertEqual(bound(env), .right("10"))
+        #expect(bound(env) == .right("10"))
     }
 }

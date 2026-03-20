@@ -1,64 +1,64 @@
-import XCTest
+import Testing
 @testable import FP
 @testable import Operators
 
-final class OptionalApplicativeTests: XCTestCase {
+@Suite struct OptionalApplicativeTests {
 
     // MARK: - Basic Applicative Tests
 
-    func testApply() {
+    @Test func apply() {
         let fn: ((Int) -> Int)? = { $0 * 2 }
         let value: Int? = 5
         let result = fn <*> value
-        XCTAssertEqual(result, 10)
+        #expect(result == 10)
 
         let noneFn: ((Int) -> Int)? = nil
         let noneResult = noneFn <*> value
-        XCTAssertNil(noneResult)
+        #expect(noneResult == nil)
 
         let noneValue: Int? = nil
         let noneValueResult = fn <*> noneValue
-        XCTAssertNil(noneValueResult)
+        #expect(noneValueResult == nil)
     }
 
-    func testLiftA2() {
+    @Test func liftA2() {
         let add: (Int, Int) -> Int = { $0 + $1 }
         let lifted = Optional<Int>.liftA2(add)
 
-        XCTAssertEqual(lifted(5, 3), 8)
-        XCTAssertNil(lifted(nil, 3))
-        XCTAssertNil(lifted(5, nil))
-        XCTAssertNil(lifted(nil, nil))
+        #expect(lifted(5, 3) == 8)
+        #expect(lifted(nil, 3) == nil)
+        #expect(lifted(5, nil) == nil)
+        #expect(lifted(nil, nil) == nil)
     }
 
-    func testZip() {
+    @Test func zip() {
         let value1: Int? = 5
         let value2: String? = "test"
         let result = Optional<(Int, String)>.zip(value1, value2)
 
         if let tuple = result {
-            XCTAssertEqual(tuple.0, 5)
-            XCTAssertEqual(tuple.1, "test")
+            #expect(tuple.0 == 5)
+            #expect(tuple.1 == "test")
         } else {
-            XCTFail("Expected some value")
+            Issue.record("Expected some value")
         }
 
         let none1: Int? = nil
-        XCTAssertNil(Optional<(Int, String)>.zip(none1, value2))
-        XCTAssertNil(Optional<(Int, String)>.zip(value1, nil))
+        #expect(Optional<(Int, String)>.zip(none1, value2) == nil)
+        #expect(Optional<(Int, String)>.zip(value1, nil) == nil)
     }
 
     // MARK: - Applicative Laws
 
-    func testApplicativeIdentityLaw() {
+    @Test func applicativeIdentityLaw() {
         // pure id <*> v = v
         let value: Int? = 5
         let identity: ((Int) -> Int)? = { $0 }
         let result = identity <*> value
-        XCTAssertEqual(result, value)
+        #expect(result == value)
     }
 
-    func testApplicativeCompositionLaw() {
+    @Test func applicativeCompositionLaw() {
         // pure (.) <*> u <*> v <*> w = u <*> (v <*> w)
         let u: ((Int) -> String)? = { "\($0)" }
         let v: ((Int) -> Int)? = { $0 * 2 }
@@ -75,10 +75,10 @@ final class OptionalApplicativeTests: XCTestCase {
         let vw = v <*> w
         let right = u <*> vw
 
-        XCTAssertEqual(left, right)
+        #expect(left == right)
     }
 
-    func testApplicativeHomomorphismLaw() {
+    @Test func applicativeHomomorphismLaw() {
         // pure f <*> pure x = pure (f x)
         let f: (Int) -> Int = { $0 * 2 }
         let x = 5
@@ -88,10 +88,10 @@ final class OptionalApplicativeTests: XCTestCase {
         let left = pureF <*> pureX
         let right: Int? = .some(f(x))
 
-        XCTAssertEqual(left, right)
+        #expect(left == right)
     }
 
-    func testApplicativeInterchangeLaw() {
+    @Test func applicativeInterchangeLaw() {
         // u <*> pure y = pure ($ y) <*> u
         let u: ((Int) -> Int)? = { $0 * 2 }
         let y = 5
@@ -103,41 +103,41 @@ final class OptionalApplicativeTests: XCTestCase {
         let pureApply: ((@escaping (Int) -> Int) -> Int)? = .some(applyTo)
         let right = pureApply <*> u
 
-        XCTAssertEqual(left, right)
+        #expect(left == right)
     }
 
     // MARK: - Applicative Operators
 
-    func testApplyOperator() {
+    @Test func applyOperator() {
         let fn: ((Int) -> Int)? = { $0 * 2 }
         let value: Int? = 5
         let result = fn <*> value
-        XCTAssertEqual(result, 10)
+        #expect(result == 10)
 
         let none: Int? = nil
         let noneResult = fn <*> none
-        XCTAssertNil(noneResult)
+        #expect(noneResult == nil)
     }
 
-    func testSequenceRight() {
+    @Test func sequenceRight() {
         let value1: Int? = 5
         let value2: Int? = 10
         let result = value1 *> value2
-        XCTAssertEqual(result, 10)
+        #expect(result == 10)
 
         let none: Int? = nil
-        XCTAssertNil(none *> value2)
-        XCTAssertNil(value1 *> none)
+        #expect((none *> value2) == nil)
+        #expect((value1 *> none) == nil)
     }
 
-    func testSequenceLeft() {
+    @Test func sequenceLeft() {
         let value1: Int? = 5
         let value2: Int? = 10
         let result = value1 <* value2
-        XCTAssertEqual(result, 5)
+        #expect(result == 5)
 
         let none: Int? = nil
-        XCTAssertNil(none <* value2)
-        XCTAssertNil(value1 <* none)
+        #expect((none <* value2) == nil)
+        #expect((value1 <* none) == nil)
     }
 }

@@ -1,97 +1,97 @@
-import XCTest
+import Testing
 @testable import FP
 @testable import Operators
 
-final class ArrayOperatorsTests: XCTestCase {
+@Suite struct ArrayOperatorsTests {
 
     // MARK: - Functor Operators
 
-    func testFmapOperator() {
+    @Test func fmapOperator() {
         let array = [1, 2, 3]
         let result = { $0 * 2 } <£> array
-        XCTAssertEqual(result, [2, 4, 6])
+        #expect(result == [2, 4, 6])
     }
 
-    func testMapReplaceOperator() {
+    @Test func mapReplaceOperator() {
         let array = [1, 2, 3]
         let result = array £> "x"
-        XCTAssertEqual(result, ["x", "x", "x"])
+        #expect(result == ["x", "x", "x"])
     }
 
-    func testMapReplaceOperatorFlipped() {
+    @Test func mapReplaceOperatorFlipped() {
         let array = [1, 2, 3]
         let result = "x" <£ array
-        XCTAssertEqual(result, ["x", "x", "x"])
+        #expect(result == ["x", "x", "x"])
     }
 
-    func testFlippedFmap() {
+    @Test func flippedFmap() {
         let array = [1, 2, 3]
         let result = array <&> { $0 * 2 }
-        XCTAssertEqual(result, [2, 4, 6])
+        #expect(result == [2, 4, 6])
     }
 
     // MARK: - Applicative Operators
 
-    func testApplyOperator() {
+    @Test func applyOperator() {
         let functions: [(Int) -> Int] = [{ $0 * 2 }, { $0 + 10 }]
         let values = [1, 2, 3]
 
         let result = functions <*> values
-        XCTAssertEqual(result, [2, 4, 6, 11, 12, 13])
+        #expect(result == [2, 4, 6, 11, 12, 13])
     }
 
-    func testSequenceLeft() {
+    @Test func sequenceLeft() {
         let arr1 = [1, 2]
         let arr2 = [3, 4]
 
         let result = arr1 *> arr2
-        XCTAssertEqual(result, [3, 4, 3, 4])
+        #expect(result == [3, 4, 3, 4])
     }
 
-    func testSequenceRight() {
+    @Test func sequenceRight() {
         let arr1 = [1, 2]
         let arr2 = [3, 4]
 
         let result = arr1 <* arr2
-        XCTAssertEqual(result, [1, 1, 2, 2])
+        #expect(result == [1, 1, 2, 2])
     }
 
     // MARK: - Monad Operators
 
-    func testBindOperator() {
+    @Test func bindOperator() {
         let array = [1, 2, 3]
         let result = array >>- { [$0, $0 * 2] }
-        XCTAssertEqual(result, [1, 2, 2, 4, 3, 6])
+        #expect(result == [1, 2, 2, 4, 3, 6])
     }
 
-    func testFlippedBindOperator() {
+    @Test func flippedBindOperator() {
         let fn: (Int) -> [Int] = { [$0, $0 * 2] }
         let array = [1, 2, 3]
         let result = fn -<< array
-        XCTAssertEqual(result, [1, 2, 2, 4, 3, 6])
+        #expect(result == [1, 2, 2, 4, 3, 6])
     }
 
-    func testKleisliOperator() {
+    @Test func kleisliOperator() {
         let duplicate: (Int) -> [Int] = { [$0, $0] }
         let double: (Int) -> [Int] = { [$0 * 2] }
 
         let composed = duplicate >=> double
-        XCTAssertEqual(composed(5), [10, 10])
+        #expect(composed(5) == [10, 10])
     }
 
     // MARK: - Alternative Operators
 
-    func testAlternativeOperator() {
+    @Test func alternativeOperator() {
         let arr1 = [1, 2, 3]
         let arr2 = [4, 5, 6]
 
-        XCTAssertEqual(arr1 <|> arr2, [1, 2, 3, 4, 5, 6])
+        #expect((arr1 <|> arr2) == [1, 2, 3, 4, 5, 6])
     }
 
-    func testAppendOperator() {
+    @Test func appendOperator() {
         let arr1 = [1, 2, 3]
         let arr2 = [4, 5, 6]
 
-        XCTAssertEqual(arr1 ++ arr2, [1, 2, 3, 4, 5, 6])
+        #expect((arr1 ++ arr2) == [1, 2, 3, 4, 5, 6])
     }
 }

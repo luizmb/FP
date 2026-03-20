@@ -1,9 +1,8 @@
-import XCTest
+import Testing
 @testable import Reader
 import FP
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-final class ReaderConcurrencyFPTests: XCTestCase {
+@Suite struct ReaderConcurrencyFPTests {
 
     struct Environment {
         let multiplier: Int
@@ -11,7 +10,7 @@ final class ReaderConcurrencyFPTests: XCTestCase {
 
     // MARK: - ReaderT + AsyncSequence Functor Tests
 
-    func testMapT() async throws {
+    @Test func mapT() async throws {
         let reader = Reader<Environment, AsyncStream<Int>> { env in
             AsyncStream { continuation in
                 continuation.yield(env.multiplier)
@@ -29,12 +28,12 @@ final class ReaderConcurrencyFPTests: XCTestCase {
             results.append(value)
         }
 
-        XCTAssertEqual(results, [10, 20])
+        #expect(results == [10, 20])
     }
 
     // MARK: - ReaderT + AsyncSequence Applicative Tests
 
-    func testLiftA2ReaderAsyncStream() async throws {
+    @Test func liftA2() async throws {
         let readerA = Reader<Environment, AsyncStream<Int>> { env in
             AsyncStream { continuation in
                 continuation.yield(env.multiplier)
@@ -61,12 +60,12 @@ final class ReaderConcurrencyFPTests: XCTestCase {
         }
 
         // zips element-by-element: (3+10, 6+20) = (13, 26)
-        XCTAssertEqual(results, [13, 26])
+        #expect(results == [13, 26])
     }
 
     // MARK: - ReaderT + AsyncSequence Monad Tests
 
-    func testFlatMapT() async throws {
+    @Test func flatMapT() async throws {
         let reader = Reader<Environment, AsyncStream<Int>> { env in
             AsyncStream { continuation in
                 continuation.yield(env.multiplier)
@@ -90,6 +89,6 @@ final class ReaderConcurrencyFPTests: XCTestCase {
             results.append(value)
         }
 
-        XCTAssertEqual(results, ["16"])
+        #expect(results == ["16"])
     }
 }

@@ -1,8 +1,8 @@
-import XCTest
+import Testing
 @testable import FP
 @testable import Operators
 
-final class ResultFunctorTests: XCTestCase {
+@Suite struct ResultFunctorTests {
 
     enum TestError: Error, Equatable {
         case test
@@ -10,41 +10,41 @@ final class ResultFunctorTests: XCTestCase {
 
     // MARK: - Basic Functor Tests
 
-    func testFmap() {
+    @Test func fmap() {
         let success: Result<Int, TestError> = .success(5)
         let result = success.map { $0 * 2 }
-        XCTAssertEqual(try? result.get(), 10)
+        #expect((try? result.get()) == 10)
 
         let failure: Result<Int, TestError> = .failure(.test)
         let failureResult = failure.map { $0 * 2 }
-        XCTAssertThrowsError(try failureResult.get())
+        #expect(throws: (any Error).self) { try failureResult.get() }
     }
 
-    func testCurriedFmap() {
+    @Test func curriedFmap() {
         let double: (Int) -> Int = { $0 * 2 }
         let fmap = Result<Int, TestError>.fmap(double)
 
         let success: Result<Int, TestError> = .success(5)
-        XCTAssertEqual(try? fmap(success).get(), 10)
+        #expect((try? fmap(success).get()) == 10)
 
         let failure: Result<Int, TestError> = .failure(.test)
-        XCTAssertThrowsError(try fmap(failure).get())
+        #expect(throws: (any Error).self) { try fmap(failure).get() }
     }
 
     // MARK: - Functor Laws
 
-    func testFunctorIdentityLaw() {
+    @Test func functorIdentityLaw() {
         // fmap id == id
         let success: Result<Int, TestError> = .success(5)
         let failure: Result<Int, TestError> = .failure(.test)
 
         let identity: (Int) -> Int = { $0 }
 
-        XCTAssertEqual(try? success.map(identity).get(), try? success.get())
-        XCTAssertThrowsError(try failure.map(identity).get())
+        #expect((try? success.map(identity).get()) == (try? success.get()))
+        #expect(throws: (any Error).self) { try failure.map(identity).get() }
     }
 
-    func testFunctorCompositionLaw() {
+    @Test func functorCompositionLaw() {
         // fmap (g . f) == fmap g . fmap f
         let value: Result<Int, TestError> = .success(5)
 
@@ -54,48 +54,48 @@ final class ResultFunctorTests: XCTestCase {
         let composed = value.map(compose(f, g))
         let separate = value.map(f).map(g)
 
-        XCTAssertEqual(try? composed.get(), try? separate.get())
+        #expect((try? composed.get()) == (try? separate.get()))
     }
 
     // MARK: - Functor Operators
 
-    func testFmapOperator() {
+    @Test func fmapOperator() {
         let success: Result<Int, TestError> = .success(5)
         let result = { $0 * 2 } <£> success
-        XCTAssertEqual(try? result.get(), 10)
+        #expect((try? result.get()) == 10)
 
         let failure: Result<Int, TestError> = .failure(.test)
         let failureResult = { $0 * 2 } <£> failure
-        XCTAssertThrowsError(try failureResult.get())
+        #expect(throws: (any Error).self) { try failureResult.get() }
     }
 
-    func testMapReplaceOperator() {
+    @Test func mapReplaceOperator() {
         let success: Result<Int, TestError> = .success(5)
         let result = success £> 99
-        XCTAssertEqual(try? result.get(), 99)
+        #expect((try? result.get()) == 99)
 
         let failure: Result<Int, TestError> = .failure(.test)
         let failureResult = failure £> 99
-        XCTAssertThrowsError(try failureResult.get())
+        #expect(throws: (any Error).self) { try failureResult.get() }
     }
 
-    func testMapReplaceFlippedOperator() {
+    @Test func mapReplaceFlippedOperator() {
         let success: Result<Int, TestError> = .success(5)
         let result = 42 <£ success
-        XCTAssertEqual(try? result.get(), 42)
+        #expect((try? result.get()) == 42)
 
         let failure: Result<Int, TestError> = .failure(.test)
         let failureResult = 42 <£ failure
-        XCTAssertThrowsError(try failureResult.get())
+        #expect(throws: (any Error).self) { try failureResult.get() }
     }
 
-    func testFlippedFmapOperator() {
+    @Test func flippedFmapOperator() {
         let success: Result<Int, TestError> = .success(5)
         let result = success <&> { $0 * 2 }
-        XCTAssertEqual(try? result.get(), 10)
+        #expect((try? result.get()) == 10)
 
         let failure: Result<Int, TestError> = .failure(.test)
         let failureResult = failure <&> { $0 * 2 }
-        XCTAssertThrowsError(try failureResult.get())
+        #expect(throws: (any Error).self) { try failureResult.get() }
     }
 }

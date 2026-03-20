@@ -1,13 +1,12 @@
-import XCTest
+import Testing
 import Combine
 @testable import Reader
 import FP
 @testable import ReaderOperators
 import Operators
 
-@available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 @MainActor
-final class ReaderCombineOperatorsTests: XCTestCase {
+@Suite struct ReaderCombineOperatorsTests {
 
     struct Environment {
         let multiplier: Int
@@ -19,8 +18,8 @@ final class ReaderCombineOperatorsTests: XCTestCase {
 
     // MARK: - Functor Operators
 
-    func testFunctorOperatorFmap() {
-        let expectation = expectation(description: "Publisher completes")
+    @Test func functorOperatorFmap() {
+        guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
         let reader = Reader<Environment, any Publisher<Int, TestError>> { env in
             Just(env.multiplier)
                 .setFailureType(to: TestError.self)
@@ -31,21 +30,22 @@ final class ReaderCombineOperatorsTests: XCTestCase {
 
         let env = Environment(multiplier: 5)
         var cancellables = Set<AnyCancellable>()
+        var capturedValue: Int?
 
         mapped(env)
             .sink(
-                receiveCompletion: { _ in expectation.fulfill() },
-                receiveValue: { value in XCTAssertEqual(value, 10) }
+                receiveCompletion: ignore,
+                receiveValue: { value in capturedValue = value }
             )
             .store(in: &cancellables)
 
-        wait(for: [expectation], timeout: 1.0)
+        #expect(capturedValue == 10)
     }
 
     // MARK: - Applicative Operators
 
-    func testApplicativeOperatorApply() {
-        let expectation = expectation(description: "Publisher completes")
+    @Test func applicativeOperatorApply() {
+        guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
         let readerFn = Reader<Environment, any Publisher<(Int) -> Int, TestError>> { env in
             Just({ $0 + env.multiplier })
                 .setFailureType(to: TestError.self)
@@ -62,21 +62,22 @@ final class ReaderCombineOperatorsTests: XCTestCase {
 
         let env = Environment(multiplier: 5)
         var cancellables = Set<AnyCancellable>()
+        var capturedValue: Int?
 
         result(env)
             .sink(
-                receiveCompletion: { _ in expectation.fulfill() },
-                receiveValue: { value in XCTAssertEqual(value, 15) }
+                receiveCompletion: ignore,
+                receiveValue: { value in capturedValue = value }
             )
             .store(in: &cancellables)
 
-        wait(for: [expectation], timeout: 1.0)
+        #expect(capturedValue == 15)
     }
 
     // MARK: - Monad Operators
 
-    func testMonadOperatorBind() {
-        let expectation = expectation(description: "Publisher completes")
+    @Test func monadOperatorBind() {
+        guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
         let reader = Reader<Environment, any Publisher<Int, TestError>> { env in
             Just(env.multiplier)
                 .setFailureType(to: TestError.self)
@@ -93,19 +94,20 @@ final class ReaderCombineOperatorsTests: XCTestCase {
 
         let env = Environment(multiplier: 5)
         var cancellables = Set<AnyCancellable>()
+        var capturedValue: String?
 
         bound(env)
             .sink(
-                receiveCompletion: { _ in expectation.fulfill() },
-                receiveValue: { value in XCTAssertEqual(value, "10") }
+                receiveCompletion: ignore,
+                receiveValue: { value in capturedValue = value }
             )
             .store(in: &cancellables)
 
-        wait(for: [expectation], timeout: 1.0)
+        #expect(capturedValue == "10")
     }
 
-    func testMonadOperatorFlippedBind() {
-        let expectation = expectation(description: "Publisher completes")
+    @Test func monadOperatorFlippedBind() {
+        guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
         let reader = Reader<Environment, any Publisher<Int, TestError>> { env in
             Just(env.multiplier)
                 .setFailureType(to: TestError.self)
@@ -124,20 +126,20 @@ final class ReaderCombineOperatorsTests: XCTestCase {
 
         let env = Environment(multiplier: 5)
         var cancellables = Set<AnyCancellable>()
+        var capturedValue: String?
 
         bound(env)
             .sink(
-                receiveCompletion: { _ in expectation.fulfill() },
-                receiveValue: { value in XCTAssertEqual(value, "10") }
+                receiveCompletion: ignore,
+                receiveValue: { value in capturedValue = value }
             )
             .store(in: &cancellables)
 
-        wait(for: [expectation], timeout: 1.0)
+        #expect(capturedValue == "10")
     }
 
-    func testKleisliComposition() {
-        let expectation = expectation(description: "Publisher completes")
-
+    @Test func kleisliComposition() {
+        guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
         let parse: (String) -> Reader<Environment, any Publisher<Int, TestError>> = { s in
             Reader { _ in
                 Just(Int(s) ?? 0)
@@ -158,14 +160,15 @@ final class ReaderCombineOperatorsTests: XCTestCase {
 
         let env = Environment(multiplier: 3)
         var cancellables = Set<AnyCancellable>()
+        var capturedValue: Int?
 
         pipeline("7")(env)
             .sink(
-                receiveCompletion: { _ in expectation.fulfill() },
-                receiveValue: { value in XCTAssertEqual(value, 21) }
+                receiveCompletion: ignore,
+                receiveValue: { value in capturedValue = value }
             )
             .store(in: &cancellables)
 
-        wait(for: [expectation], timeout: 1.0)
+        #expect(capturedValue == 21)
     }
 }

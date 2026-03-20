@@ -1,10 +1,10 @@
-import XCTest
+import Testing
 @testable import FP
 @testable import Reader
 @testable import ReaderOperators
 import Operators
 
-final class ReaderTTests: XCTestCase {
+@Suite struct ReaderTTests {
 
     struct Environment {
         let multiplier: Int
@@ -13,19 +13,19 @@ final class ReaderTTests: XCTestCase {
 
     // MARK: - ReaderT + Optional Tests
 
-    func testReaderOptionalFmap() {
+    @Test func readerOptionalFmap() {
         let reader = Reader<Environment, Int?> { env in env.multiplier }
         let doubled = { $0 * 2 } <£> reader
 
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(doubled(env), 10)
+        #expect(doubled(env) == 10)
 
         let noneReader = Reader<Environment, Int?> { _ in nil }
         let noneResult = { $0 * 2 } <£> noneReader
-        XCTAssertNil(noneResult(env))
+        #expect(noneResult(env) == nil)
     }
 
-    func testReaderOptionalApply() {
+    @Test func readerOptionalApply() {
         let readerFn = Reader<Environment, ((Int) -> Int)?> { env in
             { $0 * env.multiplier }
         }
@@ -33,37 +33,37 @@ final class ReaderTTests: XCTestCase {
 
         let result = readerFn <*> readerValue
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(result(env), 15)
+        #expect(result(env) == 15)
 
         let noneReader = Reader<Environment, Int?> { _ in nil }
         let noneResult = readerFn <*> noneReader
-        XCTAssertNil(noneResult(env))
+        #expect(noneResult(env) == nil)
     }
 
-    func testReaderOptionalSequenceRight() {
+    @Test func readerOptionalSequenceRight() {
         let reader1 = Reader<Environment, Int?> { env in env.multiplier }
         let reader2 = Reader<Environment, Int?> { env in env.addend }
 
         let result = reader1 *> reader2
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(result(env), 3)
+        #expect(result(env) == 3)
 
         let noneReader = Reader<Environment, Int?> { _ in nil }
-        XCTAssertNil((reader1 *> noneReader)(env))
-        XCTAssertNil((noneReader *> reader2)(env))
+        #expect((reader1 *> noneReader)(env) == nil)
+        #expect((noneReader *> reader2)(env) == nil)
     }
 
-    func testReaderOptionalSequenceLeft() {
+    @Test func readerOptionalSequenceLeft() {
         let reader1 = Reader<Environment, Int?> { env in env.multiplier }
         let reader2 = Reader<Environment, Int?> { env in env.addend }
 
         let result = reader1 <* reader2
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(result(env), 5)
+        #expect(result(env) == 5)
 
         let noneReader = Reader<Environment, Int?> { _ in nil }
-        XCTAssertNil((reader1 <* noneReader)(env))
-        XCTAssertNil((noneReader <* reader2)(env))
+        #expect((reader1 <* noneReader)(env) == nil)
+        #expect((noneReader <* reader2)(env) == nil)
     }
 
     // MARK: - ReaderT + Result Tests
@@ -72,19 +72,19 @@ final class ReaderTTests: XCTestCase {
         case test
     }
 
-    func testReaderResultFmap() {
+    @Test func readerResultFmap() throws {
         let reader = Reader<Environment, Result<Int, TestError>> { env in .success(env.multiplier) }
         let doubled = { $0 * 2 } <£> reader
 
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(try? doubled(env).get(), 10)
+        #expect(try doubled(env).get() == 10)
 
         let failureReader = Reader<Environment, Result<Int, TestError>> { _ in .failure(.test) }
         let failureResult = { $0 * 2 } <£> failureReader
-        XCTAssertThrowsError(try failureResult(env).get())
+        #expect(throws: (any Error).self) { try failureResult(env).get() }
     }
 
-    func testReaderResultApply() {
+    @Test func readerResultApply() throws {
         let readerFn = Reader<Environment, Result<(Int) -> Int, TestError>> { env in
             .success({ $0 * env.multiplier })
         }
@@ -92,35 +92,35 @@ final class ReaderTTests: XCTestCase {
 
         let result = readerFn <*> readerValue
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(try? result(env).get(), 15)
+        #expect(try result(env).get() == 15)
 
         let failureReader = Reader<Environment, Result<Int, TestError>> { _ in .failure(.test) }
         let failureResult = readerFn <*> failureReader
-        XCTAssertThrowsError(try failureResult(env).get())
+        #expect(throws: (any Error).self) { try failureResult(env).get() }
     }
 
-    func testReaderResultSequenceRight() {
+    @Test func readerResultSequenceRight() throws {
         let reader1 = Reader<Environment, Result<Int, TestError>> { env in .success(env.multiplier) }
         let reader2 = Reader<Environment, Result<Int, TestError>> { env in .success(env.addend) }
 
         let result = reader1 *> reader2
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(try? result(env).get(), 3)
+        #expect(try result(env).get() == 3)
 
         let failureReader = Reader<Environment, Result<Int, TestError>> { _ in .failure(.test) }
-        XCTAssertThrowsError(try (reader1 *> failureReader)(env).get())
+        #expect(throws: (any Error).self) { try (reader1 *> failureReader)(env).get() }
     }
 
-    func testReaderResultSequenceLeft() {
+    @Test func readerResultSequenceLeft() throws {
         let reader1 = Reader<Environment, Result<Int, TestError>> { env in .success(env.multiplier) }
         let reader2 = Reader<Environment, Result<Int, TestError>> { env in .success(env.addend) }
 
         let result = reader1 <* reader2
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(try? result(env).get(), 5)
+        #expect(try result(env).get() == 5)
 
         let failureReader = Reader<Environment, Result<Int, TestError>> { _ in .failure(.test) }
-        XCTAssertThrowsError(try (reader1 <* failureReader)(env).get())
+        #expect(throws: (any Error).self) { try (reader1 <* failureReader)(env).get() }
     }
 
     // MARK: - ReaderT + Either Tests
@@ -129,16 +129,16 @@ final class ReaderTTests: XCTestCase {
 
     // MARK: - ReaderT Applicative Functions
 
-    func testApplyReaderOptional() {
+    @Test func applyOptional() {
         let readerFn = Reader<Environment, ((Int) -> Int)?> { _ in { $0 * 2 } }
         let readerValue = Reader<Environment, Int?> { env in env.multiplier }
 
         let result = applyReaderOptional(readerFn, readerValue)
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(result(env), 10)
+        #expect(result(env) == 10)
     }
 
-    func testLiftA2ReaderOptional() {
+    @Test func liftA2Optional() {
         let reader1 = Reader<Environment, Int?> { env in env.multiplier }
         let reader2 = Reader<Environment, Int?> { env in env.addend }
 
@@ -147,19 +147,19 @@ final class ReaderTTests: XCTestCase {
         let result = lifted(reader1, reader2)
 
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(result(env), 8)
+        #expect(result(env) == 8)
     }
 
-    func testApplyReaderResult() {
+    @Test func applyResult() throws {
         let readerFn = Reader<Environment, Result<(Int) -> Int, TestError>> { _ in .success({ $0 * 2 }) }
         let readerValue = Reader<Environment, Result<Int, TestError>> { env in .success(env.multiplier) }
 
         let result = applyReaderResult(readerFn, readerValue)
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(try? result(env).get(), 10)
+        #expect(try result(env).get() == 10)
     }
 
-    func testLiftA2ReaderResult() {
+    @Test func liftA2Result() throws {
         let reader1 = Reader<Environment, Result<Int, TestError>> { env in .success(env.multiplier) }
         let reader2 = Reader<Environment, Result<Int, TestError>> { env in .success(env.addend) }
 
@@ -168,7 +168,7 @@ final class ReaderTTests: XCTestCase {
         let result = lifted(reader1, reader2)
 
         let env = Environment(multiplier: 5, addend: 3)
-        XCTAssertEqual(try? result(env).get(), 8)
+        #expect(try result(env).get() == 8)
     }
 
     // Either-specific applicative function tests removed due to soft dependency pattern

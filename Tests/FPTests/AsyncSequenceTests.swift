@@ -1,13 +1,12 @@
-import XCTest
+import Testing
 @testable import FP
 import FP
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-final class AsyncSequenceTests: XCTestCase {
+@Suite struct AsyncSequenceTests {
 
     // MARK: - Functor Tests (Core Methods)
 
-    func testFmap() async throws {
+    @Test func fmap() async throws {
         let sequence = AsyncStream<Int> { continuation in
             continuation.yield(1)
             continuation.yield(2)
@@ -22,10 +21,10 @@ final class AsyncSequenceTests: XCTestCase {
             results.append(value)
         }
 
-        XCTAssertEqual(results, [2, 4, 6])
+        #expect(results == [2, 4, 6])
     }
 
-    func testCurriedFmap() async throws {
+    @Test func curriedFmap() async throws {
         let sequence = AsyncStream<Int> { continuation in
             continuation.yield(1)
             continuation.yield(2)
@@ -40,12 +39,12 @@ final class AsyncSequenceTests: XCTestCase {
             results.append(value)
         }
 
-        XCTAssertEqual(results, ["1", "2"])
+        #expect(results == ["1", "2"])
     }
 
     // MARK: - Applicative Tests (Core Methods)
 
-    func testZip() async throws {
+    @Test func zip() async throws {
         let sequence1 = AsyncStream<Int> { continuation in
             continuation.yield(1)
             continuation.yield(2)
@@ -65,16 +64,16 @@ final class AsyncSequenceTests: XCTestCase {
             results.append(value)
         }
 
-        XCTAssertEqual(results.count, 2)
-        XCTAssertEqual(results[0].0, 1)
-        XCTAssertEqual(results[0].1, "a")
-        XCTAssertEqual(results[1].0, 2)
-        XCTAssertEqual(results[1].1, "b")
+        #expect(results.count == 2)
+        #expect(results[0].0 == 1)
+        #expect(results[0].1 == "a")
+        #expect(results[1].0 == 2)
+        #expect(results[1].1 == "b")
     }
 
     // MARK: - Monad Tests (Core Methods)
 
-    func testBind() async throws {
+    @Test func bind() async throws {
         let sequence = AsyncStream<Int> { continuation in
             continuation.yield(1)
             continuation.yield(2)
@@ -94,8 +93,7 @@ final class AsyncSequenceTests: XCTestCase {
             results.append(value)
         }
 
-        XCTAssertEqual(results, [1, 10, 2, 20])
+        #expect(results == [1, 10, 2, 20])
     }
 
 }
-

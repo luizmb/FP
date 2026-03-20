@@ -1,12 +1,11 @@
-import XCTest
+import Testing
 import Combine
 @testable import FP
 @testable import Either
 
 
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 @MainActor
-final class CompletionEitherTests: XCTestCase {
+@Suite struct CompletionEitherTests {
 
     enum TestError: Error, Equatable {
         case test
@@ -15,31 +14,31 @@ final class CompletionEitherTests: XCTestCase {
 
     // MARK: - Either to Completion
 
-    func testEitherRightToCompletion() {
+    @Test func eitherRightToCompletion() {
         let either: Either<TestError, Void> = .right(())
         let completion = either.completion()
 
         if case .finished = completion {
             // Success
         } else {
-            XCTFail("Expected .finished")
+            Issue.record("Expected .finished")
         }
     }
 
-    func testEitherLeftToCompletion() {
+    @Test func eitherLeftToCompletion() {
         let either: Either<TestError, Void> = .left(.test)
         let completion = either.completion()
 
         if case .failure(let error) = completion {
-            XCTAssertEqual(error, .test)
+            #expect(error == .test)
         } else {
-            XCTFail("Expected .failure")
+            Issue.record("Expected .failure")
         }
     }
 
     // MARK: - Completion to Either (Parallel)
 
-    func testCompletionFinishedToEitherParallel() {
+    @Test func completionFinishedToEitherParallel() {
         let completion: Subscribers.Completion<TestError> = .finished
         let either = completion.either.parallel()
 
@@ -48,25 +47,25 @@ final class CompletionEitherTests: XCTestCase {
         if case .left = either {
             // Success - .finished maps to .left(())
         } else {
-            XCTFail("Expected .left")
+            Issue.record("Expected .left")
         }
     }
 
-    func testCompletionFailureToEitherParallel() {
+    @Test func completionFailureToEitherParallel() {
         let completion: Subscribers.Completion<TestError> = .failure(.test)
         let either = completion.either.parallel()
 
         // parallel gives Either<Void, TestError>
         if case .right(let error) = either {
-            XCTAssertEqual(error, .test)
+            #expect(error == .test)
         } else {
-            XCTFail("Expected .right")
+            Issue.record("Expected .right")
         }
     }
 
     // MARK: - Completion to Either (Crossover)
 
-    func testCompletionFinishedToEitherCrossover() {
+    @Test func completionFinishedToEitherCrossover() {
         let completion: Subscribers.Completion<TestError> = .finished
         let either = completion.either.crossover()
 
@@ -74,25 +73,25 @@ final class CompletionEitherTests: XCTestCase {
         if case .right = either {
             // Success - .finished maps to .right(())
         } else {
-            XCTFail("Expected .right")
+            Issue.record("Expected .right")
         }
     }
 
-    func testCompletionFailureToEitherCrossover() {
+    @Test func completionFailureToEitherCrossover() {
         let completion: Subscribers.Completion<TestError> = .failure(.test)
         let either = completion.either.crossover()
 
         // crossover inverts, giving Either<TestError, Void>
         if case .left(let error) = either {
-            XCTAssertEqual(error, .test)
+            #expect(error == .test)
         } else {
-            XCTFail("Expected .left")
+            Issue.record("Expected .left")
         }
     }
 
     // MARK: - Round Trip Tests
 
-    func testRoundTripFinished() {
+    @Test func roundTripFinished() {
         let original: Subscribers.Completion<TestError> = .finished
         let either = original.either.crossover()
         let completion = either.completion()
@@ -100,59 +99,59 @@ final class CompletionEitherTests: XCTestCase {
         if case .finished = completion {
             // Success
         } else {
-            XCTFail("Expected .finished after round trip")
+            Issue.record("Expected .finished after round trip")
         }
     }
 
-    func testRoundTripFailure() {
+    @Test func roundTripFailure() {
         let original: Subscribers.Completion<TestError> = .failure(.test)
         let either = original.either.crossover()
         let completion = either.completion()
 
         if case .failure(let error) = completion {
-            XCTAssertEqual(error, .test)
+            #expect(error == .test)
         } else {
-            XCTFail("Expected .failure after round trip")
+            Issue.record("Expected .failure after round trip")
         }
     }
 
     // MARK: - SumType Tests
 
-    func testCompletionAsSumTypeFinished() {
+    @Test func completionAsSumTypeFinished() {
         let completion: Subscribers.Completion<TestError> = .finished
         let result = completion.match(
             caseLeft: { _ in "finished" },
             caseRight: { _ in "failed" }
         )
 
-        XCTAssertEqual(result, "finished")
+        #expect(result == "finished")
     }
 
-    func testCompletionAsSumTypeFailure() {
+    @Test func completionAsSumTypeFailure() {
         let completion: Subscribers.Completion<TestError> = .failure(.test)
         let result = completion.match(
             caseLeft: { _ in "finished" },
             caseRight: { error in "failed: \(error)" }
         )
 
-        XCTAssertEqual(result, "failed: test")
+        #expect(result == "failed: test")
     }
 
-    func testCompletionConstructionViaLeft() {
+    @Test func completionConstructionViaLeft() {
         let completion = Subscribers.Completion<TestError>.left(())
         if case .finished = completion {
             // Success
         } else {
-            XCTFail("Expected .finished")
+            Issue.record("Expected .finished")
         }
     }
 
-    func testCompletionConstructionViaRight() {
+    @Test func completionConstructionViaRight() {
         let completion = Subscribers.Completion<TestError>.right(.test)
         if case .failure(let error) = completion {
-            XCTAssertEqual(error, .test)
+            #expect(error == .test)
         } else {
-            XCTFail("Expected .failure")
+            Issue.record("Expected .failure")
         }
     }
 }

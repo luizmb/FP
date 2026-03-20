@@ -1,12 +1,12 @@
-import XCTest
+import Testing
 @testable import FP
 @testable import Operators
 
-final class FunctionApplicativeTests: XCTestCase {
+@Suite struct FunctionApplicativeTests {
 
     // MARK: - Basic Applicative Tests
 
-    func testApply() {
+    @Test func basicApply() {
         // Function that returns a function
         let f: (Int) -> (Int) -> Int = { x in { y in x + y } }
         let g: (Int) -> Int = { $0 * 2 }
@@ -15,41 +15,41 @@ final class FunctionApplicativeTests: XCTestCase {
 
         // For input 5: f(5) = { y in 5 + y }, g(5) = 10
         // So f(5)(g(5)) = { y in 5 + y }(10) = 15
-        XCTAssertEqual(result(5), 15)
-        XCTAssertEqual(result(3), 9)  // f(3)(g(3)) = 3 + 6 = 9
+        #expect(result(5) == 15)
+        #expect(result(3) == 9)  // f(3)(g(3)) = 3 + 6 = 9
     }
 
-    func testCurriedApply() {
+    @Test func curriedApply() {
         let f: (Int) -> (Int) -> Int = { x in { y in x + y } }
         let g: (Int) -> Int = { $0 * 2 }
 
         let appliedF = apply(f)
         let result = appliedF(g)
 
-        XCTAssertEqual(result(5), 15)
-        XCTAssertEqual(result(3), 9)
+        #expect(result(5) == 15)
+        #expect(result(3) == 9)
     }
 
-    func testPure() {
+    @Test func basicPure() {
         let constantFn: (Int) -> String = pure("hello")
 
-        XCTAssertEqual(constantFn(1), "hello")
-        XCTAssertEqual(constantFn(100), "hello")
-        XCTAssertEqual(constantFn(-5), "hello")
+        #expect(constantFn(1) == "hello")
+        #expect(constantFn(100) == "hello")
+        #expect(constantFn(-5) == "hello")
     }
 
-    func testLiftA2() {
+    @Test func basicLiftA2() {
         let add: (Int) -> (Int) -> Int = { x in { y in x + y } }
         let f: (String) -> Int = { $0.count }
         let g: (String) -> Int = { _ in 10 }
 
         let lifted = liftA2(add, f, g)
 
-        XCTAssertEqual(lifted("hello"), 15)  // 5 + 10
-        XCTAssertEqual(lifted("ab"), 12)     // 2 + 10
+        #expect(lifted("hello") == 15)  // 5 + 10
+        #expect(lifted("ab") == 12)     // 2 + 10
     }
 
-    func testCurriedLiftA2() {
+    @Test func curriedLiftA2() {
         let multiply: (Int) -> (Int) -> Int = { x in { y in x * y } }
         let f: (Int) -> Int = { $0 + 1 }
         let g: (Int) -> Int = { $0 * 2 }
@@ -57,14 +57,14 @@ final class FunctionApplicativeTests: XCTestCase {
         let lifted = liftA2(multiply)(f)(g)
 
         // For input 5: f(5) = 6, g(5) = 10, result = 6 * 10 = 60
-        XCTAssertEqual(lifted(5), 60)
+        #expect(lifted(5) == 60)
         // For input 3: f(3) = 4, g(3) = 6, result = 4 * 6 = 24
-        XCTAssertEqual(lifted(3), 24)
+        #expect(lifted(3) == 24)
     }
 
     // MARK: - Applicative Laws
 
-    func testApplicativeIdentityLaw() {
+    @Test func applicativeIdentityLaw() {
         // pure id <*> v == v
         let v: (Int) -> Int = { $0 * 2 }
         let identity: (Int) -> Int = { $0 }
@@ -73,11 +73,11 @@ final class FunctionApplicativeTests: XCTestCase {
         let left = pureId <*> v
         let right = v
 
-        XCTAssertEqual(left(5), right(5))
-        XCTAssertEqual(left(10), right(10))
+        #expect(left(5) == right(5))
+        #expect(left(10) == right(10))
     }
 
-    func testApplicativeCompositionLaw() {
+    @Test func applicativeCompositionLaw() {
         // pure (.) <*> u <*> v <*> w == u <*> (v <*> w)
         let u: (Int) -> (Int) -> String = { x in { y in "\(x + y)" } }
         let v: (Int) -> (Int) -> Int = { x in { y in x + y } }
@@ -100,11 +100,11 @@ final class FunctionApplicativeTests: XCTestCase {
         // Right side: u <*> (v <*> w)
         let right = u <*> (v <*> w)
 
-        XCTAssertEqual(left(5), right(5))
-        XCTAssertEqual(left(3), right(3))
+        #expect(left(5) == right(5))
+        #expect(left(3) == right(3))
     }
 
-    func testApplicativeHomomorphismLaw() {
+    @Test func applicativeHomomorphismLaw() {
         // pure f <*> pure x == pure (f x)
         let f: (Int) -> String = { "\($0)" }
         let x = 42
@@ -115,11 +115,11 @@ final class FunctionApplicativeTests: XCTestCase {
         let left = pureF <*> pureX
         let right: (String) -> String = pure(f(x))
 
-        XCTAssertEqual(left("ignored"), right("ignored"))
-        XCTAssertEqual(left("also ignored"), right("also ignored"))
+        #expect(left("ignored") == right("ignored"))
+        #expect(left("also ignored") == right("also ignored"))
     }
 
-    func testApplicativeInterchangeLaw() {
+    @Test func applicativeInterchangeLaw() {
         // u <*> pure y == pure ($ y) <*> u
         let u: (Int) -> (Int) -> String = { x in { y in "\(x + y)" } }
         let y = 10
@@ -132,45 +132,45 @@ final class FunctionApplicativeTests: XCTestCase {
         let pureApplyToY: (Int) -> (@escaping (Int) -> String) -> String = pure(applyToY)
         let right = pureApplyToY <*> u
 
-        XCTAssertEqual(left(5), right(5))
-        XCTAssertEqual(left(3), right(3))
+        #expect(left(5) == right(5))
+        #expect(left(3) == right(3))
     }
 
     // MARK: - Applicative Operators
 
-    func testApplyOperator() {
+    @Test func applyOperator() {
         let f: (Int) -> (String) -> String = { x in { y in "\(x): \(y)" } }
         let g: (Int) -> String = { "value \($0)" }
 
         let result = f <*> g
 
-        XCTAssertEqual(result(5), "5: value 5")
-        XCTAssertEqual(result(10), "10: value 10")
+        #expect(result(5) == "5: value 5")
+        #expect(result(10) == "10: value 10")
     }
 
-    func testSequenceRightOperator() {
+    @Test func sequenceRightOperator() {
         let f: (Int) -> Int = { $0 + 1 }
         let g: (Int) -> String = { "\($0)" }
 
         let result = f *> g
 
         // Should evaluate f, discard result, return g's result
-        XCTAssertEqual(result(5), "5")
-        XCTAssertEqual(result(10), "10")
+        #expect(result(5) == "5")
+        #expect(result(10) == "10")
     }
 
-    func testSequenceLeftOperator() {
+    @Test func sequenceLeftOperator() {
         let f: (Int) -> String = { "\($0)" }
         let g: (Int) -> Int = { $0 + 1 }
 
         let result = f <* g
 
         // Should evaluate f, keep result, evaluate g, return f's result
-        XCTAssertEqual(result(5), "5")
-        XCTAssertEqual(result(10), "10")
+        #expect(result(5) == "5")
+        #expect(result(10) == "10")
     }
 
-    func testOperatorComposition() {
+    @Test func operatorComposition() {
         // Demonstrate chaining with liftA2
         let f: (Int) -> Int = { $0 * 2 }
         let g: (Int) -> Int = { $0 + 1 }
@@ -180,19 +180,19 @@ final class FunctionApplicativeTests: XCTestCase {
         let combined = liftA2(addCurried, f, g)
 
         // For input 5: f(5) = 10, g(5) = 6, result = 10 + 6 = 16
-        XCTAssertEqual(combined(5), 16)
+        #expect(combined(5) == 16)
 
         // Can also use pure and <*>
         let pureAdd: (Int) -> (Int) -> (Int) -> Int = pure(addCurried)
         let step1: (Int) -> (Int) -> Int = pureAdd <*> f
         let result: (Int) -> Int = step1 <*> g
 
-        XCTAssertEqual(result(5), 16)
+        #expect(result(5) == 16)
     }
 
     // MARK: - Practical Examples
 
-    func testPracticalExample() {
+    @Test func practicalExample() {
         // Simulate reading from environment and combining values
         struct Config {
             let multiplier: Int
@@ -208,10 +208,10 @@ final class FunctionApplicativeTests: XCTestCase {
         let result = liftA2(combineCurried, getMultiplier, getOffset)
 
         let config = Config(multiplier: 5, offset: 10)
-        XCTAssertEqual(result(config), 15)
+        #expect(result(config) == 15)
     }
 
-    func testReaderPattern() {
+    @Test func readerPattern() {
         // The function applicative is essentially the Reader monad's applicative
         struct Environment {
             let name: String
@@ -231,10 +231,10 @@ final class FunctionApplicativeTests: XCTestCase {
         let greeting = liftA2(greetCurried, getName, getAge)
 
         let env = Environment(name: "Alice", age: 30)
-        XCTAssertEqual(greeting(env), "Hello Alice, you are 30 years old")
+        #expect(greeting(env) == "Hello Alice, you are 30 years old")
     }
 
-    func testLiftA2Practical() {
+    @Test func liftA2Practical() {
         // Combine two computations that depend on the same input
         let square: (Int) -> Int = { $0 * $0 }
         let double: (Int) -> Int = { $0 * 2 }
@@ -243,19 +243,19 @@ final class FunctionApplicativeTests: XCTestCase {
         let combined = liftA2(add, square, double)
 
         // For input 5: square(5) = 25, double(5) = 10, result = 35
-        XCTAssertEqual(combined(5), 35)
+        #expect(combined(5) == 35)
         // For input 3: square(3) = 9, double(3) = 6, result = 15
-        XCTAssertEqual(combined(3), 15)
+        #expect(combined(3) == 15)
     }
 
-    func testEquivalenceWithManualApplication() {
+    @Test func equivalenceWithManualApplication() {
         let f: (Int) -> (Int) -> Int = { x in { y in x + y } }
         let g: (Int) -> Int = { $0 * 2 }
 
         let viaApply = f <*> g
         let manual: (Int) -> Int = { r in f(r)(g(r)) }
 
-        XCTAssertEqual(viaApply(5), manual(5))
-        XCTAssertEqual(viaApply(10), manual(10))
+        #expect(viaApply(5) == manual(5))
+        #expect(viaApply(10) == manual(10))
     }
 }

@@ -1,8 +1,8 @@
-import XCTest
+import Testing
 @testable import Reader
 import FP
 
-final class ReaderCoreTests: XCTestCase {
+@Suite struct ReaderCoreTests {
 
     struct Environment {
         let multiplier: Int
@@ -11,27 +11,27 @@ final class ReaderCoreTests: XCTestCase {
 
     // MARK: - Construction and Execution
 
-    func testReaderConstruction() {
+    @Test func readerConstruction() {
         let reader = Reader<Environment, Int> { env in
             env.multiplier * 2
         }
 
         let env = Environment(multiplier: 5, offset: 3)
-        XCTAssertEqual(reader(env), 10)
+        #expect(reader(env) == 10)
     }
 
-    func testReaderCall() {
+    @Test func readerCall() {
         let reader = Reader<Environment, Int> { env in
             env.multiplier + env.offset
         }
 
         let env = Environment(multiplier: 5, offset: 3)
-        XCTAssertEqual(reader.callAsFunction(env), 8)
+        #expect(reader.callAsFunction(env) == 8)
     }
 
     // MARK: - Functor (Core Methods)
 
-    func testFmap() {
+    @Test func fmap() {
         let reader = Reader<Environment, Int> { env in
             env.multiplier
         }
@@ -39,10 +39,10 @@ final class ReaderCoreTests: XCTestCase {
         let mapped = reader.fmap { $0 * 2 }
 
         let env = Environment(multiplier: 5, offset: 3)
-        XCTAssertEqual(mapped(env), 10)
+        #expect(mapped(env) == 10)
     }
 
-    func testMapReader() {
+    @Test func mapReader() {
         let reader = Reader<Environment, Int> { env in
             env.multiplier
         }
@@ -50,10 +50,10 @@ final class ReaderCoreTests: XCTestCase {
         let mapped = reader.mapReader { "\($0)" }
 
         let env = Environment(multiplier: 5, offset: 3)
-        XCTAssertEqual(mapped(env), "5")
+        #expect(mapped(env) == "5")
     }
 
-    func testContramapEnvironment() {
+    @Test func contramapEnvironment() {
         let reader = Reader<Int, String> { value in
             "\(value)"
         }
@@ -63,10 +63,10 @@ final class ReaderCoreTests: XCTestCase {
         }
 
         let env = Environment(multiplier: 5, offset: 3)
-        XCTAssertEqual(contramapped(env), "5")
+        #expect(contramapped(env) == "5")
     }
 
-    func testDimap() {
+    @Test func dimap() {
         let reader = Reader<Int, Int> { value in
             value * 2
         }
@@ -77,12 +77,12 @@ final class ReaderCoreTests: XCTestCase {
         )
 
         let env = Environment(multiplier: 5, offset: 3)
-        XCTAssertEqual(dimapped(env), "10")
+        #expect(dimapped(env) == "10")
     }
 
     // MARK: - Applicative (Core Methods)
 
-    func testApply() {
+    @Test func apply() {
         let readerFn = Reader<Environment, (Int) -> Int> { env in
             { value in value + env.offset }
         }
@@ -98,10 +98,10 @@ final class ReaderCoreTests: XCTestCase {
         }
 
         let env = Environment(multiplier: 5, offset: 3)
-        XCTAssertEqual(result(env), 8)
+        #expect(result(env) == 8)
     }
 
-    func testLiftA2() {
+    @Test func liftA2() {
         let reader1 = Reader<Environment, Int> { env in
             env.multiplier
         }
@@ -114,10 +114,10 @@ final class ReaderCoreTests: XCTestCase {
         let combined = Reader<Environment, Int>.liftA2(add)(reader1, reader2)
 
         let env = Environment(multiplier: 5, offset: 3)
-        XCTAssertEqual(combined(env), 8)
+        #expect(combined(env) == 8)
     }
 
-    func testLiftA2NonCurried() {
+    @Test func liftA2NonCurried() {
         let reader1 = Reader<Environment, Int> { env in
             env.multiplier
         }
@@ -131,12 +131,12 @@ final class ReaderCoreTests: XCTestCase {
         let combined = liftedAdd(reader1, reader2)
 
         let env = Environment(multiplier: 5, offset: 3)
-        XCTAssertEqual(combined(env), 8)
+        #expect(combined(env) == 8)
     }
 
     // MARK: - Monad (Core Methods)
 
-    func testFlatMap() {
+    @Test func flatMap() {
         let reader = Reader<Environment, Int> { env in
             env.multiplier
         }
@@ -148,23 +148,23 @@ final class ReaderCoreTests: XCTestCase {
         }
 
         let env = Environment(multiplier: 5, offset: 3)
-        XCTAssertEqual(bound(env), "8")
+        #expect(bound(env) == "8")
     }
 
-    func testJoin() {
+    @Test func join() {
         let nested = Reader<Environment, Reader<Environment, Int>> { env in
             Reader<Environment, Int> { innerEnv in
                 env.multiplier + innerEnv.offset
             }
         }
 
-        let flattened = nested.flatMap { $0 }
+        let flattened = nested.flatMap(identity)
 
         let env = Environment(multiplier: 5, offset: 3)
-        XCTAssertEqual(flattened(env), 8)
+        #expect(flattened(env) == 8)
     }
 
-    func testKleisli() {
+    @Test func kleisli() {
         let f: (Int) -> Reader<Environment, Int> = { value in
             Reader { env in value + env.offset }
         }
@@ -177,10 +177,10 @@ final class ReaderCoreTests: XCTestCase {
         let result = composed(5)
 
         let env = Environment(multiplier: 2, offset: 3)
-        XCTAssertEqual(result(env), "16") // (5 + 3) * 2 = 16
+        #expect(result(env) == "16") // (5 + 3) * 2 = 16
     }
 
-    func testKleisliBack() {
+    @Test func kleisliBack() {
         let f: (Int) -> Reader<Environment, Int> = { value in
             Reader { env in value + env.offset }
         }
@@ -193,31 +193,31 @@ final class ReaderCoreTests: XCTestCase {
         let result = composed(5)
 
         let env = Environment(multiplier: 2, offset: 3)
-        XCTAssertEqual(result(env), "16")
+        #expect(result(env) == "16")
     }
 
     // MARK: - Ask
 
-    func testAsk() {
+    @Test func ask() {
         let reader = Reader<Environment, Environment>.ask
 
         let env = Environment(multiplier: 5, offset: 3)
         let result = reader(env)
 
-        XCTAssertEqual(result.multiplier, 5)
-        XCTAssertEqual(result.offset, 3)
+        #expect(result.multiplier == 5)
+        #expect(result.offset == 3)
     }
 
-    func testAsks() {
+    @Test func asks() {
         let reader = Reader<Environment, Int>.asks { $0.multiplier }
 
         let env = Environment(multiplier: 5, offset: 3)
-        XCTAssertEqual(reader(env), 5)
+        #expect(reader(env) == 5)
     }
 
     // MARK: - Local
 
-    func testLocal() {
+    @Test func local() {
         let reader = Reader<Environment, Int> { env in
             env.multiplier + env.offset
         }
@@ -227,6 +227,6 @@ final class ReaderCoreTests: XCTestCase {
         }
 
         let env = Environment(multiplier: 5, offset: 3)
-        XCTAssertEqual(modified(env), 13) // (5 * 2) + 3 = 13
+        #expect(modified(env) == 13) // (5 * 2) + 3 = 13
     }
 }
