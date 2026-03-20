@@ -14,13 +14,16 @@ func divide(_ a: Double, by b: Double) -> Either<String, Double> {
 
 ---
 
-## `<£>` — Map
+## `<£>` and `<&>` — Map
 
-Apply a function to the right value. Left values pass through unchanged.
+Apply a function to the right value. `<£>` puts the function on the left; `<&>` puts the either on the left.
 
 ```swift
 { $0 * 2 } <£> Either<String, Int>.right(5)       // .right(10)
 { $0 * 2 } <£> Either<String, Int>.left("error")  // .left("error")
+
+Either<String, Int>.right(5)      <&> { $0 * 2 }  // .right(10)
+Either<String, Int>.left("error") <&> { $0 * 2 }  // .left("error")
 
 // Named function
 Either<String, Int>.fmap { $0 * 2 }(.right(5))  // .right(10)
@@ -38,17 +41,6 @@ Either<String, Int>.right(42) £> "done"    // .right("done")
 Either<String, Int>.left("err") £> "done"  // .left("err")
 
 "done" <£ Either<String, Int>.right(42)    // .right("done")
-```
-
----
-
-## `<&>` — Flipped map
-
-Same as `<£>` with the either on the left.
-
-```swift
-Either<String, Int>.right(5) <&> { $0 * 2 }      // .right(10)
-Either<String, Int>.left("error") <&> { $0 * 2 } // .left("error")
 ```
 
 ---
@@ -87,9 +79,9 @@ Either.right(1).seqLeft(.right(2))   // .right(1)
 
 ---
 
-## `>>-` — Bind (flatMap)
+## `>>-` and `-<<` — Bind (flatMap)
 
-Chain operations that each may produce a left. Stops at the first left.
+Chain operations that each may produce a left. `>>-` puts the container on the left; `-<<` puts the function on the left.
 
 ```swift
 func parse(_ s: String) -> Either<String, Int> {
@@ -103,20 +95,12 @@ Either.right("42") >>- parse >>- validate    // .right(42)
 Either.right("-1") >>- parse >>- validate    // .left("Must be positive: -1")
 Either.right("??") >>- parse                 // .left("Not a number: ??")
 
-// Named function
-Either.right("42").flatMap(parse)            // .right(42)
-Either.bind(validate)(.right(42))            // .right(42)
-```
-
----
-
-## `-<<` — Flipped bind
-
-Same as `>>-` with arguments reversed.
-
-```swift
 validate -<< Either.right(42)   // .right(42)
 validate -<< Either.right(-1)   // .left("Must be positive: -1")
+
+// Named function
+Either.right("42").flatMap(parse)  // .right(42)
+Either.bind(validate)(.right(42))  // .right(42)
 ```
 
 ---

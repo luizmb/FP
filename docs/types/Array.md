@@ -6,13 +6,15 @@ Array as a monad models **non-determinism** — a computation that can return mu
 
 ---
 
-## `<£>` — Map
+## `<£>` and `<&>` — Map
 
-Apply a function to every element.
+Apply a function to every element. `<£>` puts the function on the left; `<&>` puts the array on the left.
 
 ```swift
 { $0 * 2 } <£> [1, 2, 3]          // [2, 4, 6]
 { "\($0)" } <£> [1, 2, 3]         // ["1", "2", "3"]
+
+[1, 2, 3] <&> { $0 * 2 }          // [2, 4, 6]
 
 // Named function
 Array.fmap { $0 * 2 }([1, 2, 3])  // [2, 4, 6]
@@ -31,16 +33,6 @@ Replace every element with a constant.
 
 // Named function
 Array.fmap(const("x"))([1, 2, 3])  // ["x", "x", "x"]
-```
-
----
-
-## `<&>` — Flipped map
-
-Same as `<£>` with the array on the left.
-
-```swift
-[1, 2, 3] <&> { $0 * 2 }   // [2, 4, 6]
 ```
 
 ---
@@ -78,27 +70,19 @@ Cartesian product, discarding one side's values.
 
 ---
 
-## `>>-` — Bind (flatMap)
+## `>>-` and `-<<` — Bind (flatMap)
 
-Apply a function to each element and flatten the results. Models non-deterministic branching.
+Apply a function to each element and flatten the results. `>>-` puts the array on the left; `-<<` puts the function on the left.
 
 ```swift
-[1, 2, 3] >>- { [$0, $0 * 10] }        // [1, 10, 2, 20, 3, 30]
-[1, 2, 3] >>- { $0 % 2 == 0 ? [$0] : [] }  // [2]  (filter-like)
+[1, 2, 3] >>- { [$0, $0 * 10] }             // [1, 10, 2, 20, 3, 30]
+[1, 2, 3] >>- { $0 % 2 == 0 ? [$0] : [] }   // [2]  (filter-like)
+
+{ [$0, $0 * 10] } -<< [1, 2, 3]             // [1, 10, 2, 20, 3, 30]
 
 // Named function
 Array.bind { [$0, $0 * 10] }([1, 2, 3])  // [1, 10, 2, 20, 3, 30]
 [1, 2, 3].flatMap { [$0, $0 * 10] }      // [1, 10, 2, 20, 3, 30]
-```
-
----
-
-## `-<<` — Flipped bind
-
-Same as `>>-` with arguments reversed.
-
-```swift
-{ [$0, $0 * 10] } -<< [1, 2, 3]   // [1, 10, 2, 20, 3, 30]
 ```
 
 ---

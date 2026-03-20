@@ -8,15 +8,15 @@ An `AsyncStream<Element>` emits values asynchronously over time. The operators l
 
 ---
 
-## `<£>` — Map
+## `<£>` and `<&>` — Map
 
-Apply an async function to every emitted element.
+Apply a function to every emitted element. `<£>` puts the function on the left; `<&>` puts the stream on the left.
 
 ```swift
 let numbers = AsyncStream<Int> { c in c.yield(1); c.yield(2); c.yield(3); c.finish() }
 
-let doubled = { (n: Int) async -> Int in n * 2 } <£> numbers
-// emits 2, 4, 6
+{ (n: Int) async -> Int in n * 2 } <£> numbers   // emits 2, 4, 6
+numbers <&> { (n: Int) async -> Int in n * 2 }   // emits 2, 4, 6
 
 // Named function — uses AsyncSequence.map under the hood
 numbers.map { $0 * 2 }
@@ -31,16 +31,6 @@ Replace every emitted element with a constant.
 ```swift
 numbers £> "tick"    // emits "tick", "tick", "tick"
 "tick" <£ numbers    // same
-```
-
----
-
-## `<&>` — Flipped map
-
-Same as `<£>` with the stream on the left.
-
-```swift
-numbers <&> { (n: Int) async -> Int in n * 2 }   // emits 2, 4, 6
 ```
 
 ---
@@ -81,22 +71,14 @@ AsyncStream<String>.seqRight(numbers, letters)
 
 ---
 
-## `>>-` — Bind (flatMap)
+## `>>-` and `-<<` — Bind (flatMap)
 
-For each emitted element, produce a new async sequence and flatten the results.
+For each emitted element, produce a new async sequence and flatten the results. `>>-` puts the stream on the left; `-<<` puts the function on the left.
 
 ```swift
 numbers >>- { n in AsyncStream<Int> { c in c.yield(n); c.yield(n * 10); c.finish() } }
 // emits 1, 10, 2, 20, 3, 30
-```
 
----
-
-## `-<<` — Flipped bind
-
-Same as `>>-` with arguments reversed.
-
-```swift
 { n in AsyncStream<Int> { c in c.yield(n * 2); c.finish() } } -<< numbers
 // emits 2, 4, 6
 ```

@@ -6,13 +6,16 @@ An `Optional<A>` is either `.some(value)` or `.none`. The operators let you tran
 
 ---
 
-## `<£>` — Map
+## `<£>` and `<&>` — Map
 
-Apply a function to the wrapped value. If the optional is `nil`, the result is `nil`.
+Apply a function to the wrapped value. `<£>` puts the function on the left; `<&>` puts the optional on the left.
 
 ```swift
 { $0 * 2 } <£> Optional(5)    // Optional(10)
 { $0 * 2 } <£> (nil as Int?)  // nil
+
+Optional(5)       <&> { $0 * 2 }   // Optional(10)
+(nil as Int?)     <&> { $0 * 2 }   // nil
 
 // Named function
 Optional.fmap { $0 * 2 }(Optional(5))  // Optional(10)
@@ -34,20 +37,6 @@ Optional(42) £> "hello"   // Optional("hello")
 
 // Named function (fmap with const)
 Optional.fmap(const("hello"))(Optional(42))  // Optional("hello")
-```
-
----
-
-## `<&>` — Flipped map
-
-Same as `<£>` with the optional on the left. Reads naturally left-to-right.
-
-```swift
-Optional(5) <&> { $0 * 2 }   // Optional(10)
-(nil as Int?) <&> { $0 * 2 } // nil
-
-// Named function
-Optional(5).map { $0 * 2 }   // Optional(10)
 ```
 
 ---
@@ -86,9 +75,9 @@ Optional("a").seqLeft(Optional("b"))  // Optional("a")
 
 ---
 
-## `>>-` — Bind (flatMap)
+## `>>-` and `-<<` — Bind (flatMap)
 
-Chain operations that each may return `nil`. Stops at the first `nil`.
+Chain operations that each may return `nil`. `>>-` puts the container on the left; `-<<` puts the function on the left.
 
 ```swift
 Optional("42") >>- { Int($0) }                          // Optional(42)
@@ -99,20 +88,12 @@ Optional(-1) >>- { $0 > 0 ? .some($0 * 2) : nil }      // nil
 // Chained
 Optional("42") >>- { Int($0) } >>- { $0 > 0 ? .some($0) : nil }  // Optional(42)
 
+{ Int($0) } -<< Optional("42")   // Optional(42)
+{ Int($0) } -<< Optional("??")   // nil
+
 // Named function
 Optional.bind { Int($0) }(Optional("42"))  // Optional(42)
 Optional("42").flatMap { Int($0) }         // Optional(42)
-```
-
----
-
-## `-<<` — Flipped bind
-
-Same as `>>-` with arguments reversed. Useful for naming the function first.
-
-```swift
-{ Int($0) } -<< Optional("42")   // Optional(42)
-{ Int($0) } -<< Optional("??")   // nil
 ```
 
 ---
