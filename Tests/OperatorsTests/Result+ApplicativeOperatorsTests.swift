@@ -63,7 +63,7 @@ import Testing
     @Test func applicativeIdentityLaw() {
         // pure id <*> v = v
         let value: Result<Int, TestError> = .success(5)
-        let identity: Result<(Int) -> Int, TestError> = .success({ $0 })
+        let identity: Result<(Int) -> Int, TestError> = .success(id)
         let result = identity <*> value
         #expect((try? result.get()) == (try? value.get()))
     }

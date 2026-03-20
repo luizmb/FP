@@ -11,7 +11,7 @@ import FP
 
         either.match(
             caseLeft: { error in #expect(error == "error") },
-            caseRight: const(Issue.record("Expected left"))
+            caseRight: { _ in Issue.record("Expected left") }
         )
     }
 
@@ -19,7 +19,7 @@ import FP
         let either: Either<String, Int> = .right(42)
 
         either.match(
-            caseLeft: const(Issue.record("Expected right")),
+            caseLeft: { _ in Issue.record("Expected right") },
             caseRight: { value in #expect(value == 42) }
         )
     }
@@ -151,11 +151,11 @@ import FP
 
     @Test func join() {
         let nested: Either<String, Either<String, Int>> = .right(.right(42))
-        let result = nested.flatMap(identity)
+        let result = nested.flatMap(id)
         #expect(result == .right(42))
 
         let nestedLeft: Either<String, Either<String, Int>> = .right(.left("inner error"))
-        let leftResult = nestedLeft.flatMap(identity)
+        let leftResult = nestedLeft.flatMap(id)
         #expect(leftResult == .left("inner error"))
     }
 

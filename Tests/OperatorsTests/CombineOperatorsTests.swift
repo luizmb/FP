@@ -19,7 +19,7 @@ import FP
         var results: [Int] = []
         doubled.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         ).store(in: &cancellables)
 
         #expect(results == [2, 4, 6])
@@ -29,19 +29,19 @@ import FP
         var cancellables = Set<AnyCancellable>()
         let publisher = [1, 2, 3].publisher
 
-        let mapped = Result<Int, Never>.Publisher.fmap(identity)(publisher)
+        let mapped = Result<Int, Never>.Publisher.fmap(id)(publisher)
 
         var originalResults: [Int] = []
         var mappedResults: [Int] = []
 
         publisher.sink(
             receiveCompletion: ignore,
-            receiveValue: originalResults.append
+            receiveValue: { originalResults.append($0) }
         ).store(in: &cancellables)
 
         mapped.sink(
             receiveCompletion: ignore,
-            receiveValue: mappedResults.append
+            receiveValue: { mappedResults.append($0) }
         ).store(in: &cancellables)
 
         #expect(originalResults == mappedResults)
@@ -63,12 +63,12 @@ import FP
 
         composed.sink(
             receiveCompletion: ignore,
-            receiveValue: composedResults.append
+            receiveValue: { composedResults.append($0) }
         ).store(in: &cancellables)
 
         separate.sink(
             receiveCompletion: ignore,
-            receiveValue: separateResults.append
+            receiveValue: { separateResults.append($0) }
         ).store(in: &cancellables)
 
         #expect(composedResults == separateResults)
@@ -84,7 +84,7 @@ import FP
         var results: [Int] = []
         doubled.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         ).store(in: &cancellables)
 
         #expect(results == [2, 4, 6])
@@ -100,7 +100,7 @@ import FP
         var results: [Int] = []
         replaced.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         ).store(in: &cancellables)
 
         #expect(results == [99, 99, 99])
@@ -116,7 +116,7 @@ import FP
         var results: [Int] = []
         replaced.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         ).store(in: &cancellables)
 
         #expect(results == [42, 42, 42])
@@ -133,7 +133,7 @@ import FP
         var results: [Int] = []
         doubled.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         ).store(in: &cancellables)
 
         #expect(results == [2, 4, 6])
@@ -179,7 +179,7 @@ import FP
         var results: [Int] = []
         bimappedSuccess.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         ).store(in: &cancellables)
 
         var capturedError: TestError?
@@ -210,7 +210,7 @@ import FP
         var results: [Int] = []
         result.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         ).store(in: &cancellables)
 
         #expect(results == [11, 22])
@@ -226,7 +226,7 @@ import FP
         var results: [(Int, String)] = []
         zipped.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         ).store(in: &cancellables)
 
         #expect(results.count == 3)
@@ -248,7 +248,7 @@ import FP
         var results: [Int] = []
         applied.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         ).store(in: &cancellables)
 
         #expect(results == [10, 13])
@@ -264,7 +264,7 @@ import FP
         var results: [Int] = []
         result.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         ).store(in: &cancellables)
 
         #expect(results == [10, 20])
@@ -280,7 +280,7 @@ import FP
         var results: [Int] = []
         result.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         ).store(in: &cancellables)
 
         #expect(results == [1, 2])
@@ -301,7 +301,7 @@ import FP
         var results: [Int] = []
         bound.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         ).store(in: &cancellables)
 
         #expect(results == [1, 10, 2, 20])
@@ -318,7 +318,7 @@ import FP
         var results: [Int] = []
         result.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         ).store(in: &cancellables)
 
         #expect(results == [2, 4])
@@ -337,7 +337,7 @@ import FP
         var results: [Int] = []
         result.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         ).store(in: &cancellables)
 
         #expect(results == [3, 6])
@@ -354,7 +354,7 @@ import FP
         var results: [String] = []
         result.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         ).store(in: &cancellables)
 
         #expect(results == ["10"])
@@ -371,7 +371,7 @@ import FP
         var results: [String] = []
         result.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         ).store(in: &cancellables)
 
         #expect(results == ["10"])
@@ -386,7 +386,7 @@ import FP
         var results: [Int] = []
         result.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         ).store(in: &cancellables)
 
         #expect(results == [2, 4, 6])
@@ -407,12 +407,12 @@ import FP
 
         left.sink(
             receiveCompletion: ignore,
-            receiveValue: leftResults.append
+            receiveValue: { leftResults.append($0) }
         ).store(in: &cancellables)
 
         right.sink(
             receiveCompletion: ignore,
-            receiveValue: rightResults.append
+            receiveValue: { rightResults.append($0) }
         ).store(in: &cancellables)
 
         #expect(leftResults == rightResults)
@@ -430,12 +430,12 @@ import FP
 
         publisher.sink(
             receiveCompletion: ignore,
-            receiveValue: originalResults.append
+            receiveValue: { originalResults.append($0) }
         ).store(in: &cancellables)
 
         bound.sink(
             receiveCompletion: ignore,
-            receiveValue: boundResults.append
+            receiveValue: { boundResults.append($0) }
         ).store(in: &cancellables)
 
         #expect(originalResults == boundResults)
@@ -459,12 +459,12 @@ import FP
 
         left.sink(
             receiveCompletion: ignore,
-            receiveValue: leftResults.append
+            receiveValue: { leftResults.append($0) }
         ).store(in: &cancellables)
 
         right.sink(
             receiveCompletion: ignore,
-            receiveValue: rightResults.append
+            receiveValue: { rightResults.append($0) }
         ).store(in: &cancellables)
 
         #expect(leftResults == rightResults)

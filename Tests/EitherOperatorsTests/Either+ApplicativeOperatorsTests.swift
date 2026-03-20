@@ -67,7 +67,7 @@ import Operators
     @Test func applicativeIdentityLaw() {
         // pure id <*> v = v
         let value: Either<String, Int> = .right(5)
-        let identityE: Either<String, (Int) -> Int> = .right(identity)
+        let identityE: Either<String, (Int) -> Int> = .right(id)
         let result = identityE <*> value
         #expect(result == value)
     }

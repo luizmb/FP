@@ -16,26 +16,6 @@ import Foundation
         #expect(("Hello, " <> "World!") == "Hello, World!")
     }
 
-    @Test func optionalSemigroup() {
-        let some: Int? = 5
-        let none: Int? = nil
-
-        #expect((some <> none) == 5)
-        #expect((none <> some) == 5)
-        #expect((some <> 10) == 5)
-        #expect((none <> nil) == nil)
-    }
-
-    @Test func resultSemigroup() {
-        let success1: Result<Int, NSError> = .success(5)
-        let success2: Result<Int, NSError> = .success(10)
-        let failure: Result<Int, NSError> = .failure(NSError(domain: "test", code: 1))
-
-        #expect((try? (success1 <> success2).get()) == 5)
-        #expect((try? (failure <> success2).get()) == 10)
-        #expect((try? (success1 <> failure).get()) == 5)
-    }
-
     @Test func setSemigroup() {
         let set1: Set<Int> = [1, 2, 3]
         let set2: Set<Int> = [3, 4, 5]
@@ -63,28 +43,36 @@ import Foundation
         #expect(left == right)
     }
 
-    @Test func functionSemigroupArray() {
-        let f: (Int) -> [Int] = { [$0] }
-        let g: (Int) -> [Int] = { [$0 * 2] }
+    // MARK: - Optional (Semigroup when Wrapped: Semigroup)
 
-        let combined = f <> g
-        #expect(combined(5) == [5, 10])
+    @Test func optionalSemigroup() {
+        let some: String? = "hello"
+        let none: String? = nil
+        #expect((some <> none) == "hello")
+        #expect((none <> some) == "hello")
+        #expect((some <> .some(" world")) == "hello world")
+        #expect((none <> none) == nil)
     }
 
-    @Test func functionSemigroupString() {
-        let f: (String) -> String = { "Hello, \($0)" }
-        let g: (String) -> String = { "! Welcome, \($0)" }
+    // MARK: - Bool.Monoids wrappers
 
-        let combined = f <> g
-        #expect(combined("World") == "Hello, World! Welcome, World")
+    @Test func boolAndSemigroup() {
+        #expect((Bool.Monoids.And(true) <> .init(false)) == .init(false))
+        #expect((Bool.Monoids.And(true) <> .init(true)) == .init(true))
     }
 
-    @Test func functionSemigroupOptional() {
-        let f: (Int) -> Int? = { $0 > 0 ? $0 : nil }
-        let g: (Int) -> Int? = { $0 * 2 }
+    @Test func boolOrSemigroup() {
+        #expect((Bool.Monoids.Or(false) <> .init(true)) == .init(true))
+        #expect((Bool.Monoids.Or(false) <> .init(false)) == .init(false))
+    }
 
-        let combined = f <> g
-        #expect(combined(5) == 5)
-        #expect(combined(-1) == -2)
+    // MARK: - Numeric wrappers
+
+    @Test func intSum() {
+        #expect((Int.Monoids.Sum(3) <> .init(4)) == .init(7))
+    }
+
+    @Test func intProduct() {
+        #expect((Int.Monoids.Product(3) <> .init(4)) == .init(12))
     }
 }

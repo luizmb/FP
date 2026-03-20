@@ -88,7 +88,6 @@ import Testing
 
     @Test func compositionIdentity() {
         let f: (Int) -> Int = { $0 * 2 }
-        let id: (Int) -> Int = { $0 }
 
         // f >>> id = f
         #expect((f >>> id)(5) == f(5))

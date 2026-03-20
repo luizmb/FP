@@ -40,7 +40,7 @@ import Operators
     @Test func applicativeIdentityLaw() {
         // pure id <*> v = v
         let value = Reader<Environment, Int> { env in env.multiplier }
-        let identity = Reader<Environment, (Int) -> Int> { _ in { $0 } }
+        let identity = Reader<Environment, (Int) -> Int>(const(id))
         let result = identity <*> value
 
         let env = Environment(multiplier: 5, addend: 3)

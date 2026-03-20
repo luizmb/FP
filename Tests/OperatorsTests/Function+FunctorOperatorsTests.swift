@@ -32,7 +32,7 @@ import Testing
     @Test func functorIdentityLaw() {
         // fmap id == id
         let f: (Int) -> Int = { $0 * 2 }
-        let identity: (Int) -> Int = { $0 }
+        let identity: (Int) -> Int = id
 
         let mapped = fmap(identity, f)
 

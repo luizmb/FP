@@ -21,7 +21,7 @@ import FP
 
         mapped.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         )
         .store(in: &cancellables)
 
@@ -38,7 +38,7 @@ import FP
 
         mapped.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         )
         .store(in: &cancellables)
 
@@ -59,7 +59,7 @@ import FP
 
         combined.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         )
         .store(in: &cancellables)
 
@@ -81,7 +81,7 @@ import FP
 
         bound.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         )
         .store(in: &cancellables)
 
@@ -105,7 +105,7 @@ import FP
 
         result.sink(
             receiveCompletion: ignore,
-            receiveValue: results.append
+            receiveValue: { results.append($0) }
         )
         .store(in: &cancellables)
 

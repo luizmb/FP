@@ -78,13 +78,13 @@ public extension Of3 {
 
 /// Identify function of a value, returning the unmodified value
 /// Useful in function composition and represents the arrow pointing to itself category.
-public func identity<T>(_ value: T) -> T {
+public func id<T>(_ value: T) -> T {
     value
 }
 
 public extension Of {
-    static func identity(_ value: T) -> T {
-        FP.identity(value)
+    static func id(_ value: T) -> T {
+        FP.id(value)
     }
 }
 

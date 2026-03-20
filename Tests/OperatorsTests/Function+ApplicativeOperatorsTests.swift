@@ -67,7 +67,7 @@ import Testing
     @Test func applicativeIdentityLaw() {
         // pure id <*> v == v
         let v: (Int) -> Int = { $0 * 2 }
-        let identity: (Int) -> Int = { $0 }
+        let identity: (Int) -> Int = id
         let pureId: (Int) -> (Int) -> Int = pure(identity)
 
         let left = pureId <*> v

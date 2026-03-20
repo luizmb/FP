@@ -30,17 +30,17 @@ import Operators
     }
 
     @Test func join() {
-        // join is flatMap with identity
+        // join is flatMap with id
         let nested: Either<String, Either<String, Int>> = .right(.right(5))
-        let result = nested.flatMap(identity)
+        let result = nested.flatMap(id)
         #expect(result == .right(5))
 
         let nestedLeft: Either<String, Either<String, Int>> = .right(.left("inner error"))
-        let nestedLeftResult = nestedLeft.flatMap(identity)
+        let nestedLeftResult = nestedLeft.flatMap(id)
         #expect(nestedLeftResult == .left("inner error"))
 
         let outerLeft: Either<String, Either<String, Int>> = .left("outer error")
-        let outerLeftResult = outerLeft.flatMap(identity)
+        let outerLeftResult = outerLeft.flatMap(id)
         #expect(outerLeftResult == .left("outer error"))
     }
 

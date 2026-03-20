@@ -38,10 +38,8 @@ import Testing
         let success: Result<Int, TestError> = .success(5)
         let failure: Result<Int, TestError> = .failure(.test)
 
-        let identity: (Int) -> Int = { $0 }
-
-        #expect((try? success.map(identity).get()) == (try? success.get()))
-        #expect(throws: (any Error).self) { try failure.map(identity).get() }
+        #expect((try? success.map(id).get()) == (try? success.get()))
+        #expect(throws: (any Error).self) { try failure.map(id).get() }
     }
 
     @Test func functorCompositionLaw() {
