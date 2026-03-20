@@ -20,7 +20,7 @@ import Testing
         // fmap id = id
         let array = [1, 2, 3]
 
-        #expect(Array.fmap(identity)(array) == array)
+        #expect(Array.fmap(id)(array) == array)
     }
 
     @Test func functorCompositionLaw() {

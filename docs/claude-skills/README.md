@@ -102,13 +102,13 @@ transformer with all operators.
 The library provides utilities for point-free style (in `FP.Functions`):
 
 ```swift
-curry      // (A, B) -> C becomes (A) -> (B) -> C
-flip       // Reverse parameter order
-partialApply  // Fix first parameter
-identity   // id function: (A) -> A
-const      // Constant function: ignores input
-compose    // Function composition (also >>> and <<<)
-|>         // Pipe operator
+curry        // (A, B) -> C becomes (A) -> (B) -> C
+flip         // Reverse parameter order
+partialApply // Fix first parameter
+id           // identity function: (A) -> A (returns { $0 })
+const        // Constant function: ignores input
+compose      // Function composition (also >>> and <<<)
+|>           // Pipe operator
 ```
 
 ### Tacit Examples

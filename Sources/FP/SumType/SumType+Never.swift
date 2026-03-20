@@ -2,7 +2,7 @@ import Foundation
 
 public extension SumType2 where B == Never {
     var value: A {
-        match(caseLeft: identity, caseRight: absurd)
+        match(caseLeft: id, caseRight: absurd)
     }
 
     init(lifting value: A) {
@@ -12,7 +12,7 @@ public extension SumType2 where B == Never {
 
 public extension SumType2 where A == Never {
     var value: B {
-        match(caseLeft: absurd, caseRight: identity)
+        match(caseLeft: absurd, caseRight: id)
     }
 
     init(lifting value: B) {

@@ -132,7 +132,7 @@ import Foundation
         let values = [1, 2, 3]
         let identity: (Int) -> Int? = { .some($0) }
 
-        #expect(traverse(identity)(values) == [1, 2, 3])
+        #expect(traverse(id)(values) == [1, 2, 3])
     }
 
     // MARK: - Sequence/Traverse Relationship
@@ -140,7 +140,7 @@ import Foundation
     @Test func sequenceTraverseRelationship() {
         // sequence = traverse id
         let optionals: [Int?] = [1, 2, 3]
-        let identity: (Int?) -> Int? = { $0 }
+        let identity: (Int?) -> Int? = id
 
         #expect(sequence(optionals) == traverse(identity)(optionals))
     }

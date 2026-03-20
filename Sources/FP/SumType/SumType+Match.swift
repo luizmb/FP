@@ -9,10 +9,10 @@ public extension SumType2 {
     }
 
     func fromLeft(_ otherwise: A) -> A {
-        match(caseLeft: identity, caseRight: const(otherwise))
+        match(caseLeft: id, caseRight: const(otherwise))
     }
 
     func fromRight(_ otherwise: B) -> B {
-        match(caseLeft: const(otherwise), caseRight: identity)
+        match(caseLeft: const(otherwise), caseRight: id)
     }
 }

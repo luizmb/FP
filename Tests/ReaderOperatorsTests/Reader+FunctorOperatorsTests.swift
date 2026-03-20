@@ -72,8 +72,7 @@ import Operators
     @Test func functorIdentityLaw() {
         // fmap id == id
         let reader = Reader<Environment, Int> { env in env.multiplier }
-        let identity: (Int) -> Int = { $0 }
-        let mapped = reader.fmap(identity)
+        let mapped = reader.fmap(id)
 
         let env = Environment(multiplier: 5, addend: 3)
         #expect(reader(env) == mapped(env))

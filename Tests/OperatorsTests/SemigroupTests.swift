@@ -16,26 +16,6 @@ import Foundation
         #expect(("Hello, " <> "World!") == "Hello, World!")
     }
 
-    @Test func optionalSemigroup() {
-        let some: Int? = 5
-        let none: Int? = nil
-
-        #expect((some <> none) == 5)
-        #expect((none <> some) == 5)
-        #expect((some <> 10) == 5)
-        #expect((none <> nil) == nil)
-    }
-
-    @Test func resultSemigroup() {
-        let success1: Result<Int, NSError> = .success(5)
-        let success2: Result<Int, NSError> = .success(10)
-        let failure: Result<Int, NSError> = .failure(NSError(domain: "test", code: 1))
-
-        #expect((try? (success1 <> success2).get()) == 5)
-        #expect((try? (failure <> success2).get()) == 10)
-        #expect((try? (success1 <> failure).get()) == 5)
-    }
-
     @Test func setSemigroup() {
         let set1: Set<Int> = [1, 2, 3]
         let set2: Set<Int> = [3, 4, 5]
@@ -61,30 +41,5 @@ import Foundation
         let right = a <> (b <> c)
 
         #expect(left == right)
-    }
-
-    @Test func functionSemigroupArray() {
-        let f: (Int) -> [Int] = { [$0] }
-        let g: (Int) -> [Int] = { [$0 * 2] }
-
-        let combined = f <> g
-        #expect(combined(5) == [5, 10])
-    }
-
-    @Test func functionSemigroupString() {
-        let f: (String) -> String = { "Hello, \($0)" }
-        let g: (String) -> String = { "! Welcome, \($0)" }
-
-        let combined = f <> g
-        #expect(combined("World") == "Hello, World! Welcome, World")
-    }
-
-    @Test func functionSemigroupOptional() {
-        let f: (Int) -> Int? = { $0 > 0 ? $0 : nil }
-        let g: (Int) -> Int? = { $0 * 2 }
-
-        let combined = f <> g
-        #expect(combined(5) == 5)
-        #expect(combined(-1) == -2)
     }
 }

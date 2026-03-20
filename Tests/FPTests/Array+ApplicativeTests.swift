@@ -35,7 +35,7 @@ import Testing
     @Test func applicativeIdentityLaw() {
         // pure id <*> v = v
         let array = [1, 2, 3]
-        let identityArr: [(Int) -> Int] = [identity]
+        let identityArr: [(Int) -> Int] = [id]
 
         #expect(Array.apply(identityArr, array) == array)
     }

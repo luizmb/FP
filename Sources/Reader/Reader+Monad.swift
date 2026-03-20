@@ -55,7 +55,7 @@ public extension Reader {
     /// Asks for the environment
     /// ask :: m env
     static var ask: Reader<Environment, Environment> {
-        Reader<Environment, Environment>(identity)
+        Reader<Environment, Environment>(id)
     }
 
     /// Retrieves a function of the environment

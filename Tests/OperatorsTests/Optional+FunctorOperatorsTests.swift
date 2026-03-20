@@ -31,7 +31,7 @@ import Testing
         let value: Int? = 5
         let none: Int? = nil
 
-        let identity: (Int) -> Int = { $0 }
+        let identity: (Int) -> Int = id
 
         #expect(value.map(identity) == value)
         #expect(none.map(identity) == none)

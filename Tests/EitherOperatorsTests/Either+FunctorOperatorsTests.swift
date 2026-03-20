@@ -45,8 +45,8 @@ import Operators
         let right: Either<String, Int> = .right(5)
         let left: Either<String, Int> = .left("error")
 
-        #expect(right.mapRight(identity) == right)
-        #expect(left.mapRight(identity) == left)
+        #expect(right.mapRight(id) == right)
+        #expect(left.mapRight(id) == left)
     }
 
     @Test func functorCompositionLaw() {

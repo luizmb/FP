@@ -158,7 +158,7 @@ import FP
             }
         }
 
-        let flattened = nested.flatMap(identity)
+        let flattened = nested.flatMap(id)
 
         let env = Environment(multiplier: 5, offset: 3)
         #expect(flattened(env) == 8)
