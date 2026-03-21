@@ -17,7 +17,13 @@ let package = Package(
         .library(name: "EitherOperators", targets: ["EitherOperators"]),
         .library(name: "ReaderOperators", targets: ["ReaderOperators"]),
         .library(name: "ReaderEither", targets: ["ReaderEither"]),
-        .library(name: "ReaderEitherOperators", targets: ["ReaderEitherOperators"])
+        .library(name: "ReaderEitherOperators", targets: ["ReaderEitherOperators"]),
+        .library(name: "Stateful", targets: ["Stateful"]),
+        .library(name: "StatefulOperators", targets: ["StatefulOperators"]),
+        .library(name: "StatefulEither", targets: ["StatefulEither"]),
+        .library(name: "StatefulEitherOperators", targets: ["StatefulEitherOperators"]),
+        .library(name: "StatefulReader", targets: ["StatefulReader"]),
+        .library(name: "StatefulReaderOperators", targets: ["StatefulReaderOperators"])
     ],
     targets: [
         .target(name: "FP"),
@@ -28,6 +34,12 @@ let package = Package(
         .target(name: "ReaderOperators", dependencies: ["Reader", "Operators"]),
         .target(name: "ReaderEither", dependencies: ["Reader", "Either"]),
         .target(name: "ReaderEitherOperators", dependencies: ["ReaderEither", "Reader", "Either", "EitherOperators", "Operators"]),
+        .target(name: "Stateful", dependencies: ["FP"]),
+        .target(name: "StatefulOperators", dependencies: ["Stateful", "Operators"]),
+        .target(name: "StatefulEither", dependencies: ["Stateful", "Either"]),
+        .target(name: "StatefulEitherOperators", dependencies: ["StatefulEither", "StatefulOperators", "EitherOperators"]),
+        .target(name: "StatefulReader", dependencies: ["Stateful", "Reader"]),
+        .target(name: "StatefulReaderOperators", dependencies: ["StatefulReader", "StatefulOperators", "ReaderOperators"]),
         .testTarget(name: "FPTests", dependencies: ["FP"]),
         .testTarget(name: "EitherTests", dependencies: ["Either", "FP"]),
         .testTarget(name: "ReaderTests", dependencies: ["Reader", "FP"]),
@@ -35,6 +47,12 @@ let package = Package(
         .testTarget(name: "EitherOperatorsTests", dependencies: ["Either", "EitherOperators", "Operators", "FP"]),
         .testTarget(name: "ReaderOperatorsTests", dependencies: ["Reader", "ReaderOperators", "Operators", "FP"]),
         .testTarget(name: "ReaderEitherTests", dependencies: ["Reader", "Either", "ReaderEither", "FP"]),
-        .testTarget(name: "ReaderEitherOperatorsTests", dependencies: ["Reader", "Either", "ReaderEither", "ReaderEitherOperators", "Operators", "EitherOperators", "FP"])
+        .testTarget(name: "ReaderEitherOperatorsTests", dependencies: ["Reader", "Either", "ReaderEither", "ReaderEitherOperators", "Operators", "EitherOperators", "FP"]),
+        .testTarget(name: "StatefulTests", dependencies: ["Stateful", "FP"]),
+        .testTarget(name: "StatefulOperatorsTests", dependencies: ["Stateful", "StatefulOperators", "Operators", "FP"]),
+        .testTarget(name: "StatefulEitherTests", dependencies: ["StatefulEither", "Stateful", "Either"]),
+        .testTarget(name: "StatefulEitherOperatorsTests", dependencies: ["StatefulEither", "StatefulEitherOperators", "StatefulOperators", "EitherOperators"]),
+        .testTarget(name: "StatefulReaderTests", dependencies: ["StatefulReader", "Stateful", "Reader"]),
+        .testTarget(name: "StatefulReaderOperatorsTests", dependencies: ["StatefulReader", "StatefulReaderOperators", "StatefulOperators", "ReaderOperators"])
     ]
 )
