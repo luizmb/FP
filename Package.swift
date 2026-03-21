@@ -23,7 +23,15 @@ let package = Package(
         .library(name: "StatefulEither", targets: ["StatefulEither"]),
         .library(name: "StatefulEitherOperators", targets: ["StatefulEitherOperators"]),
         .library(name: "StatefulReader", targets: ["StatefulReader"]),
-        .library(name: "StatefulReaderOperators", targets: ["StatefulReaderOperators"])
+        .library(name: "StatefulReaderOperators", targets: ["StatefulReaderOperators"]),
+        .library(name: "Writer", targets: ["Writer"]),
+        .library(name: "WriterOperators", targets: ["WriterOperators"]),
+        .library(name: "WriterEither", targets: ["WriterEither"]),
+        .library(name: "WriterEitherOperators", targets: ["WriterEitherOperators"]),
+        .library(name: "WriterReader", targets: ["WriterReader"]),
+        .library(name: "WriterReaderOperators", targets: ["WriterReaderOperators"]),
+        .library(name: "WriterStateful", targets: ["WriterStateful"]),
+        .library(name: "WriterStatefulOperators", targets: ["WriterStatefulOperators"])
     ],
     targets: [
         .target(name: "FP"),
@@ -40,6 +48,14 @@ let package = Package(
         .target(name: "StatefulEitherOperators", dependencies: ["StatefulEither", "StatefulOperators", "EitherOperators"]),
         .target(name: "StatefulReader", dependencies: ["Stateful", "Reader"]),
         .target(name: "StatefulReaderOperators", dependencies: ["StatefulReader", "StatefulOperators", "ReaderOperators"]),
+        .target(name: "Writer", dependencies: ["FP"]),
+        .target(name: "WriterOperators", dependencies: ["Writer", "Operators"]),
+        .target(name: "WriterEither", dependencies: ["Writer", "Either"]),
+        .target(name: "WriterEitherOperators", dependencies: ["WriterEither", "WriterOperators", "EitherOperators"]),
+        .target(name: "WriterReader", dependencies: ["Writer", "Reader"]),
+        .target(name: "WriterReaderOperators", dependencies: ["WriterReader", "WriterOperators", "ReaderOperators"]),
+        .target(name: "WriterStateful", dependencies: ["Writer", "Stateful"]),
+        .target(name: "WriterStatefulOperators", dependencies: ["WriterStateful", "WriterOperators", "StatefulOperators"]),
         .testTarget(name: "FPTests", dependencies: ["FP"]),
         .testTarget(name: "EitherTests", dependencies: ["Either", "FP"]),
         .testTarget(name: "ReaderTests", dependencies: ["Reader", "FP"]),
@@ -53,6 +69,14 @@ let package = Package(
         .testTarget(name: "StatefulEitherTests", dependencies: ["StatefulEither", "Stateful", "Either"]),
         .testTarget(name: "StatefulEitherOperatorsTests", dependencies: ["StatefulEither", "StatefulEitherOperators", "StatefulOperators", "EitherOperators"]),
         .testTarget(name: "StatefulReaderTests", dependencies: ["StatefulReader", "Stateful", "Reader"]),
-        .testTarget(name: "StatefulReaderOperatorsTests", dependencies: ["StatefulReader", "StatefulReaderOperators", "StatefulOperators", "ReaderOperators"])
+        .testTarget(name: "StatefulReaderOperatorsTests", dependencies: ["StatefulReader", "StatefulReaderOperators", "StatefulOperators", "ReaderOperators"]),
+        .testTarget(name: "WriterTests", dependencies: ["Writer", "FP"]),
+        .testTarget(name: "WriterOperatorsTests", dependencies: ["Writer", "WriterOperators", "Operators", "FP"]),
+        .testTarget(name: "WriterEitherTests", dependencies: ["WriterEither", "Writer", "Either"]),
+        .testTarget(name: "WriterEitherOperatorsTests", dependencies: ["WriterEither", "WriterEitherOperators", "WriterOperators", "EitherOperators"]),
+        .testTarget(name: "WriterReaderTests", dependencies: ["WriterReader", "Writer", "Reader"]),
+        .testTarget(name: "WriterReaderOperatorsTests", dependencies: ["WriterReader", "WriterReaderOperators", "WriterOperators", "ReaderOperators"]),
+        .testTarget(name: "WriterStatefulTests", dependencies: ["WriterStateful", "Writer", "Stateful"]),
+        .testTarget(name: "WriterStatefulOperatorsTests", dependencies: ["WriterStateful", "WriterStatefulOperators", "WriterOperators", "StatefulOperators"])
     ]
 )
