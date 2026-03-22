@@ -15,13 +15,19 @@ dependencies: [
 ]
 ```
 
-Import only what you need:
+Import the full library in one line:
 
 ```swift
-import FP          // Optional, Result, Array extensions + utilities
-import Either      // Either type
-import Reader      // Reader monad
-import Operators   // Operators for all core types
+import FP
+```
+
+Or import only what you need (granular options):
+
+```swift
+import CoreFP                  // Optional, Result, Array extensions + utilities
+import CoreFPOperators         // Operators for all core types
+import DataStructure         // Either, Reader, Stateful, Writer + transformer stacks
+import DataStructureOperators // Operators for all data structures
 ```
 
 ---
@@ -33,7 +39,7 @@ import Operators   // Operators for all core types
 `Either<Left, Right>` is a more flexible alternative to `Result`. While `Result` requires the error type to conform to `Error`, `Either` places no constraints on either side — making it ideal when your failure type is a `String`, a domain enum, or any non-`Error` type.
 
 ```swift
-import Either
+import DataStructure
 
 func divide(_ a: Double, by b: Double) -> Either<String, Double> {
     b == 0 ? .left("Division by zero") : .right(a / b)
@@ -53,7 +59,7 @@ divide(10, by: 2) >>- { divide($0, by: 2) }   // .right(2.5)
 `Reader<Environment, Output>` wraps a function `(Environment) -> Output`. It solves the **dependency injection** problem: describe computations that need a dependency, compose them freely, and provide the dependency once at the edge — no globals, no singletons, no passing it through every call.
 
 ```swift
-import Reader
+import DataStructure
 
 protocol Storage {
     func load(key: String) -> String?
