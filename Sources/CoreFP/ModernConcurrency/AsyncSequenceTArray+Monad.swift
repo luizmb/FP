@@ -12,7 +12,7 @@ public func flatMapTAsyncStreamArray<A, B>(
     _ fn: @escaping @Sendable (A) -> AsyncStream<[B]>
 ) -> AsyncStream<[B]> where A: Sendable, B: Sendable {
     AsyncStream<[B]> { continuation in
-        Task { @Sendable in
+        let task = Task { @Sendable in
             for await arr in stream {
                 // For each emitted array, collect all fn results and concatenate
                 var combined: [B] = []
@@ -25,6 +25,7 @@ public func flatMapTAsyncStreamArray<A, B>(
             }
             continuation.finish()
         }
+        continuation.onTermination = { _ in task.cancel() }
     }
 }
 

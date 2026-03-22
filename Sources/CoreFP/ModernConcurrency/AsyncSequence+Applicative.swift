@@ -10,7 +10,7 @@ public extension AsyncStream where Element: Sendable {
         _ values: AsyncStream<A>
     ) -> AsyncStream<B> {
         AsyncStream<B> { continuation in
-            Task { @Sendable in
+            let task = Task { @Sendable in
                 var funcIterator = functions.makeAsyncIterator()
                 var valueIterator = values.makeAsyncIterator()
 
@@ -20,6 +20,7 @@ public extension AsyncStream where Element: Sendable {
                 }
                 continuation.finish()
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 
@@ -30,7 +31,7 @@ public extension AsyncStream where Element: Sendable {
     ) -> @Sendable (AsyncStream<A>, AsyncStream<B>) -> AsyncStream<C> {
         { @Sendable (streamA, streamB) in
             AsyncStream<C> { continuation in
-                Task { @Sendable in
+                let task = Task { @Sendable in
                     var iterA = streamA.makeAsyncIterator()
                     var iterB = streamB.makeAsyncIterator()
 
@@ -40,6 +41,7 @@ public extension AsyncStream where Element: Sendable {
                     }
                     continuation.finish()
                 }
+                continuation.onTermination = { _ in task.cancel() }
             }
         }
     }
@@ -51,7 +53,7 @@ public extension AsyncStream where Element: Sendable {
         _ rhs: AsyncStream<B>
     ) -> AsyncStream<B> {
         AsyncStream<B> { continuation in
-            Task { @Sendable in
+            let task = Task { @Sendable in
                 var lhsIter = lhs.makeAsyncIterator()
                 var rhsIter = rhs.makeAsyncIterator()
 
@@ -61,6 +63,7 @@ public extension AsyncStream where Element: Sendable {
                 }
                 continuation.finish()
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 
@@ -70,7 +73,7 @@ public extension AsyncStream where Element: Sendable {
         _ streamB: AsyncStream<B>
     ) -> AsyncStream<(A, B)> {
         AsyncStream<(A, B)> { continuation in
-            Task { @Sendable in
+            let task = Task { @Sendable in
                 var iterA = streamA.makeAsyncIterator()
                 var iterB = streamB.makeAsyncIterator()
 
@@ -80,6 +83,7 @@ public extension AsyncStream where Element: Sendable {
                 }
                 continuation.finish()
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }

@@ -11,7 +11,7 @@ public func liftA2AsyncStreamEither<L, A, B, C>(
 where A: Sendable, B: Sendable, C: Sendable, L: Sendable {
     { @Sendable streamA, streamB in
         AsyncStream<Either<L, C>> { continuation in
-            Task { @Sendable in
+            let task = Task { @Sendable in
                 var iterA = streamA.makeAsyncIterator()
                 var iterB = streamB.makeAsyncIterator()
                 while let a = await iterA.next(), let b = await iterB.next() {
@@ -19,6 +19,7 @@ where A: Sendable, B: Sendable, C: Sendable, L: Sendable {
                 }
                 continuation.finish()
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }
@@ -29,7 +30,7 @@ public func seqRightAsyncStreamEither<L, A, B>(
     _ rhs: AsyncStream<Either<L, B>>
 ) -> AsyncStream<Either<L, B>> where A: Sendable, B: Sendable, L: Sendable {
     AsyncStream<Either<L, B>> { continuation in
-        Task { @Sendable in
+        let task = Task { @Sendable in
             var lhsIter = lhs.makeAsyncIterator()
             var rhsIter = rhs.makeAsyncIterator()
             while let a = await lhsIter.next(), let b = await rhsIter.next() {
@@ -37,6 +38,7 @@ public func seqRightAsyncStreamEither<L, A, B>(
             }
             continuation.finish()
         }
+        continuation.onTermination = { _ in task.cancel() }
     }
 }
 
@@ -46,7 +48,7 @@ public func seqLeftAsyncStreamEither<L, A, B>(
     _ rhs: AsyncStream<Either<L, B>>
 ) -> AsyncStream<Either<L, A>> where A: Sendable, B: Sendable, L: Sendable {
     AsyncStream<Either<L, A>> { continuation in
-        Task { @Sendable in
+        let task = Task { @Sendable in
             var lhsIter = lhs.makeAsyncIterator()
             var rhsIter = rhs.makeAsyncIterator()
             while let a = await lhsIter.next(), let b = await rhsIter.next() {
@@ -54,5 +56,6 @@ public func seqLeftAsyncStreamEither<L, A, B>(
             }
             continuation.finish()
         }
+        continuation.onTermination = { _ in task.cancel() }
     }
 }

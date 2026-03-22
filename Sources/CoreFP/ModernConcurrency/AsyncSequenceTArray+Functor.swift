@@ -9,12 +9,13 @@ public func mapTAsyncStreamArray<A, B: Sendable>(
     _ stream: AsyncStream<[A]>
 ) -> AsyncStream<[B]> where A: Sendable {
     AsyncStream<[B]> { continuation in
-        Task { @Sendable in
+        let task = Task { @Sendable in
             for await arr in stream {
                 continuation.yield(arr.map(fn))
             }
             continuation.finish()
         }
+        continuation.onTermination = { _ in task.cancel() }
     }
 }
 

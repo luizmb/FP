@@ -11,21 +11,20 @@ public func flatMapTAsyncStreamEither<L, A, B>(
     _ fn: @escaping @Sendable (A) -> AsyncStream<Either<L, B>>
 ) -> AsyncStream<Either<L, B>> where A: Sendable, B: Sendable, L: Sendable {
     AsyncStream<Either<L, B>> { continuation in
-        Task { @Sendable in
+        let task = Task { @Sendable in
             for await either in stream {
-                either.match(
-                    caseLeft: { l in continuation.yield(.left(l)) },
-                    caseRight: { a in
-                        Task { @Sendable in
-                            for await b in fn(a) {
-                                continuation.yield(b)
-                            }
-                        }
+                switch either {
+                case let .left(l):
+                    continuation.yield(.left(l))
+                case let .right(a):
+                    for await b in fn(a) {
+                        continuation.yield(b)
                     }
-                )
+                }
             }
             continuation.finish()
         }
+        continuation.onTermination = { _ in task.cancel() }
     }
 }
 

@@ -13,7 +13,7 @@ public func flatMapTAsyncStreamOptional<A, B>(
     _ fn: @escaping @Sendable (A) -> AsyncStream<B?>
 ) -> AsyncStream<B?> where A: Sendable, B: Sendable {
     AsyncStream<B?> { continuation in
-        Task { @Sendable in
+        let task = Task { @Sendable in
             for await optA in stream {
                 if let a = optA {
                     for await b in fn(a) {
@@ -25,6 +25,7 @@ public func flatMapTAsyncStreamOptional<A, B>(
             }
             continuation.finish()
         }
+        continuation.onTermination = { _ in task.cancel() }
     }
 }
 

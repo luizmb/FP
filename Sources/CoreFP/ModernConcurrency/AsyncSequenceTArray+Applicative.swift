@@ -10,7 +10,7 @@ public func liftA2AsyncStreamArray<A, B, C>(
 where A: Sendable, B: Sendable, C: Sendable {
     { @Sendable streamA, streamB in
         AsyncStream<[C]> { continuation in
-            Task { @Sendable in
+            let task = Task { @Sendable in
                 var iterA = streamA.makeAsyncIterator()
                 var iterB = streamB.makeAsyncIterator()
                 while let a = await iterA.next(), let b = await iterB.next() {
@@ -18,6 +18,7 @@ where A: Sendable, B: Sendable, C: Sendable {
                 }
                 continuation.finish()
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }
@@ -28,7 +29,7 @@ public func seqRightAsyncStreamArray<A, B>(
     _ rhs: AsyncStream<[B]>
 ) -> AsyncStream<[B]> where A: Sendable, B: Sendable {
     AsyncStream<[B]> { continuation in
-        Task { @Sendable in
+        let task = Task { @Sendable in
             var lhsIter = lhs.makeAsyncIterator()
             var rhsIter = rhs.makeAsyncIterator()
             while let a = await lhsIter.next(), let b = await rhsIter.next() {
@@ -36,6 +37,7 @@ public func seqRightAsyncStreamArray<A, B>(
             }
             continuation.finish()
         }
+        continuation.onTermination = { _ in task.cancel() }
     }
 }
 
@@ -45,7 +47,7 @@ public func seqLeftAsyncStreamArray<A, B>(
     _ rhs: AsyncStream<[B]>
 ) -> AsyncStream<[A]> where A: Sendable, B: Sendable {
     AsyncStream<[A]> { continuation in
-        Task { @Sendable in
+        let task = Task { @Sendable in
             var lhsIter = lhs.makeAsyncIterator()
             var rhsIter = rhs.makeAsyncIterator()
             while let a = await lhsIter.next(), let b = await rhsIter.next() {
@@ -53,5 +55,6 @@ public func seqLeftAsyncStreamArray<A, B>(
             }
             continuation.finish()
         }
+        continuation.onTermination = { _ in task.cancel() }
     }
 }

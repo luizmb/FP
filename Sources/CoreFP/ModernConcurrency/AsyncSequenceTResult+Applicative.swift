@@ -10,7 +10,7 @@ public func liftA2AsyncStreamResult<A, B, C, E: Error>(
 where A: Sendable, B: Sendable, C: Sendable, E: Sendable {
     { @Sendable streamA, streamB in
         AsyncStream<Result<C, E>> { continuation in
-            Task { @Sendable in
+            let task = Task { @Sendable in
                 var iterA = streamA.makeAsyncIterator()
                 var iterB = streamB.makeAsyncIterator()
                 while let a = await iterA.next(), let b = await iterB.next() {
@@ -18,6 +18,7 @@ where A: Sendable, B: Sendable, C: Sendable, E: Sendable {
                 }
                 continuation.finish()
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }
@@ -28,7 +29,7 @@ public func seqRightAsyncStreamResult<A, B, E: Error>(
     _ rhs: AsyncStream<Result<B, E>>
 ) -> AsyncStream<Result<B, E>> where A: Sendable, B: Sendable, E: Sendable {
     AsyncStream<Result<B, E>> { continuation in
-        Task { @Sendable in
+        let task = Task { @Sendable in
             var lhsIter = lhs.makeAsyncIterator()
             var rhsIter = rhs.makeAsyncIterator()
             while let a = await lhsIter.next(), let b = await rhsIter.next() {
@@ -36,6 +37,7 @@ public func seqRightAsyncStreamResult<A, B, E: Error>(
             }
             continuation.finish()
         }
+        continuation.onTermination = { _ in task.cancel() }
     }
 }
 
@@ -45,7 +47,7 @@ public func seqLeftAsyncStreamResult<A, B, E: Error>(
     _ rhs: AsyncStream<Result<B, E>>
 ) -> AsyncStream<Result<A, E>> where A: Sendable, B: Sendable, E: Sendable {
     AsyncStream<Result<A, E>> { continuation in
-        Task { @Sendable in
+        let task = Task { @Sendable in
             var lhsIter = lhs.makeAsyncIterator()
             var rhsIter = rhs.makeAsyncIterator()
             while let a = await lhsIter.next(), let b = await rhsIter.next() {
@@ -53,5 +55,6 @@ public func seqLeftAsyncStreamResult<A, B, E: Error>(
             }
             continuation.finish()
         }
+        continuation.onTermination = { _ in task.cancel() }
     }
 }

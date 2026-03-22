@@ -13,7 +13,7 @@ public func flatMapTAsyncStreamResult<A, B, E: Error>(
     _ fn: @escaping @Sendable (A) -> AsyncStream<Result<B, E>>
 ) -> AsyncStream<Result<B, E>> where A: Sendable, B: Sendable, E: Sendable {
     AsyncStream<Result<B, E>> { continuation in
-        Task { @Sendable in
+        let task = Task { @Sendable in
             for await result in stream {
                 switch result {
                 case .failure(let e):
@@ -26,6 +26,7 @@ public func flatMapTAsyncStreamResult<A, B, E: Error>(
             }
             continuation.finish()
         }
+        continuation.onTermination = { _ in task.cancel() }
     }
 }
 

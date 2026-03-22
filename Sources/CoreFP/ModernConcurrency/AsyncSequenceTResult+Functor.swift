@@ -9,12 +9,13 @@ public func mapTAsyncStreamResult<A, B: Sendable, E: Error>(
     _ stream: AsyncStream<Result<A, E>>
 ) -> AsyncStream<Result<B, E>> where A: Sendable, E: Sendable {
     AsyncStream<Result<B, E>> { continuation in
-        Task { @Sendable in
+        let task = Task { @Sendable in
             for await result in stream {
                 continuation.yield(result.map(fn))
             }
             continuation.finish()
         }
+        continuation.onTermination = { _ in task.cancel() }
     }
 }
 

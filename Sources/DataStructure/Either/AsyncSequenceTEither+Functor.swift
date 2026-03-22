@@ -10,12 +10,13 @@ public func mapTAsyncStreamEither<L, A, B: Sendable>(
     _ stream: AsyncStream<Either<L, A>>
 ) -> AsyncStream<Either<L, B>> where A: Sendable, L: Sendable {
     AsyncStream<Either<L, B>> { continuation in
-        Task { @Sendable in
+        let task = Task { @Sendable in
             for await either in stream {
                 continuation.yield(either.mapRight(fn))
             }
             continuation.finish()
         }
+        continuation.onTermination = { _ in task.cancel() }
     }
 }
 
