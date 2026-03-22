@@ -1,6 +1,6 @@
 # FP Library — Implementation Summary
 
-> Last updated: 2026-03-22 | **1169 tests · 118 suites · all passing ✅**
+> Last updated: 2026-03-22 | **1221 tests · 122 suites · all passing ✅**
 
 ---
 
@@ -70,26 +70,26 @@ The library is organised as a strict two-layer system.
 
 ### CoreFP types
 
-| Type | Functor | Applicative | Monad | Alt | bimap | join | void |
-|---|---|---|---|---|---|---|---|
-| `Array` | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ |
-| `Optional` | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ |
-| `Result` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `DeferredTask` | ✅ | ✅ | ✅ | — | — | ✅ | ✅ |
-| `DeferredStream` | ✅ | ✅ | ✅ | — | — | ✅ | ✅ |
-| `AsyncSequence` | ✅ | ✅ | ✅ | — | — | — | — |
-| `Publisher` | ✅ | ✅ | ✅ | — | — | — | — |
-| `Function` (`(R)->A`) | ✅ | ✅ | ✅ | — | — | ✅ | — |
+| Type | Functor | Applicative | Monad | Alt | bimap | join | void | Foldable |
+|---|---|---|---|---|---|---|---|---|
+| `Array` | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ | ✅ |
+| `Optional` | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ | ✅ |
+| `Result` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `DeferredTask` | ✅ | ✅ | ✅ | — | — | ✅ | ✅ | — |
+| `DeferredStream` | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
+| `AsyncSequence` | ✅ | ✅ | ✅ | — | — | — | — | — |
+| `Publisher` | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| `Function` (`(R)->A`) | ✅ | ✅ | ✅ | — | — | ✅ | — | — |
 
 ### DataStructure types
 
-| Type | Functor | Applicative | Monad | Alt | bimap | dimap | join | void |
-|---|---|---|---|---|---|---|---|---|
-| `Either<L,R>` | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ |
-| `Validation<E,A>` | ✅ | ✅ | ✅¹ | — | ✅ | — | — | ✅ |
-| `Reader<Env,A>` | ✅ | ✅ | ✅ | — | — | ✅² | ✅ | ✅ |
-| `Stateful<S,A>` | ✅ | ✅ | ✅ | — | — | — | ✅ | ✅ |
-| `Writer<W,A>` | ✅ | ✅ | ✅ | — | — | — | ✅ | ✅ |
+| Type | Functor | Applicative | Monad | Alt | bimap | dimap | join | void | Foldable |
+|---|---|---|---|---|---|---|---|---|---|
+| `Either<L,R>` | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ | ✅ |
+| `Validation<E,A>` | ✅ | ✅ | ✅¹ | ✅ | ✅ | — | — | ✅ | ✅ |
+| `Reader<Env,A>` | ✅ | ✅ | ✅ | — | — | ✅² | ✅ | ✅ | — |
+| `Stateful<S,A>` | ✅ | ✅ | ✅ | — | — | — | ✅ | ✅ | — |
+| `Writer<W,A>` | ✅ | ✅ | ✅ | — | — | — | ✅ | ✅ | — |
 
 ¹ `Validation` has a minimal `flatMap` but accumulates errors in `apply` — it is primarily an Applicative.
 ² `Reader.dimap` is the Profunctor instance: contramap the environment, map the output. Also exposes `contramapEnvironment` as a curried free function. `Stateful` is not a Profunctor (its state parameter is invariant).
@@ -239,7 +239,7 @@ Validation is an accumulating Applicative. All `ValidationT*` stacks expose Func
 
 ### Alternative
 
-`<|>` operator for: `Array`, `Optional`, `Result`, `Either`.
+`<|>` operator for: `Array`, `Optional`, `Result`, `Either`, `DeferredStream` (concatenation), `Validation` (first-success), `Publisher` (first-success via `.catch`).
 
 ### Traversable operators
 
@@ -248,6 +248,18 @@ Validation is an accumulating Applicative. All `ValidationT*` stacks expose Func
 ### Optics
 
 `Prism` for `Either`, `Result`, `Optional`, `Validation`. No `Lens` or `Iso` yet.
+
+### Foldable
+
+| Type | `fold` | `foldLeft` | `foldRight` | `foldMap` | `toList` |
+|---|---|---|---|---|---|
+| `Array` | — | ✅ | ✅ | ✅ | — |
+| `Optional` | ✅ | — | — | ✅ | ✅ |
+| `Result` | via `bifoldMap` | — | — | ✅ | ✅ |
+| `Either` | via `bifoldMap` | — | — | ✅ | ✅ |
+| `Validation` | via `match` | — | — | ✅ | ✅ |
+
+`foldLeft`/`foldRight`/`foldMap` on `Array` are curried statics for point-free use. `fold` on `Optional` is Haskell's `maybe` function. `foldMap` uses the `Monoid` identity for the empty/failure case. No symbolic operator (Foldable has none in Haskell).
 
 ### Bifunctor (`bimap`)
 
@@ -293,16 +305,15 @@ Top-level free functions (not just static methods) for all monadic types:
 
 | Item | Notes |
 |---|---|
-| `Alternative` for `DeferredTask`, `DeferredStream` | Semantically: race/fallback; straightforward to add |
-| `Foldable` for `Either`, `Validation`, `Array`, `Writer` | `foldMap`, `foldr`, `foldl` as named free functions |
+| `Alternative` for `DeferredTask` | Race semantics: first-to-succeed; needs a structured-concurrency `race` primitive |
 | `Traversable` for `Either`, `Validation`, `Writer` | Extend the existing traversal infrastructure to these types as the traversed structure |
+| `Bifoldable` / `Bitraversable` | Natural extension of `bimap`/`bifoldMap` for `Either`, `Validation` |
 
 ### Medium term
 
 | Item | Notes |
 |---|---|
 | `Comonad` (`extract`, `extend`/`coflatMap`, `duplicate`) | `Reader` and `Writer` are natural comonads |
-| `Bifoldable` / `Bitraversable` | Natural extension of `bimap` for `Either`, `Validation`, `Writer` |
 | `Lens` + `Iso` | Enables `Stateful.zoom`, composable field access; `Prism` already exists |
 
 ### Longer term
@@ -320,7 +331,7 @@ Top-level free functions (not just static methods) for all monadic types:
 
 ```bash
 swift build        # builds all 5 targets
-swift test         # 1169 tests, 118 suites, all passing
+swift test         # 1221 tests, 122 suites, all passing
 
 # Run a specific suite
 swift test --filter "WriterCoreTests"
@@ -337,8 +348,8 @@ swift test --filter "EitherFunctorTests/bimapCurried"
 
 | Metric | Count |
 |---|---|
-| Source files | 608 |
-| Test files | 123 |
-| Tests passing | 1169 |
-| Test suites | 118 |
+| Source files | 617 |
+| Test files | 127 |
+| Tests passing | 1221 |
+| Test suites | 122 |
 | SPM targets | 5 (CoreFP, CoreFPOperators, DataStructure, DataStructureOperators, FP) |
