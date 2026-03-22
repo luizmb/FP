@@ -187,6 +187,60 @@ import CoreFP
         #expect(finalState == 6)
     }
 
+    // MARK: - Zip
+
+    @Test func zipProducesTuple() {
+        let sa = Stateful<Int, Int>.get
+        let sb = Stateful<Int, String>.gets { "\($0)" }
+        #expect(Stateful<Int, (Int, String)>.zip(sa, sb).eval(7) == (7, "7"))
+    }
+
+    @Test func zipThreadsStateLeftToRight() {
+        // sa reads then increments; sb reads the already-incremented state
+        let sa = Stateful<Int, Int> { s in let v = s; s += 1; return v }
+        let sb = Stateful<Int, Int>.get
+        let result = Stateful<Int, (Int, Int)>.zip(sa, sb)
+        // state = 0: sa returns 0, state becomes 1; sb returns 1
+        #expect(result.eval(0) == (0, 1))
+        #expect(result.exec(0) == 1)
+    }
+
+    @Test func zip3ProducesTriple() {
+        let sa = Stateful<Int, Int>.pure(1)
+        let sb = Stateful<Int, String>.pure("a")
+        let sc = Stateful<Int, Bool>.pure(true)
+        #expect(Stateful<Int, (Int, String, Bool)>.zip3(sa, sb, sc).eval(0) == (1, "a", true))
+    }
+
+    @Test func zip3ThreadsStateLeftToRight() {
+        let s1 = Stateful<Int, Int> { s in let v = s; s += 1; return v }
+        let s2 = Stateful<Int, Int> { s in let v = s; s += 10; return v }
+        let s3 = Stateful<Int, Int>.get
+        let result = Stateful<Int, (Int, Int, Int)>.zip3(s1, s2, s3)
+        // state=0: s1 returns 0, state→1; s2 returns 1, state→11; s3 reads 11
+        #expect(result.eval(0) == (0, 1, 11))
+        #expect(result.exec(0) == 11)
+    }
+
+    @Test func zip4ProducesQuadruple() {
+        let sa = Stateful<Int, Int>.pure(1)
+        let sb = Stateful<Int, String>.pure("a")
+        let sc = Stateful<Int, Bool>.pure(true)
+        let sd = Stateful<Int, Double>.pure(2.5)
+        #expect(Stateful<Int, (Int, String, Bool, Double)>.zip4(sa, sb, sc, sd).eval(0) == (1, "a", true, 2.5))
+    }
+
+    @Test func zip4ThreadsStateLeftToRight() {
+        let s1 = Stateful<Int, Int> { s in let v = s; s += 1; return v }
+        let s2 = Stateful<Int, Int> { s in let v = s; s += 10; return v }
+        let s3 = Stateful<Int, Int> { s in let v = s; s += 100; return v }
+        let s4 = Stateful<Int, Int>.get
+        let result = Stateful<Int, (Int, Int, Int, Int)>.zip4(s1, s2, s3, s4)
+        // state=0: s1→0,state=1; s2→1,state=11; s3→11,state=111; s4 reads 111
+        #expect(result.eval(0) == (0, 1, 11, 111))
+        #expect(result.exec(0) == 111)
+    }
+
     // MARK: - State threading
 
     @Test func stateThreadsThroughFlatMap() {

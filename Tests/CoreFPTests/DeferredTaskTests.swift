@@ -74,6 +74,56 @@ private enum TestError: Error, Equatable { case err }
         #expect(result == "v5")
     }
 
+    // MARK: - Zip
+
+    @Test func zipCollectsBothResults() async {
+        let ta = DeferredTask<Int> { 1 }
+        let tb = DeferredTask<String> { "a" }
+        let result = await DeferredTask.zip(ta, tb).run()
+        #expect(result.0 == 1)
+        #expect(result.1 == "a")
+    }
+
+    @Test func zipRunsFirstThenSecond() async {
+        nonisolated(unsafe) var order: [Int] = []
+        let ta = DeferredTask<Int> { order.append(1); return 1 }
+        let tb = DeferredTask<Int> { order.append(2); return 2 }
+        _ = await DeferredTask.zip(ta, tb).run()
+        #expect(order == [1, 2])
+    }
+
+    @Test func zipVariadicThreeArgs() async {
+        let ta = DeferredTask<Int> { 1 }
+        let tb = DeferredTask<String> { "b" }
+        let tc = DeferredTask<Bool> { true }
+        let result = await DeferredTask.zip(ta, tb, tc).run()
+        #expect(result.0 == 1)
+        #expect(result.1 == "b")
+        #expect(result.2 == true)
+    }
+
+    @Test func zipVariadicFourArgs() async {
+        let ta = DeferredTask<Int> { 1 }
+        let tb = DeferredTask<String> { "b" }
+        let tc = DeferredTask<Bool> { true }
+        let td = DeferredTask<Double> { 3.14 }
+        let result = await DeferredTask.zip(ta, tb, tc, td).run()
+        #expect(result.0 == 1)
+        #expect(result.1 == "b")
+        #expect(result.2 == true)
+        #expect(result.3 == 3.14)
+    }
+
+    @Test func zipIsLazy() async {
+        nonisolated(unsafe) var ran = false
+        let ta = DeferredTask<Int> { 1 }
+        let tb = DeferredTask<String> { ran = true; return "x" }
+        let zipped = DeferredTask.zip(ta, tb)
+        #expect(!ran, "zip must not run tasks before .run()")
+        _ = await zipped.run()
+        #expect(ran)
+    }
+
     // MARK: - TOptional
 
     @Test func tOptionalMapT() async {

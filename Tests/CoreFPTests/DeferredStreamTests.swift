@@ -94,6 +94,62 @@ private enum TestError: Error, Equatable { case err }
         #expect(results == ["6"])
     }
 
+    // MARK: - Zip
+
+    private func makeStream<A>(_ values: A...) -> DeferredStream<A> {
+        DeferredStream<A> { AsyncStream { c in values.forEach { c.yield($0) }; c.finish() } }
+    }
+
+    @Test func zipPairsElementsPositionally() async {
+        var results: [(Int, String)] = []
+        for await pair in DeferredStream.zip(makeStream(1, 2, 3), makeStream("a", "b", "c")) {
+            results.append(pair)
+        }
+        #expect(results.map(\.0) == [1, 2, 3])
+        #expect(results.map(\.1) == ["a", "b", "c"])
+    }
+
+    @Test func zipStopsAtShorterStream() async {
+        var results: [(Int, Int)] = []
+        for await pair in DeferredStream.zip(makeStream(1, 2), makeStream(10, 20, 30)) {
+            results.append(pair)
+        }
+        #expect(results.count == 2)
+        #expect(results.map(\.0) == [1, 2])
+        #expect(results.map(\.1) == [10, 20])
+    }
+
+    @Test func zip3PairsAllThreeStreams() async {
+        var results: [(Int, String, Bool)] = []
+        for await triple in DeferredStream.zip3(makeStream(1, 2), makeStream("a", "b"), makeStream(true, false)) {
+            results.append(triple)
+        }
+        #expect(results.count == 2)
+        #expect(results.map(\.0) == [1, 2])
+        #expect(results.map(\.1) == ["a", "b"])
+        #expect(results.map(\.2) == [true, false])
+    }
+
+    @Test func zip3StopsAtShortestStream() async {
+        var count = 0
+        for await _ in DeferredStream.zip3(makeStream(1, 2, 3), makeStream("a"), makeStream(true, false, true)) {
+            count += 1
+        }
+        #expect(count == 1)
+    }
+
+    @Test func zip4PairsAllFourStreams() async {
+        var results: [(Int, String, Bool, Double)] = []
+        for await quad in DeferredStream.zip4(makeStream(1, 2), makeStream("a", "b"), makeStream(true, false), makeStream(1.0, 2.0)) {
+            results.append(quad)
+        }
+        #expect(results.count == 2)
+        #expect(results.map(\.0) == [1, 2])
+        #expect(results.map(\.1) == ["a", "b"])
+        #expect(results.map(\.2) == [true, false])
+        #expect(results.map(\.3) == [1.0, 2.0])
+    }
+
     // MARK: - TOptional
 
     @Test func tOptionalMapT() async {

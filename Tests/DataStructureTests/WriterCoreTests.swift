@@ -177,6 +177,43 @@ import CoreFP
         #expect(flat.log == ["outer", "inner"])
     }
 
+    // MARK: - Zip
+
+    @Test func zipCombinesValuesAndLogs() {
+        let wa = Writer<[String], Int>(1, ["log-a"])
+        let wb = Writer<[String], String>("x", ["log-b"])
+        let result = Writer<[String], (Int, String)>.zip(wa, wb)
+        #expect(result.value == (1, "x"))
+        #expect(result.log == ["log-a", "log-b"])
+    }
+
+    @Test func zipWithEmptyLogs() {
+        let wa = Writer<[String], Int>(42, [])
+        let wb = Writer<[String], Int>(58, [])
+        let result = Writer<[String], (Int, Int)>.zip(wa, wb)
+        #expect(result.value == (42, 58))
+        #expect(result.log == [])
+    }
+
+    @Test func zip3CombinesAllValuesAndLogs() {
+        let wa = Writer<[String], Int>(1, ["a"])
+        let wb = Writer<[String], String>("x", ["b"])
+        let wc = Writer<[String], Bool>(true, ["c"])
+        let result = Writer<[String], (Int, String, Bool)>.zip3(wa, wb, wc)
+        #expect(result.value == (1, "x", true))
+        #expect(result.log == ["a", "b", "c"])
+    }
+
+    @Test func zip4CombinesAllValuesAndLogs() {
+        let wa = Writer<[String], Int>(1, ["a"])
+        let wb = Writer<[String], String>("x", ["b"])
+        let wc = Writer<[String], Bool>(true, ["c"])
+        let wd = Writer<[String], Double>(3.14, ["d"])
+        let result = Writer<[String], (Int, String, Bool, Double)>.zip4(wa, wb, wc, wd)
+        #expect(result.value == (1, "x", true, 3.14))
+        #expect(result.log == ["a", "b", "c", "d"])
+    }
+
     // MARK: - Log accumulation
 
     @Test func logsAccumulateAcrossChain() {

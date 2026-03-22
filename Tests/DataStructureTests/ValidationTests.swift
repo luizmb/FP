@@ -104,6 +104,99 @@ import CoreFP
         #expect(lhs.seqLeft(rhs) == .success(1))
     }
 
+    // MARK: - Zip
+
+    // Tuples don't satisfy Equatable in generic positions, so use match to inspect results.
+
+    @Test func zipBothSuccess() {
+        let v1: Validation<[String], Int> = .success(1)
+        let v2: Validation<[String], String> = .success("a")
+        Validation<[String], (Int, String)>.zip(v1, v2).match(
+            caseFailure: { _ in Issue.record("Expected success") },
+            caseSuccess: { #expect($0 == (1, "a")) }
+        )
+    }
+
+    @Test func zipFirstFailure() {
+        let v1: Validation<[String], Int> = .failure(["e1"])
+        let v2: Validation<[String], String> = .success("a")
+        Validation<[String], (Int, String)>.zip(v1, v2).match(
+            caseFailure: { #expect($0 == ["e1"]) },
+            caseSuccess: { _ in Issue.record("Expected failure") }
+        )
+    }
+
+    @Test func zipSecondFailure() {
+        let v1: Validation<[String], Int> = .success(1)
+        let v2: Validation<[String], String> = .failure(["e2"])
+        Validation<[String], (Int, String)>.zip(v1, v2).match(
+            caseFailure: { #expect($0 == ["e2"]) },
+            caseSuccess: { _ in Issue.record("Expected failure") }
+        )
+    }
+
+    @Test func zipAccumulatesBothFailures() {
+        let v1: Validation<[String], Int> = .failure(["e1"])
+        let v2: Validation<[String], String> = .failure(["e2"])
+        Validation<[String], (Int, String)>.zip(v1, v2).match(
+            caseFailure: { #expect($0 == ["e1", "e2"]) },
+            caseSuccess: { _ in Issue.record("Expected failure") }
+        )
+    }
+
+    @Test func zip3AllSuccess() {
+        let v1: Validation<[String], Int> = .success(1)
+        let v2: Validation<[String], String> = .success("a")
+        let v3: Validation<[String], Bool> = .success(true)
+        Validation<[String], (Int, String, Bool)>.zip3(v1, v2, v3).match(
+            caseFailure: { _ in Issue.record("Expected success") },
+            caseSuccess: { #expect($0 == (1, "a", true)) }
+        )
+    }
+
+    @Test func zip3AccumulatesAllThreeFailures() {
+        let v1: Validation<[String], Int> = .failure(["e1"])
+        let v2: Validation<[String], String> = .failure(["e2"])
+        let v3: Validation<[String], Bool> = .failure(["e3"])
+        Validation<[String], (Int, String, Bool)>.zip3(v1, v2, v3).match(
+            caseFailure: { #expect($0 == ["e1", "e2", "e3"]) },
+            caseSuccess: { _ in Issue.record("Expected failure") }
+        )
+    }
+
+    @Test func zip3AccumulatesPartialFailures() {
+        // first and third fail, second succeeds — both errors must appear
+        let v1: Validation<[String], Int> = .failure(["e1"])
+        let v2: Validation<[String], String> = .success("ok")
+        let v3: Validation<[String], Bool> = .failure(["e3"])
+        Validation<[String], (Int, String, Bool)>.zip3(v1, v2, v3).match(
+            caseFailure: { #expect($0 == ["e1", "e3"]) },
+            caseSuccess: { _ in Issue.record("Expected failure") }
+        )
+    }
+
+    @Test func zip4AllSuccess() {
+        let v1: Validation<[String], Int> = .success(1)
+        let v2: Validation<[String], String> = .success("a")
+        let v3: Validation<[String], Bool> = .success(true)
+        let v4: Validation<[String], Double> = .success(3.14)
+        Validation<[String], (Int, String, Bool, Double)>.zip4(v1, v2, v3, v4).match(
+            caseFailure: { _ in Issue.record("Expected success") },
+            caseSuccess: { #expect($0 == (1, "a", true, 3.14)) }
+        )
+    }
+
+    @Test func zip4AccumulatesAllFourFailures() {
+        let v1: Validation<[String], Int> = .failure(["e1"])
+        let v2: Validation<[String], String> = .failure(["e2"])
+        let v3: Validation<[String], Bool> = .failure(["e3"])
+        let v4: Validation<[String], Double> = .failure(["e4"])
+        Validation<[String], (Int, String, Bool, Double)>.zip4(v1, v2, v3, v4).match(
+            caseFailure: { #expect($0 == ["e1", "e2", "e3", "e4"]) },
+            caseSuccess: { _ in Issue.record("Expected failure") }
+        )
+    }
+
     // MARK: - Prism
 
     @Test func prismSuccess() {
