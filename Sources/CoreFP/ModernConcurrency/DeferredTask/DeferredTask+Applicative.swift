@@ -13,6 +13,18 @@ public extension DeferredTask {
     func seqLeft<B: Sendable>(_ rhs: DeferredTask<B>) -> DeferredTask<Success> {
         liftA2DeferredTask({ a, _ in a })(self, rhs)
     }
+
+    // zip :: DeferredTask a -> DeferredTask b -> … -> DeferredTask (a, b, …)
+    // Runs tasks sequentially left-to-right, collecting results into a tuple.
+    static func zip<B: Sendable, each C: Sendable>(
+        _ first: DeferredTask<Success>,
+        _ second: DeferredTask<B>,
+        _ additional: repeat DeferredTask<each C>
+    ) -> DeferredTask<(Success, B, repeat each C)> {
+        DeferredTask<(Success, B, repeat each C)> {
+            (await first.run(), await second.run(), repeat await (each additional).run())
+        }
+    }
 }
 
 // apply :: DeferredTask (a -> b) -> DeferredTask a -> DeferredTask b

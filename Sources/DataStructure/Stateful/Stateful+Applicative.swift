@@ -39,4 +39,49 @@ public extension Stateful {
             }
         }
     }
+
+    /// zip :: Stateful<s, a1> -> Stateful<s, a2> -> Stateful<s, (a1, a2)>
+    /// Threads state left-to-right through both computations.
+    static func zip<A1, A2>(_ sa1: Stateful<S, A1>, _ sa2: Stateful<S, A2>) -> Stateful<S, A>
+    where A == (A1, A2) {
+        Stateful<S, (A1, A2)> { s in
+            let a1 = sa1.run(&s)
+            let a2 = sa2.run(&s)
+            return (a1, a2)
+        }
+    }
+
+    /// zip3 :: Stateful<s, a1> -> Stateful<s, a2> -> Stateful<s, a3> -> Stateful<s, (a1, a2, a3)>
+    /// Threads state left-to-right through all three computations.
+    static func zip3<A1, A2, A3>(
+        _ sa1: Stateful<S, A1>,
+        _ sa2: Stateful<S, A2>,
+        _ sa3: Stateful<S, A3>
+    ) -> Stateful<S, A>
+    where A == (A1, A2, A3) {
+        Stateful<S, (A1, A2, A3)> { s in
+            let a1 = sa1.run(&s)
+            let a2 = sa2.run(&s)
+            let a3 = sa3.run(&s)
+            return (a1, a2, a3)
+        }
+    }
+
+    /// zip4 :: Stateful<s, a1> -> … -> Stateful<s, a4> -> Stateful<s, (a1, a2, a3, a4)>
+    /// Threads state left-to-right through all four computations.
+    static func zip4<A1, A2, A3, A4>(
+        _ sa1: Stateful<S, A1>,
+        _ sa2: Stateful<S, A2>,
+        _ sa3: Stateful<S, A3>,
+        _ sa4: Stateful<S, A4>
+    ) -> Stateful<S, A>
+    where A == (A1, A2, A3, A4) {
+        Stateful<S, (A1, A2, A3, A4)> { s in
+            let a1 = sa1.run(&s)
+            let a2 = sa2.run(&s)
+            let a3 = sa3.run(&s)
+            let a4 = sa4.run(&s)
+            return (a1, a2, a3, a4)
+        }
+    }
 }

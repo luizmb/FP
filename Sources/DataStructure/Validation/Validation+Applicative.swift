@@ -33,4 +33,40 @@ public extension Validation {
     func seqLeft<B>(_ rhs: Validation<E, B>) -> Validation<E, A> {
         Validation<E, A>.liftA2({ a, _ in a })(self, rhs)
     }
+
+    /// zip :: Validation<e, a1> -> Validation<e, a2> -> Validation<e, (a1, a2)>
+    /// Accumulates errors from both sides via Semigroup.
+    static func zip<A1, A2>(_ v1: Validation<E, A1>, _ v2: Validation<E, A2>) -> Validation<E, A>
+    where A == (A1, A2) {
+        Validation<E, (A1, A2)>.liftA2({ ($0, $1) })(v1, v2)
+    }
+
+    /// zip3 :: Validation<e, a1> -> Validation<e, a2> -> Validation<e, a3> -> Validation<e, (a1, a2, a3)>
+    /// Accumulates errors from all three sides via Semigroup.
+    static func zip3<A1, A2, A3>(
+        _ v1: Validation<E, A1>,
+        _ v2: Validation<E, A2>,
+        _ v3: Validation<E, A3>
+    ) -> Validation<E, A>
+    where A == (A1, A2, A3) {
+        Validation<E, (A1, A2, A3)>.liftA2({ ab, c in (ab.0, ab.1, c) })(
+            Validation<E, (A1, A2)>.zip(v1, v2),
+            v3
+        )
+    }
+
+    /// zip4 :: Validation<e, a1> -> … -> Validation<e, a4> -> Validation<e, (a1, a2, a3, a4)>
+    /// Accumulates errors from all four sides via Semigroup.
+    static func zip4<A1, A2, A3, A4>(
+        _ v1: Validation<E, A1>,
+        _ v2: Validation<E, A2>,
+        _ v3: Validation<E, A3>,
+        _ v4: Validation<E, A4>
+    ) -> Validation<E, A>
+    where A == (A1, A2, A3, A4) {
+        Validation<E, (A1, A2, A3, A4)>.liftA2({ abc, d in (abc.0, abc.1, abc.2, d) })(
+            Validation<E, (A1, A2, A3)>.zip3(v1, v2, v3),
+            v4
+        )
+    }
 }
