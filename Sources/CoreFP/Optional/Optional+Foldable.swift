@@ -4,11 +4,11 @@
 /// For example:
 /// ```
 /// let f: (String) -> Character? = \.first
-/// let f: (String) -> Character = \.first >>> alternative(nil) >>> alternative("X")
+/// let f: (String) -> Character = \.first >>> withDefault(nil) >>> withDefault("X")
 /// ```
 /// When `f` function changes its type to return a non-optional, a default value has to be provided. This can be
 /// achieved by using the `alternative` function and `>>>` operator:
-public func alternative<A>(_ fallback: A?) -> (A?) -> A? {
+public func withDefault<A>(_ fallback: A?) -> (A?) -> A? {
     { optional in
         optional ?? fallback
     }
@@ -20,11 +20,11 @@ public func alternative<A>(_ fallback: A?) -> (A?) -> A? {
 /// For example:
 /// ```
 /// let f: (String) -> Character? = \.first
-/// let f: (String) -> Character = \.first >>> alternative("X")
+/// let f: (String) -> Character = \.first >>> withDefault("X")
 /// ```
 /// When `f` function changes its type to return a non-optional, a default value has to be provided. This can be
 /// achieved by using the `alternative` function and `>>>` operator:
-public func alternative<A>(_ fallback: A) -> (A?) -> A {
+public func withDefault<A>(_ fallback: A) -> (A?) -> A {
     { optional in
         optional ?? fallback
     }
@@ -42,5 +42,38 @@ public extension Optional {
             otherwise()
             return nil
         }
+    }
+
+    /// Collapse an Optional to a single value.
+    /// fold :: b -> (a -> b) -> Maybe a -> b
+    func fold<B>(onNone: B, onSome: (Wrapped) -> B) -> B {
+        map(onSome) ?? onNone
+    }
+
+    /// Curried fold for point-free use.
+    static func fold<B>(
+        onNone: B,
+        onSome: @escaping (Wrapped) -> B
+    ) -> (Wrapped?) -> B {
+        { $0.fold(onNone: onNone, onSome: onSome) }
+    }
+
+    /// Map to a Monoid, returning identity for nil.
+    /// foldMap :: Monoid m => (a -> m) -> Maybe a -> m
+    func foldMap<M: Monoid>(_ f: (Wrapped) -> M) -> M {
+        map(f) ?? M.identity
+    }
+
+    /// Curried foldMap for point-free use.
+    static func foldMap<M: Monoid>(
+        _ f: @escaping (Wrapped) -> M
+    ) -> (Wrapped?) -> M {
+        { $0.foldMap(f) }
+    }
+
+    /// Extract value as a single-element list, or empty list for nil.
+    /// toList :: Maybe a -> [a]
+    var toList: [Wrapped] {
+        map { [$0] } ?? []
     }
 }

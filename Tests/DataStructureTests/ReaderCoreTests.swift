@@ -229,4 +229,21 @@ import CoreFP
         let env = Environment(multiplier: 5, offset: 3)
         #expect(modified(env) == 13) // (5 * 2) + 3 = 13
     }
+
+    // MARK: - join / void
+
+    @Test func joinFreeFunction() {
+        let nested = Reader<Environment, Reader<Environment, Int>> { env in
+            Reader { _ in env.multiplier * 3 }
+        }
+        let env = Environment(multiplier: 4, offset: 0)
+        #expect(DataStructure.join(nested)(env) == 12)
+    }
+
+    @Test func voidFreeFunction() {
+        let reader = Reader<Environment, Int> { env in env.multiplier }
+        let env = Environment(multiplier: 5, offset: 0)
+        let voided: Reader<Environment, Void> = DataStructure.void(reader)
+        voided(env) // Void result — just verify it runs
+    }
 }

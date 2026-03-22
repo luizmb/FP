@@ -25,4 +25,15 @@ public extension Validation {
             caseSuccess: compose(af, Validation<E1, B>.success)
         )
     }
+
+    func void() -> Validation<E, Void> {
+        mapSuccess(ignore)
+    }
+
+    static func bimap<E1: Semigroup, B>(
+        _ ef: @escaping (E) -> E1,
+        _ af: @escaping (A) -> B
+    ) -> (Validation<E, A>) -> Validation<E1, B> {
+        { $0.bimap(ef, af) }
+    }
 }

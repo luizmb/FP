@@ -2,6 +2,7 @@ import Testing
 import Combine
 @testable import CoreFP
 import CoreFP
+import Foundation
 
 @MainActor
 @Suite struct PublisherTests {
@@ -110,5 +111,35 @@ import CoreFP
         .store(in: &cancellables)
 
         #expect(results == ["10"])
+    }
+
+    // MARK: - Alternative
+
+    @Test func altSuccessPublisherPassesThrough() {
+        var results: [Int] = []
+        var cancellables = Set<AnyCancellable>()
+
+        let lhs: any Publisher<Int, TestError> = [1, 2, 3].publisher.setFailureType(to: TestError.self).eraseToAnyPublisher()
+        let rhs: any Publisher<Int, TestError> = [4, 5, 6].publisher.setFailureType(to: TestError.self).eraseToAnyPublisher()
+
+        altPublisher(lhs, rhs)
+            .sink(receiveCompletion: ignore, receiveValue: { results.append($0) })
+            .store(in: &cancellables)
+
+        #expect(results == [1, 2, 3])
+    }
+
+    @Test func altFailingPublisherFallsBackToRhs() {
+        var results: [Int] = []
+        var cancellables = Set<AnyCancellable>()
+
+        let lhs: any Publisher<Int, TestError> = Fail(error: TestError.test).eraseToAnyPublisher()
+        let rhs: any Publisher<Int, TestError> = [42].publisher.setFailureType(to: TestError.self).eraseToAnyPublisher()
+
+        altPublisher(lhs, rhs)
+            .sink(receiveCompletion: ignore, receiveValue: { results.append($0) })
+            .store(in: &cancellables)
+
+        #expect(results == [42])
     }
 }

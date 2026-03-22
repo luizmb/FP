@@ -6,7 +6,7 @@ import CoreFPOperators
 // ReaderT + Array
 
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
-public func <£> <A, B, Env>(_ transform: @escaping (A) -> B, _ reader: Reader<Env, [A]>)
+public func <£^> <A, B, Env>(_ transform: @escaping (A) -> B, _ reader: Reader<Env, [A]>)
 -> Reader<Env, [B]> {
     reader.mapT(transform)
 }

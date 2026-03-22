@@ -17,7 +17,7 @@ import CoreFP
             .right(env.multiplier)
         }
 
-        let mapped = { $0 * 2 } <£> reader
+        let mapped = { $0 * 2 } <£^> reader
 
         let env = Environment(multiplier: 5)
         #expect(mapped(env) == .right(10))

@@ -70,7 +70,7 @@ import CoreFP
 
     @Test func writerTValidationFmapOperator() {
         let w = Writer<[String], Validation<[Int], Int>>(.success(3), ["log"])
-        let result = { $0 * 2 } <£> w
+        let result = { $0 * 2 } <£^> w
         #expect(result.value == .success(6))
         #expect(result.log == ["log"])
     }

@@ -51,4 +51,33 @@ import Foundation
         let voided = success.void()
         #expect(throws: Never.self) { try voided.get() }
     }
+
+    // MARK: - join / void free functions
+
+    private enum JoinTestError: Error { case fail }
+
+    @Test func joinFreeFunction() {
+        let nested: Result<Result<Int, JoinTestError>, JoinTestError> = .success(.success(42))
+        #expect((try? CoreFP.join(nested).get()) == 42)
+    }
+
+    @Test func joinOuterFailure() {
+        let nested: Result<Result<Int, JoinTestError>, JoinTestError> = .failure(.fail)
+        #expect(throws: (any Error).self) { try CoreFP.join(nested).get() }
+    }
+
+    @Test func joinInnerFailure() {
+        let nested: Result<Result<Int, JoinTestError>, JoinTestError> = .success(.failure(.fail))
+        #expect(throws: (any Error).self) { try CoreFP.join(nested).get() }
+    }
+
+    @Test func voidFreeFunction() {
+        let success: Result<Int, JoinTestError> = .success(5)
+        #expect(throws: Never.self) { try CoreFP.void(success).get() }
+    }
+
+    @Test func voidFreeFunctionFailure() {
+        let failure: Result<Int, JoinTestError> = .failure(.fail)
+        #expect(throws: (any Error).self) { try CoreFP.void(failure).get() }
+    }
 }

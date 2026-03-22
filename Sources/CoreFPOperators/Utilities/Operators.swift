@@ -234,6 +234,19 @@ infix operator <£: FunctorOps
 /// https://hackage.haskell.org/package/base-4.20.0.1/docs/Data-Functor.html#v:-60--38--62-
 infix operator <&>: MonadBindLeft
 
+/// Transformer-specific fmap: `(<£^>) :: (a -> b) -> f (g a) -> f (g b)`
+///
+/// This operator is exclusively for transformer (nested) fmap (`mapT`).
+/// Unlike `<£>`, it has NO base overload — only transformer-specific overloads —
+/// so Swift can always resolve the correct overload with zero ambiguity.
+infix operator <£^>: FunctorOps
+
+/// Flipped transformer-specific fmap: `(<&^>) :: f (g a) -> (a -> b) -> f (g b)`
+///
+/// Flipped version of `<£^>`. The outer type is the first argument,
+/// so Swift resolves the overload from the container type directly.
+infix operator <&^>: MonadBindLeft
+
 /// Raised to the power of ^^ - infixr 8
 /// ```swift
 /// 2 ^ 3

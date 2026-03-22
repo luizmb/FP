@@ -26,7 +26,7 @@ import Testing
 
     @Test func fmapOperator() {
         let arr: [Int?] = [1, nil, 3]
-        let result = { $0 * 2 } <£> arr
+        let result = { $0 * 2 } <£^> arr
         #expect(result == [2, nil, 6])
     }
 

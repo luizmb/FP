@@ -187,4 +187,18 @@ private enum TestError: Error, Equatable { case err }
         }.run()
         #expect(result == .failure(.err))
     }
+
+    // MARK: - join / void
+
+    @Test func joinFreeFunction() async {
+        let nested = DeferredTask<DeferredTask<Int>> { DeferredTask<Int> { 42 } }
+        let result = await CoreFP.join(nested).run()
+        #expect(result == 42)
+    }
+
+    @Test func voidFreeFunction() async {
+        let task = DeferredTask<Int> { 99 }
+        await CoreFP.void(task).run()
+        // Void result — just verify it completes without error
+    }
 }

@@ -95,4 +95,28 @@ import CoreFP
         #expect(output == "0")
         #expect(finalState == 3)
     }
+
+    @Test func applyReaderStatefulTest() {
+        let rf = Reader<Env, Stateful<Int, (Int) -> String>> { _ in .pure({ "\($0)" }) }
+        let ra = Reader<Env, Stateful<Int, Int>> { env in .pure(env.multiplier) }
+        let result = DataStructure.applyReaderStateful(rf, ra)
+        let env = Env(multiplier: 5)
+        #expect(result(env).eval(0) == "5")
+    }
+
+    @Test func seqRightReaderStatefulTest() {
+        let lhs = Reader<Env, Stateful<Int, Int>> { _ in .pure(1) }
+        let rhs = Reader<Env, Stateful<Int, String>> { _ in .pure("hello") }
+        let result = DataStructure.seqRightReaderStateful(lhs, rhs)
+        let env = Env(multiplier: 0)
+        #expect(result(env).eval(0) == "hello")
+    }
+
+    @Test func seqLeftReaderStatefulTest() {
+        let lhs = Reader<Env, Stateful<Int, Int>> { _ in .pure(99) }
+        let rhs = Reader<Env, Stateful<Int, String>> { _ in .pure("ignored") }
+        let result = DataStructure.seqLeftReaderStateful(lhs, rhs)
+        let env = Env(multiplier: 0)
+        #expect(result(env).eval(0) == 99)
+    }
 }

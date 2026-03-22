@@ -52,6 +52,32 @@ import CoreFPOperators
         #expect(globalReader(globalEnv) == 5)
     }
 
+    @Test func contramapEnvironmentCurried() {
+        struct GlobalEnv { let local: Environment }
+
+        let reader = Reader<Environment, Int> { env in env.multiplier }
+        let widen = Reader<Environment, Int>.contramapEnvironment { (g: GlobalEnv) in g.local }
+        let globalReader = widen(reader)
+
+        let globalEnv = GlobalEnv(local: Environment(multiplier: 7, addend: 0))
+        #expect(globalReader(globalEnv) == 7)
+    }
+
+    @Test func contramapEnvironmentPointFree() {
+        struct GlobalEnv { let local: Environment }
+
+        let readers: [Reader<Environment, Int>] = [
+            Reader { $0.multiplier },
+            Reader { $0.addend },
+        ]
+        let widen = Reader<Environment, Int>.contramapEnvironment { (g: GlobalEnv) in g.local }
+        let global = readers.map(widen)
+
+        let env = GlobalEnv(local: Environment(multiplier: 3, addend: 9))
+        #expect(global[0](env) == 3)
+        #expect(global[1](env) == 9)
+    }
+
     @Test func dimap() {
         struct GlobalEnv {
             let local: Environment
@@ -65,6 +91,38 @@ import CoreFPOperators
 
         let globalEnv = GlobalEnv(local: Environment(multiplier: 5, addend: 3))
         #expect(transformed(globalEnv) == "5")
+    }
+
+    @Test func dimapCurried() {
+        struct GlobalEnv { let local: Environment }
+
+        let reader = Reader<Environment, Int> { env in env.multiplier }
+        let transform = Reader<Environment, Int>.dimap(
+            { (g: GlobalEnv) in g.local },
+            { "\($0)" }
+        )
+        let transformed = transform(reader)
+
+        let globalEnv = GlobalEnv(local: Environment(multiplier: 4, addend: 0))
+        #expect(transformed(globalEnv) == "4")
+    }
+
+    @Test func dimapPointFree() {
+        struct GlobalEnv { let local: Environment }
+
+        let readers: [Reader<Environment, Int>] = [
+            Reader { $0.multiplier },
+            Reader { $0.addend },
+        ]
+        let transform = Reader<Environment, Int>.dimap(
+            { (g: GlobalEnv) in g.local },
+            { $0 * 10 }
+        )
+        let global = readers.map(transform)
+
+        let env = GlobalEnv(local: Environment(multiplier: 2, addend: 5))
+        #expect(global[0](env) == 20)
+        #expect(global[1](env) == 50)
     }
 
     // MARK: - Functor Laws

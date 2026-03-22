@@ -9,7 +9,7 @@ import CoreFPOperators
 
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
-public func <£> <A, B, E: Error, Env>(_ transform: @escaping (A) -> B, _ reader: Reader<Env, any Publisher<A, E>>)
+public func <£^> <A, B, E: Error, Env>(_ transform: @escaping (A) -> B, _ reader: Reader<Env, any Publisher<A, E>>)
 -> Reader<Env, any Publisher<B, E>>
 where A: Sendable, B: Sendable {
     reader.mapT(transform)

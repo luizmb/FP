@@ -60,4 +60,30 @@ import Testing
         #expect(value.filter { $0 > 3 } == 5)
         #expect(value.filter { $0 > 10 } == nil)
     }
+
+    // MARK: - join / void
+
+    @Test func joinFreeFunction() {
+        let nested: Int?? = .some(.some(42))
+        #expect(CoreFP.join(nested) == 42)
+    }
+
+    @Test func joinNilOuter() {
+        let nested: Int?? = .none
+        #expect(CoreFP.join(nested) == nil)
+    }
+
+    @Test func joinNilInner() {
+        let nested: Int?? = .some(.none)
+        #expect(CoreFP.join(nested) == nil)
+    }
+
+    @Test func voidSome() {
+        let value: Int? = 5
+        #expect(CoreFP.void(value) != nil)
+    }
+
+    @Test func voidNone() {
+        #expect(CoreFP.void(Int?.none) == nil)
+    }
 }

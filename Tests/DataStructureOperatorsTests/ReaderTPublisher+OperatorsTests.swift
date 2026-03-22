@@ -26,7 +26,7 @@ import CoreFPOperators
                 .eraseToAnyPublisher()
         }
 
-        let mapped = { $0 * 2 } <£> reader
+        let mapped = { $0 * 2 } <£^> reader
 
         let env = Environment(multiplier: 5)
         var cancellables = Set<AnyCancellable>()

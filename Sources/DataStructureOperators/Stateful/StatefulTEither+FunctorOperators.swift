@@ -1,0 +1,15 @@
+import DataStructure
+import CoreFPOperators
+import CoreFP
+
+// (<£^>) :: (a -> b) -> Stateful<s, Either<l, a>> -> Stateful<s, Either<l, b>>
+public func <£^> <S, L, A, B>(_ fn: @escaping (A) -> B, _ stateful: Stateful<S, Either<L, A>>) -> Stateful<S, Either<L, B>>
+where L: Sendable, A: Sendable {
+    stateful.mapT(fn)
+}
+
+// (<&^>) :: Stateful<s, Either<l, a>> -> (a -> b) -> Stateful<s, Either<l, b>>
+public func <&^> <S, L, A, B>(_ stateful: Stateful<S, Either<L, A>>, _ fn: @escaping (A) -> B) -> Stateful<S, Either<L, B>>
+where L: Sendable, A: Sendable {
+    stateful.mapT(fn)
+}

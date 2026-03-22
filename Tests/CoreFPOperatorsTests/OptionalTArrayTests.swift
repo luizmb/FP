@@ -20,13 +20,13 @@ import Testing
 
     @Test func fmapOperatorSome() {
         let opt: [Int]? = [1, 2, 3]
-        let result = { $0 * 2 } <£> opt
+        let result = { $0 * 2 } <£^> opt
         #expect(result == [2, 4, 6])
     }
 
     @Test func fmapOperatorNone() {
         let opt: [Int]? = nil
-        let result = { $0 * 2 } <£> opt
+        let result = { $0 * 2 } <£^> opt
         #expect(result == nil)
     }
 
