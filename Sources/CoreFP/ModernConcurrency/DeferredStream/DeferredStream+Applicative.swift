@@ -26,7 +26,7 @@ public func applyDeferredStream<A: Sendable, B: Sendable>(
 ) -> DeferredStream<B> {
     DeferredStream<B> {
         AsyncStream<B> { continuation in
-            Task { @Sendable in
+            let task = Task { @Sendable in
                 var fnIter = fns.makeAsyncIterator()
                 var valIter = values.makeAsyncIterator()
                 while let fn = await fnIter.next(), let val = await valIter.next() {
@@ -34,6 +34,7 @@ public func applyDeferredStream<A: Sendable, B: Sendable>(
                 }
                 continuation.finish()
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }
@@ -45,7 +46,7 @@ public func liftA2DeferredStream<A: Sendable, B: Sendable, C: Sendable>(
     { @Sendable sa, sb in
         DeferredStream<C> {
             AsyncStream<C> { continuation in
-                Task { @Sendable in
+                let task = Task { @Sendable in
                     var ia = sa.makeAsyncIterator()
                     var ib = sb.makeAsyncIterator()
                     while let a = await ia.next(), let b = await ib.next() {
@@ -53,6 +54,7 @@ public func liftA2DeferredStream<A: Sendable, B: Sendable, C: Sendable>(
                     }
                     continuation.finish()
                 }
+                continuation.onTermination = { _ in task.cancel() }
             }
         }
     }

@@ -12,7 +12,7 @@ public func liftA2TDeferredStreamValidation<E: Semigroup & Sendable, A: Sendable
         let inner = sb
         return DeferredStream<Validation<E, C>> {
             AsyncStream<Validation<E, C>> { continuation in
-                Task { @Sendable in
+                let task = Task { @Sendable in
                     var ia = outer.makeAsyncIterator()
                     var ib = inner.makeAsyncIterator()
                     while let va = await ia.next(), let vb = await ib.next() {
@@ -20,6 +20,7 @@ public func liftA2TDeferredStreamValidation<E: Semigroup & Sendable, A: Sendable
                     }
                     continuation.finish()
                 }
+                continuation.onTermination = { _ in task.cancel() }
             }
         }
     }
@@ -31,7 +32,7 @@ public func applyTDeferredStreamValidation<E: Semigroup & Sendable, A: Sendable,
 ) -> DeferredStream<Validation<E, B>> where B: Sendable {
     DeferredStream<Validation<E, B>> {
         AsyncStream<Validation<E, B>> { continuation in
-            Task { @Sendable in
+            let task = Task { @Sendable in
                 var fi = fns.makeAsyncIterator()
                 var vi = values.makeAsyncIterator()
                 while let vf = await fi.next(), let va = await vi.next() {
@@ -45,6 +46,7 @@ public func applyTDeferredStreamValidation<E: Semigroup & Sendable, A: Sendable,
                 }
                 continuation.finish()
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }

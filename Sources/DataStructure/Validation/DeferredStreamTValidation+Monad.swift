@@ -11,7 +11,7 @@ public func flatMapTDeferredStreamValidation<E: Semigroup & Sendable, A: Sendabl
     let s = stream
     return DeferredStream<Validation<E, B>> {
         AsyncStream<Validation<E, B>> { continuation in
-            Task { @Sendable in
+            let task = Task { @Sendable in
                 for await v in s {
                     switch v {
                     case let .success(a):
@@ -24,6 +24,7 @@ public func flatMapTDeferredStreamValidation<E: Semigroup & Sendable, A: Sendabl
                 }
                 continuation.finish()
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }

@@ -10,7 +10,7 @@ public func flatMapTDeferredStreamResult<A: Sendable, B: Sendable, E: Error & Se
     let s = stream
     return DeferredStream<Result<B, E>> {
         AsyncStream<Result<B, E>> { continuation in
-            Task { @Sendable in
+            let task = Task { @Sendable in
                 for await ra in s {
                     switch ra {
                     case let .success(a):
@@ -23,6 +23,7 @@ public func flatMapTDeferredStreamResult<A: Sendable, B: Sendable, E: Error & Se
                 }
                 continuation.finish()
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }

@@ -4,12 +4,13 @@ public extension DeferredStream {
         let outer = self
         return DeferredStream<B> {
             AsyncStream<B> { continuation in
-                Task { @Sendable in
+                let task = Task { @Sendable in
                     for await element in outer {
                         continuation.yield(fn(element))
                     }
                     continuation.finish()
                 }
+                continuation.onTermination = { _ in task.cancel() }
             }
         }
     }

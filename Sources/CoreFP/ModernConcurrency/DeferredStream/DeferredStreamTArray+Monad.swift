@@ -10,7 +10,7 @@ public func flatMapTDeferredStreamArray<A: Sendable, B: Sendable>(
     let s = stream
     return DeferredStream<[B]> {
         AsyncStream<[B]> { continuation in
-            Task { @Sendable in
+            let task = Task { @Sendable in
                 for await arrA in s {
                     var result: [B] = []
                     for a in arrA {
@@ -22,6 +22,7 @@ public func flatMapTDeferredStreamArray<A: Sendable, B: Sendable>(
                 }
                 continuation.finish()
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }

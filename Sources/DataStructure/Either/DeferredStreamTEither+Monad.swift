@@ -11,7 +11,7 @@ public func flatMapTDeferredStreamEither<L: Sendable, A: Sendable, B: Sendable>(
     let s = stream
     return DeferredStream<Either<L, B>> {
         AsyncStream<Either<L, B>> { continuation in
-            Task { @Sendable in
+            let task = Task { @Sendable in
                 for await either in s {
                     switch either {
                     case let .right(a):
@@ -24,6 +24,7 @@ public func flatMapTDeferredStreamEither<L: Sendable, A: Sendable, B: Sendable>(
                 }
                 continuation.finish()
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }

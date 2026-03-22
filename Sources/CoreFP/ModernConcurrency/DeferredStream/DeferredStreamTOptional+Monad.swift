@@ -10,7 +10,7 @@ public func flatMapTDeferredStreamOptional<A: Sendable, B: Sendable>(
     let s = stream
     return DeferredStream<B?> {
         AsyncStream<B?> { continuation in
-            Task { @Sendable in
+            let task = Task { @Sendable in
                 for await optA in s {
                     if let a = optA {
                         for await optB in fn(a) {
@@ -22,6 +22,7 @@ public func flatMapTDeferredStreamOptional<A: Sendable, B: Sendable>(
                 }
                 continuation.finish()
             }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }
