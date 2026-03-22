@@ -4,7 +4,18 @@
       "Bash(swift test:*)",
       "Bash(swift:*)",
       "Bash(git add:*)",
-      "Bash(sed:*)"
+      "Bash(sed:*)",
+      "mcp__xcodebuildmcp__session_show_defaults",
+      "mcp__xcodebuildmcp__test_sim",
+      "mcp__xcodebuildmcp__build_sim",
+      "mcp__xcodebuildmcp__session_set_defaults",
+      "mcp__xcodebuildmcp__list_schemes",
+      "Bash(xcsift)",
+      "Bash(xcodebuildmcp --help)",
+      "Bash(xcodebuildmcp swift-package:*)",
+      "Bash(xargs -I{} basename {})",
+      "Bash(grep -rl \"import Core$\" Sources Tests)",
+      "Bash(xargs perl:*)"
     ]
   }
 }
