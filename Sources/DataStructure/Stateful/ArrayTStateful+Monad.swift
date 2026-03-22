@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 // ArrayTStateful: outer = Array, inner = Stateful
 // Type: [Stateful<S, A>] = Array<Stateful<S, A>>

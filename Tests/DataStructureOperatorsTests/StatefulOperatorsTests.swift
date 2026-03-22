@@ -1,8 +1,8 @@
 import DataStructureOperators
 import DataStructure
 import Testing
-import CoreOperators
-import Core
+import CoreFPOperators
+import CoreFP
 
 @Suite struct StatefulOperatorsTests {
 

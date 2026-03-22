@@ -1,8 +1,8 @@
 import DataStructureOperators
 import DataStructure
 import Testing
-@testable import Core
-@testable import CoreOperators
+@testable import CoreFP
+@testable import CoreFPOperators
 
 @Suite struct EitherTransformerTests {
 

@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 // ResultTStateful: outer = Result, inner = Stateful
 // Type: Result<Stateful<S, A>, E> = Result wrapping a Stateful computation

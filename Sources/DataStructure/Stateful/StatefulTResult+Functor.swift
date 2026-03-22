@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 public extension Stateful {
     // StatefulT + Result — Stateful<S, Result<A, E>>

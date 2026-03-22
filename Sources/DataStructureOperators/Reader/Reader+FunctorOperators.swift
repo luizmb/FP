@@ -1,7 +1,7 @@
 import DataStructure
 import Foundation
-import Core
-import CoreOperators
+import CoreFP
+import CoreFPOperators
 
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
 public func <£> <Env, A, B>(

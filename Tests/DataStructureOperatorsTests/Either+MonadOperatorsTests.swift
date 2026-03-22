@@ -1,8 +1,8 @@
 import DataStructureOperators
 import DataStructure
 import Testing
-import Core
-import CoreOperators
+import CoreFP
+import CoreFPOperators
 
 @Suite struct EitherMonadTests {
 

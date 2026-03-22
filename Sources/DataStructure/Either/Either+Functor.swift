@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 public extension Either {
     static func fmap<B1>(

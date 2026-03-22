@@ -1,5 +1,5 @@
 import DataStructure
-import CoreOperators
+import CoreFPOperators
 import Testing
 
 @Test func example() async throws {

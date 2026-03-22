@@ -1,6 +1,6 @@
 import DataStructure
-import CoreOperators
-import Core
+import CoreFPOperators
+import CoreFP
 import Testing
 
 @Test func bimapLeft() async throws {

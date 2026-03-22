@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 // ArrayTWriter: outer = Array, inner = Writer
 // Type: [Writer<W, A>]

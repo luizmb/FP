@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 public extension Reader {
     // MARK: - ReaderT + Either

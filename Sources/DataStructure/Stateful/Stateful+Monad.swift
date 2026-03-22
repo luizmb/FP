@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 public extension Stateful {
     func flatMap<B>(_ fn: @escaping (A) -> Stateful<S, B>) -> Stateful<S, B> {

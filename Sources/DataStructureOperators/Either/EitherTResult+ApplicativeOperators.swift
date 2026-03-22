@@ -1,6 +1,6 @@
 import DataStructure
-import Core
-import CoreOperators
+import CoreFP
+import CoreFPOperators
 
 // EitherTResult: outer = Either, inner = Result
 // Type: Either<L, Result<A,E>>

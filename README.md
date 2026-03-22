@@ -24,8 +24,8 @@ import FP
 Or import only what you need (granular options):
 
 ```swift
-import Core                  // Optional, Result, Array extensions + utilities
-import CoreOperators         // Operators for all core types
+import CoreFP                  // Optional, Result, Array extensions + utilities
+import CoreFPOperators         // Operators for all core types
 import DataStructure         // Either, Reader, Stateful, Writer + transformer stacks
 import DataStructureOperators // Operators for all data structures
 ```

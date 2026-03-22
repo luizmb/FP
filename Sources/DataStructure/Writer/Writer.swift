@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 public struct Writer<W: Monoid, A> {
     public let value: A

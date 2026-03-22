@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 public extension Writer {
     // WriterT + Result — Writer<W, Result<A, E>>

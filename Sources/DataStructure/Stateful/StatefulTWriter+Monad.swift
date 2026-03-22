@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 // StatefulTWriter: outer = Stateful, inner = Writer
 // Type: Stateful<S, Writer<W, A>>

@@ -1,7 +1,7 @@
 import DataStructure
-import Core
+import CoreFP
 import Foundation
-import CoreOperators
+import CoreFPOperators
 
 // (<*>) :: Reader<e, (a -> b)> -> Reader<e, a> -> Reader<e, b>
 public func <*> <Env, A, B>(

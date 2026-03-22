@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 // AsyncStreamTWriter: outer = AsyncStream, inner = Writer
 // Type: AsyncStream<Writer<W, A>>

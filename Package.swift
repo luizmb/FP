@@ -11,20 +11,20 @@ let package = Package(
     ],
     products: [
         .library(name: "FP", targets: ["FP"]),
-        .library(name: "Core", targets: ["Core"]),
-        .library(name: "CoreOperators", targets: ["CoreOperators"]),
+        .library(name: "CoreFP", targets: ["CoreFP"]),
+        .library(name: "CoreFPOperators", targets: ["CoreFPOperators"]),
         .library(name: "DataStructure", targets: ["DataStructure"]),
         .library(name: "DataStructureOperators", targets: ["DataStructureOperators"])
     ],
     targets: [
-        .target(name: "Core"),
-        .target(name: "CoreOperators", dependencies: ["Core"]),
-        .target(name: "DataStructure", dependencies: ["Core"]),
-        .target(name: "DataStructureOperators", dependencies: ["DataStructure", "CoreOperators"]),
-        .target(name: "FP", dependencies: ["Core", "CoreOperators", "DataStructure", "DataStructureOperators"]),
-        .testTarget(name: "CoreTests", dependencies: ["Core"]),
-        .testTarget(name: "CoreOperatorsTests", dependencies: ["CoreOperators", "Core"]),
-        .testTarget(name: "DataStructureTests", dependencies: ["DataStructure", "Core"]),
-        .testTarget(name: "DataStructureOperatorsTests", dependencies: ["DataStructure", "DataStructureOperators", "CoreOperators", "Core"])
+        .target(name: "CoreFP"),
+        .target(name: "CoreFPOperators", dependencies: ["CoreFP"]),
+        .target(name: "DataStructure", dependencies: ["CoreFP"]),
+        .target(name: "DataStructureOperators", dependencies: ["DataStructure", "CoreFPOperators"]),
+        .target(name: "FP", dependencies: ["CoreFP", "CoreFPOperators", "DataStructure", "DataStructureOperators"]),
+        .testTarget(name: "CoreFPTests", dependencies: ["CoreFP"]),
+        .testTarget(name: "CoreFPOperatorsTests", dependencies: ["CoreFPOperators", "CoreFP"]),
+        .testTarget(name: "DataStructureTests", dependencies: ["DataStructure", "CoreFP"]),
+        .testTarget(name: "DataStructureOperatorsTests", dependencies: ["DataStructure", "DataStructureOperators", "CoreFPOperators", "CoreFP"])
     ]
 )

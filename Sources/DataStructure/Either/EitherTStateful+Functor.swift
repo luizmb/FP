@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 // EitherTStateful: outer = Either, inner = Stateful
 // Type: Either<L, Stateful<S, A>>

@@ -539,6 +539,20 @@
                ReferencedContainer = "container:">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "YES"
+            buildForProfiling = "YES"
+            buildForArchiving = "YES"
+            buildForAnalyzing = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "CoreFPOperators"
+               BuildableName = "CoreFPOperators"
+               BlueprintName = "CoreFPOperators"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -915,6 +929,26 @@
                BlueprintIdentifier = "CoreTests"
                BuildableName = "CoreTests"
                BlueprintName = "CoreTests"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "CoreFPOperatorsTests"
+               BuildableName = "CoreFPOperatorsTests"
+               BlueprintName = "CoreFPOperatorsTests"
+               ReferencedContainer = "container:">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "CoreFPTests"
+               BuildableName = "CoreFPTests"
+               BlueprintName = "CoreFPTests"
                ReferencedContainer = "container:">
             </BuildableReference>
          </TestableReference>

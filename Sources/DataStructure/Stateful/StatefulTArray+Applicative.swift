@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 // StatefulT + Array — free functions for Stateful<S, [A]>
 

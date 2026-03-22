@@ -1,8 +1,8 @@
 import DataStructure
 #if canImport(Combine)
 import Combine
-import Core
-import CoreOperators
+import CoreFP
+import CoreFPOperators
 
 // PublisherTEither: AnyPublisher<Either<L,A>, E>
 

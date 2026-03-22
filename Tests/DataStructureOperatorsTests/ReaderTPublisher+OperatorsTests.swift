@@ -2,8 +2,8 @@ import DataStructureOperators
 import DataStructure
 import Testing
 import Combine
-import Core
-import CoreOperators
+import CoreFP
+import CoreFPOperators
 
 @MainActor
 @Suite struct ReaderCombineOperatorsTests {

@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 public struct Reader<Environment, Output>: FunctionWrapper {
     public let runReader: (Environment) -> Output

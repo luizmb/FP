@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 // WriterT + Either — free functions for Writer<W, Either<L, A>>
 

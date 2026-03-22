@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 // WriterT + Array — free functions for Writer<W, [A]>
 

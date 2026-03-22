@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 public enum Either<A, B>: SumType2 {
     case left(A)

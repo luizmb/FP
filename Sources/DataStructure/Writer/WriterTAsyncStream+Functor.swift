@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 public extension Writer {
     // WriterT + AsyncStream — Writer<W, AsyncStream<A>>

@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 public extension Either {
     func result() -> Result<B, A> where A: Error {

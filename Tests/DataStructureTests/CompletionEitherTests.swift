@@ -1,7 +1,7 @@
 import DataStructure
 import Testing
 import Combine
-@testable import Core
+@testable import CoreFP
 
 
 @MainActor

@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 public extension Writer {
     /// flatMap :: Writer<w, a> -> (a -> Writer<w, b>) -> Writer<w, b>

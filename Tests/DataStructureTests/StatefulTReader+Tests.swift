@@ -1,6 +1,6 @@
 import DataStructure
 import Testing
-import Core
+import CoreFP
 
 @Suite struct StatefulReaderTests {
 

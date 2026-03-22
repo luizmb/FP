@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 // WriterT + Reader — free functions for Writer<W, Reader<Env, A>>
 

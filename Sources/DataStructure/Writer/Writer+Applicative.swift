@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 public extension Writer {
     /// apply :: Writer<w, (input -> a)> -> Writer<w, input> -> Writer<w, a>

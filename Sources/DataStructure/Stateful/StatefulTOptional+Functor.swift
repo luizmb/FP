@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 public extension Stateful {
     // StatefulT + Optional — Stateful<S, A?>

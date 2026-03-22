@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 // ReaderTWriter: outer = Reader, inner = Writer
 // Type: Reader<Env, Writer<W, A>>

@@ -1,7 +1,7 @@
 import DataStructure
 import Testing
 import Combine
-import Core
+import CoreFP
 
 @MainActor
 @Suite struct ReaderCombineFPTests {

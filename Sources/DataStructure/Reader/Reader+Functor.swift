@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 public extension Reader {
     /// Functor map - transforms the output value

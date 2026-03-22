@@ -1,8 +1,8 @@
 import DataStructureOperators
 import DataStructure
 import Testing
-@testable import Core
-import CoreOperators
+@testable import CoreFP
+import CoreFPOperators
 
 @Suite struct ReaderMonadTests {
 

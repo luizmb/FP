@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 // StatefulT + Either — free functions for Stateful<S, Either<L, A>>
 

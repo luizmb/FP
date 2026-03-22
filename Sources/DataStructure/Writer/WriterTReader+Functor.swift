@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 public extension Writer {
     // WriterT + Reader — Writer<W, Reader<Env, A>>

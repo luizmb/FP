@@ -1,6 +1,6 @@
 #if canImport(Combine)
 import Foundation
-import Core
+import CoreFP
 import Combine
 
 // WriterT + Publisher — free functions for Writer<W, any Publisher<A, E>>

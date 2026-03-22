@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 public extension Either {
     /// Monadic bind operation for Either
@@ -55,7 +55,7 @@ public extension Either {
     /// Monadic join - flattens nested Eithers
     /// join :: m (m a) -> m a
     static func join<B1>(_ nested: Either<A, Either<A, B1>>) -> Either<A, B1> where B == Either<A, B1> {
-        nested.flatMap(Core.id)
+        nested.flatMap(CoreFP.id)
     }
 
     /// Discards the right value, keeping only the structure

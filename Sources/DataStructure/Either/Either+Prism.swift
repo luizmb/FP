@@ -1,4 +1,4 @@
-import Core
+import CoreFP
 import Foundation
 
 public extension Either {

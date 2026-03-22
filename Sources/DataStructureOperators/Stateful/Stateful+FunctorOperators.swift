@@ -1,7 +1,7 @@
 import DataStructure
 import Foundation
-import Core
-import CoreOperators
+import CoreFP
+import CoreFPOperators
 
 // (<$>) :: (a -> b) -> Stateful<s, a> -> Stateful<s, b>
 public func <£> <S, A, B>(

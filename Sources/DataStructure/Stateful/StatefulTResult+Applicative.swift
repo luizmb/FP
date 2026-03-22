@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 // StatefulT + Result — free functions for Stateful<S, Result<A, E>>
 

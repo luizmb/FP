@@ -1,5 +1,5 @@
 import Foundation
-import Core
+import CoreFP
 
 // ArrayTEither: outer = Array, inner = Either
 // Type: [Either<L,A>] = Array<Either<L,A>>
