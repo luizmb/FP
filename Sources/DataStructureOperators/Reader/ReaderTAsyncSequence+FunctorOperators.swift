@@ -25,3 +25,10 @@ public func <£ <A, B, Env>(_ value: A, _ reader: Reader<Env, AsyncStream<B>>)
 -> Reader<Env, AsyncMapSequence<AsyncStream<B>, A>> where A: Sendable {
     reader £> value
 }
+
+// (<&^>) :: f (g a) -> (a -> b) -> f (g b)
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+public func <&^> <A, B, Env>(_ reader: Reader<Env, AsyncStream<A>>, _ transform: @escaping @Sendable (A) -> B)
+-> Reader<Env, AsyncMapSequence<AsyncStream<A>, B>> {
+    transform <£^> reader
+}

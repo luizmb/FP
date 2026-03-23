@@ -20,3 +20,8 @@ public func £> <A, B, Env1, Env2>(_ reader: Reader<Env1, Reader<Env2, A>>, _ va
 public func <£ <A, B, Env1, Env2>(_ value: A, _ reader: Reader<Env1, Reader<Env2, B>>) -> Reader<Env1, Reader<Env2, A>> {
     reader £> value
 }
+
+// (<&^>) :: f (g a) -> (a -> b) -> f (g b)
+public func <&^> <A, B, Env1, Env2>(_ reader: Reader<Env1, Reader<Env2, A>>, _ transform: @escaping (A) -> B) -> Reader<Env1, Reader<Env2, B>> {
+    transform <£^> reader
+}
