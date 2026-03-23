@@ -56,27 +56,6 @@ infix operator >>>: FunctionCompositionForward
 /// https://hackage.haskell.org/package/base-4.20.0.1/docs/Control-Category.html#v:-60--60--60-
 infix operator <<<: FunctionCompositionBackwards
 
-/// Haskell pipe/dot . - infixr 9
-/// `(.) :: (b -> c) -> (a -> b) -> a -> c`
-///
-/// Right to left function composition.
-/// ```haskell
-/// (f . g) x = f (g x)
-/// f . id = f = id . f
-/// ```
-///
-/// Examples:
-/// ```haskell
-/// >>> map ((*2) . length) [[], [0, 1, 2], [0]]
-/// [0,6,2]
-/// >>> foldr (.) id [(+1), (*3), (^3)] 2
-/// 25
-/// >>> let (...) = (.).(.) in ((*2)...(+)) 5 10
-/// 30
-/// ```
-/// https://hackage.haskell.org/package/base-4.20.0.1/docs/Prelude.html#v:.
-infix operator •: FunctionCompositionBackwards
-
 /// Haskell $ (parentheses replacement) - infixr 0
 /// `($) :: (a -> b) -> a -> b`
 ///
