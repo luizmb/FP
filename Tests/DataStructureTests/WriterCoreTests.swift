@@ -224,4 +224,19 @@ import CoreFP
         #expect(result.value == "6")
         #expect(result.log == ["step1", "step2", "step3"])
     }
+
+    // MARK: - join / void
+
+    @Test func joinFreeFunction() {
+        let nested = Writer<[String], Writer<[String], Int>>(Writer(42, ["inner"]), ["outer"])
+        let result = DataStructure.join(nested)
+        #expect(result.value == 42)
+        #expect(result.log == ["outer", "inner"])
+    }
+
+    @Test func voidFreeFunction() {
+        let writer = Writer<[String], Int>(99, ["log"])
+        let voided = DataStructure.void(writer)
+        #expect(voided.log == ["log"])
+    }
 }

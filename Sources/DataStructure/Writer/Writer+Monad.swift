@@ -34,4 +34,8 @@ public extension Writer {
     ) -> Writer<W, O> where A == Writer<W, O> {
         nested.flatMap(id)
     }
+
+    func void() -> Writer<W, Void> {
+        fmap(ignore)
+    }
 }

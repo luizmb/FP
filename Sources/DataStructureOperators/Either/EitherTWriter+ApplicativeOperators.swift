@@ -1,0 +1,18 @@
+import DataStructure
+import CoreFPOperators
+import CoreFP
+
+// (<*>) :: Either<l, Writer<w, (a -> b)>> -> Either<l, Writer<w, a>> -> Either<l, Writer<w, b>>
+public func <*> <L, W: Monoid, A, B>(_ eithF: Either<L, Writer<W, (A) -> B>>, _ eithA: Either<L, Writer<W, A>>) -> Either<L, Writer<W, B>> {
+    applyEitherWriter(eithF, eithA)
+}
+
+// (*>) :: Either<l, Writer<w, a>> -> Either<l, Writer<w, b>> -> Either<l, Writer<w, b>>
+public func *> <L, W: Monoid, A, B>(_ lhs: Either<L, Writer<W, A>>, _ rhs: Either<L, Writer<W, B>>) -> Either<L, Writer<W, B>> {
+    seqRightEitherWriter(lhs, rhs)
+}
+
+// (<*) :: Either<l, Writer<w, a>> -> Either<l, Writer<w, b>> -> Either<l, Writer<w, a>>
+public func <* <L, W: Monoid, A, B>(_ lhs: Either<L, Writer<W, A>>, _ rhs: Either<L, Writer<W, B>>) -> Either<L, Writer<W, A>> {
+    seqLeftEitherWriter(lhs, rhs)
+}

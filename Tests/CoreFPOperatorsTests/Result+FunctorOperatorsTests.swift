@@ -31,6 +31,34 @@ import Testing
         #expect(throws: (any Error).self) { try fmap(failure).get() }
     }
 
+    // MARK: - Bifunctor
+
+    @Test func bimapSuccess() {
+        let success: Result<Int, TestError> = .success(5)
+        let result: Result<Int, TestError> = success.bimap({ $0 * 2 }, id)
+        #expect((try? result.get()) == 10)
+    }
+
+    @Test func bimapFailure() {
+        let failure: Result<Int, TestError> = .failure(.test)
+        let result: Result<Int, TestError> = failure.bimap({ $0 * 2 }, id)
+        #expect(throws: (any Error).self) { try result.get() }
+    }
+
+    @Test func bimapCurried() {
+        let transform = Result<Int, TestError>.bimap({ $0 * 3 }, id)
+        #expect((try? transform(.success(4)).get()) == 12)
+        #expect(throws: (any Error).self) { try transform(.failure(.test)).get() }
+    }
+
+    @Test func bimapPointFree() {
+        let values: [Result<Int, TestError>] = [.success(2), .failure(.test), .success(5)]
+        let results = values.map(Result<Int, TestError>.bimap({ $0 * 2 }, id))
+        #expect((try? results[0].get()) == 4)
+        #expect(throws: (any Error).self) { try results[1].get() }
+        #expect((try? results[2].get()) == 10)
+    }
+
     // MARK: - Functor Laws
 
     @Test func functorIdentityLaw() {

@@ -1,13 +1,14 @@
 import DataStructureOperators
 import DataStructure
 import Testing
+import CoreFPOperators
 import CoreFP
 
 @Suite struct WriterReaderOperatorsTests {
 
     @Test func writerMapTWithReaderInner() {
         let w = Writer<[String], Reader<Int, Int>>(Reader { $0 }, ["x"])
-        let result = w.mapT { $0 * 3 }
+        let result = { $0 * 3 } <£^> w
         #expect(result.value.runReader(4) == 12)
         #expect(result.log == ["x"])
     }
@@ -30,10 +31,37 @@ import CoreFP
 
     @Test func writerFlatMapTKeepsOuterLog() {
         let w = Writer<[String], Reader<Int, Int>>(Reader { $0 }, ["outer"])
-        let result = w.flatMapT { n in
+        let result = w >>- { n in
             Writer<[String], Reader<Int, String>>(Reader { env in "\(env + n)" }, ["inner"])
         }
         #expect(result.value.runReader(3) == "6")
         #expect(result.log == ["outer"])
+    }
+
+    @Test func readerTWriterApply() {
+        let rf: Reader<Int, Writer<[String], (Int) -> String>> = Reader { _ in Writer({ "\($0)" }, ["fn"]) }
+        let ra: Reader<Int, Writer<[String], Int>> = Reader { env in Writer(env, ["val"]) }
+        let result = rf <*> ra
+        let w = result.runReader(7)
+        #expect(w.value == "7")
+        #expect(w.log == ["fn", "val"])
+    }
+
+    @Test func readerTWriterSeqRight() {
+        let lhs: Reader<Int, Writer<[String], Int>> = Reader { _ in Writer(1, ["a"]) }
+        let rhs: Reader<Int, Writer<[String], String>> = Reader { _ in Writer("hello", ["b"]) }
+        let result = lhs *> rhs
+        let w = result.runReader(0)
+        #expect(w.value == "hello")
+        #expect(w.log == ["a", "b"])
+    }
+
+    @Test func readerTWriterSeqLeft() {
+        let lhs: Reader<Int, Writer<[String], Int>> = Reader { _ in Writer(99, ["a"]) }
+        let rhs: Reader<Int, Writer<[String], String>> = Reader { _ in Writer("ignored", ["b"]) }
+        let result = lhs <* rhs
+        let w = result.runReader(0)
+        #expect(w.value == 99)
+        #expect(w.log == ["a", "b"])
     }
 }

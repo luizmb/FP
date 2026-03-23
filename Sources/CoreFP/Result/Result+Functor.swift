@@ -25,4 +25,11 @@ public extension Result {
     ) -> Result<A1, B1> {
         map(lf).mapError(rf)
     }
+
+    static func bimap<A1, B1>(
+        _ lf: @escaping (A) -> A1,
+        _ rf: @escaping (B) -> B1
+    ) -> (Result<A, B>) -> Result<A1, B1> {
+        { $0.bimap(lf, rf) }
+    }
 }

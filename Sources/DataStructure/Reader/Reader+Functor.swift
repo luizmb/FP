@@ -23,6 +23,12 @@ public extension Reader {
         .init(compose(fn, runReader))
     }
 
+    static func contramapEnvironment<GlobalEnvironment>(
+        _ fn: @escaping (GlobalEnvironment) -> Environment
+    ) -> (Reader<Environment, Output>) -> Reader<GlobalEnvironment, Output> {
+        { $0.contramapEnvironment(fn) }
+    }
+
     func mapReader<O1>(
         _ fn: @escaping (Output) -> O1
     ) -> Reader<Environment, O1> {
@@ -34,5 +40,12 @@ public extension Reader {
         _ mapReader: @escaping (Output) -> O1
     ) -> Reader<GlobalEnvironment, O1> {
         .init(compose3(contramapEnvironment, runReader, mapReader))
+    }
+
+    static func dimap<GlobalEnvironment, O1>(
+        _ contramapEnv: @escaping (GlobalEnvironment) -> Environment,
+        _ mapOut: @escaping (Output) -> O1
+    ) -> (Reader<Environment, Output>) -> Reader<GlobalEnvironment, O1> {
+        { $0.dimap(contramapEnv, mapOut) }
     }
 }

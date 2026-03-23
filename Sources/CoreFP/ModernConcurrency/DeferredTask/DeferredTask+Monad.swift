@@ -16,6 +16,11 @@ public extension DeferredTask {
         nested.flatMap(id)
     }
 
+    // void :: DeferredTask a -> DeferredTask ()
+    func void() -> DeferredTask<Void> {
+        fmap(ignore)
+    }
+
     // kleisli :: (a -> DeferredTask b) -> (b -> DeferredTask c) -> (a -> DeferredTask c)
     static func kleisli<B: Sendable, C: Sendable>(
         _ f: @escaping @Sendable (Success) -> DeferredTask<B>,

@@ -6,7 +6,7 @@ import CoreFPOperators
 // ReaderT + Result
 
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
-public func <£> <A, B, E: Error, Env>(_ transform: @escaping (A) -> B, _ reader: Reader<Env, Result<A, E>>)
+public func <£^> <A, B, E: Error, Env>(_ transform: @escaping (A) -> B, _ reader: Reader<Env, Result<A, E>>)
 -> Reader<Env, Result<B, E>>
 where A: Sendable, B: Sendable {
     reader.mapT(transform)

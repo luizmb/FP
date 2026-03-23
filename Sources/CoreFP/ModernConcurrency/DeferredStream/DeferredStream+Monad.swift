@@ -24,10 +24,31 @@ public extension DeferredStream {
         { @Sendable stream in stream.flatMap(fn) }
     }
 
+    // alt :: DeferredStream a -> DeferredStream a -> DeferredStream a
+    // Concatenation: yield all elements from lhs, then all from rhs.
+    static func alt(_ lhs: DeferredStream<Element>, _ rhs: @autoclosure () -> DeferredStream<Element>) -> DeferredStream<Element> {
+        let captured = rhs()
+        return DeferredStream<Element> {
+            AsyncStream<Element> { continuation in
+                let task = Task { @Sendable in
+                    for await element in lhs { continuation.yield(element) }
+                    for await element in captured { continuation.yield(element) }
+                    continuation.finish()
+                }
+                continuation.onTermination = { _ in task.cancel() }
+            }
+        }
+    }
+
     // join :: DeferredStream (DeferredStream a) -> DeferredStream a
     static func join<A: Sendable>(_ nested: DeferredStream<DeferredStream<A>>) -> DeferredStream<A>
     where Element == DeferredStream<A> {
         nested.flatMap(id)
+    }
+
+    // void :: DeferredStream a -> DeferredStream ()
+    func void() -> DeferredStream<Void> {
+        fmap(ignore)
     }
 
     // kleisli :: (a -> DeferredStream b) -> (b -> DeferredStream c) -> (a -> DeferredStream c)

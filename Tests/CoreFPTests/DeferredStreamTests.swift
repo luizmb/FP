@@ -224,4 +224,47 @@ private enum TestError: Error, Equatable { case err }
         for await v in result { results.append(v) }
         #expect(results == [.success("v5")])
     }
+
+    // MARK: - join / void
+
+    @Test func joinFreeFunction() async {
+        let inner = DeferredStream<Int> { AsyncStream { c in c.yield(1); c.yield(2); c.finish() } }
+        let nested = DeferredStream<DeferredStream<Int>> { AsyncStream { c in c.yield(inner); c.finish() } }
+        var collected: [Int] = []
+        for await v in CoreFP.join(nested) { collected.append(v) }
+        #expect(collected == [1, 2])
+    }
+
+    @Test func voidFreeFunction() async {
+        let stream = DeferredStream<Int> { AsyncStream { c in c.yield(1); c.yield(2); c.finish() } }
+        var count = 0
+        for await _ in CoreFP.void(stream) { count += 1 }
+        #expect(count == 2)
+    }
+
+    // MARK: - Alternative
+
+    @Test func altConcatenatesElements() async {
+        let lhs = DeferredStream<Int> { AsyncStream { c in c.yield(1); c.yield(2); c.finish() } }
+        let rhs = DeferredStream<Int> { AsyncStream { c in c.yield(3); c.yield(4); c.finish() } }
+        var results: [Int] = []
+        for await v in DeferredStream.alt(lhs, rhs) { results.append(v) }
+        #expect(results == [1, 2, 3, 4])
+    }
+
+    @Test func altEmptyLhsYieldsRhs() async {
+        let lhs = DeferredStream<Int> { AsyncStream { c in c.finish() } }
+        let rhs = DeferredStream<Int> { AsyncStream { c in c.yield(42); c.finish() } }
+        var results: [Int] = []
+        for await v in DeferredStream.alt(lhs, rhs) { results.append(v) }
+        #expect(results == [42])
+    }
+
+    @Test func altEmptyRhsYieldsLhs() async {
+        let lhs = DeferredStream<Int> { AsyncStream { c in c.yield(1); c.finish() } }
+        let rhs = DeferredStream<Int> { AsyncStream { c in c.finish() } }
+        var results: [Int] = []
+        for await v in DeferredStream.alt(lhs, rhs) { results.append(v) }
+        #expect(results == [1])
+    }
 }

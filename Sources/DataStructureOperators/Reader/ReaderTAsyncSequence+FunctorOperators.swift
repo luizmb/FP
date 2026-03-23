@@ -7,7 +7,7 @@ import CoreFPOperators
 
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func <£> <A, B, Env>(_ transform: @escaping @Sendable (A) -> B, _ reader: Reader<Env, AsyncStream<A>>)
+public func <£^> <A, B, Env>(_ transform: @escaping @Sendable (A) -> B, _ reader: Reader<Env, AsyncStream<A>>)
 -> Reader<Env, AsyncMapSequence<AsyncStream<A>, B>> {
     reader.mapT(transform)
 }

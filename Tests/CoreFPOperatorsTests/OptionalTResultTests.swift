@@ -29,7 +29,7 @@ import Testing
 
     @Test func fmapOperator() throws {
         let opt: Result<Int, Err>? = .success(3)
-        let result = { $0 * 2 } <£> opt
+        let result = { $0 * 2 } <£^> opt
         #expect(try result?.get() == 6)
     }
 

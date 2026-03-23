@@ -216,6 +216,33 @@ import CoreFP
         }
     }
 
+    // MARK: - join / void
+
+    @Test func joinFreeFunction() {
+        let nested: Either<String, Either<String, Int>> = .right(.right(42))
+        #expect(DataStructure.join(nested) == .right(42))
+    }
+
+    @Test func joinOuterLeft() {
+        let nested: Either<String, Either<String, Int>> = .left("err")
+        #expect(DataStructure.join(nested) == .left("err"))
+    }
+
+    @Test func joinInnerLeft() {
+        let nested: Either<String, Either<String, Int>> = .right(.left("inner"))
+        #expect(DataStructure.join(nested) == .left("inner"))
+    }
+
+    @Test func voidRight() {
+        let either: Either<String, Int> = .right(5)
+        if case .left = DataStructure.void(either) { Issue.record("Expected .right") }
+    }
+
+    @Test func voidLeft() {
+        let either: Either<String, Int> = .left("err")
+        if case .right = DataStructure.void(either) { Issue.record("Expected .left") }
+    }
+
     // MARK: - Helper
 
     enum TestError: Error, Equatable {

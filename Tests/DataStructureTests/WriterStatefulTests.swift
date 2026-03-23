@@ -83,4 +83,38 @@ import CoreFP
         #expect(w.log == ["outer", "inner"])
         #expect(finalState == 6)
     }
+
+    @Test func statefulTWriterApplicative() {
+        let sf = Stateful<Int, Writer<[String], (Int) -> String>> { state in
+            state += 1
+            return Writer({ "\($0)" }, ["fn"])
+        }
+        let sa = Stateful<Int, Writer<[String], Int>> { state in
+            state += 10
+            return Writer(state, ["val"])
+        }
+        let result = applyStatefulWriter(sf, sa)
+        let (w, finalState) = result.runStateful(0)
+        #expect(w.value == "11")
+        #expect(w.log == ["fn", "val"])
+        #expect(finalState == 11)
+    }
+
+    @Test func statefulTWriterSeqRight() {
+        let lhs = Stateful<Int, Writer<[String], Int>> { state in Writer(state, ["a"]) }
+        let rhs = Stateful<Int, Writer<[String], String>> { _ in Writer("done", ["b"]) }
+        let result = seqRightStatefulWriter(lhs, rhs)
+        let w = result.eval(0)
+        #expect(w.value == "done")
+        #expect(w.log == ["a", "b"])
+    }
+
+    @Test func statefulTWriterSeqLeft() {
+        let lhs = Stateful<Int, Writer<[String], Int>> { _ in Writer(42, ["a"]) }
+        let rhs = Stateful<Int, Writer<[String], String>> { _ in Writer("ignored", ["b"]) }
+        let result = seqLeftStatefulWriter(lhs, rhs)
+        let w = result.eval(0)
+        #expect(w.value == 42)
+        #expect(w.log == ["a", "b"])
+    }
 }

@@ -22,7 +22,7 @@ import Testing
 
     @Test func fmapOperator() {
         let arr: [Result<Int, Err>] = [.success(1), .failure(.fail)]
-        let result = { $0 * 2 } <£> arr
+        let result = { $0 * 2 } <£^> arr
         #expect(result == [.success(2), .failure(.fail)])
     }
 

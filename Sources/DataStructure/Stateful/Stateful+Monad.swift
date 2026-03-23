@@ -34,4 +34,8 @@ public extension Stateful {
     ) -> Stateful<S, O> where A == Stateful<S, O> {
         nested.flatMap(id)
     }
+
+    func void() -> Stateful<S, Void> {
+        fmap(ignore)
+    }
 }

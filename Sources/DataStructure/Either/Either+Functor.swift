@@ -35,4 +35,11 @@ public extension Either {
             caseRight: compose(rf, Either<A1, B1>.right)
         )
     }
+
+    static func bimap<A1, B1>(
+        _ lf: @escaping (A) -> A1,
+        _ rf: @escaping (B) -> B1
+    ) -> (Either<A, B>) -> Either<A1, B1> {
+        { $0.bimap(lf, rf) }
+    }
 }

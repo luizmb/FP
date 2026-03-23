@@ -1,550 +1,396 @@
-# FP Library - Complete Implementation Summary
+# FP Library — Implementation Summary
 
-## Overview
+> Last updated: 2026-03-23 | **1312 tests · 127 suites · all passing ✅**
 
-This document provides a comprehensive overview of all functional programming features implemented in the FP library, including core type classes, monad transformers, and platform-specific integrations.
-
-**Note on Haskell Operator Mappings:**
-- Haskell `>>=` (bind) → Swift `>>-` (to avoid conflict with Swift's bitwise `>>=`)
-- Haskell `=<<` (flipped bind) → Swift `-<<`
-- Haskell `>=>` (Kleisli composition) → Swift `>=>` (same)
-- All other operators match Haskell equivalents
+---
 
 ## Module Architecture
 
-The library follows a modular design with separation between implementations and operators:
+The library is organised as a strict two-layer system.
 
-### Core Modules
-- **FP**: Foundation types (Optional, Result, Array, Traversable) with Functor/Applicative/Monad;
-  transformer stacks: OptionalTArray, OptionalTResult, ArrayTOptional, ArrayTResult;
-  PublisherT stacks (PublisherTOptional, PublisherTArray, PublisherTResult via `#if canImport(Combine)`);
-  AsyncSequenceT stacks (AsyncSequenceTOptional, AsyncSequenceTArray, AsyncSequenceTResult)
-- **Either**: Sum type with full type class support;
-  transformer stacks: OptionalTEither, ArrayTEither, EitherTOptional, EitherTArray, EitherTResult;
-  PublisherTEither (`#if canImport(Combine)`), AsyncSequenceTEither;
-  platform bridges: `Completion+Either`, `AsyncThrowingStream+Either`
-- **Reader**: Reader monad for dependency injection;
-  includes `ReaderT+Publisher` (Combine, `#if canImport`) and `ReaderT+AsyncSequence` transformers
-- **Operators**: Operators for core types + all transformer stacks in FP module
+| Layer | Module | Role |
+|---|---|---|
+| Core | `CoreFP` | Named free functions for Swift built-ins and concurrency types |
+| Operators | `CoreFPOperators` | Operator sugar (`<£>`, `>>-`, …) delegating to `CoreFP` |
+| Core | `DataStructure` | Named free functions for custom FP types |
+| Operators | `DataStructureOperators` | Operator sugar delegating to `DataStructure` |
+| Umbrella | `FP` | Re-exports all four modules |
 
-### Reader Transformer Modules
-- **ReaderOperators**: ReaderT operators for Optional, Result, Array, nested Reader,
-  Publisher (`#if canImport(Combine)`), and AsyncStream
-- **ReaderEither**: ReaderT + Either implementations
-- **ReaderEitherOperators**: Operators for Either transformers
+**Rule:** Operators never contain logic — they always delegate to a named function in the corresponding core module. The sole exception is inverted-direction operators (e.g. `<£` vs `£>`) whose body is one call to the forward form.
 
-### Specialized Modules
-- **EitherOperators**: Operators for Either, all EitherT stacks, OptionalTEither, ArrayTEither,
-  PublisherTEither, AsyncSequenceTEither
+**Transformer naming:** `OuterTInner` where the left word is the outer (wrapping) type and the right word is the inner. E.g. `WriterTEither` = `Writer<W, Either<L, A>>`.
+
+**Module placement rule:**
+- If either side of a transformer involves `Either`, `Validation`, `Reader`, `Stateful`, or `Writer` → `DataStructure` / `DataStructureOperators`.
+- If both sides are Swift built-ins or `CoreFP` types (`Array`, `Optional`, `Result`, `DeferredTask`, `DeferredStream`, `AsyncStream`, `Publisher`) → `CoreFP` / `CoreFPOperators`.
+
+---
+
+## Operator Vocabulary
+
+| Operator | Haskell | Meaning |
+|---|---|---|
+| `<£>` | `<$>` | Functor map |
+| `£>` / `<£` | `$>` / `<$` | Replace with constant |
+| `<&>` | `<&>` | Flipped functor map |
+| `<£^>` / `<&^>` | — | Transformer-specific fmap (no base overload; avoids resolution failure with many `<£>` overloads) |
+| `<*>` | `<*>` | Applicative apply |
+| `*>` / `<*` | `*>` / `<*` | Sequence, discard one side |
+| `>>-` | `>>=` | Monadic bind (renamed to avoid Swift's `>>=`) |
+| `-<<` | `=<<` | Flipped bind |
+| `>=>` / `<=<` | `>=>` / `<=<` | Kleisli composition |
+| `->>` | `=>>` | Comonad extend / coflatMap (value on left) |
+| `<<-` | flip of `=>>` | Flipped comonad extend (function on left) |
+| `<>` | `<>` | Semigroup append |
+| `<|>` | `<|>` | Alternative |
+| `++` | `++` | List concatenation |
+| `>>>` / `<<<` / `•` | `>>>` / `<<<` / `.` | Function composition |
+| `£` / `<\|` / `\|>` | `$` / `<\|` / `\|>` | Function application |
+| `^` | `^` | Power |
+
+---
 
 ## Operator Precedence
 
-### Precedence Hierarchy (Highest to Lowest)
 ```
- 9.0  FunctionCompositionForward      >>> <<<
- 8.5  BitwiseShiftPrecedence          << >>
- 8.0  PowerPrecedence                 ^
- 7.0  MultiplicationPrecedence        * / %
- 6.0  ConcatPrecedence                <>
- 6.0  AdditionPrecedence              + -
- 5.0  AppendToList                    ++
- 4.8  RangeFormationPrecedence        ... ..<
- 4.5  CastingPrecedence               as as? as! is
- 4.2  NilCoalescingPrecedence         ??
- 4.0  ComparisonPrecedence            == != < > <= >=
- 4.0  FunctorOps                      <£> £> <£ <*> *> <* (left-assoc)
- 3.0  AlternativePrecedence           <|>
- 3.0  LogicalConjunctionPrecedence    &&
- 2.0  LogicalDisjunctionPrecedence    ||
- 1.0  KleisliCompositionRight         >=> -<< (right-assoc)
- 1.0  MonadBindLeft                   >>- <&> (left-assoc)
- 0.5  TernaryPrecedence               ? :
- 0.0  LowPrecedenceFunctionCall       £ <| |>
--1.0  AssignmentPrecedence            = += -= >>= (Swift bitwise)
+9   FunctionCompositionForward    >>>  <<<  •
+8   PowerPrecedence               ^
+7   MultiplicationPrecedence      *  /  %
+6   ConcatPrecedence              <>
+6   AdditionPrecedence            +  -
+5   AppendToList                  ++
+4   FunctorOps                    <£>  £>  <£  <*>  *>  <*  <£^>  <&^>   (left)
+3   AlternativePrecedence         <|>
+1   KleisliCompositionRight       >=>  <=<  -<<  <<-                       (right)
+1   MonadBindLeft                 >>-  ->>  <&>  <&^>                      (left)
+0   LowPrecedenceFunctionCall     £  <|  |>
 ```
 
-**✅ Precedence Verified:** All operator precedence and associativity matches Haskell! See [PRECEDENCE_CORRECTIONS.md](PRECEDENCE_CORRECTIONS.md) for detailed comparison.
+---
 
-## Implemented Features
+## Types and Typeclass Coverage
 
-### 1. Optional - Complete Type Class Support
+### CoreFP types
 
-**Functor** (`Sources/FP/Functor/Optional+Functor.swift`):
-- ✅ `fmap` - Curried map
+| Type | Functor | Applicative | Monad | Alt | bimap | join | void | Foldable |
+|---|---|---|---|---|---|---|---|---|
+| `Array` | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ | ✅ |
+| `Optional` | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ | ✅ |
+| `Result` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| `DeferredTask` | ✅ | ✅ | ✅ | — | — | ✅ | ✅ | — |
+| `DeferredStream` | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
+| `AsyncSequence` | ✅ | ✅ | ✅ | — | — | — | — | — |
+| `Publisher` | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
+| `Function` (`(R)->A`) | ✅ | ✅ | ✅ | — | — | ✅ | — | — |
 
-**Applicative** (`Sources/FP/Applicative/Optional+Applicative.swift`):
-- ✅ `pure` - Wrap value
-- ✅ `liftA2` - Lift binary function
-- ✅ `apply` - Applicative application
+### DataStructure types
 
-**Monad** (`Sources/FP/Monad/Optional+Monad.swift`):
-- ✅ `bind` - Curried flatMap
-- ✅ `kleisli` - Left-to-right Kleisli composition
-- ✅ `kleisliBack` - Right-to-left Kleisli composition
-- ✅ `alt` - Alternative (first non-nil)
-- ✅ `join` - Flatten nested optionals
-- ✅ `filter` - Filter with predicate
+| Type | Functor | Applicative | Monad | Alt | bimap | dimap | join | void | Foldable |
+|---|---|---|---|---|---|---|---|---|---|
+| `Either<L,R>` | ✅ | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ | ✅ |
+| `Validation<E,A>` | ✅ | ✅ | ✅¹ | ✅ | ✅ | — | — | ✅ | ✅ |
+| `Reader<Env,A>` | ✅ | ✅ | ✅ | — | — | ✅² | ✅ | ✅ | — |
+| `Stateful<S,A>` | ✅ | ✅ | ✅ | — | — | — | ✅ | ✅ | — |
+| `Writer<W,A>` | ✅ | ✅ | ✅ | — | — | — | ✅ | ✅ | — |
 
-**Operators** (`Sources/Operators/Optional+*.swift`):
-- ✅ `<£>`, `£>`, `<£`, `<&>` - Functor operators
-- ✅ `<*>`, `*>`, `<*` - Applicative operators
-- ✅ `>>-`, `-<<`, `>=>` - Monad operators
-- ✅ `<|>` - Alternative
+¹ `Validation` has a minimal `flatMap` but accumulates errors in `apply` — it is primarily an Applicative.
+² `Reader.dimap` is the Profunctor instance: contramap the environment, map the output. Also exposes `contramapEnvironment` as a curried free function. `Stateful` is not a Profunctor (its state parameter is invariant).
 
-### 2. Result - Complete Type Class Support
+All `bimap`, `join`, `void`, `dimap`/`contramapEnvironment` are available both as instance methods and as curried static/top-level free functions for point-free use.
 
-**Functor** (`Sources/FP/Functor/Result+Functor.swift`):
-- ✅ `fmap` - Curried map
+---
 
-**Applicative** (`Sources/FP/Applicative/Result+Applicative.swift`):
-- ✅ `pure` - Wrap success value
-- ✅ `liftA2` - Lift binary function
-- ✅ `apply` - Applicative application
+## Transformer Stacks
 
-**Monad** (`Sources/FP/Monad/Result+Monad.swift`):
-- ✅ `bind` - Curried flatMap
-- ✅ `kleisli` - Kleisli composition
-- ✅ `kleisliBack` - Reverse Kleisli composition
-- ✅ `alt` - Alternative (first success or last failure)
-- ✅ `join` - Flatten nested results
-- ✅ `void` - Discard success value
+Naming: `OuterTInner`. Every stack exposes `mapT` (Functor), `applyXxx` + `liftA2Xxx` (Applicative), `flatMapT` (Monad) where applicable, plus full operator coverage.
 
-**Operators** (`Sources/Operators/Result+*.swift`):
-- ✅ `<£>`, `£>`, `<£`, `<&>` - Functor operators
-- ✅ `<*>`, `*>`, `<*` - Applicative operators
-- ✅ `>>-`, `-<<`, `>=>` - Monad operators
-- ✅ `<|>` - Alternative
+### CoreFP transformer stacks
 
-### 3. Either - Complete Type Class Support
+| Stack | Outer | Inner | F | A | M |
+|---|---|---|---|---|---|
+| `OptionalTArray` | `Optional` | `Array` | ✅ | ✅ | ✅ |
+| `OptionalTResult` | `Optional` | `Result` | ✅ | ✅ | ✅ |
+| `ArrayTOptional` | `Array` | `Optional` | ✅ | ✅ | ✅ |
+| `ArrayTResult` | `Array` | `Result` | ✅ | ✅ | ✅ |
+| `DeferredTaskTOptional` | `DeferredTask` | `Optional` | ✅ | ✅ | ✅ |
+| `DeferredTaskTArray` | `DeferredTask` | `Array` | ✅ | ✅ | ✅ |
+| `DeferredTaskTResult` | `DeferredTask` | `Result` | ✅ | ✅ | ✅ |
+| `DeferredStreamTOptional` | `DeferredStream` | `Optional` | ✅ | ✅ | ✅ |
+| `DeferredStreamTArray` | `DeferredStream` | `Array` | ✅ | ✅ | ✅ |
+| `DeferredStreamTResult` | `DeferredStream` | `Result` | ✅ | ✅ | ✅ |
+| `AsyncSequenceTOptional` | `AsyncSequence` | `Optional` | ✅ | ✅ | ✅ |
+| `AsyncSequenceTArray` | `AsyncSequence` | `Array` | ✅ | ✅ | ✅ |
+| `AsyncSequenceTResult` | `AsyncSequence` | `Result` | ✅ | ✅ | ✅ |
+| `PublisherTOptional` | `Publisher` | `Optional` | ✅ | ✅ | ✅ |
+| `PublisherTArray` | `Publisher` | `Array` | ✅ | ✅ | ✅ |
+| `PublisherTResult` | `Publisher` | `Result` | ✅ | ✅ | ✅ |
 
-**Functor** (`Sources/Either/Either+Functor.swift`):
-- ✅ `fmap` - Map over Right values
-- ✅ `bimap` - Map over both Left and Right
+### Either transformer stacks (DataStructure)
 
-**Applicative** (`Sources/Either/Either+Applicative.swift`):
-- ✅ `pure` - Wrap Right value
-- ✅ `liftA2` - Lift binary function
-- ✅ `apply` - Applicative application
+| Stack | F | A | M |
+|---|---|---|---|
+| `OptionalTEither` | ✅ | ✅ | ✅ |
+| `ArrayTEither` | ✅ | ✅ | ✅ |
+| `DeferredTaskTEither` | ✅ | ✅ | ✅ |
+| `DeferredStreamTEither` | ✅ | ✅ | ✅ |
+| `AsyncSequenceTEither` | ✅ | ✅ | ✅ |
+| `PublisherTEither` | ✅ | ✅ | ✅ |
+| `EitherTOptional` | ✅ | ✅ | ✅ |
+| `EitherTArray` | ✅ | ✅ | ✅ |
+| `EitherTResult` | ✅ | ✅ | ✅ |
+| `EitherTValidation` | ✅ | ✅ | ✅ |
+| `EitherTStateful` | ✅ | ✅ | ✅ |
+| `EitherTWriter` | ✅ | ✅ | ✅ |
 
-**Monad** (`Sources/Either/Either+Monad.swift`):
-- ✅ `flatMap` - Monadic bind
-- ✅ `bind` - Curried version
-- ✅ `kleisli` - Kleisli composition
-- ✅ `kleisliBack` - Reverse Kleisli composition
-- ✅ `alt` - Alternative (first Right or last Left)
+### Validation transformer stacks (DataStructure)
 
-**Operators** (`Sources/EitherOperators/*.swift`):
-- ✅ `<£>`, `£>`, `<£`, `<&>` - Functor operators
-- ✅ `<*>`, `*>`, `<*` - Applicative operators
-- ✅ `>>-`, `-<<`, `>=>` - Monad operators
-- ✅ `<|>` - Alternative
+Validation is an accumulating Applicative. All `ValidationT*` stacks expose Functor + Applicative only (no Monad — `flatMap` would lose accumulated errors).
 
-### 4. Array - Complete Type Class Support
-
-**Functor** (`Sources/FP/Functor/Array+Functor.swift`):
-- ✅ `fmap` - Curried map
-
-**Applicative** (`Sources/FP/Applicative/Array+Applicative.swift`):
-- ✅ `pure` - Single element array
-- ✅ `liftA2` - Lift binary function (cartesian product)
-- ✅ `apply` - Applicative application
-- ✅ `zip` - Zip two arrays
-
-**Monad** (`Sources/FP/Monad/Array+Monad.swift`):
-- ✅ `bind` - Curried flatMap
-- ✅ `kleisli` - Kleisli composition
-- ✅ `kleisliBack` - Reverse Kleisli composition
-- ✅ `alt` - Alternative (concatenation)
-- ✅ `concat` - Flatten nested arrays
-- ✅ `join` - Flatten nested arrays
-
-**Operators** (`Sources/Operators/Array+Operators.swift`):
-- ✅ `<£>`, `£>`, `<£`, `<&>` - Functor operators
-- ✅ `<*>`, `*>`, `<*` - Applicative operators
-- ✅ `>>-`, `-<<`, `>=>` - Monad operators
-- ✅ `<|>` - Alternative
-- ✅ `++` - Concatenation
-
-### 5. AsyncSequence - Complete Type Class Support
-
-**Functor** (`Sources/FP/Concurrency/AsyncSequence+Functor.swift`):
-- ✅ `fmap` - Async map
-- Platform: macOS 10.15+, iOS 13.0+
-
-**Applicative** (`Sources/FP/Concurrency/AsyncSequence+Applicative.swift`):
-- ✅ `liftA2` - Lift binary function
-- ✅ `zip` - Zip two async sequences
-- Platform: macOS 10.15+, iOS 13.0+
-
-**Monad** (`Sources/FP/Concurrency/AsyncSequence+Monad.swift`):
-- ✅ `bind` - Async flatMap
-- ✅ `kleisli` - Kleisli composition
-- ✅ `kleisliBack` - Reverse Kleisli composition
-- Platform: macOS 10.15+, iOS 13.0+
-
-**Operators** (`Sources/Operators/Concurrency/*.swift`):
-- ✅ `<£>`, `£>`, `<£` - Functor operators (with Sendable constraints)
-- ✅ `>>-`, `-<<`, `>=>` - Monad operators
-
-### 6. Publisher - Complete Type Class Support (Apple Platforms)
-
-**Functor** (`Sources/FP/Combine/Publisher+Functor.swift`):
-- ✅ `fmap` - Map over publisher values
-- Platform: macOS 13.0+, iOS 16.0+ (parameterized existentials)
-
-**Applicative** (`Sources/FP/Combine/Publisher+Applicative.swift`):
-- ✅ `liftA2` - Lift binary function
-- ✅ `zip` - Zip two publishers
-- Platform: macOS 13.0+, iOS 16.0+
-
-**Monad** (`Sources/FP/Combine/Publisher+Monad.swift`):
-- ✅ `bind` - Publisher flatMap
-- ✅ `kleisli` - Kleisli composition
-- ✅ `kleisliBack` - Reverse Kleisli composition
-- Platform: macOS 13.0+, iOS 16.0+
-
-**Operators** (`Sources/Operators/Combine/*.swift`):
-- ✅ `<£>`, `£>`, `<£`, `<&>` - Functor operators
-- ✅ `<*>`, `*>`, `<*` - Applicative operators
-- ✅ `>>-`, `-<<`, `>=>` - Monad operators
-- Conditional compilation: `#if canImport(Combine)`
-
-### 7. Reader - Complete Type Class Support
-
-**Functor** (`Sources/Reader/Reader+Functor.swift`):
-- ✅ `fmap` - Map over reader output
-- ✅ `mapReader` - Direct reader transformation
-
-**Applicative** (`Sources/Reader/Reader+Applicative.swift`):
-- ✅ `pure` - Constant reader
-- ✅ `liftA2` - Lift binary function
-- ✅ `apply` - Applicative application
-
-**Monad** (`Sources/Reader/Reader+Monad.swift`):
-- ✅ `flatMap` - Monadic bind
-- ✅ `bind` - Curried version
-- ✅ `kleisli` - Kleisli composition
-- ✅ `kleisliBack` - Reverse Kleisli composition
-- ✅ `join` - Flatten nested readers
-- ✅ `ask` - Get environment
-- ✅ `asks` - Query environment
-- ✅ `local` - Run with modified environment
-
-**Operators** (`Sources/ReaderOperators/*.swift`):
-- ✅ `<£>`, `£>`, `<£`, `<&>` - Functor operators
-- ✅ `<*>`, `*>`, `<*` - Applicative operators
-- ✅ `>>-`, `-<<`, `>=>` - Monad operators
-
-## ReaderT Transformers
-
-Complete monad transformer implementations for composing Reader with other monads:
-
-### ReaderT + Optional (`Sources/Reader/ReaderT+*.swift`)
-- ✅ Functor: `mapT`
-- ✅ Applicative: `applyReaderOptional`, `liftA2ReaderOptional`
-- ✅ Monad: `flatMapT`, `bindT`
-- ✅ Operators in `Sources/ReaderOperators/ReaderT+*.swift`
-
-### ReaderT + Result (`Sources/Reader/ReaderT+*.swift`)
-- ✅ Functor: `mapT`
-- ✅ Applicative: `applyReaderResult`, `liftA2ReaderResult`
-- ✅ Monad: `flatMapT`, `bindT`
-- ✅ Operators in `Sources/ReaderOperators/ReaderT+*.swift`
-
-### ReaderT + Either (`Sources/ReaderEither/*.swift`)
-- ✅ Functor: `mapT`
-- ✅ Applicative: `applyReaderEither`, `liftA2ReaderEither`
-- ✅ Monad: `flatMapT`, `bindT`
-- ✅ Operators in `Sources/ReaderEitherOperators/*.swift`
-
-### ReaderT + Array (`Sources/Reader/ReaderT+*.swift`)
-- ✅ Functor: `mapT`
-- ✅ Applicative: `applyReaderArray`, `liftA2ReaderArray`
-- ✅ Monad: `flatMapT`, `bindT`
-- ✅ Operators in `Sources/ReaderOperators/ReaderT+*.swift`
-
-### ReaderT + Reader (nested) (`Sources/Reader/ReaderT+*.swift`)
-- ✅ Functor: `mapT`
-- ✅ Applicative: `applyReaderReader`, `liftA2ReaderReader`
-- ✅ Monad: `flatMapT`, `bindT`
-- ✅ Operators in `Sources/ReaderOperators/ReaderT+*.swift`
-
-### ReaderT + AsyncSequence (`Sources/Reader/Concurrency/*.swift`)
-- ✅ Functor: `mapT` (with Sendable constraints)
-- ✅ Applicative: `liftA2ReaderAsyncStream`
-- ✅ Monad: `flatMapT`, `bindReaderAsyncStream`
-- ✅ Operators in `Sources/ReaderOperators/Concurrency/*.swift`
-- Platform: macOS 10.15+, iOS 13.0+
-
-### ReaderT + Publisher (`Sources/Reader/Combine/*.swift`)
-- ✅ Functor: `mapT`
-- ✅ Applicative: `liftA2ReaderPublisher`
-- ✅ Monad: `flatMapT`, `bindReaderPublisher`
-- ✅ Operators in `Sources/ReaderOperators/Combine/*.swift`
-- Platform: macOS 13.0+, iOS 16.0+
-- Conditional compilation: `#if canImport(Combine)`
-
-## Monad Transformers (Non-Reader Outer)
-
-Complete Functor/Applicative/Monad transformer stacks where the **outer** monad is not Reader.
-All stacks expose `mapT` (Functor), named `liftA2*` / `apply*` (Applicative), `flatMapT` (Monad),
-and full operator coverage via the matching operator module.
-
-### Group A — FP Module (`Sources/FP/`)
-
-| Type | Name | Haskell |
+| Stack | F | A |
 |---|---|---|
-| `[A]?` | `OptionalTArray` | `ListT Maybe` |
-| `Result<A,E>?` | `OptionalTResult` | `ExceptT e Maybe` |
-| `[A?]` | `ArrayTOptional` | `MaybeT []` |
-| `[Result<A,E>]` | `ArrayTResult` | `ExceptT e []` |
+| `ValidationTArray` | ✅ | ✅ |
+| `ValidationTOptional` | ✅ | ✅ |
+| `ValidationTResult` | ✅ | ✅ |
+| `ValidationTEither` | ✅ | ✅ |
+| `ValidationTReader` | ✅ | ✅ |
+| `ValidationTStateful` | ✅ | ✅ |
+| `ValidationTWriter` | ✅ | ✅ |
+| `DeferredTaskTValidation` | ✅ | ✅ |
+| `DeferredStreamTValidation` | ✅ | ✅ |
 
-Operators in `Sources/Operators/Optional/` and `Sources/Operators/Array/`.
+### Reader transformer stacks (DataStructure)
 
-### Group B — Either Module (`Sources/Either/`)
+| Stack | F | A | M |
+|---|---|---|---|
+| `ReaderTOptional` | ✅ | ✅ | ✅ |
+| `ReaderTResult` | ✅ | ✅ | ✅ |
+| `ReaderTArray` | ✅ | ✅ | ✅ |
+| `ReaderTEither` | ✅ | ✅ | ✅ |
+| `ReaderTValidation` | ✅ | ✅ | — |
+| `ReaderTReader` | ✅ | ✅ | ✅ |
+| `ReaderTStateful` | ✅ | ✅ | ✅ |
+| `ReaderTWriter` | ✅ | ✅ | ✅ |
+| `ReaderTDeferredTask` | ✅ | ✅ | ✅ |
+| `ReaderTDeferredStream` | ✅ | ✅ | ✅ |
+| `ReaderTAsyncSequence` | ✅ | ✅ | ✅ |
+| `ReaderTPublisher` | ✅ | ✅ | ✅ |
 
-| Type | Name | Haskell |
-|---|---|---|
-| `Either<L,A>?` | `OptionalTEither` | `ExceptT l Maybe` |
-| `[Either<L,A>]` | `ArrayTEither` | `ExceptT l []` |
-| `Either<L, A?>` | `EitherTOptional` | `MaybeT (Either l)` |
-| `Either<L, [A]>` | `EitherTArray` | `ListT (Either l)` |
-| `Either<L, Result<A,E>>` | `EitherTResult` | `ExceptT e (Either l)` |
+### Stateful transformer stacks (DataStructure)
 
-Note: `EitherT*` stacks use free functions (`flatMapTEitherOptional`, `mapTEitherArray`, etc.)
-since Swift can't constrain Either's right type in extensions.
-Operators in `Sources/EitherOperators/`.
+`StatefulTDeferredTask` and `StatefulTDeferredStream` have no Monad instance — `flatMapT` would require `inout S` to cross an `@escaping`/`@Sendable` boundary, which Swift prohibits. Applicative is fine because state is threaded synchronously to extract the lazy values before any async execution.
 
-### Group C — Publisher Transformers (`Sources/FP/Combine/` and `Sources/Either/`)
+| Stack | F | A | M |
+|---|---|---|---|
+| `StatefulTOptional` | ✅ | ✅ | ✅ |
+| `StatefulTResult` | ✅ | ✅ | ✅ |
+| `StatefulTArray` | ✅ | ✅ | ✅ |
+| `StatefulTEither` | ✅ | ✅ | ✅ |
+| `StatefulTValidation` | ✅ | ✅ | — |
+| `StatefulTReader` | ✅ | ✅ | — |
+| `StatefulTWriter` | ✅ | ✅ | ✅ |
+| `StatefulTDeferredTask` | ✅ | ✅ | — |
+| `StatefulTDeferredStream` | ✅ | ✅ | — |
+| `StatefulTAsyncStream` | ✅ | ✅ | — |
+| `StatefulTPublisher` | ✅ | ✅ | — |
+| `ArrayTStateful` | ✅ | ✅ | ✅ |
+| `OptionalTStateful` | ✅ | ✅ | ✅ |
+| `ResultTStateful` | ✅ | ✅ | ✅ |
+| `PublisherTStateful` | ✅ | ✅ | — |
 
-| Type | Module | Name |
-|---|---|---|
-| `AnyPublisher<A?,E>` | FP | `PublisherTOptional` |
-| `AnyPublisher<[A],E>` | FP | `PublisherTArray` |
-| `AnyPublisher<Result<A,E2>,E>` | FP | `PublisherTResult` |
-| `AnyPublisher<Either<L,A>,E>` | Either | `PublisherTEither` |
+### Writer transformer stacks (DataStructure)
 
-All guarded with `#if canImport(Combine)`. Operators in `Sources/Operators/Combine/` (FP stacks)
-and `Sources/EitherOperators/` (Either stack).
-
-### Group D — AsyncSequence Transformers (`Sources/FP/ModernConcurrency/` and `Sources/Either/`)
-
-| Type | Module | Name |
-|---|---|---|
-| `AsyncStream<A?>` | FP | `AsyncSequenceTOptional` |
-| `AsyncStream<[A]>` | FP | `AsyncSequenceTArray` |
-| `AsyncStream<Result<A,E>>` | FP | `AsyncSequenceTResult` |
-| `AsyncStream<Either<L,A>>` | Either | `AsyncSequenceTEither` |
-
-All guarded with `@available(macOS 10.15, iOS 13.0, ...)`. Operators in
-`Sources/Operators/ModernConcurrency/` (FP stacks) and `Sources/EitherOperators/` (Either stack).
+| Stack | F | A | M |
+|---|---|---|---|
+| `WriterTOptional` | ✅ | ✅ | ✅ |
+| `WriterTResult` | ✅ | ✅ | ✅ |
+| `WriterTArray` | ✅ | ✅ | ✅ |
+| `WriterTEither` | ✅ | ✅ | ✅ |
+| `WriterTValidation` | ✅ | ✅ | — |
+| `WriterTReader` | ✅ | ✅ | ✅ |
+| `WriterTStateful` | ✅ | ✅ | ✅ |
+| `WriterTDeferredTask` | ✅ | ✅ | ✅ |
+| `WriterTDeferredStream` | ✅ | ✅ | ✅ |
+| `WriterTAsyncStream` | ✅ | ✅ | ✅ |
+| `WriterTPublisher` | ✅ | ✅ | — |
+| `ArrayTWriter` | ✅ | ✅ | ✅ |
+| `OptionalTWriter` | ✅ | ✅ | ✅ |
+| `ResultTWriter` | ✅ | ✅ | ✅ |
+| `PublisherTWriter` | ✅ | ✅ | — |
+| `AsyncStreamTWriter` | ✅ | — | ✅ |
 
 ---
 
 ## Additional Features
 
-### Function Composition (`Sources/Operators/FunctionComposition.swift`)
-- ✅ `>>>` - Forward composition (left-to-right)
-- ✅ `<<<` - Backward composition (right-to-left)
-- ✅ `•` - Alternative composition symbol
-- ✅ `£` - Low-precedence function application
-- ✅ `<|` - Backward application
-- ✅ `|>` - Forward application (pipe)
+### Traversable
 
-### Semigroup (`Sources/Operators/Semigroup.swift`)
-The `<>` operator for:
-- ✅ Arrays
-- ✅ Strings
-- ✅ Optionals
-- ✅ Results
-- ✅ Dictionaries
-- ✅ Sets
-- ✅ Functions returning semigroupable values
+`sequence :: (Traversable t, Applicative f) => t (f a) -> f (t a)`
 
-### Monad Utilities (`Sources/FP/Monad/MonadUtilities.swift`)
-- ✅ `join` - Flatten nested monads (Optional, Result)
-- ✅ `void` - Discard value (Optional, Result, Array)
-- ✅ `filter` - Monadic filter (Optional, Array)
-- ✅ `sequence` - Sequence list of effects (Optional, Result)
-- ✅ `traverse` - Map and sequence (Optional, Result)
+| Traversed (`t`) | Effect (`f`) | Free form |
+|---|---|---|
+| `Array` | `Optional` | `sequenceArrayOptional` / `traverseArrayOptional` |
+| `Array` | `Result` | `sequenceArrayResult` / `traverseArrayResult` |
+| `Array` | `Array` | `sequenceArrayArray` |
+| `Optional` | `Optional` | `sequenceOptionalOptional` |
+| `Optional` | `Result` | `sequenceOptionalResult` |
+| `Optional` | `Array` | `sequenceOptionalArray` |
+| `Either` | `Array` | `sequence` / `traverse` (free curried overloads) |
+| `Either` | `Optional` | `sequence` / `traverse` |
+| `Either` | `Result` | `sequence` / `traverse` |
+| `Validation` | `Array` | `sequence` / `traverse` |
+| `Validation` | `Optional` | `sequence` / `traverse` |
+| `Validation` | `Result` | `sequence` / `traverse` |
+| `Writer` | `Array` | `sequence` / `traverse` |
+| `Writer` | `Optional` | `sequence` / `traverse` |
+| `Writer` | `Result` | `sequence` / `traverse` |
 
-### Numeric Operators (`Sources/Operators/NumericOperators.swift`)
-- ✅ `^` - Power operator for numeric types
+### Semigroup / Monoid
 
-## Test Coverage
+`<>` operator for: `Array`, `String`, `Optional`, `Result`, `Dictionary`, `Set`, numeric types, `Bool`. `Monoid` (identity + combine) is implemented as a protocol used by `Writer`.
 
-**548 tests total**, all passing ✅
+### Alternative
 
-### Test Distribution:
-- **Core Types**: ~150 tests
-  - Optional: Functor, Applicative, Monad laws + operators
-  - Result: Functor, Applicative, Monad laws + operators
-  - Array: Functor, Applicative, Monad laws + operators
+`<|>` operator for: `Array`, `Optional`, `Result`, `Either`, `DeferredStream` (concatenation), `Validation` (first-success), `Publisher` (first-success via `.catch`).
 
-- **Either**: ~30 tests
-  - Functor, Applicative, Monad laws
-  - Operators and transformations
+### Traversable operators
 
-- **Reader**: ~40 tests
-  - Functor, Applicative, Monad laws
-  - Reader-specific operations (ask, local, etc.)
+`<$>` / `£>` operator traversal for `Array` and `Optional` via the `TraversableFree` pattern.
 
-- **ReaderT Transformers**: ~70 tests
-  - Optional, Result, Either, Array, nested Reader
-  - All ReaderT operator tests
+### Optics
 
-- **Concurrency**: ~25 tests
-  - AsyncSequence Functor, Applicative, Monad
-  - ReaderT + AsyncSequence transformers
+`Prism` for `Either`, `Result`, `Optional`, `Validation`. No `Lens` or `Iso` yet.
 
-- **Combine**: ~20 tests
-  - Publisher Functor, Applicative, Monad
-  - ReaderT + Publisher transformers
+### Foldable
 
-- **Utilities**: ~21 tests
-  - Function composition
-  - Semigroup
-  - Monad utilities (sequence, traverse, join, etc.)
+| Type | `fold` | `foldLeft` | `foldRight` | `foldMap` | `toList` |
+|---|---|---|---|---|---|
+| `Array` | — | ✅ | ✅ | ✅ | — |
+| `Optional` | ✅ | — | — | ✅ | ✅ |
+| `Result` | via `bifoldMap` | — | — | ✅ | ✅ |
+| `Either` | via `bifoldMap` | — | — | ✅ | ✅ |
+| `Validation` | via `match` | — | — | ✅ | ✅ |
 
-### Test Coverage Includes:
-- ✅ Functor laws (identity, composition)
-- ✅ Applicative laws (identity, composition, homomorphism, interchange)
-- ✅ Monad laws (left identity, right identity, associativity)
-- ✅ All operator implementations
-- ✅ Platform-specific features (async, Combine)
-- ✅ ReaderT transformers for all inner types
-- ✅ Semigroup associativity
-- ✅ Function composition properties
+`foldLeft`/`foldRight`/`foldMap` on `Array` are curried statics for point-free use. `fold` on `Optional` is Haskell's `maybe` function. `foldMap` uses the `Monoid` identity for the empty/failure case. No symbolic operator (Foldable has none in Haskell).
 
-## Platform Support
+### Comonad (`extract`, `extend`/`coflatMap`, `duplicate`)
 
-- **macOS 10.15+**, **iOS 13.0+**, **tvOS 13.0+**, **watchOS 6.0+**
-  - Required for AsyncSequence support
+`w ->> f  =  extend f w` (dual of `>>=`)
 
-- **macOS 13.0+**, **iOS 16.0+**, **tvOS 16.0+**, **watchOS 9.0+**
-  - Required for Publisher with parameterized existentials
+| Type | Constraint | `extract` | `extend` / `coflatMap` | `duplicate` | `->>` / `<<-` |
+|---|---|---|---|---|---|
+| `Writer<W, A>` | `W: Monoid` | ✅ | ✅ | ✅ | ✅ |
+| `Reader<Env, A>` | `Env: Monoid` | ✅ | ✅ | ✅ | ✅ |
 
-- **Linux**
-  - Full support except Combine features
-  - Combine code conditionally compiled with `#if canImport(Combine)`
+All operations are available as instance methods, a curried static, and top-level free functions.
+
+### Bifunctor (`bimap`)
+
+Free curried functions for `Either`, `Result`, `Validation`. No dedicated operator (no Haskell standard symbol).
+
+### Bifoldable (`bifoldMap`)
+
+| Type | Instance | Static curried | Free curried |
+|---|---|---|---|
+| `Either` | ✅ (via `SumType2.bifoldMap(leftBy:rightBy:)`) | — | ✅ |
+| `Validation` | ✅ | ✅ | ✅ |
+
+### Bitraversable (`bitraverse`, `bisequence`)
+
+`bitraverse :: Applicative f => (a -> f c) -> (b -> f d) -> t a b -> f (t c d)`
+
+| Type | Effect | Instance | Free curried | `bisequence` |
+|---|---|---|---|---|
+| `Either` | `Array` | ✅ | ✅ | ✅ |
+| `Either` | `Optional` | ✅ | ✅ | ✅ |
+| `Either` | `Result` | ✅ | ✅ | ✅ |
+| `Validation` | `Array` | ✅ | ✅ | ✅ |
+| `Validation` | `Optional` | ✅ | ✅ | ✅ |
+| `Validation` | `Result` | ✅ | ✅ | — ¹ |
+
+¹ `bisequence` for `Validation` + `Result` effect requires `Validation<Result<E1,Err>, …>`, which is invalid since `Result` is not unconditionally `Semigroup`.
+
+### Profunctor (`dimap`)
+
+`Reader` is a Profunctor. Free curried `dimap` and `contramapEnvironment` functions provided.
+`Stateful` is **not** a Profunctor — its state type is invariant. Proper state-zooming requires a `Lens` (not yet implemented).
+
+### `join` / `void` free functions
+
+Top-level free functions (not just static methods) for all monadic types:
+- `join` for `Array`, `Optional`, `Result`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Writer`, `Function`
+- `void` for all of the above plus `Validation`
+
+### SumType protocol
+
+`Either`, `Result`, and related types share `SumType2<A,B>`, providing `.a`, `.b`, `.isA`, `.isB`, `match()` for free.
+
+### Platform bridges
+
+- `Completion+Either`, `Completion+Result` — Combine completion → sum types
+- `AsyncThrowingStream+Either`, `AsyncThrowingStream+Result` — async throwing streams → typed sum types
+
+---
+
+## Known Architectural Limits
+
+| Situation | Reason |
+|---|---|
+| `StatefulTDeferredTask` / `StatefulTDeferredStream` / `StatefulTPublisher` / `StatefulTAsyncStream` have no Monad | `flatMapT` closure would need to capture `inout S` across `@escaping`/`@Sendable` — Swift prohibits this |
+| `Stateful` is not a Profunctor | State type `S` is invariant (appears in both covariant and contravariant position); proper zooming requires a `Lens` |
+| `ValidationT*` stacks have no Monad | Validation's error-accumulation semantics are incompatible with `flatMap`'s short-circuit requirement |
+| `WriterTPublisher` / `PublisherTStateful` have no Monad | Publisher combinators don't compose cleanly with `inout`-threading state or log-accumulating flatMap |
+| Many `<£>` / `>>-` overloads cause SourceKit false positives | SourceKit's type checker fails with 12+ overloads for the same operator; `swift build` and `swift test` always succeed. `<£^>` / `<&^>` dedicated transformer operators sidestep this for fmap. |
+
+---
+
+## Roadmap
+
+### Near term
+
+| Item | Notes |
+|---|---|
+| `Alternative` for `DeferredTask` | Race semantics: first-to-succeed; needs a structured-concurrency `race` primitive |
+
+### Medium term
+
+| Item | Notes |
+|---|---|
+| `Lens` + `Iso` | Enables `Stateful.zoom`, composable field access; `Prism` already exists |
+
+### Longer term
+
+| Item | Notes |
+|---|---|
+| MTL-style monad classes (`MonadReader`, `MonadWriter`, `MonadState`) | Lift `ask`/`tell`/`get` through transformer stacks; limited by Swift's lack of multi-param type classes |
+| `MonadError` (`throwError`, `catchError`) | For `Either`, `Result`, `DeferredTask` |
+| Free Monad | Separates program structure from interpretation; requires `Functor` protocol constraint |
+| Comonad-based stream processing | Cellular automata, sliding-window transforms |
+
+---
 
 ## Build & Test
 
 ```bash
-# Build all targets
-swift build
+swift build        # builds all 5 targets
+swift test         # 1312 tests, 127 suites, all passing
 
-# Run all tests
-swift test
+# Run a specific suite
+swift test --filter "WriterCoreTests"
 
-# Results: 548 tests, all passing ✅
+# Run a specific test
+swift test --filter "EitherFunctorTests/bimapCurried"
 ```
 
-## Key Design Decisions
-
-1. **Module Separation**: Clear separation between implementation modules (FP, Either, Reader, etc.) and operator modules (Operators, EitherOperators, ReaderOperators, etc.). Platform-specific features live inside the same module, guarded by `#if canImport(Combine)` and `@available`.
-
-2. **Operator Precedence**: Matches Haskell precedence and associativity exactly. Uses `>>-` instead of `>>=` to avoid conflict with Swift's bitwise operator.
-
-3. **Type Safety**: Leverages Swift's type system with proper generic constraints and Sendable requirements for concurrency.
-
-4. **Platform Compatibility**: Conditional compilation for platform-specific features ensures Linux compatibility.
-
-5. **Consistency**: All monad types follow the same pattern with consistent naming (fmap, bind, kleisli, etc.)
-
-6. **Testing**: Comprehensive test coverage ensures correctness and adherence to category theory laws.
-
-7. **Documentation**: All functions include Haskell type signatures in comments for reference.
-
-## Usage Examples
-
-### Basic Monad Chaining
-```swift
-// Optional
-let result = someOptional >>- { x in
-    guard x > 0 else { return nil }
-    return .some(x * 2)
-}
-
-// Result
-let validated = Result.success(5) >>- { x in
-    guard x > 0 else { return .failure(ValidationError()) }
-    return .success(x * 2)
-}
-
-// Array
-let expanded = [1, 2, 3] >>- { [$0, $0 * 2] }
-// Result: [1, 2, 2, 4, 3, 6]
-```
-
-### Kleisli Composition
-```swift
-let validate: (Int) -> Int? = { $0 > 0 ? .some($0) : nil }
-let double: (Int) -> Int? = { .some($0 * 2) }
-
-let composed = validate >=> double
-composed(5)   // Optional(10)
-composed(-1)  // nil
-```
-
-### ReaderT Transformers
-```swift
-struct Config { let multiplier: Int }
-
-// ReaderT + Optional
-let readerOpt: Reader<Config, Int?> = Reader { env in
-    guard env.multiplier > 0 else { return nil }
-    return .some(env.multiplier * 2)
-}
-
-let result = readerOpt.mapT { $0 * 3 }
-result(Config(multiplier: 5))  // Optional(30)
-
-// ReaderT + AsyncSequence
-let readerAsync: Reader<Config, AsyncStream<Int>> = Reader { env in
-    AsyncStream { continuation in
-        continuation.yield(env.multiplier)
-        continuation.yield(env.multiplier * 2)
-        continuation.finish()
-    }
-}
-
-let mapped = readerAsync.mapT { $0 * 2 }
-```
-
-### Function Composition
-```swift
-let addOne: (Int) -> Int = { $0 + 1 }
-let double: (Int) -> Int = { $0 * 2 }
-
-// Forward pipe
-5 |> addOne |> double  // 12
-
-// Composition
-let f = addOne >>> double
-f(5)  // 12
-```
-
-## Future Enhancements
-
-Potential additions (not yet implemented):
-- State Monad
-- Writer Monad
-- IO Monad
-- Free Monad
-- Comonad implementations
-- More extensive Lens/Prism/Iso optics
-- MonadPlus/Alternative for more types
-- Validation applicative (accumulating errors)
+**Test targets:** `CoreFPTests`, `CoreFPOperatorsTests`, `DataStructureTests`, `DataStructureOperatorsTests`
 
 ---
 
-**Total Implementation**:
-- 180+ source files
-- 100+ test files
-- 548 passing tests
-- 7 monad types with full type class support
-- 7 ReaderT transformer implementations
-- 17 additional monad transformer stacks (Groups A–D)
-- Complete operator coverage
-- Multi-platform support
+## Stats
+
+| Metric | Count |
+|---|---|
+| Source files | 651 |
+| Test files | 132 |
+| Tests passing | 1312 |
+| Test suites | 127 |
+| SPM targets | 5 (CoreFP, CoreFPOperators, DataStructure, DataStructureOperators, FP) |

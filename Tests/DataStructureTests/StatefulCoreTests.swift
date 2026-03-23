@@ -259,4 +259,29 @@ import CoreFP
         let program = push(1).seqRight(push(2)).seqRight(push(3))
         #expect(program.exec([]) == [1, 2, 3])
     }
+
+    // MARK: - join / void
+
+    @Test func joinFreeFunction() {
+        let nested = Stateful<Int, Stateful<Int, Int>> { s in
+            s += 1
+            return Stateful<Int, Int> { s in
+                let v = s
+                s *= 2
+                return v
+            }
+        }
+        // state starts at 3: outer runs → state=4, returns inner
+        // inner runs → returns 4, state becomes 8
+        let (value, finalState) = DataStructure.join(nested).runStateful(3)
+        #expect(value == 4)
+        #expect(finalState == 8)
+    }
+
+    @Test func voidFreeFunction() {
+        let stateful = Stateful<Int, Int> { s in s += 1; return s }
+        let voided = DataStructure.void(stateful)
+        let (_, finalState) = voided.runStateful(5)
+        #expect(finalState == 6) // state still threads through
+    }
 }

@@ -46,6 +46,46 @@ import CoreFP
         #expect(v.mapFailure { [$0] } == .failure(["err"]))
     }
 
+    @Test func bimapSuccess() {
+        let v: Validation<String, Int> = .success(3)
+        #expect(v.bimap({ $0.uppercased() }, { $0 * 2 }) == .success(6))
+    }
+
+    @Test func bimapFailure() {
+        let v: Validation<String, Int> = .failure("err")
+        #expect(v.bimap({ $0.uppercased() }, { $0 * 2 }) == .failure("ERR"))
+    }
+
+    @Test func bimapCurried() {
+        let transform = Validation<String, Int>.bimap({ $0.uppercased() }, { $0 * 2 })
+        #expect(transform(.success(5)) == .success(10))
+        #expect(transform(.failure("err")) == .failure("ERR"))
+    }
+
+    @Test func bimapPointFree() {
+        let values: [Validation<String, Int>] = [.success(4), .failure("x"), .success(1)]
+        let result = values.map(Validation<String, Int>.bimap({ $0 + "!" }, { $0 + 10 }))
+        #expect(result == [.success(14), .failure("x!"), .success(11)])
+    }
+
+    @Test func voidSuccess() {
+        let v: Validation<String, Int> = .success(42)
+        if case .failure = DataStructure.void(v) { Issue.record("Expected .success") }
+    }
+
+    @Test func voidFailure() {
+        let v: Validation<String, Int> = .failure("err")
+        if case .success = DataStructure.void(v) { Issue.record("Expected .failure") }
+    }
+
+    @Test func voidPreservesError() {
+        let v: Validation<String, Int> = .failure("msg")
+        v.void().match(
+            caseFailure: { #expect($0 == "msg") },
+            caseSuccess: { _ in Issue.record("Expected .failure") }
+        )
+    }
+
     // MARK: - Applicative — the key behaviour
 
     @Test func applySuccessSuccess() {
@@ -368,5 +408,53 @@ import CoreFP
             Reader<String, Validation<[Int], String>> { _ in .success("count: \(n)") }
         }
         #expect(result("hello") == .success("count: 5"))
+    }
+
+    // MARK: - Alternative
+
+    @Test func altSuccessIgnoresRhs() {
+        let lhs: Validation<String, Int> = .success(1)
+        let rhs: Validation<String, Int> = .success(2)
+        #expect(Validation.alt(lhs, rhs) == .success(1))
+    }
+
+    @Test func altFailureFallsBackToRhs() {
+        let lhs: Validation<String, Int> = .failure("err")
+        let rhs: Validation<String, Int> = .success(42)
+        #expect(Validation.alt(lhs, rhs) == .success(42))
+    }
+
+    @Test func altBothFailureReturnsRhs() {
+        let lhs: Validation<String, Int> = .failure("first")
+        let rhs: Validation<String, Int> = .failure("second")
+        #expect(Validation.alt(lhs, rhs) == .failure("second"))
+    }
+
+    // MARK: - Foldable
+
+    @Test func foldMapSuccess() {
+        let v: Validation<String, Int> = .success(5)
+        #expect(v.foldMap({ "\($0)" }) == "5")
+    }
+
+    @Test func foldMapFailureReturnsIdentity() {
+        let v: Validation<String, Int> = .failure("err")
+        #expect(v.foldMap({ "\($0)" }) == "")
+    }
+
+    @Test func foldMapCurried() {
+        let fn = Validation<String, Int>.foldMap({ "\($0)" })
+        #expect(fn(.success(3)) == "3")
+        #expect(fn(.failure("x")) == "")
+    }
+
+    @Test func toListSuccess() {
+        let v: Validation<String, Int> = .success(42)
+        #expect(v.toList == [42])
+    }
+
+    @Test func toListFailure() {
+        let v: Validation<String, Int> = .failure("err")
+        #expect(v.toList == [])
     }
 }

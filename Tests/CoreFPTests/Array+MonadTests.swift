@@ -66,4 +66,24 @@ import Testing
 
         #expect(left == right)
     }
+
+    // MARK: - join / void
+
+    @Test func joinFreeFunction() {
+        let nested: [[Int]] = [[1, 2], [3], [4, 5]]
+        #expect(CoreFP.join(nested) == [1, 2, 3, 4, 5])
+    }
+
+    @Test func joinEmpty() {
+        let nested: [[Int]] = [[], [], []]
+        #expect(CoreFP.join(nested) == [])
+    }
+
+    @Test func voidFreeFunction() {
+        #expect(CoreFP.void([1, 2, 3]).count == 3)
+    }
+
+    @Test func voidEmpty() {
+        #expect(CoreFP.void([Int]()).isEmpty)
+    }
 }

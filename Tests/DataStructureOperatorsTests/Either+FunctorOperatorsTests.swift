@@ -38,6 +38,18 @@ import CoreFPOperators
         #expect(leftResult == .left("ERROR"))
     }
 
+    @Test func bimapCurried() {
+        let transform = Either<String, Int>.bimap({ $0.uppercased() }, { $0 * 2 })
+        #expect(transform(.right(5)) == .right(10))
+        #expect(transform(.left("error")) == .left("ERROR"))
+    }
+
+    @Test func bimapPointFree() {
+        let values: [Either<String, Int>] = [.right(3), .left("x"), .right(7)]
+        let result = values.map(Either<String, Int>.bimap({ $0 + "!" }, { $0 * 10 }))
+        #expect(result == [.right(30), .left("x!"), .right(70)])
+    }
+
     // MARK: - Functor Laws
 
     @Test func functorIdentityLaw() {

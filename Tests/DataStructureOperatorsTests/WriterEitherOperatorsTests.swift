@@ -1,13 +1,14 @@
 import DataStructureOperators
 import DataStructure
 import Testing
+import CoreFPOperators
 import CoreFP
 
 @Suite struct WriterEitherOperatorsTests {
 
     @Test func writerMapTWithEitherInner() {
         let w = Writer<[String], Either<String, Int>>(.right(5), ["x"])
-        let result = w.mapT { $0 * 2 }
+        let result = { $0 * 2 } <£^> w
         #expect(result.value == .right(10))
         #expect(result.log == ["x"])
     }
@@ -20,7 +21,7 @@ import CoreFP
 
     @Test func writerFlatMapT() {
         let w = Writer<[String], Either<String, Int>>(.right(5), ["outer"])
-        let result = w.flatMapT { n in
+        let result = w >>- { n in
             Writer<[String], Either<String, String>>(.right("\(n)"), ["inner"])
         }
         #expect(result.value == .right("5"))
