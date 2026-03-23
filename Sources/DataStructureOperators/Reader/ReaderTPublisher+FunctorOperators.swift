@@ -29,4 +29,12 @@ public func <£ <A1, A, B: Error, Env>(_ value: A1, _ reader: Reader<Env, any Pu
     reader £> value
 }
 
+// (<&^>) :: f (g a) -> (a -> b) -> f (g b)
+@available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
+public func <&^> <A, B, E: Error, Env>(_ reader: Reader<Env, any Publisher<A, E>>, _ transform: @escaping (A) -> B)
+-> Reader<Env, any Publisher<B, E>>
+where A: Sendable, B: Sendable {
+    transform <£^> reader
+}
+
 #endif

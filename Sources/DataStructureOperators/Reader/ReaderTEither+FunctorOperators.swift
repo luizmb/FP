@@ -25,3 +25,9 @@ public func £> <B1, A, B, Env>(_ reader: Reader<Env, Either<A, B>>, _ value: B1
 public func <£ <B1, A, B, Env>(_ value: B1, _ reader: Reader<Env, Either<A, B>>) -> Reader<Env, Either<A, B1>> {
     reader £> value
 }
+
+// (<&^>) :: f (g a) -> (a -> b) -> f (g b)
+public func <&^> <A, B, L, Env>(_ reader: Reader<Env, Either<L, A>>, _ transform: @escaping (A) -> B) -> Reader<Env, Either<L, B>>
+where A: Sendable, B: Sendable, L: Sendable {
+    transform <£^> reader
+}

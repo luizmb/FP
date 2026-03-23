@@ -29,3 +29,12 @@ public func <£ <A, B, C>(
 ) -> (A) -> C {
     f £> value
 }
+
+/// Flipped functor fmap for functions — left-to-right composition
+/// (<&>) :: (a -> b) -> (b -> c) -> (a -> c)
+public func <&> <A, B, C>(
+    _ f: @escaping (A) -> B,
+    _ transform: @escaping (B) -> C
+) -> (A) -> C {
+    compose(f, transform)
+}

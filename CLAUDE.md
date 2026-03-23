@@ -55,18 +55,32 @@ Transformers are named `OuterTInner`, e.g. `OptionalTArray` means `Optional<[A]>
 
 ### Operator Vocabulary
 
-| Operator | Haskell equiv | Meaning |
-|---|---|---|
-| `<£>` | `fmap` / `<$>` | Functor map |
-| `£>` / `<£` | `$>` / `<$` | Replace with constant |
-| `<*>` | `<*>` | Applicative apply |
-| `*>` / `<*` | `*>` / `<*` | Sequence, discard one side |
-| `>>-` | `>>=` | Monadic bind |
-| `>=>` | `>=>` | Kleisli composition |
-| `>>>` | `>>>` | Function composition |
-| `\|>` | `\|>` | Pipe (forward application) |
-| `<>` | `<>` | Semigroup/Monoid append |
-| `<\|>` | `<\|>` | Alternative / alt |
+Every operator that has a directional sense has a **flipped counterpart**. When adding a new overload for the forward operator, **always add the corresponding overload for the flipped operator in the same commit**. The flipped version delegates to the forward one with arguments swapped — never duplicates logic.
+
+| Forward | Flipped | Haskell equiv | Meaning |
+|---|---|---|---|
+| `<£>` | `<&>` | `<$>` / `<&>` | Functor map — fn left / container left |
+| `<£^>` | `<&^>` | — | Transformer (nested) functor map — fn left / container left |
+| `£>` | `<£` | `$>` / `<$` | Replace with constant — container left / value left |
+| `<*>` | — | `<*>` | Applicative apply (symmetric, no flip) |
+| `*>` | `<*` | `*>` / `<*` | Sequence — keep right / keep left |
+| `>>-` | `-<<` | `>>=` / `=<<` | Monadic bind — container left / fn left |
+| `->>` | `<<-` | — | Comonad extend — container left / fn left |
+| `>=>` | `<=<` | `>=>` / `<=<` | Kleisli composition — left-to-right / right-to-left |
+| `>>>` | `<<<` | `>>>` / `<<<` | Function/optics composition — left-to-right / right-to-left |
+| `£` / `<\|` | `\|>` | `$` | Function application — fn left (`f £ x`) / value left (`x \|> f`) |
+| `<\|>` | — | `<\|>` | Alternative / choice (symmetric, no flip) |
+| `<>` | — | `<>` | Semigroup/Monoid append (symmetric, no flip) |
+| `++` | — | `++` | List/String concat (symmetric, no flip) |
+| `^` (infix) | — | `^` | Numeric power — `base ^ exp` |
+| `^` (prefix) | — | — | Lift — `WritableKeyPath` → `Lens`; `KeyPath` → partial `Lens` builder |
+| `≅` | — | — | Isomorphism / approximate equality check |
+| `±` / `+/-` | — | — | Numeric range construction — `value ± delta` |
+
+**Notes:**
+- `£` and `<|` are two symbols for the same operator (both `fn £ value` / `fn <| value`); `|>` is its flip.
+- `<£^>` and `<&^>` have **no base-type overloads** by design — transformer-only, so Swift always resolves unambiguously.
+- Optics (`Lens`, `Prism`, `AffineTraversal`) compose via `>>>` / `<<<` alongside regular function composition.
 
 ## Testing Conventions
 

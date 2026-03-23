@@ -22,14 +22,6 @@ import Testing
         #expect(composed(5) == 12) // (5 + 1) * 2 = 12
     }
 
-    @Test func backwardCompositionAlternativeSymbol() {
-        let addOne: (Int) -> Int = { $0 + 1 }
-        let double: (Int) -> Int = { $0 * 2 }
-
-        let composed = double • addOne
-        #expect(composed(5) == 12)
-    }
-
     @Test func compositionAssociativity() {
         let f: (Int) -> Int = { $0 + 1 }
         let g: (Int) -> Int = { $0 * 2 }

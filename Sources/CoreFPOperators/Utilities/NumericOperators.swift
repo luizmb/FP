@@ -44,7 +44,7 @@ public func ≅ <T>(_ value: T, _ pattern: PartialRangeUpTo<T>) -> Bool where T:
 /// 20 ± 3       // 17...23
 /// 10 ± (-3)    // 7...13 (negative delta becomes positive)
 /// ```
-public func ± <T: Numeric & Comparable & SignedNumeric>(_ center: T, _ delta: T) -> ClosedRange<T> {
+public func ± <T: SignedNumeric>(_ center: T, _ delta: T) -> ClosedRange<T> {
     let absDelta = abs(delta)
     return (center - absDelta)...(center + absDelta)
 }
@@ -57,7 +57,7 @@ public func ± <T: Numeric & Comparable & SignedNumeric>(_ center: T, _ delta: T
 /// 5.0 +/- 0.5   // 4.5...5.5
 /// 2 +/- 5       // -3...7
 /// ```
-public func +/- <T: Numeric & Comparable & SignedNumeric>(_ center: T, _ delta: T) -> ClosedRange<T> {
+public func +/- <T: SignedNumeric>(_ center: T, _ delta: T) -> ClosedRange<T> {
     let absDelta = abs(delta)
     return (center - absDelta)...(center + absDelta)
 }

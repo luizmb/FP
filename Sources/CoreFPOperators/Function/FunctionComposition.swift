@@ -20,15 +20,6 @@ public func <<< <A, B, C>(
     { a in g(f(a)) }
 }
 
-/// Right-to-left function composition (alternative symbol)
-/// (•) :: (b -> c) -> (a -> b) -> a -> c
-public func • <A, B, C>(
-    _ g: @escaping (B) -> C,
-    _ f: @escaping (A) -> B
-) -> (A) -> C {
-    { a in g(f(a)) }
-}
-
 // MARK: - Function Application
 
 /// Function application operator (low precedence)
