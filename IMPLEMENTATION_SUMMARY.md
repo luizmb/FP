@@ -1,6 +1,6 @@
 # FP Library — Implementation Summary
 
-> Last updated: 2026-03-22 | **1221 tests · 122 suites · all passing ✅**
+> Last updated: 2026-03-23 | **1312 tests · 127 suites · all passing ✅**
 
 ---
 
@@ -39,6 +39,8 @@ The library is organised as a strict two-layer system.
 | `>>-` | `>>=` | Monadic bind (renamed to avoid Swift's `>>=`) |
 | `-<<` | `=<<` | Flipped bind |
 | `>=>` / `<=<` | `>=>` / `<=<` | Kleisli composition |
+| `->>` | `=>>` | Comonad extend / coflatMap (value on left) |
+| `<<-` | flip of `=>>` | Flipped comonad extend (function on left) |
 | `<>` | `<>` | Semigroup append |
 | `<|>` | `<|>` | Alternative |
 | `++` | `++` | List concatenation |
@@ -59,8 +61,8 @@ The library is organised as a strict two-layer system.
 5   AppendToList                  ++
 4   FunctorOps                    <£>  £>  <£  <*>  *>  <*  <£^>  <&^>   (left)
 3   AlternativePrecedence         <|>
-1   KleisliCompositionRight       >=>  <=<  -<<                            (right)
-1   MonadBindLeft                 >>-  <&>  <&^>                           (left)
+1   KleisliCompositionRight       >=>  <=<  -<<  <<-                       (right)
+1   MonadBindLeft                 >>-  ->>  <&>  <&^>                      (left)
 0   LowPrecedenceFunctionCall     £  <|  |>
 ```
 
@@ -232,6 +234,15 @@ Validation is an accumulating Applicative. All `ValidationT*` stacks expose Func
 | `Optional` | `Optional` | `sequenceOptionalOptional` |
 | `Optional` | `Result` | `sequenceOptionalResult` |
 | `Optional` | `Array` | `sequenceOptionalArray` |
+| `Either` | `Array` | `sequence` / `traverse` (free curried overloads) |
+| `Either` | `Optional` | `sequence` / `traverse` |
+| `Either` | `Result` | `sequence` / `traverse` |
+| `Validation` | `Array` | `sequence` / `traverse` |
+| `Validation` | `Optional` | `sequence` / `traverse` |
+| `Validation` | `Result` | `sequence` / `traverse` |
+| `Writer` | `Array` | `sequence` / `traverse` |
+| `Writer` | `Optional` | `sequence` / `traverse` |
+| `Writer` | `Result` | `sequence` / `traverse` |
 
 ### Semigroup / Monoid
 
@@ -261,9 +272,42 @@ Validation is an accumulating Applicative. All `ValidationT*` stacks expose Func
 
 `foldLeft`/`foldRight`/`foldMap` on `Array` are curried statics for point-free use. `fold` on `Optional` is Haskell's `maybe` function. `foldMap` uses the `Monoid` identity for the empty/failure case. No symbolic operator (Foldable has none in Haskell).
 
+### Comonad (`extract`, `extend`/`coflatMap`, `duplicate`)
+
+`w ->> f  =  extend f w` (dual of `>>=`)
+
+| Type | Constraint | `extract` | `extend` / `coflatMap` | `duplicate` | `->>` / `<<-` |
+|---|---|---|---|---|---|
+| `Writer<W, A>` | `W: Monoid` | ✅ | ✅ | ✅ | ✅ |
+| `Reader<Env, A>` | `Env: Monoid` | ✅ | ✅ | ✅ | ✅ |
+
+All operations are available as instance methods, a curried static, and top-level free functions.
+
 ### Bifunctor (`bimap`)
 
 Free curried functions for `Either`, `Result`, `Validation`. No dedicated operator (no Haskell standard symbol).
+
+### Bifoldable (`bifoldMap`)
+
+| Type | Instance | Static curried | Free curried |
+|---|---|---|---|
+| `Either` | ✅ (via `SumType2.bifoldMap(leftBy:rightBy:)`) | — | ✅ |
+| `Validation` | ✅ | ✅ | ✅ |
+
+### Bitraversable (`bitraverse`, `bisequence`)
+
+`bitraverse :: Applicative f => (a -> f c) -> (b -> f d) -> t a b -> f (t c d)`
+
+| Type | Effect | Instance | Free curried | `bisequence` |
+|---|---|---|---|---|
+| `Either` | `Array` | ✅ | ✅ | ✅ |
+| `Either` | `Optional` | ✅ | ✅ | ✅ |
+| `Either` | `Result` | ✅ | ✅ | ✅ |
+| `Validation` | `Array` | ✅ | ✅ | ✅ |
+| `Validation` | `Optional` | ✅ | ✅ | ✅ |
+| `Validation` | `Result` | ✅ | ✅ | — ¹ |
+
+¹ `bisequence` for `Validation` + `Result` effect requires `Validation<Result<E1,Err>, …>`, which is invalid since `Result` is not unconditionally `Semigroup`.
 
 ### Profunctor (`dimap`)
 
@@ -306,14 +350,11 @@ Top-level free functions (not just static methods) for all monadic types:
 | Item | Notes |
 |---|---|
 | `Alternative` for `DeferredTask` | Race semantics: first-to-succeed; needs a structured-concurrency `race` primitive |
-| `Traversable` for `Either`, `Validation`, `Writer` | Extend the existing traversal infrastructure to these types as the traversed structure |
-| `Bifoldable` / `Bitraversable` | Natural extension of `bimap`/`bifoldMap` for `Either`, `Validation` |
 
 ### Medium term
 
 | Item | Notes |
 |---|---|
-| `Comonad` (`extract`, `extend`/`coflatMap`, `duplicate`) | `Reader` and `Writer` are natural comonads |
 | `Lens` + `Iso` | Enables `Stateful.zoom`, composable field access; `Prism` already exists |
 
 ### Longer term
@@ -331,7 +372,7 @@ Top-level free functions (not just static methods) for all monadic types:
 
 ```bash
 swift build        # builds all 5 targets
-swift test         # 1221 tests, 122 suites, all passing
+swift test         # 1312 tests, 127 suites, all passing
 
 # Run a specific suite
 swift test --filter "WriterCoreTests"
@@ -348,8 +389,8 @@ swift test --filter "EitherFunctorTests/bimapCurried"
 
 | Metric | Count |
 |---|---|
-| Source files | 617 |
-| Test files | 127 |
-| Tests passing | 1221 |
-| Test suites | 122 |
+| Source files | 651 |
+| Test files | 132 |
+| Tests passing | 1312 |
+| Test suites | 127 |
 | SPM targets | 5 (CoreFP, CoreFPOperators, DataStructure, DataStructureOperators, FP) |
