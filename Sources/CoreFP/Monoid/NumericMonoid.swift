@@ -42,6 +42,34 @@ public enum NumericMonoid<T: Numeric & ExpressibleByIntegerLiteral> {
     }
 }
 
+// MARK: - ExpressibleByIntegerLiteral (all numeric types)
+
+extension NumericMonoid.Sum: ExpressibleByIntegerLiteral {
+    public init(integerLiteral value: T.IntegerLiteralType) {
+        self.init(T(integerLiteral: value))
+    }
+}
+
+extension NumericMonoid.Product: ExpressibleByIntegerLiteral {
+    public init(integerLiteral value: T.IntegerLiteralType) {
+        self.init(T(integerLiteral: value))
+    }
+}
+
+// MARK: - ExpressibleByFloatLiteral (Float, Double, CGFloat)
+
+extension NumericMonoid.Sum: ExpressibleByFloatLiteral where T: ExpressibleByFloatLiteral {
+    public init(floatLiteral value: T.FloatLiteralType) {
+        self.init(T(floatLiteral: value))
+    }
+}
+
+extension NumericMonoid.Product: ExpressibleByFloatLiteral where T: ExpressibleByFloatLiteral {
+    public init(floatLiteral value: T.FloatLiteralType) {
+        self.init(T(floatLiteral: value))
+    }
+}
+
 // MARK: - Numeric type aliases
 
 extension Int {
