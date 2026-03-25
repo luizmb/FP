@@ -135,6 +135,103 @@ Optional(1)   <|> Optional(3)    // Optional(1)
 
 ---
 
+## Fold (Foldable)
+
+### `withDefault` — provide a fallback
+
+`withDefault` is a curried function for point-free composition. It replaces `nil` with a fallback value:
+
+```swift
+withDefault(0)(Optional(42))   // 42
+withDefault(0)(nil)            // 0
+
+// Curried version — useful in pipelines
+let safeAge: (String) -> Int = { Int($0) } >>> withDefault(0)
+safeAge("25")   // 25
+safeAge("??")   // 0
+
+// Two-argument version — provides a chain of fallbacks
+withDefault(nil)(Optional(42))  // Optional(42)
+withDefault(nil)(nil as Int?)   // nil  (fallback is itself nil)
+```
+
+### `fold` — collapse to a single value
+
+```swift
+Optional(5).fold(onNone: 0, onSome: { $0 * 2 })    // 10
+(nil as Int?).fold(onNone: 0, onSome: { $0 * 2 })  // 0
+
+// Static variant for point-free composition
+let describe: (Int?) -> String = Optional.fold(onNone: "nothing", onSome: { "value: \($0)" })
+describe(Optional(42))   // "value: 42"
+describe(nil)            // "nothing"
+```
+
+### `foldMap` — map to a Monoid, then combine
+
+```swift
+Optional(3).foldMap { Int.Monoids.Sum($0) }       // Sum(3)
+(nil as Int?).foldMap { Int.Monoids.Sum($0) }     // Sum(0)  — Monoid identity
+
+Optional("hello").foldMap { [$0] }   // ["hello"]
+(nil as String?).foldMap { [$0] }    // []  — Array identity
+```
+
+### `toList` — zero-or-one element list
+
+```swift
+Optional(42).toList   // [42]
+(nil as Int?).toList  // []
+```
+
+---
+
+## `filter` — conditional nil
+
+Applies a predicate. Returns `nil` if the predicate fails:
+
+```swift
+Optional(5).filter { $0 > 0 }    // Optional(5)
+Optional(-1).filter { $0 > 0 }   // nil
+(nil as Int?).filter { $0 > 0 }  // nil
+```
+
+---
+
+## `then` — side effect on non-nil
+
+Run a closure if the optional is non-nil, with an optional fallback for the `nil` case:
+
+```swift
+Optional(42).then { print("Got \($0)") }           // prints "Got 42", returns Optional(42)
+(nil as Int?).then { print("Got \($0)") }           // nothing printed, returns nil
+
+Optional(42).then({ print("got: \($0)") }, otherwise: { print("nothing") })
+// prints "got: 42"
+```
+
+---
+
+## `isNilOrEmpty` — nil or empty collection
+
+Available when `Wrapped` is a `Collection`:
+
+```swift
+(nil as [Int]?).isNilOrEmpty      // true
+Optional([]).isNilOrEmpty          // true
+Optional([1, 2, 3]).isNilOrEmpty  // false
+
+(nil as String?).isNilOrEmpty     // true
+Optional("").isNilOrEmpty          // true
+Optional("hello").isNilOrEmpty    // false
+
+// Optional(ifEmpty:) — wrap a collection, returning nil if empty
+Optional(ifEmpty: [])      // nil
+Optional(ifEmpty: [1, 2])  // Optional([1, 2])
+```
+
+---
+
 ## Traverse
 
 Useful for **inverting nested structures** — turning an `Optional` wrapping another type inside-out.
