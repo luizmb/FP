@@ -86,17 +86,112 @@ Add the chosen products to your target in `Package.swift`:
 
 ### Joining things together (Semigroup)
 
-In Mathematics, a **Semigroup** is any type where two instances can be combined into one of the same type. Two Strings combine with `+` resulting in a single String, two arrays combine with `+` also to form a single array. In both cases, the resulting value will contain elements from the left and elements from the right, but the main idea is that `(String, String) -> String` and `(Array, Array) -> Array`. Most numbers can combine in two different ways, however, because you can sum them or multiply them, and in both cases you start with two numbers and end up with a single value of the same type. Booleans also combine with `&&` or `||`.
+A **Semigroup** is any type where two values can be combined into one value of the same type. You already know several semigroups from everyday Swift:
+
+```swift
+String.combine("Hello, ", "World!")  // "Hello, World!"
+Array.combine([1, 2], [3, 4])        // [1, 2, 3, 4]
+```
+
+The only rule is that combining must be *associative* — it shouldn't matter how you group the operations, only the order:
+
+```swift
+// These two must always be equivalent:
+String.combine(String.combine("a", "b"), "c")  // "abc"
+String.combine("a", String.combine("b", "c"))  // "abc"
+```
+
+This library defines a `Semigroup` protocol, implemented by `String`, `Array`, `Optional`, `Dictionary`, `Set`, `Result`, and numeric types like `Int`, `Double`, and `CGFloat`, as well as `Bool` — but more on those in a moment. You can also make your own types conform to it by implementing `combine`.
 
 Curiosity: lasagna is a semigroup, because putting one lasagna on top of another gives you lasagna.
 
-In this library you will find a `protocol Semigroup` which is implemented by several types like `String` and `Array`, and represent the operation of joining two into one. For numbers and Bool, continue reading the next topic.
+![Lasagna + Lasagna = Lasagna](docs/lasagna.jpg)
 
-### Neutral element when joining  (Monoid)
+`sconcat` reduces a non-empty sequence using `combine`:
 
-If `Semigroup` allows to combine two things together, `Monoid` extends that protocol with one extra requirement: there should be a neutral element that, when joined with any other instance of that type, keeps it unchanged (regardless of the order). That sounds much more complicated than what it is, examples for the rescue. Remember that String is a semigroup, because `"Hello" + " World" -> "Hello World"`? Now, take empty string `""`, when combine from the left (`"" + "some other string"`) or from the right (`"some other string" + ""`) keeps `"some other string"` unchanged. That means `String` is a monoid, because it's a semigroup with a neutral element. `Array` has a neutral element too, the empty array `[]`. Int and other numbers, are semigroup and monoid, but there's a problem: they have multiple implementations of monoid because you can sum two numbers (`4 + 2 -> 6`) or multiply two numbers (`4 * 2 -> 8`), and in both cases you start with two instances (4 and 2) and end up with a single instance that for sum will be 6 or for multiplication will be 8. For sum, the neutral element is 0, as summing zero to anything keeps that unchanged, while for multiplication the neutral element is 1. Now, Swift doesn't allow to implement the `protocol Monoid` twice, in two completely different ways, so instead of `extension Int: Monoid`, we make a boxing type for each instance, meaning `Int.Monoids.Sum(5)`, which is the sum instance of monoid for ints, while `Int.Monoids.Product(5)` wraps the Int in a multiplication instance of monoid. Same thing for types like `UInt`, `Float`, `CGFloat` and others, while `Bool.Monoids.And` and `Bool.Monoids.Or` will have instances of monoids for operations `&&` (with neutral element `true`) and `||` (neutral element `false`) respectively.
+```swift
+sconcat("Hello", [", ", "World", "!"])  // "Hello, World!"
+sconcat([1, 2], [[3, 4], [5, 6]])       // [1, 2, 3, 4, 5, 6]
+```
 
-By-the-way, neutral element is called `identity`, and can now be found in `String.identity`, `Array.identity`, `Int.Monoids.Sum.identity`, `Bool.Monoids.And.identity` and similars.
+#### Semigroup operator _(optional, requires CoreFPOperators)_
+
+`<>` is the infix operator for `combine`:
+
+```swift
+"Hello, " <> "World!"     // "Hello, World!"
+[1, 2] <> [3, 4]          // [1, 2, 3, 4]
+```
+
+---
+
+### Neutral element when joining (Monoid)
+
+A **Monoid** is a semigroup with one extra requirement: there must be a neutral element (called `identity`) that leaves any value unchanged when combined with it — regardless of which side it appears on.
+
+```swift
+"" <> "hello"  // "hello" — empty string is the identity for String
+"hello" <> ""  // "hello"
+
+[] <> [1, 2]   // [1, 2] — empty array is the identity for Array
+[1, 2] <> []   // [1, 2]
+```
+
+You can access the identity through the static property:
+
+```swift
+String.identity   // ""
+[Int].identity    // []
+```
+
+`mconcat` collapses an entire array using `combine`, starting from `identity`:
+
+```swift
+mconcat(["Hello", ", ", "World", "!"])  // "Hello, World!"
+mconcat([[1, 2], [3], [4, 5]])          // [1, 2, 3, 4, 5]
+mconcat([String]())                     // "" — empty input returns identity
+```
+
+**Numbers and Booleans**
+
+Most numeric types can be combined in more than one way — you can add them or multiply them — so there isn't a single obvious `Monoid` instance for `Int`. Swift also doesn't allow the same type to conform to a protocol twice.
+
+This library solves that with lightweight wrapper types:
+
+```swift
+// Addition — identity is 0
+Int.Monoids.Sum.combine(3, 4)                              // Sum(7)
+Int.Monoids.Sum.identity                                   // Sum(0)
+mconcat([1, 2, 3] as [Int.Monoids.Sum]).rawValue           // 6
+
+// Multiplication — identity is 1
+Int.Monoids.Product.combine(3, 4)                          // Product(12)
+Int.Monoids.Product.identity                               // Product(1)
+mconcat([2, 3, 4] as [Int.Monoids.Product]).rawValue       // 24
+```
+
+The same pattern applies to `UInt`, `Float`, `Double`, `CGFloat`, and all other numeric types. Float literals work too:
+
+```swift
+Double.Monoids.Sum.combine(1.5, 2.5)                       // Sum(4.0)
+mconcat([1.0, 2.5, 0.5] as [Double.Monoids.Sum]).rawValue  // 4.0
+```
+
+`Bool` works the same way:
+
+```swift
+// Conjunction (&&) — identity is true
+Bool.Monoids.And.combine(.init(true), .init(false))   // And(false)
+Bool.Monoids.And.identity                             // And(true)
+mconcat([Bool.Monoids.And(true), .init(true), .init(false)]).rawValue  // false
+
+// Disjunction (||) — identity is false
+Bool.Monoids.Or.combine(.init(false), .init(true))    // Or(true)
+Bool.Monoids.Or.identity                              // Or(false)
+mconcat([Bool.Monoids.Or(false), .init(false), .init(true)]).rawValue  // true
+```
+
+An empty tray of lasagna would be the identity element — making lasagna a monoid too.
 
 ### Map (Functor)
 
