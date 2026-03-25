@@ -115,6 +115,72 @@ Concatenate two arrays.
 
 ---
 
+## `filterM` — curried filter
+
+A curried version of `filter` for point-free composition:
+
+```swift
+Array.filterM { $0 > 2 }([1, 2, 3, 4])   // [3, 4]
+
+// Useful in pipelines
+let keepPositives = Array.filterM { $0 > 0 }
+keepPositives([1, -2, 3, -4])   // [1, 3]
+
+// Compose with other curried functions
+let pipeline = Array.fmap { $0 * 2 } >>> Array.filterM { $0 > 4 }
+pipeline([1, 2, 3, 4])   // [6, 8]
+```
+
+---
+
+## Fold (Foldable)
+
+### `foldLeft` — left-associative fold
+
+Accumulates from left to right:
+
+```swift
+Array.foldLeft(0, +)([1, 2, 3, 4])    // 10   — (((0+1)+2)+3)+4
+Array.foldLeft(1, *)([1, 2, 3, 4])    // 24   — (((1*1)*2)*3)*4
+Array.foldLeft("", { $0 + $1 })(["a", "b", "c"])  // "abc"
+
+// Curried — useful for composition
+let sum = Array.foldLeft(0, +)
+sum([1, 2, 3])   // 6
+```
+
+### `foldRight` — right-associative fold
+
+Accumulates from right to left:
+
+```swift
+Array.foldRight(-, 0)([1, 2, 3])    // 2    — 1-(2-(3-0))
+Array.foldRight({ $1 + [$0] }, [])([1, 2, 3])  // [3, 2, 1]  — reverse
+
+// foldRight is lazy — useful for short-circuiting operations
+let firstPositive = Array.foldRight(
+    { elem, acc in elem > 0 ? elem : acc },
+    0
+)
+firstPositive([0, -1, 5, 2])   // 5
+```
+
+### `foldMap` — map to a Monoid, then combine
+
+```swift
+Array.foldMap { Int.Monoids.Sum($0) }([1, 2, 3])       // Sum(6)
+Array.foldMap { Int.Monoids.Product($0) }([2, 3, 4])   // Product(24)
+
+// Combine strings
+Array.foldMap { [$0 * 2] }([1, 2, 3])   // [2, 4, 6]  — Array<[Int]> folded into [Int]
+
+// Curried — useful in composition
+let sumAll = Array.foldMap { Int.Monoids.Sum($0) }
+sumAll([10, 20, 30]).rawValue   // 60
+```
+
+---
+
 ## Traverse
 
 Useful for **inverting nested structures** — turning an array of optionals or results into a single optional or result wrapping an array.

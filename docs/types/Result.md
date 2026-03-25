@@ -156,6 +156,90 @@ Optional(Result<Int, MyError>.success(42)).sequence()  // .success(Optional(42))
 
 ---
 
+## `Result.Monoids` — combining strategies
+
+`Result` can't have a single `Semigroup` instance because it's not obvious what "combine two results" should mean. This library offers four explicit strategies as nested types.
+
+### `Optimistic` — success wins
+
+If either value is `.success`, the result is `.success`. Combining two successes requires `Success: Semigroup`.
+
+```swift
+// Success wins over failure
+Result<Int, MyError>.Monoids.Optimistic.combine(.success(1), .failure(.bad))   // .success(1)
+Result<Int, MyError>.Monoids.Optimistic.combine(.failure(.bad), .success(2))   // .success(2)
+
+// Two successes are combined
+Result<[Int], MyError>.Monoids.Optimistic.combine(.success([1, 2]), .success([3, 4]))
+// .success([1, 2, 3, 4])
+```
+
+### `OptimisticCombining` — success wins, with identity
+
+A `Monoid` extension of `Optimistic`. Requires both `Success: Semigroup` and `Failure: Monoid`. The identity element is `.failure(Failure.identity)`.
+
+```swift
+Result<[Int], [MyError]>.Monoids.OptimisticCombining.identity
+// .failure([])   — Monoid identity
+
+Result<[Int], [MyError]>.Monoids.OptimisticCombining.combine(.success([1]), .success([2]))
+// .success([1, 2])
+```
+
+### `Pessimistic` — failure wins
+
+If either value is `.failure`, the result is `.failure`. Combining two failures requires `Failure: Semigroup`.
+
+```swift
+Result<Int, [MyError]>.Monoids.Pessimistic.combine(.success(1), .failure([.bad]))   // .failure([.bad])
+Result<Int, [MyError]>.Monoids.Pessimistic.combine(.failure([.a]), .failure([.b]))  // .failure([.a, .b])
+
+// Two successes — the last one wins (no Semigroup required for success)
+Result<Int, [MyError]>.Monoids.Pessimistic.combine(.success(1), .success(2))   // .success(2)
+```
+
+### `PessimisticCombining` — failure wins, with identity
+
+A `Monoid` extension of `Pessimistic`. Requires both `Failure: Semigroup` and `Success: Monoid`. The identity element is `.success(Success.identity)`.
+
+```swift
+Result<[Int], MyError>.Monoids.PessimisticCombining.identity
+// .success([])   — Monoid identity
+
+Result<[Int], MyError>.Monoids.PessimisticCombining.combine(.failure(.a), .failure(.b))
+// .failure(.a)  — first failure wins
+```
+
+### Choosing a strategy
+
+| Strategy | Success + Success | Success + Failure | Failure + Failure |
+|---|---|---|---|
+| `Optimistic` | combine (requires `Success: Semigroup`) | success wins | last failure |
+| `Pessimistic` | last success | failure wins | combine (requires `Failure: Semigroup`) |
+
+Use `Optimistic` when partial success is acceptable. Use `Pessimistic` for validation pipelines where any failure must propagate.
+
+---
+
+## `bimap` — transform both sides
+
+Transform the success and failure values simultaneously:
+
+```swift
+let result: Result<Int, String> = .failure("not found")
+
+result.bimap(
+    { $0 * 2 },          // success path
+    { "Error: \($0)" }   // failure path
+)
+// .failure("Error: not found")
+
+Result<Int, String>.success(21).bimap({ $0 * 2 }, { "Error: \($0)" })
+// .success(42)
+```
+
+---
+
 ## Module
 
 ```swift

@@ -306,7 +306,7 @@ Just(2).eraseToAnyPublisher() £> "done"             // publisher of "done"
 
 ---
 
-### Zip / Apply
+### Zip / Apply (Applicative)
 
 **Zip** combines two containers into one container of pairs. The key insight is that the containers remain independent until you combine them:
 
@@ -379,7 +379,7 @@ Result.success("hello") <* Result.success(42)   // .success("hello")
 
 ---
 
-### FlatMap
+### FlatMap (Monad)
 
 `map` transforms the value *inside* a container. But sometimes the transform itself produces a container, and you'd end up with a nested one:
 
@@ -479,6 +479,240 @@ let parseAndDouble = doubleIt <=< parseInt
 
 ---
 
+### Fold (Foldable)
+
+A **Foldable** is any structure you can collapse into a single value by visiting each element. Arrays are the obvious example, but `Optional` is foldable too — it has either zero or one element.
+
+```swift
+// withDefault — provide a fallback when a value is absent (curried, for composition)
+withDefault(0)(Optional(42))   // 42
+withDefault(0)(nil)            // 0
+
+// fold — collapse an Optional to a single type
+Optional(5).fold(onNone: 0, onSome: { $0 * 2 })   // 10
+(nil as Int?).fold(onNone: 0, onSome: { $0 * 2 }) // 0
+
+// Static variant for point-free composition
+let safeParse: (String) -> Int = { Int($0) }.map >>> Optional.fold(onNone: -1, onSome: id)
+
+// foldMap — map each element to a Monoid, then combine them
+Optional(3).foldMap { Int.Monoids.Sum($0) }        // Sum(3)
+(nil as Int?).foldMap { Int.Monoids.Sum($0) }      // Sum(0)  — identity
+
+[1, 2, 3].foldMap { Int.Monoids.Sum($0) }          // Sum(6)
+
+// foldLeft / foldRight on Array (curried)
+Array.foldLeft(0, +)([1, 2, 3, 4])    // 10  — (((0+1)+2)+3)+4
+Array.foldRight(-, 0)([1, 2, 3])      // 2   — 1-(2-(3-0))
+
+// toList — Optional as a zero-or-one list
+Optional(42).toList   // [42]
+(nil as Int?).toList  // []
+```
+
+---
+
+### Traverse (Traversable)
+
+A **Traversable** is a structure you can map over with a function that produces a container, collecting all the containers into one. Think of it as "map, then flip the nesting."
+
+The two key operations are:
+- `traverse` — map and flip at once
+- `sequence` — flip without mapping (the common case)
+
+```swift
+// Array<Optional> → Optional<Array>
+// All must be present; one nil collapses the whole result
+[Optional(1), Optional(2), Optional(3)].sequence()   // Optional([1, 2, 3])
+[Optional(1), nil, Optional(3)].sequence()           // nil
+
+["1", "2", "3"].traverse { Int($0) }    // Optional([1, 2, 3])
+["1", "x", "3"].traverse { Int($0) }   // nil
+
+// Array<Result> → Result<Array>
+[Result<Int, MyError>.success(1), .success(2)].sequence()           // .success([1, 2])
+[Result<Int, MyError>.success(1), .failure(.err)].sequence()        // .failure(.err)
+
+// Optional<Array> → Array<Optional>
+Optional([1, 2, 3]).sequence()   // [Optional(1), Optional(2), Optional(3)]
+(nil as [Int]?).sequence()       // [nil]
+
+// Optional<Result> → Result<Optional>
+Optional(Result<Int, MyError>.success(42)).sequence()   // .success(Optional(42))
+(nil as Result<Int, MyError>?).sequence()               // .success(nil)
+```
+
+---
+
+### Alternative (Choice)
+
+**Alternative** models a choice between two effects: try the first; if it's "empty" (nil, [], failure), fall back to the second.
+
+```swift
+// Optional — first non-nil wins
+(nil as Int?) <|> Optional(3)   // Optional(3)
+Optional(1)   <|> Optional(3)   // Optional(1) — first wins if present
+
+// Array — concatenation
+[1, 2] <|> [3, 4]   // [1, 2, 3, 4]
+[]     <|> [3, 4]   // [3, 4]
+
+// Result — first success wins
+Result<Int, Error>.failure(err) <|> .success(3)   // .success(3)
+Result<Int, Error>.success(1)   <|> .success(3)   // .success(1)
+
+// DeferredStream — second stream starts when first finishes
+let a = DeferredStream<Int>.wrap(AsyncStream.just(1, 2))
+let b = DeferredStream<Int>.wrap(AsyncStream.just(3, 4))
+for await v in (a <|> b) { print(v) }  // 1, 2, 3, 4
+```
+
+---
+
+### Comonad (Extend)
+
+A **Comonad** is the dual of a Monad. While a Monad lets you inject values (`pure`) and extract context-dependent results (`flatMap`), a Comonad lets you *extract* the current value (`extract`) and *extend* a function over the whole context (`extend` / `coflatMap`).
+
+The `Writer` type in this library is a Comonad:
+
+```swift
+// extract — pull out the value (dual of pure)
+Writer(42, ["log"]).extract   // 42
+
+// coflatMap / extend — map a function over the entire writer context
+Writer(21, ["step"]).coflatMap { w in w.value * 2 + w.log.count }
+// Writer(43, ["step"])   — value: 21*2 + 1, log preserved
+
+// duplicate — wrap the writer in another writer (dual of join)
+Writer(42, ["log"]).duplicate   // Writer(Writer(42, ["log"]), ["log"])
+```
+
+#### Comonad operators _(optional, requires DataStructureOperators)_
+
+`->>` extends a comonad (container on the left):
+
+```swift
+Writer(21, ["x"]) ->> { $0.value * 2 }   // Writer(42, ["x"])
+```
+
+`<<-` is the flipped version — function on the left:
+
+```swift
+{ $0.value * 2 } <<- Writer(21, ["x"])   // Writer(42, ["x"])
+```
+
+---
+
+### Utilities
+
+**Function composition** — `>>>` and `<<<`
+
+```swift
+let trim:       (String) -> String = { $0.trimmingCharacters(in: .whitespaces) }
+let uppercased: (String) -> String = { $0.uppercased() }
+let exclaim:    (String) -> String = { $0 + "!" }
+
+let shout = trim >>> uppercased >>> exclaim   // left-to-right
+shout("  hello  ")   // "HELLO!"
+
+let shout2 = exclaim <<< uppercased <<< trim  // right-to-left, equivalent
+shout2("  hello  ")  // "HELLO!"
+```
+
+**Function application** — `£` / `<|` and `|>`
+
+```swift
+uppercased £ "hello"                   // "HELLO"  — fn left
+uppercased <| "hello"                  // "HELLO"  — fn left (ASCII alternative)
+"hello" |> uppercased                  // "HELLO"  — value left (pipe)
+"  hello  " |> trim |> exclaim        // "hello!" — pipeline
+```
+
+**Core building blocks**
+
+```swift
+id("hello")                                       // "hello" — identity
+const(42)("anything")                             // 42      — ignore second argument
+flip(-)( 3, 10)                                   // 7       — swap argument order
+curry { $0 + $1 }(1)(2)                           // 3       — (A, B) -> C into A -> B -> C
+uncurry { a in { b in a + b } }((1, 2))           // 3       — inverse of curry
+partialApply({ a, b in a + b }, 10)(5)            // 15      — fix first argument
+withArg("hello")(uppercased)                      // "HELLO" — argument-first application
+```
+
+**fanout** — apply multiple functions to the same input, collect results into a tuple:
+
+```swift
+let (upper, count, first) = fanout(uppercased, \.count, \.first)("hello")
+// ("HELLO", 5, Optional("h"))
+```
+
+**join and void** — flatten nested containers or discard values:
+
+```swift
+join([[1, 2], [3, 4]])               // [1, 2, 3, 4] — [[A]] → [A]
+join(Optional(Optional(42)))         // Optional(42)  — A?? → A?
+join(Result<Result<Int,E>,E>.success(.success(42)))  // .success(42)
+
+void([1, 2, 3])                      // [(), (), ()]  — discard values, keep structure
+void(Optional(42))                   // Optional(())
+```
+
+**Tuple utilities**
+
+```swift
+mapTuple2(uppercased)("hello", "world")     // ("HELLO", "WORLD")
+mapTuple3({ $0 * 2 })(1, 2, 3)            // (2, 4, 6)
+tuple(1, "hello")                           // (1, "hello")
+untuple { $0 + $1 }((1, 2))               // 3  — tuple-argument → two-argument
+```
+
+**Type casting** — curried, for pipelines:
+
+```swift
+// cast — guaranteed cast (value must already be that type, no crash)
+cast(String.self)("hello")         // "hello"
+
+// castOptionally — safe cast, returns nil on mismatch
+castOptionally(Int.self)("hello")  // nil
+castOptionally(Int.self)(42)       // Optional(42)
+```
+
+**lazy / unlazy** — defer and force evaluation:
+
+```swift
+let later: () -> Int = lazy(expensiveComputation())  // not evaluated yet
+unlazy(later)                                         // forces it
+```
+
+**Boolean predicates** — curried, for point-free composition:
+
+```swift
+[1, 2, 3, 2].filter(equals(2))       // [2, 2]
+[1, 2, 3, 2].filter(notEquals(2))    // [1, 3]
+[1, 2, 3, 4].filter(not { $0 % 2 == 0 })  // [1, 3]
+[0, 1, 2, -1].filter(and({ $0 % 2 == 0 }, { $0 > 0 }))  // [2]
+[0, 1, 2, -1].filter(or({ $0 == 0 }, { $0 > 1 }))        // [0, 2]
+```
+
+**`Mutable`** — builder-pattern copy for value types:
+
+```swift
+struct Config: Mutable { var host: String; var port: Int }
+
+let base = Config(host: "localhost", port: 8080)
+let dev  = base.mutate { $0.port = 3000 }     // Config(host: "localhost", port: 3000)
+```
+
+**`ignore` / `absurd`** — structural helpers:
+
+```swift
+[1, 2, 3].map(ignore)   // [(), (), ()]
+// absurd(n) — eliminate the Never type in impossible branches
+```
+
+---
+
 ### Functional Getter / Setter for Structs (Lens)
 
 Swift value types are immutable-by-default, which is great until you need to update a field several levels deep. The naïve approach requires unpacking the whole hierarchy:
@@ -565,11 +799,12 @@ let cityFirst2 = ^\Address.city <<< ^\User.address
 
 ### Functional Getter / Setter for Enums (Prism)
 
-Where a `Lens` works on structs (where every field is always present), a **Prism** works on enums (where only one case is active at a time). A Prism focuses on a specific case and lets you extract or construct values for that case.
+Just as a glass prism refracts a beam of white light into its constituent wavelengths — revealing all the colours hiding inside the one —, in Functional Programming a **Prism** has nothing to do with a progressive rock band album art, but instead it refracts a sum type (enum) into its individual cases, letting you focus on the one you care about. Where a `Lens` works on structs (where every field is always present), a Prism works on enums (where only one case is active at a time). It focuses on a specific case and lets you extract or construct values for that case.
 
-It has two operations:
+It has three operations:
 - `preview` — tries to extract the associated value; returns `nil` if the enum is a different case
 - `review` — constructs an enum value from the focused type
+- `over` — applies a transform to the focused value; leaves the structure unchanged if the case is inactive
 
 ```swift
 enum Shape {
@@ -582,11 +817,11 @@ let circlePrism = prism(
     review:  Shape.circle
 )
 
-circlePrism.preview(.circle(5.0))        // Optional(5.0)
-circlePrism.preview(.rectangle(3, 4))    // nil
-circlePrism.review(7.0)                  // Shape.circle(7.0)
-circlePrism.over { $0 * 2 }(.circle(5)) // Shape.circle(10.0)
-circlePrism.over { $0 * 2 }(.rectangle(3, 4))  // Shape.rectangle(3, 4) — unchanged
+circlePrism.preview(.circle(5.0))              // Optional(5.0)
+circlePrism.preview(.rectangle(3, 4))          // nil
+circlePrism.review(7.0)                        // Shape.circle(7.0)
+circlePrism.over { $0 * 2 }(.circle(5))       // Shape.circle(10.0)
+circlePrism.over { $0 * 2 }(.rectangle(3, 4)) // Shape.rectangle(3, 4) — unchanged
 ```
 
 If your enum has optional-returning computed properties, the keyPath shorthand is more concise:
@@ -636,6 +871,164 @@ let deepCasePrism = outerPrism >>> innerPrism
 // Prism >>> Lens → AffineTraversal
 let cityInLoggedInUser = loggedInPrism >>> ^\User.address >>> ^\Address.city
 ```
+
+---
+
+### Assembling Optics (AffineTraversal)
+
+Assembling an `AffineTraversal` is like aligning a lens and a prism in a telescope — each brings its own focus, and together they reach deeper into a structure than either could alone. The `AffineTraversal` is the optic you get whenever a focus *may or may not exist*, combining optional extraction with structural update.
+
+It has three operations:
+- `preview` — tries to extract the focused value; returns `nil` if the focus is absent
+- `set` — updates the focused value if present; leaves the structure unchanged if absent
+- `over` — applies a transform to the focused value if present
+
+**Lens `>>>` Prism → AffineTraversal**
+
+Start with a struct and drill down to a field that is itself an enum case:
+
+```swift
+enum Shape { case circle(Double); case rectangle(Double, Double) }
+struct Canvas { var shape: Shape }
+
+let shapeLens: Lens<Canvas, Shape>    = lens(\.shape)
+let circlePrism: Prism<Shape, Double> = prism(
+    preview: { if case .circle(let r) = $0 { return r } else { return nil } },
+    review:  Shape.circle
+)
+
+// Lens >>> Prism = AffineTraversal<Canvas, Double>
+let circleRadiusTraversal = shapeLens >>> circlePrism
+
+let canvas = Canvas(shape: .circle(5.0))
+circleRadiusTraversal.preview(canvas)                      // Optional(5.0)
+circleRadiusTraversal.set(canvas, 10.0)                    // Canvas(shape: .circle(10.0))
+circleRadiusTraversal.over { $0 * 2 }(canvas)             // Canvas(shape: .circle(10.0))
+
+let rectCanvas = Canvas(shape: .rectangle(3, 4))
+circleRadiusTraversal.preview(rectCanvas)                  // nil
+circleRadiusTraversal.set(rectCanvas, 10.0)               // Canvas(shape: .rectangle(3, 4)) — unchanged
+```
+
+**Prism `>>>` Lens → AffineTraversal**
+
+Go the other direction: start with an enum case and drill further into the associated value:
+
+```swift
+enum App { case loggedIn(User); case guest }
+struct User { var address: Address }
+struct Address { var city: String }
+
+let loggedInPrism: Prism<App, User> = prism(
+    preview: { if case .loggedIn(let u) = $0 { return u } else { return nil } },
+    review:  App.loggedIn
+)
+let cityLens: Lens<User, String> = lens(\.address) >>> lens(\.city)
+
+// Prism >>> Lens = AffineTraversal<App, String>
+let cityInLoggedInUser = loggedInPrism >>> cityLens
+
+cityInLoggedInUser.preview(.loggedIn(User(address: Address(city: "Paris"))))  // Optional("Paris")
+cityInLoggedInUser.preview(.guest)                                             // nil
+cityInLoggedInUser.set(.loggedIn(User(address: Address(city: "Paris"))), "London")
+// .loggedIn(User(address: Address(city: "London")))
+```
+
+**Building a longer pipeline**
+
+Because all three optic types compose via `>>>`, you can chain freely:
+
+```swift
+let radiusTraversal = loggedInPrism >>> lens(\.avatar) >>> circlePrism
+// AffineTraversal<App, Double>
+```
+
+`<<<` is the right-to-left version:
+
+```swift
+let radiusTraversal2 = circlePrism <<< lens(\.avatar) <<< loggedInPrism
+```
+
+---
+
+### SumType2 — Shared Interface for Two-Case Types
+
+`Either`, `Result`, and similar two-case types all conform to the `SumType2<A, B>` protocol, which gives them a uniform interface without duplicating `switch` statements everywhere.
+
+```swift
+// match — exhaustive elimination without a switch
+let e: Either<String, Int> = .right(42)
+e.match(
+    caseLeft:  { "Error: \($0)" },
+    caseRight: { "Value: \($0)" }
+)  // "Value: 42"
+
+// .a / .b — optional projections
+Either<String, Int>.left("oops").a   // Optional("oops")
+Either<String, Int>.right(42).b      // Optional(42)
+
+// .isA / .isB — predicate checks
+Result<Int, Error>.success(42).isB   // true
+
+// from — convert between any two conforming types with the same type parameters
+let r = Result<Int, String>.from(Either<String, Int>.right(42))  // .success(42)
+```
+
+The protocol defines three requirements — `left(_:)`, `right(_:)`, `match(caseLeft:caseRight:)`, and `from(_:)` — and provides `.a`, `.b`, `.isA`, `.isB` as extensions. Use `SumType2` in your own generic functions to work over `Either`, `Result`, and any custom two-case type simultaneously.
+
+---
+
+### Operator Reference
+
+All operators require `CoreFPOperators` (for built-in types) or `DataStructureOperators` (for `DataStructure` types). Every operator has a named-function equivalent in the core module.
+
+| Operator | Flipped | Description | Types |
+|----------|---------|-------------|-------|
+| `<£>` | `<&>` | Functor map — fn left / container left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` |
+| `<£^>` | `<&^>` | Transformer map (nested containers) — transformer-only, no base-type overloads | `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` transformer variants |
+| `£>` | `<£` | Replace contents with a constant — container left / value left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` |
+| `<*>` | — | Applicative apply — wrapped function on left, wrapped value on right | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` |
+| `*>` | `<*` | Sequence two effects — keep right / keep left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` |
+| `>>-` | `-<<` | Monadic bind — container left / fn left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Writer` |
+| `->>` | `<<-` | Comonad extend — container left / fn left | `Writer` |
+| `>=>` | `<=<` | Kleisli composition — left-to-right / right-to-left | `Optional`, `Array`, `Result`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Writer` |
+| `>>>` | `<<<` | Function / optics composition — left-to-right / right-to-left | Functions, `Lens`, `Prism`, `AffineTraversal` |
+| `£` / `<\|` | `\|>` | Function application — fn left / value left | Any function |
+| `<\|>` | — | Alternative / choice | `Optional`, `Array`, `Result`, `Publisher`, `DeferredTask`, `DeferredStream` |
+| `<>` | — | Semigroup append | `String`, `Array`, `Optional`, `Dictionary`, `Set`, `Result`, `Int.Monoids.*`, `Bool.Monoids.*`, … |
+| `++` | — | Concatenation | `String`, `Array` |
+| `^` _(prefix)_ | — | Lift `WritableKeyPath` → `Lens`; `KeyPath` → partial `Lens` builder | `WritableKeyPath`, `KeyPath` |
+| `^` _(infix)_ | — | Numeric power — `base ^ exp` | `SignedNumeric` |
+| `±` / `+/-` | — | Symmetric range — `center ± delta` → `ClosedRange` | `SignedNumeric` |
+| `≅` | — | Flipped range match — `value ≅ range` (equivalent to `range ~= value`) | `Comparable` |
+
+---
+
+### Types
+
+Each type in this library has a dedicated reference page with comprehensive examples covering every operation, operator, and transformer combination.
+
+#### CoreFP
+
+| Type | Description |
+|------|-------------|
+| [Optional](docs/types/Optional.md) | Swift's built-in optional, extended with full Functor / Applicative / Monad instances |
+| [Array](docs/types/Array.md) | Swift's built-in array, extended — models nondeterminism and multiple results |
+| [Result](docs/types/Result.md) | Swift's built-in result, extended with `bimap`, Kleisli composition, and Monoid strategies |
+| [Publisher](docs/types/Publisher.md) | Combine's `AnyPublisher`, extended with functional operations |
+| [AsyncSequence](docs/types/AsyncSequence.md) | Swift's `AsyncSequence`, extended with functional operations |
+| [DeferredTask](docs/types/DeferredTask.md) | Lazy async computation — nothing runs until `.run()` is called |
+| [DeferredStream](docs/types/DeferredStream.md) | Lazy async stream — nothing starts until first iteration |
+
+#### DataStructure
+
+| Type | Description |
+|------|-------------|
+| [Either](docs/types/Either.md) | Unconstrained sum type — both sides are equal citizens, no `Error` requirement |
+| [Validation](docs/types/Validation.md) | Accumulating applicative — errors collect instead of short-circuiting |
+| [Reader](docs/types/Reader.md) | Dependency injection monad — wraps `(Environment) -> Output` |
+| [Stateful](docs/types/Stateful.md) | State threading monad — wraps `(inout S) -> A` |
+| [Writer](docs/types/Writer.md) | Append-as-you-go monad — produces a value alongside an accumulated log |
 
 ---
 

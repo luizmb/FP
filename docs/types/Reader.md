@@ -167,6 +167,43 @@ userName(Config(multiplier: -1))  // nil
 
 ---
 
+## Comonad — extract and extend
+
+`Reader` is a **Comonad** when its `Environment` is a `Monoid`. The Monoid identity acts as the "empty" environment, and `combine` merges environments.
+
+```swift
+struct Config: Monoid {
+    static let identity = Config(multiplier: 1)
+    static func combine(_ a: Config, _ b: Config) -> Config { Config(multiplier: a.multiplier * b.multiplier) }
+    var multiplier: Int
+}
+
+let base = Reader<Config, Int> { $0.multiplier * 10 }
+
+// extract — run the reader with the Monoid identity (the "empty" environment)
+base.extract           // 10  (Config.identity.multiplier * 10)
+extract(base)          // 10  (free function version)
+
+// extend / coflatMap — map a function over the reader context as a whole
+// Builds a new Reader that, for each environment e, creates a "shifted" reader
+// and applies f to it.
+let extended = base.extend { r in r.extract * 2 }
+// Reader that produces extract * 2 for each shifted environment
+
+base.coflatMap { r in r.extract + 1 }
+// equivalent to extend
+
+// duplicate — wrap the reader in another reader (dual of join)
+base.duplicate
+// Reader<Config, Reader<Config, Int>>
+
+// Curried free functions for point-free composition
+extend { r in r.extract * 2 }(base)
+duplicate(base)
+```
+
+---
+
 ## Module
 
 ```swift
