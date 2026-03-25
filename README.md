@@ -1,6 +1,6 @@
 # FP
 
-FP is a Swift library that brings functional programming patterns to your codebase in a composable, type-safe way. It extends Swift's built-in types (`Optional`, `Result`, `Array`, `Publisher`) and introduces new data structures that make common patterns — error handling, dependency injection, state threading, validation — explicit, predictable, and easy to test.
+FP is a Swift library that brings functional programming patterns to your codebase in a composable, type-safe way. It extends Swift's built-in types (`Optional`, `Result`, `Array`, `Publisher`, async/await `Task`, `AsyncSequence`) and introduces new data structures that make common patterns — error handling, dependency injection, state threading, validation — explicit, predictable, and easy to test.
 
 The library draws from Haskell and Scala Cats conventions and is designed to be used incrementally: start with just the core extensions and adopt more as your comfort grows.
 
@@ -8,9 +8,9 @@ The library draws from Haskell and Scala Cats conventions and is designed to be 
 
 New to functional programming? These are some of the best starting points:
 
-- [Functors, Applicatives, and Monads in Pictures](https://adit.io/posts/2013-04-17-functors,_applicatives,_and_monads_in_pictures.html) — a visual, intuition-first introduction to the core concepts
-- [Learn You a Haskell for Great Good!](http://learnyouahaskell.com/) — a beginner-friendly free book that explains the ideas behind this library
-- [Swift Functors, Applicatives, and Monads in Practice](https://www.objc.io/blog/2019/10/01/swift-functors-applicatives-and-monads/) — the same concepts applied to Swift specifically
+- [Functors, Applicatives, and Monads in Pictures](https://mokacoding.com/blog/functor-applicative-monads-in-pictures/) — a visual, intuition-first introduction to the core concepts
+- [Learn You a Haskell for Great Good!](https://learnyouahaskell.github.io/) — a beginner-friendly free book that explains the ideas behind this library
+
 
 ## Installation
 
@@ -27,36 +27,17 @@ dependencies: [
 
 #### `CoreFP` — the foundation
 
-The minimum you need. Adds functional operations (`map`, `flatMap`, `zip`, `apply`, and more) to Swift's built-in types — `Optional`, `Result`, `Array`, Combine's `Publisher`, and Swift Concurrency's `AsyncSequence`. Also includes:
-
-- `DeferredTask<A>` — a lazy async computation (nothing runs until you call `.run()`)
-- `DeferredStream<A>` — a lazy async stream (nothing starts until first iteration)
-- `Lens<S, A>`, `Prism<S, A>`, `AffineTraversal<S, A>` — composable optics for reading and updating values inside data structures
-- `Semigroup` and `Monoid` protocols with instances for `String`, `Array`, `Bool`, `Int`, `Dictionary`, `Set`, and more
-
-A **Semigroup** is any type where two instances can be combined into one of the same type. Strings combine with `+`, arrays combine with `+`, booleans combine with `&&` or `||`. Curiosity: lasagna is a semigroup, because putting one lasagna on top of another gives you lasagna.
-
-A **Monoid** adds one extra requirement to a semigroup: a neutral element (called the identity) which, when combined with anything, leaves it unchanged. `""` is the identity for strings, `[]` for arrays, `0` for integer addition, `1` for integer multiplication. An empty tray of lasagna would be the identity element — making lasagna a monoid too.
+The minimum you need. Adds several functional operations to Swift's built-in types — `Optional`, `Result`, `Array`, Combine's `Publisher`, and Swift Concurrency's `AsyncSequence` and more.
 
 #### `CoreFPOperators` — expressive operator sugar _(optional)_
 
 Adds custom symbolic operators for all `CoreFP` types. Using operators is entirely optional — every operator has a named function equivalent in `CoreFP` — but they allow a more concise, expression-oriented style.
 
-Operators introduced: `<£>` `<&>` `<£^>` `<&^>` `£>` `<£` `<*>` `*>` `<*` `>>-` `-<<` `->>` `<<-` `>=>` `<=<` `>>>` `<<<` `£` `<|` `|>` `<|>` `<>` `++` `^` `≅` `±` `+/-`
-
 > **Before adding this module**, check your codebase for existing definitions of these symbols. Some (like `<>`, `>>>`, `|>`, or `^`) are used in other libraries and could cause conflicts or ambiguity errors at the call site.
 
 #### `DataStructure` — additional functional data structures _(optional)_
 
-Adds new types that are common in functional languages but absent from Swift's standard library:
-
-- `Either<A, B>` — a sum type where both sides are unconstrained (unlike `Result`, the left side doesn't have to be an `Error`)
-- `Validation<E, A>` — like `Result`, but errors accumulate instead of short-circuiting (requires `E: Semigroup`)
-- `Reader<Environment, Output>` — models dependency injection as a value
-- `Stateful<S, A>` — threads state through a sequence of computations without mutation
-- `Writer<Log, A>` — produces a value alongside an append-only log (requires `Log: Monoid`)
-
-Each type comes with full `Functor`, `Applicative`, and `Monad` instances, as well as transformer variants for nesting with other types.
+Adds new types that are common in functional languages but absent from Swift's standard library, such as `Either<A, B>`, `Validation<E, A>`, `Reader<Environment, Output>`, `Stateful<S, A>`, `Writer<Log, A>`.
 
 #### `DataStructureOperators` — operators for data structures _(optional)_
 
@@ -102,6 +83,20 @@ Add the chosen products to your target in `Package.swift`:
 ---
 
 ## Library Overview
+
+### Joining things together (Semigroup)
+
+In Mathematics, a **Semigroup** is any type where two instances can be combined into one of the same type. Two Strings combine with `+` resulting in a single String, two arrays combine with `+` also to form a single array. In both cases, the resulting value will contain elements from the left and elements from the right, but the main idea is that `(String, String) -> String` and `(Array, Array) -> Array`. Most numbers can combine in two different ways, however, because you can sum them or multiply them, and in both cases you start with two numbers and end up with a single value of the same type. Booleans also combine with `&&` or `||`.
+
+Curiosity: lasagna is a semigroup, because putting one lasagna on top of another gives you lasagna.
+
+In this library you will find a `protocol Semigroup` which is implemented by several types like `String` and `Array`, and represent the operation of joining two into one. For numbers and Bool, continue reading the next topic.
+
+### Neutral element when joining  (Monoid)
+
+If `Semigroup` allows to combine two things together, `Monoid` extends that protocol with one extra requirement: there should be a neutral element that, when joined with any other instance of that type, keeps it unchanged (regardless of the order). That sounds much more complicated than what it is, examples for the rescue. Remember that String is a semigroup, because `"Hello" + " World" -> "Hello World"`? Now, take empty string `""`, when combine from the left (`"" + "some other string"`) or from the right (`"some other string" + ""`) keeps `"some other string"` unchanged. That means `String` is a monoid, because it's a semigroup with a neutral element. `Array` has a neutral element too, the empty array `[]`. Int and other numbers, are semigroup and monoid, but there's a problem: they have multiple implementations of monoid because you can sum two numbers (`4 + 2 -> 6`) or multiply two numbers (`4 * 2 -> 8`), and in both cases you start with two instances (4 and 2) and end up with a single instance that for sum will be 6 or for multiplication will be 8. For sum, the neutral element is 0, as summing zero to anything keeps that unchanged, while for multiplication the neutral element is 1. Now, Swift doesn't allow to implement the `protocol Monoid` twice, in two completely different ways, so instead of `extension Int: Monoid`, we make a boxing type for each instance, meaning `Int.Monoids.Sum(5)`, which is the sum instance of monoid for ints, while `Int.Monoids.Product(5)` wraps the Int in a multiplication instance of monoid. Same thing for types like `UInt`, `Float`, `CGFloat` and others, while `Bool.Monoids.And` and `Bool.Monoids.Or` will have instances of monoids for operations `&&` (with neutral element `true`) and `||` (neutral element `false`) respectively.
+
+By-the-way, neutral element is called `identity`, and can now be found in `String.identity`, `Array.identity`, `Int.Monoids.Sum.identity`, `Bool.Monoids.And.identity` and similars.
 
 ### Map (Functor)
 
