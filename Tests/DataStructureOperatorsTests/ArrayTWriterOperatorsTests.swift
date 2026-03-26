@@ -15,6 +15,15 @@ import CoreFP
         #expect(result[1].log == ["b"])
     }
 
+    @Test func flippedFmap() {
+        let arr: [Writer<[String], Int>] = [Writer(3, ["a"]), Writer(4, ["b"])]
+        let result = arr <&^> { $0 * 2 }
+        #expect(result[0].value == 6)
+        #expect(result[0].log == ["a"])
+        #expect(result[1].value == 8)
+        #expect(result[1].log == ["b"])
+    }
+
     @Test func bind() {
         let arr: [Writer<[String], Int>] = [Writer(3, ["a"]), Writer(4, ["b"])]
         let result = arr >>- { n in Writer<[String], String>("\(n)", ["inner"]) }

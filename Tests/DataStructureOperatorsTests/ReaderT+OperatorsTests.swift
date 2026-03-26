@@ -25,6 +25,18 @@ import CoreFPOperators
         #expect(noneResult(env) == nil)
     }
 
+    @Test func readerOptionalFlippedFmap() {
+        let reader = Reader<Environment, Int?> { env in env.multiplier }
+        let doubled = reader <&^> { $0 * 2 }
+
+        let env = Environment(multiplier: 5, addend: 3)
+        #expect(doubled(env) == 10)
+
+        let noneReader = Reader<Environment, Int?> { _ in nil }
+        let noneResult = noneReader <&^> { $0 * 2 }
+        #expect(noneResult(env) == nil)
+    }
+
     @Test func readerOptionalApply() {
         let readerFn = Reader<Environment, ((Int) -> Int)?> { env in
             { $0 * env.multiplier }

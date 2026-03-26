@@ -13,6 +13,13 @@ import CoreFP
         #expect(result.log == ["log"])
     }
 
+    @Test func flippedFmap() {
+        let w = Writer<[String], Stateful<Int, Int>>(Stateful { s in s }, ["log"])
+        let result = w <&^> { $0 * 2 }
+        #expect(result.value.eval(5) == 10)
+        #expect(result.log == ["log"])
+    }
+
     @Test func apply() {
         let wf = Writer<[String], Stateful<Int, (Int) -> String>>(
             Stateful { _ in { "\($0)" } },

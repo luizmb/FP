@@ -13,6 +13,13 @@ import CoreFP
         #expect(result.log == ["x"])
     }
 
+    @Test func writerFlippedFmapWithStatefulInner() {
+        let w = Writer<[String], Stateful<Int, Int>>(Stateful { s in s }, ["x"])
+        let result = w <&^> { $0 * 4 }
+        #expect(result.value.eval(3) == 12)
+        #expect(result.log == ["x"])
+    }
+
     @Test func statefulMapTWithWriterInner() {
         let s = Stateful<Int, Writer<[String], Int>> { state in Writer(state, ["y"]) }
         let result = { $0 * 2 } <£^> s

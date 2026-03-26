@@ -33,6 +33,12 @@ import Testing
         #expect(try result?.get() == 6)
     }
 
+    @Test func flippedFmapOperator() throws {
+        let opt: Result<Int, Err>? = .success(3)
+        let result = opt <&^> { $0 * 2 }
+        #expect(try result?.get() == 6)
+    }
+
     // MARK: - Applicative
 
     @Test func liftA2BothSuccess() throws {

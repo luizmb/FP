@@ -22,6 +22,22 @@ import CoreFP
         #expect(result.log == ["log"])
     }
 
+    @Test func flippedFmap() async {
+        let stream = DeferredStream<Int> { AsyncStream { c in
+            c.yield(1)
+            c.yield(2)
+            c.finish()
+        } }
+        let w = Writer<[String], DeferredStream<Int>>(stream, ["log"])
+        let result = w <&^> { $0 * 3 }
+        var values: [Int] = []
+        for await v in result.value {
+            values.append(v)
+        }
+        #expect(values == [3, 6])
+        #expect(result.log == ["log"])
+    }
+
     @Test func bind() async {
         let stream = DeferredStream<Int> { AsyncStream { c in
             c.yield(4)

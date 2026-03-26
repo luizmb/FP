@@ -22,6 +22,22 @@ import CoreFP
         #expect(values == [10, 20])
     }
 
+    @Test func flippedFmap() async {
+        let s = Stateful<Int, DeferredStream<Int>> { _ in
+            DeferredStream { AsyncStream { c in
+                c.yield(1)
+                c.yield(2)
+                c.finish()
+            } }
+        }
+        let result = s <&^> { $0 * 10 }
+        var values: [Int] = []
+        for await v in result.eval(0) {
+            values.append(v)
+        }
+        #expect(values == [10, 20])
+    }
+
     @Test func fmapTransformsSingleValue() async {
         let s = Stateful<Int, DeferredStream<Int>> { _ in
             DeferredStream { AsyncStream { c in

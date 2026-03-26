@@ -12,6 +12,12 @@ import CoreFP
         #expect(result.eval(0) == [2, 4, 6])
     }
 
+    @Test func flippedFmap() {
+        let s = Stateful<Int, [Int]>.pure([1, 2, 3])
+        let result = s <&^> { $0 * 2 }
+        #expect(result.eval(0) == [2, 4, 6])
+    }
+
     @Test func apply() {
         let sf = Stateful<Int, [(Int) -> Int]>.pure([{ $0 + 1 }, { $0 * 10 }])
         let sa = Stateful<Int, [Int]>.pure([1, 2])

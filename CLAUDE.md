@@ -4,20 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Build & Test Commands
 
-This is a Swift Package Manager project — no Xcode project file. Use `swift build` / `swift test` directly.
+This is a Swift Package Manager project — no Xcode project file. Use `swift build` / `swift test` directly. However, always pipe the result to xcsift for clean output.
 
 ```bash
 # Build all targets
-swift build
+swift build 2>&1 | xcsift
 
 # Run all tests
-swift test
+swift test 2>&1 | xcsift
 
 # Run a single test target
-swift test --target CoreFPTests
+swift test --target CoreFPTests 2>&1 | xcsift
 
 # Run a specific test by name (Swift Testing uses / as separator)
-swift test --filter "DeferredTaskTests/flatMap"
+swift test --filter "DeferredTaskTests/flatMap" 2>&1 | xcsift
 ```
 
 Test targets: `CoreFPTests`, `CoreFPOperatorsTests`, `DataStructureTests`, `DataStructureOperatorsTests`.
@@ -103,3 +103,29 @@ Every operation requires **two independent sets of tests**:
 - Both test sets must exist for every operator. Having only one of the two is a bug.
 
 **Why:** Named functions are the semantic layer and must be testable without importing any operator module. The operator tests verify only that the syntactic sugar correctly delegates — they are thin by design.
+
+
+
+
+
+
+
+
+
+
+
+# Memory Index
+
+## Feedback
+- [Build tools preference](feedback_build_tools.md) — Use `swift build` / `swift test` (not xcodebuildmcp) for this pure SPM package
+- [Code style preferences](feedback_code_style.md) — No `return` keyword (implicit returns); no column-aligned switch cases; pending task to clean up existing codebase
+- [Operator architecture rule](feedback_operator_architecture.md) — Every operator must call a named function in the core module; operators live in separate SPM targets; no custom operators inside function bodies (exception: inverted-direction operators)
+- [Operator pairs — always implement both directions](feedback_operator_pairs.md) — Every directional operator has a flipped counterpart; both must be added in the same commit; full pair table included
+- [FP naming conventions](feedback_fp_naming_conventions.md) — How to name operator-backing functions using Haskell/Scala Cats names; notes on `seqRight`/`seqLeft` vs `productR`/`productL`
+- [Existential Publisher workarounds](feedback_existential_publisher_workarounds.md) — Patterns for `any Publisher<A, E>` limitations (erase to AnyPublisher, static method dispatch, etc.)
+- [Test method naming conflicts](feedback_test_method_naming.md) — Don't name @Test funcs the same as global FP functions (mconcat, sconcat, etc.) — Swift prefers self.method over global
+- [Test target split — core vs operators](feedback_test_target_split.md) — CoreFPTests/DataStructureTests: named functions only, no operator symbols. CoreFPOperatorsTests/DataStructureOperatorsTests: operator symbols only. Both sets required.
+
+## Project
+- [SPM module organisation](project_module_organisation.md) — Two-layer architecture: core modules (named functions) vs operator modules (operator sugar); full list of targets
+- [Stateful monad naming](project_stateful_naming.md) — The State monad is named `Stateful` (not `State`) to avoid SwiftUI conflicts

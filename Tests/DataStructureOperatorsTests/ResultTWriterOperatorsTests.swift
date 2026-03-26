@@ -15,6 +15,13 @@ import CoreFP
         #expect(mapped.success?.log == ["x"])
     }
 
+    @Test func flippedFmapSuccess() {
+        let result: Result<Writer<[String], Int>, TestError> = .success(Writer(5, ["x"]))
+        let mapped = result <&^> { $0 * 2 }
+        #expect(mapped.success?.value == 10)
+        #expect(mapped.success?.log == ["x"])
+    }
+
     @Test func fmapFailure() {
         let result: Result<Writer<[String], Int>, TestError> = .failure(.failure)
         let mapped: Result<Writer<[String], Int>, TestError> = { $0 * 2 } <£^> result

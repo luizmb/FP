@@ -37,4 +37,10 @@ import CoreFP
         let mapped = { $0 * 2 } <£^> s
         #expect(mapped.eval(0).runReader(5) == 10)
     }
+
+    @Test func statefulReaderFlippedFmap() {
+        let s = Stateful<Int, Reader<Int, Int>> { _ in Reader { env in env } }
+        let mapped = s <&^> { $0 * 2 }
+        #expect(mapped.eval(0).runReader(5) == 10)
+    }
 }

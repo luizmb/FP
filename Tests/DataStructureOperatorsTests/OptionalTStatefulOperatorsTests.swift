@@ -12,6 +12,12 @@ import CoreFP
         #expect(result?.eval(5) == 10)
     }
 
+    @Test func flippedFmapSome() {
+        let opt: Stateful<Int, Int>? = .some(.get)
+        let result = opt <&^> { $0 * 2 }
+        #expect(result?.eval(5) == 10)
+    }
+
     @Test func fmapNone() {
         let opt: Stateful<Int, Int>? = nil
         let result = { $0 * 2 } <£^> opt

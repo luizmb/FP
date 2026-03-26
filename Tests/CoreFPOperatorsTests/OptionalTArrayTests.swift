@@ -30,6 +30,18 @@ import Testing
         #expect(result == nil)
     }
 
+    @Test func flippedFmapOperatorSome() {
+        let opt: [Int]? = [1, 2, 3]
+        let result = opt <&^> { $0 * 2 }
+        #expect(result == [2, 4, 6])
+    }
+
+    @Test func flippedFmapOperatorNone() {
+        let opt: [Int]? = nil
+        let result = opt <&^> { $0 * 2 }
+        #expect(result == nil)
+    }
+
     // MARK: - Applicative
 
     @Test func liftA2BothPresent() {

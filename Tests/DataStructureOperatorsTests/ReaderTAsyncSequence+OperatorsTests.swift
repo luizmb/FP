@@ -33,6 +33,27 @@ import CoreFPOperators
         #expect(results == [10, 20])
     }
 
+    @Test func functorOperatorFlippedFmap() async throws {
+        let reader = Reader<Environment, AsyncStream<Int>> { env in
+            AsyncStream { continuation in
+                continuation.yield(env.multiplier)
+                continuation.yield(env.multiplier * 2)
+                continuation.finish()
+            }
+        }
+
+        let mapped = reader <&^> { $0 * 2 }
+
+        let env = Environment(multiplier: 5)
+        var results: [Int] = []
+
+        for try await value in mapped(env) {
+            results.append(value)
+        }
+
+        #expect(results == [10, 20])
+    }
+
     // MARK: - Monad Operators
 
     @Test func monadOperatorBind() async throws {

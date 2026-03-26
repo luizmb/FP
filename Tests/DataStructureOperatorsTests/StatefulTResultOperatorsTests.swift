@@ -14,6 +14,12 @@ import CoreFP
         #expect(result.eval(0) == .success(10))
     }
 
+    @Test func flippedFmapSuccess() {
+        let s = Stateful<Int, Result<Int, TestError>>.pure(.success(5))
+        let result = s <&^> { $0 * 2 }
+        #expect(result.eval(0) == .success(10))
+    }
+
     @Test func fmapFailure() {
         let s = Stateful<Int, Result<Int, TestError>>.pure(.failure(.failure))
         let result = { $0 * 2 } <£^> s

@@ -14,6 +14,14 @@ import CoreFP
         #expect(result.log == ["log"])
     }
 
+    @Test func flippedFmap() async {
+        let w = Writer<[String], DeferredTask<Int>>(DeferredTask { 5 }, ["log"])
+        let result = w <&^> { $0 * 2 }
+        let value = await result.value.run()
+        #expect(value == 10)
+        #expect(result.log == ["log"])
+    }
+
     @Test func bind() async {
         let w = Writer<[String], DeferredTask<Int>>(DeferredTask { 3 }, ["outer"])
         let result = w >>- { n in

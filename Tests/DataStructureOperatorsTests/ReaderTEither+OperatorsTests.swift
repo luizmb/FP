@@ -23,6 +23,17 @@ import CoreFP
         #expect(mapped(env) == .right(10))
     }
 
+    @Test func functorOperatorFlippedFmap() {
+        let reader = Reader<Environment, Either<String, Int>> { env in
+            .right(env.multiplier)
+        }
+
+        let mapped = reader <&^> { $0 * 2 }
+
+        let env = Environment(multiplier: 5)
+        #expect(mapped(env) == .right(10))
+    }
+
     @Test func functorOperatorReplace() {
         let reader = Reader<Environment, Either<String, Int>> { env in
             .right(env.multiplier)

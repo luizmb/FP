@@ -12,6 +12,12 @@ import CoreFP
         #expect(result.eval(0)("env") == 10)
     }
 
+    @Test func flippedFmap() {
+        let s = Stateful<Int, Reader<String, Int>> { _ in Reader { _ in 5 } }
+        let result = s <&^> { $0 * 2 }
+        #expect(result.eval(0)("env") == 10)
+    }
+
     @Test func apply() {
         let sf = Stateful<Int, Reader<String, (Int) -> String>> { _ in Reader { _ in { "\($0)" } } }
         let sa = Stateful<Int, Reader<String, Int>> { _ in Reader { _ in 7 } }

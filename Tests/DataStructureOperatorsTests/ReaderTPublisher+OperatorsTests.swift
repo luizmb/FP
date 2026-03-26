@@ -42,6 +42,30 @@ import CoreFPOperators
         #expect(capturedValue == 10)
     }
 
+    @Test func functorOperatorFlippedFmap() {
+        guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
+        let reader = Reader<Environment, any Publisher<Int, TestError>> { env in
+            Just(env.multiplier)
+                .setFailureType(to: TestError.self)
+                .eraseToAnyPublisher()
+        }
+
+        let mapped = reader <&^> { $0 * 2 }
+
+        let env = Environment(multiplier: 5)
+        var cancellables = Set<AnyCancellable>()
+        var capturedValue: Int?
+
+        mapped(env)
+            .sink(
+                receiveCompletion: ignore,
+                receiveValue: { value in capturedValue = value }
+            )
+            .store(in: &cancellables)
+
+        #expect(capturedValue == 10)
+    }
+
     // MARK: - Applicative Operators
 
     @Test func applicativeOperatorApply() {
