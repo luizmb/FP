@@ -85,3 +85,21 @@ Every operator that has a directional sense has a **flipped counterpart**. When 
 ## Testing Conventions
 
 Tests use Swift Testing (`@Suite`, `@Test`, `#expect`). Tests verify **functor/applicative/monad laws** and all transformer combinations. When naming `@Test` functions, avoid names that collide with global FP functions (`mconcat`, `sconcat`, etc.) — Swift will prefer `self.method` and cause ambiguity errors.
+
+### Core tests vs Operator tests — MANDATORY split
+
+Every operation requires **two independent sets of tests**:
+
+| Test target | What it tests | Allowed syntax |
+|---|---|---|
+| `CoreFPTests` | Named functions in `CoreFP` | Named functions only — **no custom operator symbols** |
+| `DataStructureTests` | Named functions in `DataStructure` | Named functions only — **no custom operator symbols** |
+| `CoreFPOperatorsTests` | Operator syntax in `CoreFPOperators` | Must use the operator symbol (e.g. `<£>`, `>>-`, `>>>`) |
+| `DataStructureOperatorsTests` | Operator syntax in `DataStructureOperators` | Must use the operator symbol |
+
+**Rules:**
+- `CoreFPTests` and `DataStructureTests` must **never** contain custom operator symbols. If you catch yourself writing `value <£> f` or `a >>> b` in these targets, stop — use the named function (`map(value, f)`, `compose(a, b)`) instead.
+- `CoreFPOperatorsTests` and `DataStructureOperatorsTests` must test the operator symbol directly — not just the backing named function.
+- Both test sets must exist for every operator. Having only one of the two is a bug.
+
+**Why:** Named functions are the semantic layer and must be testable without importing any operator module. The operator tests verify only that the syntactic sugar correctly delegates — they are thin by design.
