@@ -1250,7 +1250,7 @@ unlazy(later)                                          // forces it
 
 **Boolean predicates** — curried, composable, for fully tacit style
 
-`equals`, `notEquals`, `not`, `and`, `or` all return `(A) -> Bool`, so they compose directly with key paths and `>>>` to build predicates without any closure syntax:
+`equals`, `notEquals`, `not`, `and`, `or` are overloaded for both `Bool` values and `(A) -> Bool` predicates, so they compose directly with key paths, `<<<`/`>>>`, and `flip` to build predicates without any closure syntax:
 
 ```swift
 struct User { let name: String; let age: Int; let isAdmin: Bool }
@@ -1272,8 +1272,8 @@ users.filter(or(equals("Alice") <<< \.name, equals("Bob") <<< \.name))
 // Deeply composed — fully tacit with flip to avoid any closure:
 users.filter(and(not(\.isAdmin), flip(>=)(18) <<< \.age))
 
-// All even positives — combine on a single Int field:
-[0, 1, 2, -1, 4].filter(and(equals(0) <<< { $0 % 2 }, { $0 > 0 }))   // [2, 4]
+// All even positives — fully tacit:
+[0, 1, 2, -1, 4].filter(and(equals(0) <<< flip(%)(2), flip(>)(0)))   // [2, 4]
 ```
 
 ---

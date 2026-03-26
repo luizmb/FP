@@ -88,6 +88,23 @@ import Testing
         #expect(result.count == 2)
     }
 
+    // MARK: - flip-based tacit predicates (mirrors README examples)
+
+    @Test func flipBasedAgeFilter() {
+        // flip(>=)(18) is (Int) -> Bool equivalent to { $0 >= 18 }
+        let users = [alice, bob]
+        let result = users.filter(and(not(\.isAdmin), compose(\User.age, flip(>=)(18))))
+        #expect(result.map(\.name) == ["Alice"])
+    }
+
+    @Test func flipBasedEvenPositives() {
+        // mirrors: [0,1,2,-1,4].filter(and(equals(0) <<< flip(%)(2), flip(>)(0)))
+        let isEven = compose(flip(%)(2) as (Int) -> Int, equals(0))
+        let isPositive: (Int) -> Bool = flip(>)(0)
+        let result = [0, 1, 2, -1, 4].filter(and(isEven, isPositive))
+        #expect(result == [2, 4])
+    }
+
     // MARK: - and / or (Bool value — original overloads untouched)
 
     @Test func andBool() {
