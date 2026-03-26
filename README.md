@@ -4,6 +4,53 @@ FP is a Swift library that brings functional programming patterns to your codeba
 
 The library draws from Haskell and Scala Cats conventions and is designed to be used incrementally: start with just the core extensions and adopt more as your comfort grows.
 
+## Contents
+
+- [Learning Resources](#learning-resources)
+- [Installation](#installation)
+  - [Modules](#modules)
+    - [`CoreFP` — the foundation](#corefp--the-foundation)
+    - [`CoreFPOperators` — expressive operator sugar](#corefpoperators--expressive-operator-sugar-optional)
+    - [`DataStructure` — additional functional data structures](#datastructure--additional-functional-data-structures-optional)
+    - [`DataStructureOperators` — operators for data structures](#datastructureoperators--operators-for-data-structures-optional)
+  - [Choosing what to import](#choosing-what-to-import)
+- [Library Overview](#library-overview)
+  - [Joining things together (Semigroup)](#joining-things-together-semigroup)
+    - [Semigroup operator](#semigroup-operator-optional-requires-corefpoperators)
+  - [Neutral element when joining (Monoid)](#neutral-element-when-joining-monoid)
+  - [Map (Functor)](#map-functor)
+    - [Bifunctor](#bifunctor)
+    - [Covariance, contravariance, and contramap](#covariance-contravariance-and-contramap)
+    - [Profunctor and dimap](#profunctor-and-dimap)
+    - [Functor operators](#functor-operators-optional-requires-corefpoperators)
+  - [Zip / Apply (Applicative)](#zip--apply-applicative)
+    - [Applicative operators](#applicative-operators-optional-requires-corefpoperators)
+  - [FlatMap (Monad)](#flatmap-monad)
+    - [Monad operators](#monad-operators-optional-requires-corefpoperators)
+  - [Fold (Foldable)](#fold-foldable)
+  - [Traverse (Traversable)](#traverse-traversable)
+  - [Alternative (Choice)](#alternative-choice)
+  - [Comonad (Extend)](#comonad-extend)
+    - [Comonad operators](#comonad-operators-optional-requires-datastructureoperators)
+  - [Functional Getter / Setter for Structs (Lens)](#functional-getter--setter-for-structs-lens)
+    - [Lens operators](#lens-operators-optional-requires-corefpoperators)
+  - [Functional Getter / Setter for Enums (Prism)](#functional-getter--setter-for-enums-prism)
+    - [Prism operators](#prism-operators-optional-requires-corefpoperators)
+  - [Assembling Optics (AffineTraversal)](#assembling-optics-affinetraversal)
+  - [Bidirectional Conversions (Iso)](#bidirectional-conversions-iso)
+    - [Iso operators](#iso-operators-optional-requires-corefpoperators)
+  - [Composing Transformations (Endo)](#composing-transformations-endo)
+  - [SumType2 — Shared Interface for Two-Case Types](#sumtype2--shared-interface-for-two-case-types)
+  - [Utilities](#utilities)
+  - [Operator Reference](#operator-reference)
+  - [Types](#types)
+    - [CoreFP](#corefp)
+    - [DataStructure](#datastructure)
+- [Contributing](#contributing)
+- [Testing](#testing)
+- [Platform Support](#platform-support)
+- [License](#license)
+
 ## Learning Resources
 
 New to functional programming? These are some of the best starting points:
@@ -239,28 +286,37 @@ When you `map` over a container, the output type changes "in the same direction"
 
 But some type parameters vary in the *opposite* direction, and those are called **contravariant**. The clearest example is a function's input. If you have a function `(String) -> Bool` (say, a validator), you can adapt it to also accept `Int` by first converting `Int → String`. You're not mapping the output — you're pre-processing the input. That "pre-processing the input" operation is called `contramap`.
 
-This library makes the concept concrete via the `Reader` type (a wrapper around `(Environment) -> Output`):
+This library makes the concept concrete via the `Reader` type (a wrapper around `(Environment) -> Output`). In a dependency injection context, `contramapEnvironment` lets a component that needs a specific sub-dependency be adapted to accept the whole root environment:
 
 ```swift
-let validate: Reader<String, Bool> = Reader { $0.count > 3 }
+struct Dependencies {
+    var urlRequester: URLRequester
+    var jsonParser: JSONParser
+    var dateNow: DateNow
+    var dispatchQueueMain: DispatchQueueMain
+}
 
-// contramapEnvironment adapts the input type
-let validateInt: Reader<Int, Bool> = validate.contramapEnvironment { String($0) }
+// A reader scoped to just the URLRequester sub-dependency
+let fetchItems: Reader<URLRequester, [Item]> = Reader { $0.get("/items") }
+
+// contramapEnvironment zooms out: adapt it to accept the full Dependencies root
+let fetchItemsFromRoot: Reader<Dependencies, [Item]> = fetchItems.contramapEnvironment(\.urlRequester)
 ```
 
 #### Profunctor and dimap
 
 A **Profunctor** is a type that is covariant in one parameter and contravariant in another. Plain functions are the textbook example: `(A) -> B` can be mapped on the output (covariant in `B`) and contramapped on the input (contravariant in `A`). That makes functions profunctors.
 
-`dimap` does both in one call:
+`dimap` does both in one call — narrowing the environment and transforming the output in a single expression:
 
 ```swift
-let validate: Reader<String, Bool> = Reader { $0.count > 3 }
+// A reader scoped to just the URLRequester
+let checkReachability: Reader<URLRequester, Bool> = Reader { $0.isReachable }
 
-// adapt both the input and the output at once
-let validateAndDescribe: Reader<Int, String> = validate.dimap(
-    { String($0) },      // Int → String (input adapter)
-    { $0 ? "ok" : "too short" }  // Bool → String (output adapter)
+// Narrow the input from Dependencies to URLRequester, and describe the Bool result as a String
+let serviceStatus: Reader<Dependencies, String> = checkReachability.dimap(
+    \.urlRequester,                               // Dependencies → URLRequester (narrow the environment)
+    { $0 ? "service online" : "service offline" } // Bool → String (describe the result)
 )
 ```
 
@@ -603,116 +659,6 @@ Writer(21, ["x"]) ->> { $0.value * 2 }   // Writer(42, ["x"])
 
 ---
 
-### Utilities
-
-**Function composition** — `>>>` and `<<<`
-
-```swift
-let trim:       (String) -> String = { $0.trimmingCharacters(in: .whitespaces) }
-let uppercased: (String) -> String = { $0.uppercased() }
-let exclaim:    (String) -> String = { $0 + "!" }
-
-let shout = trim >>> uppercased >>> exclaim   // left-to-right
-shout("  hello  ")   // "HELLO!"
-
-let shout2 = exclaim <<< uppercased <<< trim  // right-to-left, equivalent
-shout2("  hello  ")  // "HELLO!"
-```
-
-**Function application** — `£` / `<|` and `|>`
-
-```swift
-uppercased £ "hello"                   // "HELLO"  — fn left
-uppercased <| "hello"                  // "HELLO"  — fn left (ASCII alternative)
-"hello" |> uppercased                  // "HELLO"  — value left (pipe)
-"  hello  " |> trim |> exclaim        // "hello!" — pipeline
-```
-
-**Core building blocks**
-
-```swift
-id("hello")                                       // "hello" — identity
-const(42)("anything")                             // 42      — ignore second argument
-flip(-)( 3, 10)                                   // 7       — swap argument order
-curry { $0 + $1 }(1)(2)                           // 3       — (A, B) -> C into A -> B -> C
-uncurry { a in { b in a + b } }((1, 2))           // 3       — inverse of curry
-partialApply({ a, b in a + b }, 10)(5)            // 15      — fix first argument
-withArg("hello")(uppercased)                      // "HELLO" — argument-first application
-```
-
-**fanout** — apply multiple functions to the same input, collect results into a tuple:
-
-```swift
-let (upper, count, first) = fanout(uppercased, \.count, \.first)("hello")
-// ("HELLO", 5, Optional("h"))
-```
-
-**join and void** — flatten nested containers or discard values:
-
-```swift
-join([[1, 2], [3, 4]])               // [1, 2, 3, 4] — [[A]] → [A]
-join(Optional(Optional(42)))         // Optional(42)  — A?? → A?
-join(Result<Result<Int,E>,E>.success(.success(42)))  // .success(42)
-
-void([1, 2, 3])                      // [(), (), ()]  — discard values, keep structure
-void(Optional(42))                   // Optional(())
-```
-
-**Tuple utilities**
-
-```swift
-mapTuple2(uppercased)("hello", "world")     // ("HELLO", "WORLD")
-mapTuple3({ $0 * 2 })(1, 2, 3)            // (2, 4, 6)
-tuple(1, "hello")                           // (1, "hello")
-untuple { $0 + $1 }((1, 2))               // 3  — tuple-argument → two-argument
-```
-
-**Type casting** — curried, for pipelines:
-
-```swift
-// cast — guaranteed cast (value must already be that type, no crash)
-cast(String.self)("hello")         // "hello"
-
-// castOptionally — safe cast, returns nil on mismatch
-castOptionally(Int.self)("hello")  // nil
-castOptionally(Int.self)(42)       // Optional(42)
-```
-
-**lazy / unlazy** — defer and force evaluation:
-
-```swift
-let later: () -> Int = lazy(expensiveComputation())  // not evaluated yet
-unlazy(later)                                         // forces it
-```
-
-**Boolean predicates** — curried, for point-free composition:
-
-```swift
-[1, 2, 3, 2].filter(equals(2))       // [2, 2]
-[1, 2, 3, 2].filter(notEquals(2))    // [1, 3]
-[1, 2, 3, 4].filter(not { $0 % 2 == 0 })  // [1, 3]
-[0, 1, 2, -1].filter(and({ $0 % 2 == 0 }, { $0 > 0 }))  // [2]
-[0, 1, 2, -1].filter(or({ $0 == 0 }, { $0 > 1 }))        // [0, 2]
-```
-
-**`Mutable`** — builder-pattern copy for value types:
-
-```swift
-struct Config: Mutable { var host: String; var port: Int }
-
-let base = Config(host: "localhost", port: 8080)
-let dev  = base.mutate { $0.port = 3000 }     // Config(host: "localhost", port: 3000)
-```
-
-**`ignore` / `absurd`** — structural helpers:
-
-```swift
-[1, 2, 3].map(ignore)   // [(), (), ()]
-// absurd(n) — eliminate the Never type in impossible branches
-```
-
----
-
 ### Functional Getter / Setter for Structs (Lens)
 
 Swift value types are immutable-by-default, which is great until you need to update a field several levels deep. The naïve approach requires unpacking the whole hierarchy:
@@ -764,7 +710,7 @@ userCityLens.get(user)              // "New York"
 userCityLens.set(user, "London")    // User(address: Address(city: "London"), name: "Alice")
 ```
 
-Composing a `Lens` with a `Prism` yields an `AffineTraversal` — a focus that may or may not be present, depending on which enum case is active (see the next section).
+Lenses also compose with Prisms — see [Assembling Optics (AffineTraversal)](#assembling-optics-affinetraversal) for the full story.
 
 #### Lens operators _(optional, requires CoreFPOperators)_
 
@@ -850,28 +796,7 @@ extension Shape {
 let circlePrism: Prism<Shape, Double> = prism(\.circleRadius, review: Shape.circle)
 ```
 
-**Composing Prisms with Lenses**
-
-Prisms compose with other prisms, and with lenses. Composing a `Prism` with a `Lens` gives an `AffineTraversal` — an optic that *may or may not* have a focus depending on which case is active:
-
-```swift
-enum App { case loggedIn(User); case guest }
-struct User { var address: Address }
-struct Address { var city: String }
-
-let loggedInPrism: Prism<App, User> = prism(
-    preview: { if case .loggedIn(let u) = $0 { return u } else { return nil } },
-    review:  App.loggedIn
-)
-
-let userCityTraversal = loggedInPrism >>> ^\User.address >>> ^\Address.city
-// AffineTraversal<App, String>
-
-userCityTraversal.preview(.loggedIn(User(address: Address(city: "Paris"))))  // Optional("Paris")
-userCityTraversal.preview(.guest)  // nil
-```
-
-An `AffineTraversal` has `preview` for optional extraction, `set` for conditional update (leaves the value unchanged if the focus is absent), and `over` for conditional transformation.
+Prisms compose with other prisms and with lenses — see [Assembling Optics (AffineTraversal)](#assembling-optics-affinetraversal) for the full story.
 
 #### Prism operators _(optional, requires CoreFPOperators)_
 
@@ -1059,6 +984,41 @@ See [Binding](docs/types/Binding.md) for the full bridge API.
 
 ---
 
+### Composing Transformations (Endo)
+
+`Endo<A>` wraps an endomorphism — a function `(A) -> A` — and gives it a `Monoid` instance under left-to-right composition. The identity element is the do-nothing function.
+
+```swift
+let trim    = Endo<String> { $0.trimmingCharacters(in: .whitespaces) }
+let lower   = Endo<String> { $0.lowercased() }
+let exclaim = Endo<String> { $0 + "!" }
+
+let normalize: Endo<String> = mconcat([trim, lower, exclaim])
+normalize.runEndo("  HELLO  ")   // "hello!"
+normalize("  HELLO  ")           // "hello!" — callAsFunction works too
+```
+
+`Endo.combine(f, g)` applies `f` first, then `g` — the same left-to-right order as `>>>`. The `<>` operator and `mconcat` follow from the `Semigroup`/`Monoid` conformances:
+
+```swift
+let pipeline = trim <> lower <> exclaim   // same as mconcat([trim, lower, exclaim])
+pipeline("  HELLO  ")   // "hello!"
+```
+
+**`Endo` vs `Iso<A, A>`**
+
+Both are endomorphisms and both form a `Monoid` under composition, but they differ in one key way:
+
+| | `Endo<A>` | `Iso<A, A>` |
+|---|---|---|
+| Stores | `(A) -> A` | `(A) -> A` + inverse `(A) -> A` |
+| Reversible | no | yes — `.reverse` gives the undo |
+| Use when | trimming, clamping, normalizing | rotating, scaling, unit conversion |
+
+You can always extract an `Endo` from an `Iso<A, A>` via `.get`, but not vice versa — invertibility requires both directions up front.
+
+---
+
 ### SumType2 — Shared Interface for Two-Case Types
 
 `Either`, `Result`, and similar two-case types all conform to the `SumType2<A, B>` protocol, which gives them a uniform interface without duplicating `switch` statements everywhere.
@@ -1083,6 +1043,265 @@ let r = Result<Int, String>.from(Either<String, Int>.right(42))  // .success(42)
 ```
 
 The protocol defines three requirements — `left(_:)`, `right(_:)`, `match(caseLeft:caseRight:)`, and `from(_:)` — and provides `.a`, `.b`, `.isA`, `.isB` as extensions. Use `SumType2` in your own generic functions to work over `Either`, `Result`, and any custom two-case type simultaneously.
+
+---
+
+### Utilities
+
+**Function composition** — `>>>` and `<<<`
+
+`>>>` chains functions left-to-right; `<<<` chains right-to-left. Both produce a single function from the chain:
+
+```swift
+let trim:       (String) -> String = { $0.trimmingCharacters(in: .whitespaces) }
+let uppercased: (String) -> String = { $0.uppercased() }
+let exclaim:    (String) -> String = { $0 + "!" }
+
+let shout  = trim >>> uppercased >>> exclaim   // left-to-right
+let shout2 = exclaim <<< uppercased <<< trim   // right-to-left — equivalent
+
+shout("  hello  ")    // "HELLO!"
+shout2("  hello  ")   // "HELLO!"
+```
+
+Key paths are also composable — useful when building point-free transformations over nested types:
+
+```swift
+struct Company { var ceo: Person }
+struct Person  { var name: String }
+
+let ceoName: (Company) -> String = \.ceo >>> \.name
+companies.map(ceoName)   // [String]
+```
+
+---
+
+**Function application** — `£` / `<|` and `|>`
+
+`£` and `<|` both apply a function to a value with the function on the left. They use the same precedence group — lower than every other operator — so they eliminate wrapping parentheses. Both are right-associative, so chains nest naturally:
+
+```swift
+uppercased £ trim £ "  hello  "   // "HELLO" — evaluated right-to-left: trim first, then uppercased
+```
+
+The practical difference is in readability and conflict risk: `£` is a single Unicode character that never clashes with any other Swift operator. `<|` is ASCII, but the `<` and `|` characters appear in comparison and bitwise-OR operators, so it can cause parse ambiguity when placed directly adjacent to expressions involving `<` or `|`. Prefer `£` inside complex expressions; use `<|` where clarity is sufficient.
+
+`|>` is the value-left flip — left-associative at the same level — ideal for pipelines:
+
+```swift
+"  hello  "
+    |> trim
+    |> uppercased
+    |> exclaim   // "HELLO!"
+```
+
+---
+
+**`id`** — identity function
+
+`id` returns its argument unchanged. It replaces `{ $0 }` or `\.self` in any position that expects a function, enabling point-free style:
+
+```swift
+id("hello")   // "hello"
+
+// Use instead of { $0 } in map/flatMap/filter:
+[Optional(1), nil, Optional(3)].compactMap(id)   // [1, 3]
+["a", "b", "c"].map(id)                          // ["a", "b", "c"] — no-op map
+
+// Use as a default closure parameter:
+func process(_ transform: (String) -> String = id) -> String { ... }
+
+// Use in Optional.fold to pass values through the some branch unchanged:
+optional.fold(onNone: "", onSome: id)
+```
+
+---
+
+**`const`** — ignore arguments, return a fixed value
+
+`const` produces a function that ignores all its arguments and returns a single value. It works for any number of ignored arguments thanks to parameter packs — no overloads needed:
+
+```swift
+// Single-argument: replaces { _ in 42 }
+[1, 2, 3].map(const(42))                     // [42, 42, 42]
+Optional("hello").map(const(true))            // Optional(true)
+
+// Multi-argument: replaces { _, _ in "fixed" } or { _, _, _, _ in "fixed" }
+let alwaysZero: (Int, String, Bool) -> Int = const(0)
+alwaysZero(99, "ignored", true)              // 0
+
+// Combine with map to replace contents:
+results.map(const(.success(())))             // all successes, structure preserved
+```
+
+---
+
+**`flip`, `curry`, `uncurry`, `partialApply`**
+
+```swift
+// flip — swap the two arguments of a binary function
+flip(-)( 3, 10)           // 7    — equivalent to 10 - 3
+[1, 2, 3].reduce(0, flip(+))  // sum, argument order doesn't matter for +
+
+// curry — (A, B) -> C  into  A -> B -> C
+let add = curry { (a: Int, b: Int) in a + b }
+let addFive = add(5)       // (Int) -> Int
+addFive(3)                 // 8
+
+// uncurry — A -> B -> C  into  (A, B) -> C
+let addUncurried = uncurry(add)
+addUncurried(3, 4)         // 7
+
+// partialApply — fix the first argument
+let triple = partialApply({ a, b in a * b }, 3)
+triple(7)                  // 21
+```
+
+---
+
+**`withArg`** — select which argument to operate on in a multi-argument context
+
+`withArg` takes a key path that picks one value from a tuple of arguments, then lets you plug a single-argument function into that position. This is useful when adapting a unary function into a binary or ternary context without a closure:
+
+```swift
+// Adapting a (String) -> Bool into (Int, String) -> Bool
+// by selecting the second argument:
+let isLongName: (Int, String) -> Bool = withArg(\.1)(\.count >>> { $0 > 5 })
+isLongName(42, "Alexander")   // true
+isLongName(42, "Ali")         // false
+
+// Selecting the first argument explicitly:
+let doubleFirst: (Int, String) -> Int = withArg(\.0)({ $0 * 2 })
+doubleFirst(21, "ignored")    // 42
+```
+
+---
+
+**`fanout`** — apply several functions to the same input
+
+```swift
+// All functions receive the same value; results are collected into a tuple:
+let describe = fanout(\.count, \.first, uppercased)
+let (count, first, upper) = describe("hello")
+// (5, Optional("h"), "HELLO")
+
+// Useful for building a summary from a single pass:
+users.map(fanout(\.name, \.age, \.isAdmin))
+// [(String, Int, Bool)]
+```
+
+---
+
+**`join` and `void`**
+
+`join` flattens one layer of nesting; `void` discards the contained values while keeping the container shape:
+
+```swift
+// join — one layer in, same container out
+join([[1, 2], [3, 4]])                                      // [1, 2, 3, 4]
+join(Optional(Optional(42)))                                // Optional(42)
+join(Result<Result<Int, E>, E>.success(.success(42)))       // .success(42)
+
+// void — like map(ignore); keeps structure, discards values
+void([1, 2, 3])          // [(), (), ()]
+void(Optional(42))       // Optional(())
+void(Result<Int,E>.success(99))   // .success(())
+```
+
+`void` differs from `ignore`: `ignore` is `(A) -> Void` (discards a single value entirely), while `void` is `Container<A> -> Container<Void>` (maps every element to `()`). Use `ignore` when you want to drop a value; use `void` when you want to strip the values from a container but keep its structure.
+
+---
+
+**Tuple utilities**
+
+```swift
+mapTuple2(uppercased)("hello", "world")    // ("HELLO", "WORLD")
+mapTuple3({ $0 * 2 })(1, 2, 3)           // (2, 4, 6)
+tuple(1, "hello")                          // (1, "hello")
+untuple { a, b in a + b }((3, 4))        // 7 — (A, B) argument → two separate arguments
+```
+
+---
+
+**Type casting** — curried, for pipelines
+
+```swift
+// cast — identity cast; value must already be the target type (no crash)
+cast(String.self)("hello")         // "hello"
+
+// castOptionally — safe conditional cast; nil on mismatch
+castOptionally(Int.self)("hello")  // nil
+castOptionally(Int.self)(42)       // Optional(42)
+
+// In a pipeline:
+items.compactMap(castOptionally(URL.self))   // [URL] — only URLs survive
+```
+
+---
+
+**`lazy` / `unlazy`** — defer and force evaluation
+
+```swift
+let later: () -> Int = lazy(expensiveComputation())   // not evaluated yet
+unlazy(later)                                          // forces it
+```
+
+---
+
+**Boolean predicates** — curried, composable, for fully tacit style
+
+`equals`, `notEquals`, `not`, `and`, `or` all return `(A) -> Bool`, so they compose directly with key paths and `>>>` to build predicates without any closure syntax:
+
+```swift
+struct User { let name: String; let age: Int; let isAdmin: Bool }
+
+// equals / notEquals — match on a value
+users.filter(equals("Alice") <<< \.name)       // only "Alice"
+users.filter(notEquals("Alice") <<< \.name)    // everyone else
+
+// not — negate any predicate
+users.filter(not(\.isAdmin))                   // non-admins only
+
+// and / or — combine predicates
+users.filter(and(equals("Alice") <<< \.name, \.isAdmin))
+// Alices who are also admins
+
+users.filter(or(equals("Alice") <<< \.name, equals("Bob") <<< \.name))
+// Alices or Bobs
+
+// Deeply composed — fully tacit, no { } at all:
+users.filter(and(not(\.isAdmin), { $0.age >= 18 } <<< \.age))
+
+// All even positives — combine on a single Int field:
+[0, 1, 2, -1, 4].filter(and(equals(0) <<< { $0 % 2 }, { $0 > 0 }))   // [2, 4]
+```
+
+---
+
+**`Mutable`** — builder-pattern copy for value types
+
+```swift
+struct Config: Mutable { var host: String; var port: Int }
+
+let base = Config(host: "localhost", port: 8080)
+let dev  = base.mutate { $0.port = 3000 }     // Config(host: "localhost", port: 3000)
+let prod = base.mutate { $0.host = "prod.example.com" }
+```
+
+---
+
+**`ignore` / `absurd`** — structural helpers
+
+```swift
+// ignore — discard a value and return ()
+[1, 2, 3].map(ignore)         // [(), (), ()]
+tasks.forEach(ignore)          // run side effects, discard results
+
+// absurd — exhaustively eliminate the Never type in impossible branches
+func handle<A>(_ result: Either<Never, A>) -> A {
+    result.match(caseLeft: absurd, caseRight: id)
+}
+```
 
 ---
 
