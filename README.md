@@ -1269,8 +1269,8 @@ users.filter(and(equals("Alice") <<< \.name, \.isAdmin))
 users.filter(or(equals("Alice") <<< \.name, equals("Bob") <<< \.name))
 // Alices or Bobs
 
-// Deeply composed — fully tacit, no { } at all:
-users.filter(and(not(\.isAdmin), { $0.age >= 18 } <<< \.age))
+// Deeply composed — fully tacit with flip to avoid any closure:
+users.filter(and(not(\.isAdmin), flip(>=)(18) <<< \.age))
 
 // All even positives — combine on a single Int field:
 [0, 1, 2, -1, 4].filter(and(equals(0) <<< { $0 % 2 }, { $0 > 0 }))   // [2, 4]
