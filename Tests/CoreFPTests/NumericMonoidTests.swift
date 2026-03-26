@@ -17,9 +17,9 @@ import Testing
     }
 
     @Test func sumMconcat() {
-        let values = [1, 2, 3, 4, 5].map(Int.Monoids.Sum.init)
-        let total = mconcat(values)
-        let empty = mconcat([Int.Monoids.Sum]())
+        let values = [1, 2, 3, 4, 5].map { Int.Monoids.Sum($0) }
+        let total: Int.Monoids.Sum = mconcat(values)
+        let empty: Int.Monoids.Sum = mconcat([])
         #expect(total.rawValue == 15)
         #expect(empty.rawValue == 0)
     }
@@ -38,9 +38,9 @@ import Testing
     }
 
     @Test func productMconcat() {
-        let values = [1, 2, 3, 4, 5].map(Int.Monoids.Product.init)
-        let product = mconcat(values)
-        let empty = mconcat([Int.Monoids.Product]())
+        let values = [1, 2, 3, 4, 5].map { Int.Monoids.Product($0) }
+        let product: Int.Monoids.Product = mconcat(values)
+        let empty: Int.Monoids.Product = mconcat([])
         #expect(product.rawValue == 120)
         #expect(empty.rawValue == 1)
     }

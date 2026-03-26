@@ -795,6 +795,19 @@ let cityFirst = ^\User.address >>> ^\Address.city
 let cityFirst2 = ^\Address.city <<< ^\User.address
 ```
 
+**Bridging to SwiftUI `Binding`** _(Apple platforms, requires CoreFP)_
+
+A `Binding<Root>` combined with a `Lens<Root, Focus>` produces a `Binding<Focus>`:
+
+```swift
+@State var user = User(name: "Alice", age: 30)
+let nameLens: Lens<User, String> = lens(\.name)
+
+TextField("Name", text: $user[optic: nameLens])
+```
+
+See [Binding](docs/types/Binding.md) for the full bridge API.
+
 ---
 
 ### Functional Getter / Setter for Enums (Prism)
@@ -871,6 +884,20 @@ let deepCasePrism = outerPrism >>> innerPrism
 // Prism >>> Lens → AffineTraversal
 let cityInLoggedInUser = loggedInPrism >>> ^\User.address >>> ^\Address.city
 ```
+
+**Bridging to SwiftUI `Binding`** _(Apple platforms, requires CoreFP)_
+
+`Binding[optic: prism]` returns `Binding<A>?` — `nil` when the focused case is inactive:
+
+```swift
+@State var sheet: Sheet = .settings(Settings())
+
+if let settingsBinding = $sheet[optic: settingsPrism] {
+    SettingsView(settings: settingsBinding)
+}
+```
+
+See [Binding](docs/types/Binding.md) for the full bridge API.
 
 ---
 
@@ -949,6 +976,87 @@ let radiusTraversal = loggedInPrism >>> lens(\.avatar) >>> circlePrism
 let radiusTraversal2 = circlePrism <<< lens(\.avatar) <<< loggedInPrism
 ```
 
+**Bridging to SwiftUI `Binding`** _(Apple platforms, requires CoreFP)_
+
+`Binding[optic: affineTraversal]` returns `Binding<A>?` — `nil` when the focus is absent:
+
+```swift
+@State var app: App = .loggedIn(User(...))
+
+if let cityBinding = $app[optic: loggedInPrism >>> ^\User.address >>> ^\Address.city] {
+    TextField("City", text: cityBinding)
+}
+```
+
+See [Binding](docs/types/Binding.md) for the full bridge API.
+
+---
+
+### Bidirectional Conversions (Iso)
+
+An `Iso<S, A>` is a pair of total, invertible functions: `get: (S) -> A` and `reverseGet: (A) -> S`. Unlike a `Lens`, there is no notion of "focusing on a part" — the whole structure converts losslessly in both directions.
+
+```swift
+let metersToFeet = iso(get: { $0 * 3.28084 }, reverseGet: { $0 / 3.28084 })  // Iso<Double, Double>
+
+metersToFeet.get(1.0)          // 3.28084
+metersToFeet.reverseGet(3.28084) // 1.0
+metersToFeet.reverse           // Iso<Double, Double> with get/reverseGet swapped
+```
+
+`over` applies a transform through the round-trip:
+
+```swift
+metersToFeet.over { $0 + 10 }(1.0)  // convert to feet, add 10, convert back
+```
+
+Every `Iso` is also a valid `Lens`, `Prism`, and `AffineTraversal` — use `.asLens`, `.asPrism`, or `.asAffineTraversal` to downcast when needed.
+
+**Iso as Monoid** — endomorphism isos (`Iso<A, A>`) form a `Monoid` under composition. Use `mconcat` to chain a sequence of lossless transforms into one:
+
+```swift
+let rotate    = iso(get: rotatePoint,    reverseGet: rotatePointBack)
+let scale     = iso(get: scalePoint,     reverseGet: scalePointBack)
+let translate = iso(get: translatePoint, reverseGet: translatePointBack)
+
+let transform: Iso<Point, Point> = mconcat([rotate, scale, translate])
+transform.get(point)        // all three applied in order
+transform.reverse.get(point) // all three reversed, in reverse order
+```
+
+#### Iso operators _(optional, requires CoreFPOperators)_
+
+`>>>` and `<<<` compose an `Iso` with any other optic, returning the strongest optic the combination allows:
+
+| Composition | Result |
+|-------------|--------|
+| `Iso >>> Iso` | `Iso` |
+| `Iso >>> Lens` / `Lens >>> Iso` | `Lens` |
+| `Iso >>> Prism` / `Prism >>> Iso` | `Prism` |
+| `Iso >>> AffineTraversal` / `AffineTraversal >>> Iso` | `AffineTraversal` |
+
+```swift
+let addOne = iso(get: { $0 + 1 }, reverseGet: { $0 - 1 })
+let timesTwo = iso(get: { $0 * 2 }, reverseGet: { $0 / 2 })
+
+let combined = addOne >>> timesTwo  // Iso<Int, Int>
+combined.get(5)          // (5+1)*2 = 12
+combined.reverseGet(12)  // 12/2 - 1 = 5
+```
+
+**Bridging to SwiftUI `Binding`** _(Apple platforms, requires CoreFP)_
+
+`Binding[optic: iso]` always returns a `Binding<A>` (never optional — Iso is total):
+
+```swift
+@State var meters: Double = 1.0
+
+// Editing in feet while storing in meters:
+TextField("Feet", value: $meters[optic: metersToFeet], format: .number)
+```
+
+See [Binding](docs/types/Binding.md) for the full bridge API.
+
 ---
 
 ### SumType2 — Shared Interface for Two-Case Types
@@ -992,7 +1100,7 @@ All operators require `CoreFPOperators` (for built-in types) or `DataStructureOp
 | `>>-` | `-<<` | Monadic bind — container left / fn left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Writer` |
 | `->>` | `<<-` | Comonad extend — container left / fn left | `Writer` |
 | `>=>` | `<=<` | Kleisli composition — left-to-right / right-to-left | `Optional`, `Array`, `Result`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Writer` |
-| `>>>` | `<<<` | Function / optics composition — left-to-right / right-to-left | Functions, `Lens`, `Prism`, `AffineTraversal` |
+| `>>>` | `<<<` | Function / optics composition — left-to-right / right-to-left | Functions, `Iso`, `Lens`, `Prism`, `AffineTraversal` |
 | `£` / `<\|` | `\|>` | Function application — fn left / value left | Any function |
 | `<\|>` | — | Alternative / choice | `Optional`, `Array`, `Result`, `Publisher`, `DeferredTask`, `DeferredStream` |
 | `<>` | — | Semigroup append | `String`, `Array`, `Optional`, `Dictionary`, `Set`, `Result`, `Int.Monoids.*`, `Bool.Monoids.*`, … |
@@ -1019,6 +1127,7 @@ Each type in this library has a dedicated reference page with comprehensive exam
 | [AsyncSequence](docs/types/AsyncSequence.md) | Swift's `AsyncSequence`, extended with functional operations |
 | [DeferredTask](docs/types/DeferredTask.md) | Lazy async computation — nothing runs until `.run()` is called |
 | [DeferredStream](docs/types/DeferredStream.md) | Lazy async stream — nothing starts until first iteration |
+| [Binding](docs/types/Binding.md) | SwiftUI's `Binding`, extended with `[optic:]` subscripts for `Lens`, `Iso`, `Prism`, and `AffineTraversal` _(Apple platforms only)_ |
 
 #### DataStructure
 
