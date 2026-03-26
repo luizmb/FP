@@ -228,18 +228,11 @@ infix operator <£^>: FunctorOps
 /// so Swift resolves the overload from the container type directly.
 infix operator <&^>: MonadBindLeft
 
-/// Raised to the power of ^^ - infixr 8
-/// ```swift
-/// 2 ^ 3
-/// 8
-///
-/// 3 ^ 2
-/// 9
-///
-/// 5 ^ 3
-/// 125
-/// ```
-infix operator ^: PowerPrecedence
+// `^` is already declared by the Swift standard library as `infix operator ^: BitwiseXorPrecedence`.
+// Re-declaring it with a different precedence group would cause an "ambiguous operator declarations"
+// error, so we intentionally omit the declaration here and provide only the function overloads
+// in NumericOperators.swift. For BinaryFloatingPoint types (where XOR doesn't exist) the power
+// semantics are unambiguous.
 
 /// Lift operator
 /// - keypaths to functions

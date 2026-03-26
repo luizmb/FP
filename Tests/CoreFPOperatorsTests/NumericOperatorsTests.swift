@@ -1,4 +1,5 @@
 import Testing
+@testable import CoreFP
 @testable import CoreFPOperators
 
 @Suite struct NumericOperatorsTests {
@@ -98,5 +99,38 @@ import Testing
         let viaOperator: Bool = statusCode ≅ range
         let viaContains = range.contains(statusCode)
         #expect(viaOperator == viaContains)
+    }
+
+    // MARK: - Power
+    // ^ is limited to BinaryFloatingPoint to avoid conflict with Swift's built-in
+    // XOR operator on BinaryInteger types. Use power(_:_:) for integers.
+
+    @Test func powerFloatOperator() {
+        let a: Double = 2.0 ^ 10
+        let b: Double = 3.0 ^ 3
+        let c: Double = 5.0 ^ 0
+        let d: Double = 7.0 ^ 1
+        #expect(a == 1024.0)
+        #expect(b == 27.0)
+        #expect(c == 1.0)
+        #expect(d == 7.0)
+    }
+
+    @Test func powerOperatorMatchesNamedFunction() {
+        let r1: Double = 2.0 ^ 8
+        let r2: Double = 3.0 ^ 4
+        #expect(r1 == power(2.0, 8))
+        #expect(r2 == power(3.0, 4))
+    }
+
+    @Test func plusMinusMatchesNamedFunction() {
+        #expect((5 ± 2) == symmetricRange(5, delta: 2))
+        #expect((5.0 ± 0.5) == symmetricRange(5.0, delta: 0.5))
+    }
+
+    @Test func rangeMatchOperatorMatchesNamedFunction() {
+        let range = 200...299
+        #expect((200 ≅ range) == rangeMatch(200, in: range))
+        #expect((300 ≅ range) == rangeMatch(300, in: range))
     }
 }

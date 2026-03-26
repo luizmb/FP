@@ -13,6 +13,13 @@ import CoreFP
         #expect(result[1].eval(5) == 20)
     }
 
+    @Test func flippedFmap() {
+        let arr: [Stateful<Int, Int>] = [.get, .pure(10)]
+        let result = arr <&^> { $0 * 2 }
+        #expect(result[0].eval(5) == 10)
+        #expect(result[1].eval(5) == 20)
+    }
+
     @Test func bind() {
         let arr: [Stateful<Int, Int>] = [.pure(3), .pure(4)]
         let result = arr >>- { n in Stateful<Int, String>.pure("\(n)") }

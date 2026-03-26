@@ -13,6 +13,13 @@ import CoreFP
         #expect(result.log == ["log"])
     }
 
+    @Test func flippedFmap() {
+        let w = Writer<[String], Reader<Int, Int>>(Reader { $0 * 2 }, ["log"])
+        let result = w <&^> { $0 + 1 }
+        #expect(result.value(3) == 7)
+        #expect(result.log == ["log"])
+    }
+
     @Test func apply() {
         let wf = Writer<[String], Reader<Int, (Int) -> String>>(Reader { env in { "\(env + $0)" } }, ["fn"])
         let wa = Writer<[String], Reader<Int, Int>>(Reader { $0 }, ["val"])

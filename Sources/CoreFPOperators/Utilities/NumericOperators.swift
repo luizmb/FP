@@ -1,43 +1,40 @@
-import Foundation
+import CoreFP
 
 // MARK: - Pattern Matching (Flipped)
 
-/// Flipped pattern matching operator
-/// Allows writing `value ≅ pattern` instead of `pattern ~= value`
+/// Flipped pattern matching operator.
+/// Allows writing `value ≅ range` instead of `range ~= value`.
 ///
-/// Examples:
 /// ```swift
 /// statusCode ≅ 200...299           // true if statusCode in range
 /// statusCode ≅ 250 ± 50            // true if statusCode in 200...300
 /// temperature ≅ 20.0...25.0        // true if temperature in range
 /// ```
-public func ≅ <T>(_ value: T, _ pattern: ClosedRange<T>) -> Bool where T: Comparable {
-    pattern ~= value
+public func ≅ <T: Comparable>(_ value: T, _ range: ClosedRange<T>) -> Bool {
+    rangeMatch(value, in: range)
 }
 
-public func ≅ <T>(_ value: T, _ pattern: Range<T>) -> Bool where T: Comparable {
-    pattern ~= value
+public func ≅ <T: Comparable>(_ value: T, _ range: Range<T>) -> Bool {
+    rangeMatch(value, in: range)
 }
 
-public func ≅ <T>(_ value: T, _ pattern: PartialRangeFrom<T>) -> Bool where T: Comparable {
-    pattern ~= value
+public func ≅ <T: Comparable>(_ value: T, _ range: PartialRangeFrom<T>) -> Bool {
+    rangeMatch(value, in: range)
 }
 
-public func ≅ <T>(_ value: T, _ pattern: PartialRangeThrough<T>) -> Bool where T: Comparable {
-    pattern ~= value
+public func ≅ <T: Comparable>(_ value: T, _ range: PartialRangeThrough<T>) -> Bool {
+    rangeMatch(value, in: range)
 }
 
-public func ≅ <T>(_ value: T, _ pattern: PartialRangeUpTo<T>) -> Bool where T: Comparable {
-    pattern ~= value
+public func ≅ <T: Comparable>(_ value: T, _ range: PartialRangeUpTo<T>) -> Bool {
+    rangeMatch(value, in: range)
 }
 
 // MARK: - Plus-Minus Range
 
-/// Plus-minus operator
-/// Creates a symmetric closed range from a center value and delta
-/// Delta is always treated as absolute value
+/// Symmetric range operator — `center ± delta` → `ClosedRange`.
+/// Delta is always treated as an absolute value.
 ///
-/// Examples:
 /// ```swift
 /// 5.0 ± 0.5    // 4.5...5.5
 /// 2 ± 5        // -3...7
@@ -45,19 +42,34 @@ public func ≅ <T>(_ value: T, _ pattern: PartialRangeUpTo<T>) -> Bool where T:
 /// 10 ± (-3)    // 7...13 (negative delta becomes positive)
 /// ```
 public func ± <T: SignedNumeric>(_ center: T, _ delta: T) -> ClosedRange<T> {
-    let absDelta = abs(delta)
-    return (center - absDelta)...(center + absDelta)
+    symmetricRange(center, delta: delta)
 }
 
-/// Plus-minus operator (alternative ASCII syntax)
-/// Identical to ±
+/// ASCII alias for `±`.
 ///
-/// Examples:
 /// ```swift
 /// 5.0 +/- 0.5   // 4.5...5.5
 /// 2 +/- 5       // -3...7
 /// ```
 public func +/- <T: SignedNumeric>(_ center: T, _ delta: T) -> ClosedRange<T> {
-    let absDelta = abs(delta)
-    return (center - absDelta)...(center + absDelta)
+    symmetricRange(center, delta: delta)
+}
+
+// MARK: - Power
+//
+// Note: `^` cannot be defined for types conforming to `BinaryInteger` because
+// Swift already defines `^` as bitwise XOR on those types, creating an
+// irresolvable ambiguity. The operator is therefore limited to
+// `BinaryFloatingPoint` types (Double, Float, Float16, etc.) which have no
+// built-in `^`. For integer exponentiation use the named function `power(_:_:)`.
+
+/// Raises a floating-point `base` to an integer `exp` using repeated multiplication.
+///
+/// ```swift
+/// 2.0 ^ 10   // 1024.0
+/// 3.0 ^ 3    // 27.0
+/// 5.0 ^ 0    // 1.0
+/// ```
+public func ^ <T: BinaryFloatingPoint>(_ base: T, _ exp: Int) -> T {
+    power(base, exp)
 }

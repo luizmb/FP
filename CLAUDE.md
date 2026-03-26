@@ -2,22 +2,23 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+
 ## Build & Test Commands
 
-This is a Swift Package Manager project — no Xcode project file. Use `swift build` / `swift test` directly.
+This is a Swift Package Manager project — no Xcode project file. Use `swift build` / `swift test` directly. However, always pipe the result to xcsift for clean output.
 
 ```bash
 # Build all targets
-swift build
+swift build 2>&1 | xcsift
 
 # Run all tests
-swift test
+swift test 2>&1 | xcsift
 
 # Run a single test target
-swift test --target CoreFPTests
+swift test --target CoreFPTests 2>&1 | xcsift
 
 # Run a specific test by name (Swift Testing uses / as separator)
-swift test --filter "DeferredTaskTests/flatMap"
+swift test --filter "DeferredTaskTests/flatMap" 2>&1 | xcsift
 ```
 
 Test targets: `CoreFPTests`, `CoreFPOperatorsTests`, `DataStructureTests`, `DataStructureOperatorsTests`.
@@ -85,3 +86,21 @@ Every operator that has a directional sense has a **flipped counterpart**. When 
 ## Testing Conventions
 
 Tests use Swift Testing (`@Suite`, `@Test`, `#expect`). Tests verify **functor/applicative/monad laws** and all transformer combinations. When naming `@Test` functions, avoid names that collide with global FP functions (`mconcat`, `sconcat`, etc.) — Swift will prefer `self.method` and cause ambiguity errors.
+
+### Core tests vs Operator tests — MANDATORY split
+
+Every operation requires **two independent sets of tests**:
+
+| Test target | What it tests | Allowed syntax |
+|---|---|---|
+| `CoreFPTests` | Named functions in `CoreFP` | Named functions only — **no custom operator symbols** |
+| `DataStructureTests` | Named functions in `DataStructure` | Named functions only — **no custom operator symbols** |
+| `CoreFPOperatorsTests` | Operator syntax in `CoreFPOperators` | Must use the operator symbol (e.g. `<£>`, `>>-`, `>>>`) |
+| `DataStructureOperatorsTests` | Operator syntax in `DataStructureOperators` | Must use the operator symbol |
+
+**Rules:**
+- `CoreFPTests` and `DataStructureTests` must **never** contain custom operator symbols. If you catch yourself writing `value <£> f` or `a >>> b` in these targets, stop — use the named function (`map(value, f)`, `compose(a, b)`) instead.
+- `CoreFPOperatorsTests` and `DataStructureOperatorsTests` must test the operator symbol directly — not just the backing named function.
+- Both test sets must exist for every operator. Having only one of the two is a bug.
+
+**Why:** Named functions are the semantic layer and must be testable without importing any operator module. The operator tests verify only that the syntactic sugar correctly delegates — they are thin by design.

@@ -26,6 +26,12 @@ import Testing
         #expect(result == [.success(2), .failure(.fail)])
     }
 
+    @Test func flippedFmapOperator() {
+        let arr: [Result<Int, Err>] = [.success(1), .failure(.fail)]
+        let result = arr <&^> { $0 * 2 }
+        #expect(result == [.success(2), .failure(.fail)])
+    }
+
     // MARK: - Applicative
 
     @Test func liftA2CartesianProduct() {

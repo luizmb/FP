@@ -36,6 +36,12 @@ import Testing
         #expect(result == [.right(10), .left(.err)])
     }
 
+    @Test func arrayTEitherFlippedFmapOperator() {
+        let arr: [Either<L, Int>] = [.right(5), .left(.err)]
+        let result = arr <&^> { $0 * 2 }
+        #expect(result == [.right(10), .left(.err)])
+    }
+
     @Test func arrayTEitherBindOperator() {
         let arr: [Either<L, Int>] = [.right(1), .right(2)]
         let result = arr >>- { n in [Either<L, Int>.right(n * 2)] }

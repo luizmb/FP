@@ -14,6 +14,12 @@ import CoreFP
         #expect(mapped.success?.eval(5) == 10)
     }
 
+    @Test func flippedFmapSuccess() {
+        let result: Result<Stateful<Int, Int>, TestError> = .success(.get)
+        let mapped = result <&^> { $0 * 2 }
+        #expect(mapped.success?.eval(5) == 10)
+    }
+
     @Test func fmapFailure() {
         let result: Result<Stateful<Int, Int>, TestError> = .failure(.failure)
         let mapped: Result<Stateful<Int, Int>, TestError> = { $0 * 2 } <£^> result

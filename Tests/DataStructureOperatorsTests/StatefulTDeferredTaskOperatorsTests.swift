@@ -13,6 +13,13 @@ import CoreFP
         #expect(value == 10)
     }
 
+    @Test func flippedFmap() async {
+        let s = Stateful<Int, DeferredTask<Int>> { _ in DeferredTask { 5 } }
+        let result = s <&^> { $0 * 2 }
+        let value = await result.eval(0).run()
+        #expect(value == 10)
+    }
+
     @Test func fmapPreservesState() async {
         let s = Stateful<Int, DeferredTask<Int>> { _ in DeferredTask { 3 } }
         let result = { $0 + 1 } <£^> s
