@@ -1357,6 +1357,7 @@ Each type in this library has a dedicated reference page with comprehensive exam
 | [Reader](docs/types/Reader.md) | Dependency injection monad — wraps `(Environment) -> Output` |
 | [Stateful](docs/types/Stateful.md) | State threading monad — wraps `(inout S) -> A` |
 | [Writer](docs/types/Writer.md) | Append-as-you-go monad — produces a value alongside an accumulated log |
+| [NonEmpty](docs/types/NonEmpty.md) | Statically guaranteed non-empty sequence — Semigroup (no Monoid), full FAM + Foldable + Traversable |
 
 ---
 

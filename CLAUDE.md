@@ -83,6 +83,22 @@ Every operator that has a directional sense has a **flipped counterpart**. When 
 - `<£^>` and `<&^>` have **no base-type overloads** by design — transformer-only, so Swift always resolves unambiguously.
 - Optics (`Lens`, `Prism`, `AffineTraversal`) compose via `>>>` / `<<<` alongside regular function composition.
 
+## Swift Limitations — What Cannot Be Implemented
+
+Swift lacks Higher-Kinded Types (HKT). You cannot write a type parameter that is itself generic — `protocol Functor { associatedtype F<A> }` is not valid Swift. This rules out entire categories of abstractions that exist in Haskell or Scala Cats:
+
+- **`Functor`, `Applicative`, `Monad` as protocols** — impossible to express generically. Each type (`Optional`, `Array`, `Reader`, …) gets its own concrete `map`/`flatMap` methods rather than conforming to a shared protocol.
+- **`Bifunctor` protocol** — cannot abstract over `F<A, B>` generically. `bimap` exists as an ad-hoc method on each type.
+- **`Contravariant` protocol** — same reason; `contramap` is only on `Reader`.
+- **`Profunctor` protocol** — `dimap` is only on `Reader`; cannot be generalised across optics or other profunctors.
+- **`Category` / `Arrow` protocols** — require abstracting over the morphism type `F<A, B>`.
+- **`Traversable` as a protocol** — `traverse` can't be expressed generically because the applicative effect `F` would need to be an HKT parameter.
+- **`Identity<A>` as a generic monad transformer base** — the type itself is trivial, but using it to parameterise transformer stacks generically requires HKT.
+- **`Const<C, A>` as a generic functor** — same constraint; can exist as a concrete type but can't participate in generic functor machinery.
+- **`Free` monad, `Coyoneda`, recursion schemes** — all require HKT in their general form.
+
+When suggesting new additions to this library, only propose things that are expressible as **concrete types with concrete method implementations**. Do not propose protocol abstractions that require HKT — they will not compile in Swift.
+
 ## Testing Conventions
 
 Tests use Swift Testing (`@Suite`, `@Test`, `#expect`). Tests verify **functor/applicative/monad laws** and all transformer combinations. When naming `@Test` functions, avoid names that collide with global FP functions (`mconcat`, `sconcat`, etc.) — Swift will prefer `self.method` and cause ambiguity errors.
