@@ -188,6 +188,121 @@ private enum TestError: Error, Equatable { case err }
         #expect(result == .failure(.err))
     }
 
+    // MARK: - Race
+
+    @Test func raceIsLazy() async {
+        nonisolated(unsafe) var ran = false
+        let lhs = DeferredTask<Int> { ran = true; return 1 }
+        let rhs = DeferredTask<Int> { 2 }
+        let raced = race(lhs, rhs)
+        #expect(!ran)
+        _ = await raced.run()
+        #expect(ran)
+    }
+
+    @Test func raceFastTaskWins() async {
+        let fast = DeferredTask<Int> { 1 }
+        let slow = DeferredTask<Int> {
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            return 2
+        }
+        let result = await race(fast, slow).run()
+        #expect(result == 1)
+    }
+
+    @Test func raceReturnsEitherOnTie() async {
+        let lhs = DeferredTask<Int> { 1 }
+        let rhs = DeferredTask<Int> { 2 }
+        let result = await race(lhs, rhs).run()
+        #expect(result == 1 || result == 2)
+    }
+
+    // MARK: - TOptional Alternative
+
+    @Test func altOptionalFirstNonNilWins() async {
+        let lhs = DeferredTask<Int?> { nil }
+        let rhs = DeferredTask<Int?> { 42 }
+        let result = await altDeferredTaskOptional(lhs, rhs).run()
+        #expect(result == 42)
+    }
+
+    @Test func altOptionalFirstSomeBeatsNil() async {
+        let lhs = DeferredTask<Int?> { 7 }
+        let rhs = DeferredTask<Int?> { nil }
+        let result = await altDeferredTaskOptional(lhs, rhs).run()
+        #expect(result == 7)
+    }
+
+    @Test func altOptionalBothNilReturnsNil() async {
+        let lhs = DeferredTask<Int?> { nil }
+        let rhs = DeferredTask<Int?> { nil }
+        let result = await altDeferredTaskOptional(lhs, rhs).run()
+        #expect(result == nil)
+    }
+
+    @Test func altOptionalFasterTaskWins() async {
+        let fast = DeferredTask<Int?> { 99 }
+        let slow = DeferredTask<Int?> {
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            return 1
+        }
+        let result = await altDeferredTaskOptional(fast, slow).run()
+        #expect(result == 99)
+    }
+
+    @Test func altOptionalIsLazy() async {
+        nonisolated(unsafe) var ran = false
+        let lhs = DeferredTask<Int?> { ran = true; return 1 }
+        let rhs = DeferredTask<Int?> { nil }
+        let combined = altDeferredTaskOptional(lhs, rhs)
+        #expect(!ran)
+        _ = await combined.run()
+        #expect(ran)
+    }
+
+    // MARK: - TResult Alternative
+
+    @Test func altResultFirstSuccessWins() async {
+        let lhs = DeferredTask<Result<Int, TestError>> { .failure(.err) }
+        let rhs = DeferredTask<Result<Int, TestError>> { .success(42) }
+        let result = await altDeferredTaskResult(lhs, rhs).run()
+        #expect(result == .success(42))
+    }
+
+    @Test func altResultSuccessBeatsFailure() async {
+        let lhs = DeferredTask<Result<Int, TestError>> { .success(7) }
+        let rhs = DeferredTask<Result<Int, TestError>> { .failure(.err) }
+        let result = await altDeferredTaskResult(lhs, rhs).run()
+        #expect(result == .success(7))
+    }
+
+    @Test func altResultBothFailReturnsLastFailure() async {
+        let lhs = DeferredTask<Result<Int, TestError>> { .failure(.err) }
+        let rhs = DeferredTask<Result<Int, TestError>> { .failure(.err) }
+        let result = await altDeferredTaskResult(lhs, rhs).run()
+        #expect(result == .failure(.err))
+    }
+
+    @Test func altResultFasterSuccessWins() async {
+        let fast = DeferredTask<Result<Int, TestError>> { .success(99) }
+        let slow = DeferredTask<Result<Int, TestError>> {
+            try? await Task.sleep(nanoseconds: 5_000_000_000)
+            return .success(1)
+        }
+        let result = await altDeferredTaskResult(fast, slow).run()
+        #expect(result == .success(99))
+    }
+
+    @Test func altResultIsLazy() async {
+        nonisolated(unsafe) var ran = false
+        let lhs = DeferredTask<Result<Int, TestError>> { ran = true; return .success(1) }
+        let rhs = DeferredTask<Result<Int, TestError>> { .failure(.err) }
+        let combined = altDeferredTaskResult(lhs, rhs)
+        #expect(!ran)
+        _ = await combined.run()
+        #expect(ran)
+    }
+
     // MARK: - join / void
 
     @Test func joinFreeFunction() async {
