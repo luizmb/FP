@@ -35,7 +35,7 @@ public extension NonEmpty {
     static func join<O>(
         _ nested: NonEmpty<NonEmpty<O>>
     ) -> NonEmpty<O> where A == NonEmpty<O> {
-        nested.flatMap(id)
+        nested.flatMap(CoreFP.id)
     }
 
     func void() -> NonEmpty<Void> {

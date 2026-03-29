@@ -1,7 +1,7 @@
 /// Sequence a list of results
 /// sequence :: [Result<a, e>] -> Result<[a], e>
 public func sequence<A, E>(_ results: [Result<A, E>]) -> Result<[A], E> {
-    results.traverse(id)
+    results.traverse(CoreFP.id)
 }
 
 /// Map and sequence for Result

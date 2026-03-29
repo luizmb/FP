@@ -19,7 +19,7 @@ public extension NonEmpty {
 
     /// Sequence `NonEmpty<A?>` into `NonEmpty<A>?`.
     func sequence<B>() -> NonEmpty<B>? where A == B? {
-        traverse(id)
+        traverse(CoreFP.id)
     }
 
     // MARK: Result effect (short-circuits on first failure)
@@ -42,7 +42,7 @@ public extension NonEmpty {
 
     /// Sequence `NonEmpty<Result<B, E>>` into `Result<NonEmpty<B>, E>`.
     func sequence<B, E>() -> Result<NonEmpty<B>, E> where A == Result<B, E> {
-        traverse(id)
+        traverse(CoreFP.id)
     }
 
     // MARK: Either effect (short-circuits on first left)
@@ -65,7 +65,7 @@ public extension NonEmpty {
 
     /// Sequence `NonEmpty<Either<L, B>>` into `Either<L, NonEmpty<B>>`.
     func sequence<L, B>() -> Either<L, NonEmpty<B>> where A == Either<L, B> {
-        traverse(id)
+        traverse(CoreFP.id)
     }
 
     // MARK: Validation effect (accumulates all failures)
@@ -89,6 +89,6 @@ public extension NonEmpty {
 
     /// Sequence `NonEmpty<Validation<E, B>>` into `Validation<E, NonEmpty<B>>`.
     func sequence<E: Semigroup, B>() -> Validation<E, NonEmpty<B>> where A == Validation<E, B> {
-        traverse(id)
+        traverse(CoreFP.id)
     }
 }

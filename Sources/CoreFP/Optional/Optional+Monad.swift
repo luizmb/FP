@@ -42,7 +42,7 @@ public extension Optional {
     /// Monadic join - flattens nested Optionals
     /// join :: m (m a) -> m a
     static func join<A1>(_ nested: A1??) -> A1? {
-        nested.flatMap(id)
+        nested.flatMap(CoreFP.id)
     }
 
     /// Discards the value, keeping only the structure

@@ -32,7 +32,7 @@ public extension Writer {
     static func join<O>(
         _ nested: Writer<W, Writer<W, O>>
     ) -> Writer<W, O> where A == Writer<W, O> {
-        nested.flatMap(id)
+        nested.flatMap(CoreFP.id)
     }
 
     func void() -> Writer<W, Void> {

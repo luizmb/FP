@@ -11,6 +11,6 @@ public extension Array {
     // sequence :: [a?] -> [a]?
     // sequence = traverse id
     func sequence<A>() -> [A]? where Element == A? {
-        traverse(id)
+        traverse(CoreFP.id)
     }
 }
