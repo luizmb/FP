@@ -1,9 +1,8 @@
-import Testing
 @testable import CoreFP
 @testable import CoreFPOperators
+import Testing
 
 @Suite struct FunctionMonadTests {
-
     // MARK: - Basic Monad Tests
 
     @Test func basicFlatMap() {
@@ -82,7 +81,7 @@ import Testing
         // For functions: pure a >>- f == f a
         let a = 5
         let f: (Int) -> (String) -> String = { x in
-            { r in "\(x + Int(r)!)" }
+            { r in "\(x)_\(r)" }
         }
 
         let left = pure(a) >>- f
@@ -127,7 +126,7 @@ import Testing
     @Test func kleisliLeftIdentityLaw() {
         // pure >=> f == f
         let f: (Int) -> (String) -> String = { x in
-            { r in "\(x + Int(r)!)" }
+            { r in "\(x)_\(r)" }
         }
 
         let left = pure >=> f
@@ -139,7 +138,7 @@ import Testing
     @Test func kleisliRightIdentityLaw() {
         // f >=> pure == f
         let f: (Int) -> (String) -> String = { x in
-            { r in "\(x + Int(r)!)" }
+            { r in "\(x)_\(r)" }
         }
 
         let left = f >=> pure

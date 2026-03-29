@@ -1,3 +1,4 @@
+// swiftlint:disable discouraged_optional_collection
 import CoreFP
 
 // OptionalTArray: outer = Optional, inner = Array
@@ -17,3 +18,4 @@ public func -<< <A, B>(_ fn: @escaping (A) -> [B]?, _ opt: [A]?) -> [B]? {
 public func >=> <A, B, C>(_ fn1: @escaping (A) -> [B]?, _ fn2: @escaping (B) -> [C]?) -> (A) -> [C]? {
     { a in fn1(a).flatMapT(fn2) }
 }
+// swiftlint:enable discouraged_optional_collection

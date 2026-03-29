@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 public extension Reader {
     // MARK: - ReaderT + Reader (nested)

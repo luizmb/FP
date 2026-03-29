@@ -1,7 +1,7 @@
 #if canImport(Combine)
-import Foundation
-import CoreFP
 import Combine
+import CoreFP
+import Foundation
 
 // StatefulT + Publisher — Stateful<S, any Publisher<A, E>>
 //

@@ -2,7 +2,6 @@
 import SwiftUI
 
 public extension Binding {
-
     /// Access a sub-value through a `Lens`. Always returns a valid binding.
     ///
     /// ```swift

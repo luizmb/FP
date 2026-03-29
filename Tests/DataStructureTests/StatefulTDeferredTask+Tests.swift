@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct StatefulTDeferredTaskTests {
-
     // MARK: - Stateful<S, DeferredTask<A>> — State as outer, DeferredTask as inner
     // Note: flatMapT is not implementable for this stack.
 

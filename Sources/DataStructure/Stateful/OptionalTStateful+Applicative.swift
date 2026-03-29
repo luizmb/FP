@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // OptionalTStateful: outer = Optional, inner = Stateful
 // Type: Stateful<S, A>? = Optional<Stateful<S, A>>

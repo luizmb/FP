@@ -1,8 +1,7 @@
-import Testing
 @testable import CoreFP
+import Testing
 
 @Suite struct AsyncSequenceTransformerTests {
-
     // Helper to collect all values from an AsyncStream
     private func collect<A: Sendable>(_ stream: AsyncStream<A>) async -> [A] {
         var results: [A] = []

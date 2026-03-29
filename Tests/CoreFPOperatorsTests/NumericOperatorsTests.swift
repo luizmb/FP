@@ -1,9 +1,8 @@
-import Testing
 @testable import CoreFP
 @testable import CoreFPOperators
+import Testing
 
 @Suite struct NumericOperatorsTests {
-
     // MARK: - Plus-Minus Tests
 
     @Test func plusMinusInteger() {
@@ -110,7 +109,7 @@ import Testing
         let b: Double = 3.0 ^ 3
         let c: Double = 5.0 ^ 0
         let d: Double = 7.0 ^ 1
-        #expect(a == 1024.0)
+        #expect(a == 1_024.0)
         #expect(b == 27.0)
         #expect(c == 1.0)
         #expect(d == 7.0)

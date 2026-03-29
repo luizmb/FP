@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct ReaderEitherTests {
-
     struct Environment {
         let multiplier: Int
     }

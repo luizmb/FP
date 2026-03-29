@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 public extension Stateful {
     static var get: Stateful<S, S> {

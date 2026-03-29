@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 public extension Writer {
     /// pure :: a -> Writer w a — lift a value with an empty log

@@ -2,7 +2,6 @@ import DataStructure
 import Testing
 
 @Suite struct AsyncThrowingStreamEitherTests {
-
     struct TestError: Error, Equatable {
         let message: String
         static let fail = TestError(message: "fail")

@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // ReaderTDeferredStream: outer = Reader, inner = DeferredStream
 // Type: Reader<Env, DeferredStream<A>>

@@ -1,12 +1,11 @@
-import Foundation
 import CoreFP
+import Foundation
 
 public extension Either {
     func result() -> Result<B, A> where A: Error {
         Result.from(self.inverted())
     }
 }
-
 
 public extension Result {
     var either: SumTypeCopyStrategy<Either<Success, Failure>, Either<Failure, Success>> {

@@ -1,6 +1,6 @@
-import DataStructure
 import CoreFP
 import CoreFPOperators
+import DataStructure
 
 // MARK: - Functor operators for NonEmpty
 

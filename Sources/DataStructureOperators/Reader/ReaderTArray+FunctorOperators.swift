@@ -1,7 +1,7 @@
-import DataStructure
-import Foundation
 import CoreFP
 import CoreFPOperators
+import DataStructure
+import Foundation
 
 // ReaderT + Array
 

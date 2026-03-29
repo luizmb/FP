@@ -1,11 +1,10 @@
-import DataStructureOperators
-import DataStructure
-import Testing
-import CoreFPOperators
 import CoreFP
+import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct ReaderTDeferredTaskOperatorsTests {
-
     struct Env { let value: Int }
 
     @Test func apply() async {

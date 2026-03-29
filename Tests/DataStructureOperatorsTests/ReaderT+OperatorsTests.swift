@@ -1,11 +1,10 @@
-import DataStructureOperators
-import DataStructure
-import Testing
 @testable import CoreFP
 import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct ReaderTTests {
-
     struct Environment {
         let multiplier: Int
         let addend: Int
@@ -176,7 +175,10 @@ import CoreFPOperators
         let reader2 = Reader<Environment, Result<Int, TestError>> { env in .success(env.addend) }
 
         let add: (Int, Int) -> Int = { $0 + $1 }
-        let lifted: (Reader<Environment, Result<Int, TestError>>, Reader<Environment, Result<Int, TestError>>) -> Reader<Environment, Result<Int, TestError>> = liftA2ReaderResult(add)
+        let lifted: (
+            Reader<Environment, Result<Int, TestError>>,
+            Reader<Environment, Result<Int, TestError>>
+        ) -> Reader<Environment, Result<Int, TestError>> = liftA2ReaderResult(add)
         let result = lifted(reader1, reader2)
 
         let env = Environment(multiplier: 5, addend: 3)

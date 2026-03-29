@@ -1,20 +1,19 @@
-import Testing
-import Foundation
 @testable import CoreFP
+import Foundation
+import Testing
 
 @Suite struct MonadUtilitiesTests {
-
     // MARK: - Join Tests
 
     @Test func optionalJoin() {
         let nested: Int?? = .some(.some(5))
-        #expect(Optional<Int>.join(nested) == 5)
+        #expect(Int?.join(nested) == 5)
 
         let nestedNone: Int?? = .some(.none)
-        #expect(Optional<Int>.join(nestedNone) == nil)
+        #expect(Int?.join(nestedNone) == nil)
 
         let outerNone: Int?? = .none
-        #expect(Optional<Int>.join(outerNone) == nil)
+        #expect(Int?.join(outerNone) == nil)
     }
 
     // MARK: - Void Tests
@@ -56,7 +55,7 @@ import Foundation
 
     @Test func arrayFilterM() {
         let array = [1, 2, 3, 4, 5]
-        let isEven = { $0 % 2 == 0 }
+        let isEven: (Int) -> Bool = { $0.isMultiple(of: 2) }
 
         let result = Array.filterM(isEven)(array)
         #expect(result == [2, 4])

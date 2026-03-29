@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct ReaderTDeferredTaskApplicativeTests {
-
     struct Env { let value: Int }
 
     // MARK: - Reader<Env, DeferredTask<A>> — Reader as outer, DeferredTask as inner

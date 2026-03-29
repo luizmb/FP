@@ -4,7 +4,6 @@ import CoreFP
 // Type: Reader<Environment, NonEmpty<A>>
 
 public extension Reader {
-
     func flatMapT<Inner, B>(
         _ fn: @escaping (Inner) -> Reader<Environment, NonEmpty<B>?>
     ) -> Reader<Environment, NonEmpty<B>?> where Output == NonEmpty<Inner> {

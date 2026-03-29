@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // AsyncSequenceTEither: outer = AsyncStream, inner = Either
 // Type: AsyncStream<Either<L,A>>

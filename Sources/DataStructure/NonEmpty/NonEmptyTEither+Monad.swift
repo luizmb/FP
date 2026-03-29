@@ -4,7 +4,6 @@ import CoreFP
 // Type: NonEmpty<Either<L, A>>
 
 public extension NonEmpty {
-
     /// flatMapT for NonEmpty<Either<L, A>> — Right values expand via fn, Lefts propagate.
     /// .left(l)    → NonEmpty<Either<L, B>>(head: .left(l))
     /// .right(a)   → fn(a)  (inner bind)

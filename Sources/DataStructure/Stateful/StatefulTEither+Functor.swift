@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 public extension Stateful {
     // StatefulT + Either — Stateful<S, Either<L, A>>

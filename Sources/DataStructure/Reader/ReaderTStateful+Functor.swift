@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // ReaderTStateful: outer = Reader, inner = Stateful
 // Type: Reader<Env, Stateful<S, A>>

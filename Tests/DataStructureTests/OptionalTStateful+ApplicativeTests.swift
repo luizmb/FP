@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct OptionalTStatefulApplicativeTests {
-
     // MARK: - Stateful<S, A>? — Optional as outer, Stateful as inner
 
     @Test func applyBothSome() {

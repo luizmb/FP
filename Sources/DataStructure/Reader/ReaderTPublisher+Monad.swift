@@ -1,7 +1,7 @@
 #if canImport(Combine)
-import Foundation
-import CoreFP
 import Combine
+import CoreFP
+import Foundation
 
 public extension Reader {
     // MARK: - ReaderT + Publisher
@@ -13,9 +13,12 @@ public extension Reader {
     -> Reader<Environment, any Publisher<B, E>>
     where Output == any Publisher<A, E> {
         Reader<Environment, any Publisher<B, E>> { env in
-            self.runReader(env).eraseToAnyPublisher().flatMap { a in
-                fn(a).runReader(env).eraseToAnyPublisher()
-            }.eraseToAnyPublisher()
+            self.runReader(env)
+                .eraseToAnyPublisher()
+                .flatMap { a in
+                    fn(a).runReader(env).eraseToAnyPublisher()
+                }
+                .eraseToAnyPublisher()
         }
     }
 

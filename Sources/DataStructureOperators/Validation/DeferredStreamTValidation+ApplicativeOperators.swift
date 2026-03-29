@@ -1,6 +1,6 @@
-import DataStructure
 import CoreFP
 import CoreFPOperators
+import DataStructure
 
 // (<*>) :: DeferredStream<Validation<e,a->b>> -> DeferredStream<Validation<e,a>> -> DeferredStream<Validation<e,b>>
 public func <*> <E: Semigroup & Sendable, A: Sendable, B: Sendable>(

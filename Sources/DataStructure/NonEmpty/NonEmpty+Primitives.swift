@@ -1,7 +1,6 @@
 import CoreFP
 
 public extension NonEmpty {
-
     // MARK: - Accessors
 
     /// The last element — always safe because at least one element exists.
@@ -32,9 +31,7 @@ public extension NonEmpty {
 
     /// Reverse the collection.
     var reversed: NonEmpty<A> {
-        let arr = toArray.reversed()
-        // Safe: toArray is non-empty, so reversed() is non-empty.
-        return NonEmpty(head: arr.first!, tail: Array(arr.dropFirst()))
+        NonEmpty(head: last, tail: Array(toArray.dropLast().reversed()))
     }
 
     /// Safe index access — returns `nil` for out-of-bounds indices.

@@ -1,3 +1,4 @@
+// swiftlint:disable discouraged_optional_collection
 import Foundation
 
 // OptionalTArray: outer = Optional, inner = Array
@@ -22,3 +23,4 @@ public extension Optional {
         { opt in opt.flatMapT(fn) }
     }
 }
+// swiftlint:enable discouraged_optional_collection

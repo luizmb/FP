@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct WriterCoreTests {
-
     // MARK: - Construction & Execution
 
     @Test func writerInit() {

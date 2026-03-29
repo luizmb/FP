@@ -1,9 +1,8 @@
-import Testing
 @testable import CoreFP
 @testable import CoreFPOperators
+import Testing
 
 @Suite struct OptionalApplicativeTests {
-
     // MARK: - Basic Applicative Tests
 
     @Test func apply() {
@@ -23,7 +22,7 @@ import Testing
 
     @Test func liftA2() {
         let add: (Int, Int) -> Int = { $0 + $1 }
-        let lifted = Optional<Int>.liftA2(add)
+        let lifted = Int?.liftA2(add)
 
         #expect(lifted(5, 3) == 8)
         #expect(lifted(nil, 3) == nil)
@@ -34,7 +33,7 @@ import Testing
     @Test func zip() {
         let value1: Int? = 5
         let value2: String? = "test"
-        let result = Optional<(Int, String)>.zip(value1, value2)
+        let result = (Int, String)?.zip(value1, value2)
 
         if let tuple = result {
             #expect(tuple.0 == 5)
@@ -44,8 +43,8 @@ import Testing
         }
 
         let none1: Int? = nil
-        #expect(Optional<(Int, String)>.zip(none1, value2) == nil)
-        #expect(Optional<(Int, String)>.zip(value1, nil) == nil)
+        #expect((Int, String)?.zip(none1, value2) == nil)
+        #expect((Int, String)?.zip(value1, nil) == nil)
     }
 
     // MARK: - Applicative Laws
@@ -68,7 +67,7 @@ import Testing
         let composeFn: (@escaping (Int) -> String, @escaping (Int) -> Int) -> (Int) -> String = { f, g in
             { x in f(g(x)) }
         }
-        let composed = Optional<(Int) -> String>.liftA2(composeFn)(u, v)
+        let composed = ((Int) -> String)?.liftA2(composeFn)(u, v)
         let left = composed <*> w
 
         // Right side: apply v to w, then apply u

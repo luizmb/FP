@@ -1,10 +1,9 @@
-import Testing
 import CoreFP
+import Testing
 
 private enum TestError: Error, Equatable { case err }
 
 @Suite struct DeferredStreamTests {
-
     // MARK: - Lazy behavior
 
     @Test func doesNotStartUntilIterated() async {

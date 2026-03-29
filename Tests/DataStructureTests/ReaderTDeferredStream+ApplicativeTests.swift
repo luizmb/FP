@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct ReaderTDeferredStreamApplicativeTests {
-
     struct Env { let value: Int }
 
     // MARK: - Reader<Env, DeferredStream<A>> — Reader as outer, DeferredStream as inner

@@ -1,7 +1,7 @@
 #if canImport(Combine)
-import Foundation
-import CoreFP
 import Combine
+import CoreFP
+import Foundation
 
 // PublisherTWriter: outer = Publisher, inner = Writer
 // Type: AnyPublisher<Writer<W, A>, E>

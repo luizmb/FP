@@ -1,11 +1,10 @@
-import DataStructureOperators
-import DataStructure
-import Testing
-import CoreFPOperators
 import CoreFP
+import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct StatefulTDeferredTaskOperatorsTests {
-
     @Test func fmap() async {
         let s = Stateful<Int, DeferredTask<Int>> { _ in DeferredTask { 5 } }
         let result = { $0 * 2 } <£^> s

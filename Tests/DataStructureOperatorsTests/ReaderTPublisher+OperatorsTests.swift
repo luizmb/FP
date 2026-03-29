@@ -1,13 +1,12 @@
-import DataStructureOperators
-import DataStructure
-import Testing
 import Combine
 import CoreFP
 import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @MainActor
 @Suite struct ReaderCombineOperatorsTests {
-
     struct Environment {
         let multiplier: Int
     }

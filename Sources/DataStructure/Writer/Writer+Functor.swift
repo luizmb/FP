@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 public extension Writer {
     func mapWriter<B>(_ fn: (A) -> B) -> Writer<W, B> {

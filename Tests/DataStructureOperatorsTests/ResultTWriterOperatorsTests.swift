@@ -1,11 +1,10 @@
-import DataStructureOperators
-import DataStructure
-import Testing
-import CoreFPOperators
 import CoreFP
+import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct ResultTWriterOperatorsTests {
-
     enum TestError: Error, Equatable { case failure }
 
     @Test func fmapSuccess() {
@@ -25,8 +24,7 @@ import CoreFP
     @Test func fmapFailure() {
         let result: Result<Writer<[String], Int>, TestError> = .failure(.failure)
         let mapped: Result<Writer<[String], Int>, TestError> = { $0 * 2 } <£^> result
-        if case .failure(let e) = mapped { #expect(e == .failure) }
-        else { Issue.record("Expected .failure") }
+        if case .failure(let e) = mapped { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func bindSuccess() {
@@ -39,8 +37,7 @@ import CoreFP
     @Test func bindFailure() {
         let result: Result<Writer<[String], Int>, TestError> = .failure(.failure)
         let bound = result >>- { n in Writer<[String], String>("\(n)", ["inner"]) }
-        if case .failure(let e) = bound { #expect(e == .failure) }
-        else { Issue.record("Expected .failure") }
+        if case .failure(let e) = bound { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func kleisli() {
@@ -63,8 +60,7 @@ import CoreFP
         let rf: Result<Writer<[String], (Int) -> String>, TestError> = .failure(.failure)
         let ra: Result<Writer<[String], Int>, TestError> = .success(Writer(7, ["val"]))
         let result = rf <*> ra
-        if case .failure(let e) = result { #expect(e == .failure) }
-        else { Issue.record("Expected .failure") }
+        if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func seqRight() {

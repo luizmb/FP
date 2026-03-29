@@ -1,14 +1,14 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // ReaderT + Optional
 
 /// Apply for ReaderT Optional
 /// (<*>) :: Reader e (a -> b) -> Reader e a -> Reader e b
 public func applyReaderOptional<Env, A, B>(
-    _ readerF: Reader<Env, Optional<(A) -> B>>,
-    _ readerA: Reader<Env, Optional<A>>
-) -> Reader<Env, Optional<B>> {
+    _ readerF: Reader<Env, ((A) -> B)?>,
+    _ readerA: Reader<Env, A?>
+) -> Reader<Env, B?> {
     Reader { env in
         guard let fn = readerF(env), let a = readerA(env) else {
             return nil
@@ -33,16 +33,16 @@ public func liftA2ReaderOptional<Env, A, B, C>(
 
 /// seqRight for ReaderT Optional
 public func seqRightReaderOptional<Env, A, B>(
-    _ lhs: Reader<Env, Optional<A>>,
-    _ rhs: Reader<Env, Optional<B>>
-) -> Reader<Env, Optional<B>> {
+    _ lhs: Reader<Env, A?>,
+    _ rhs: Reader<Env, B?>
+) -> Reader<Env, B?> {
     Reader { env in lhs(env).seqRight(rhs(env)) }
 }
 
 /// seqLeft for ReaderT Optional
 public func seqLeftReaderOptional<Env, A, B>(
-    _ lhs: Reader<Env, Optional<A>>,
-    _ rhs: Reader<Env, Optional<B>>
-) -> Reader<Env, Optional<A>> {
+    _ lhs: Reader<Env, A?>,
+    _ rhs: Reader<Env, B?>
+) -> Reader<Env, A?> {
     Reader { env in lhs(env).seqLeft(rhs(env)) }
 }

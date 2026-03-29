@@ -1,6 +1,6 @@
-import DataStructure
 import CoreFP
 import CoreFPOperators
+import DataStructure
 
 // MARK: - Transformer functor operators: NonEmpty<Either<L, A>>
 

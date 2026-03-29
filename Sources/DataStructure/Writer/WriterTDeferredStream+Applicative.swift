@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // WriterT + DeferredStream — free functions for Writer<W, DeferredStream<A>>
 

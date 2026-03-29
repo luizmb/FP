@@ -1,8 +1,7 @@
-import Testing
 @testable import CoreFP
+import Testing
 
 @Suite struct SemigroupConformanceTests {
-
     @Test func stringSemigroup() {
         #expect(String.combine("Hello, ", "World!") == "Hello, World!")
     }

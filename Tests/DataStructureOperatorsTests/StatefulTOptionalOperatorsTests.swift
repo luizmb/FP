@@ -1,11 +1,10 @@
-import DataStructureOperators
-import DataStructure
-import Testing
-import CoreFPOperators
 import CoreFP
+import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct StatefulTOptionalOperatorsTests {
-
     @Test func fmapSome() {
         let s = Stateful<Int, Int?>.pure(.some(5))
         let result = { $0 * 2 } <£^> s

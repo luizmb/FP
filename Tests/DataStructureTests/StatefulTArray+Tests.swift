@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct StatefulTArrayTests {
-
     // MARK: - Stateful<S, [A]> — State as outer, Array as inner
 
     @Test func mapT() {

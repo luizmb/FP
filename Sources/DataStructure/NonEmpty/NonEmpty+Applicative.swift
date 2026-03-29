@@ -3,7 +3,6 @@ import CoreFP
 // MARK: - Applicative
 
 public extension NonEmpty {
-
     /// Lift a single value into a singleton NonEmpty.
     static func pure(_ value: A) -> NonEmpty<A> {
         NonEmpty(head: value)

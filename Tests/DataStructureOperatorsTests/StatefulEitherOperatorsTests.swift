@@ -1,5 +1,5 @@
-import DataStructureOperators
 import DataStructure
+import DataStructureOperators
 import Testing
 
 @Test func statefulEitherOperatorsImport() {

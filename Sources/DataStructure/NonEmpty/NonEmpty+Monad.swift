@@ -3,7 +3,6 @@ import CoreFP
 // MARK: - Monad
 
 public extension NonEmpty {
-
     /// Map each element to a NonEmpty, then concatenate all results.
     /// Result is always non-empty because fn(head) is non-empty.
     func flatMap<B>(_ fn: (A) -> NonEmpty<B>) -> NonEmpty<B> {

@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct ReaderTWriterApplicativeTests {
-
     struct Env { let value: Int }
 
     // MARK: - Reader<Env, Writer<W, A>> — Reader as outer, Writer as inner

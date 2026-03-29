@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // (<*>) :: f (a -> b) -> f a -> f b
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)

@@ -1,17 +1,23 @@
-import DataStructure
 import CoreFP
 import CoreFPOperators
+import DataStructure
 
 // ReaderTWriter: outer = Reader, inner = Writer
 // Type: Reader<Env, Writer<W, A>>
 
 // (>>-) :: Reader<env, Writer<w, a>> -> (a -> Writer<w, b>) -> Reader<env, Writer<w, b>>
-public func >>- <Env, W: Monoid, A, B>(_ reader: Reader<Env, Writer<W, A>>, _ fn: @escaping (A) -> Writer<W, B>) -> Reader<Env, Writer<W, B>> {
+public func >>- <Env, W: Monoid, A, B>(
+    _ reader: Reader<Env, Writer<W, A>>,
+    _ fn: @escaping (A) -> Writer<W, B>
+) -> Reader<Env, Writer<W, B>> {
     reader.flatMapT(fn)
 }
 
 // (-<<) :: (a -> Writer<w, b>) -> Reader<env, Writer<w, a>> -> Reader<env, Writer<w, b>>
-public func -<< <Env, W: Monoid, A, B>(_ fn: @escaping (A) -> Writer<W, B>, _ reader: Reader<Env, Writer<W, A>>) -> Reader<Env, Writer<W, B>> {
+public func -<< <Env, W: Monoid, A, B>(
+    _ fn: @escaping (A) -> Writer<W, B>,
+    _ reader: Reader<Env, Writer<W, A>>
+) -> Reader<Env, Writer<W, B>> {
     reader.flatMapT(fn)
 }
 

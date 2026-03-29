@@ -4,7 +4,6 @@ import CoreFP
 // Type: Writer<W, NonEmpty<A>>
 
 public extension Writer {
-
     /// flatMapT for Writer<W, NonEmpty<A>>.
     /// Each element maps to a Writer<W, NonEmpty<B>?>; logs are combined, NonEmpties concatenated.
     func flatMapT<Inner, B>(

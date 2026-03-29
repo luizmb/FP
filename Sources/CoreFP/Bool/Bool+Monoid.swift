@@ -1,7 +1,6 @@
 extension Bool {
     /// Namespace for Bool Monoid instances.
     public enum Monoids {
-
         /// Monoid under conjunction (&&), with identity `true`.
         public struct And: Monoid, RawRepresentable {
             public let rawValue: Bool

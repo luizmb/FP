@@ -1,11 +1,10 @@
-import DataStructureOperators
-import DataStructure
-import Testing
 import CoreFP
 import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct NonEmptyFunctorOperatorsTests {
-
     private let three = NonEmpty(head: 1, tail: [2, 3])
 
     // MARK: - <£> (fn left)

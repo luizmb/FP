@@ -2,28 +2,26 @@ import Foundation
 
 public extension Optional {
     // liftA2 :: (a1 -> a2 -> a) -> Optional<a1> -> Optional<a2> -> Optional<a>
-    static func liftA2<A1, A2>(_ fn: @escaping (A1, A2) -> A) -> (
-        Optional<A1>, Optional<A2>
-    ) -> Optional<A> {
+    static func liftA2<A1, A2>(_ fn: @escaping (A1, A2) -> A) -> (A1?, A2?) -> A? {
         { optionalA, optionalB in
-            Optional<(A1, A2)>.zip(optionalA, optionalB).map(fn)
+            (A1, A2)?.zip(optionalA, optionalB).map(fn)
         }
     }
 
     /// apply :: Optional<(a -> b)> -> Optional<a> -> Optional<b>
-    static func apply<A>(_ functions: Optional<(A) -> Wrapped>, _ values: Optional<A>) -> Optional<Wrapped> {
+    static func apply<A>(_ functions: ((A) -> Wrapped)?, _ values: A?) -> Wrapped? {
         functions.flatMap(values.map)
     }
 
     /// seqRight :: Optional<a> -> Optional<b> -> Optional<b>
     /// Run both, discard the left result, return the right
-    func seqRight<A>(_ rhs: Optional<A>) -> Optional<A> {
+    func seqRight<A>(_ rhs: A?) -> A? {
         flatMap(const(rhs))
     }
 
     /// seqLeft :: Optional<a> -> Optional<b> -> Optional<a>
     /// Run both, return the left result
-    func seqLeft<Ignore>(_ rhs: Optional<Ignore>) -> Optional<Wrapped> {
+    func seqLeft<Ignore>(_ rhs: Ignore?) -> Wrapped? {
         flatMap { a in rhs.map(const(a)) }
     }
 

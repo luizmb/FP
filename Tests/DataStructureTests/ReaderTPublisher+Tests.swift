@@ -1,11 +1,10 @@
-import DataStructure
-import Testing
 import Combine
 import CoreFP
+import DataStructure
+import Testing
 
 @MainActor
 @Suite struct ReaderCombineFPTests {
-
     struct Environment {
         let multiplier: Int
     }

@@ -4,7 +4,6 @@ import CoreFP
 // Type: NonEmpty<A?>
 
 public extension NonEmpty {
-
     /// mapT for NonEmpty<A?> — maps over the inner Optional values.
     func mapT<Inner, B>(_ fn: (Inner) -> B) -> NonEmpty<B?> where A == Inner? {
         map { $0.map(fn) }

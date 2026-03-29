@@ -1,10 +1,10 @@
-import Testing
 @testable import CoreFP
+import Testing
 
 // MARK: - Fixtures
 
-private let addOne  = iso(get: { $0 + 1 },   reverseGet: { $0 - 1 })   // Iso<Int, Int>
-private let timesTwo = iso(get: { $0 * 2 },  reverseGet: { $0 / 2 })   // Iso<Int, Int>
+private let addOne = iso(get: { $0 + 1 }, reverseGet: { $0 - 1 })   // Iso<Int, Int>
+private let timesTwo = iso(get: { $0 * 2 }, reverseGet: { $0 / 2 })   // Iso<Int, Int>
 private let swap     = iso(get: { (a: Int, b: Int) in (b, a) },
                            reverseGet: { (a: Int, b: Int) in (b, a) }) // Iso<(Int,Int),(Int,Int)>
 
@@ -13,7 +13,6 @@ private let mirrorX = iso(get: { Point(x: -$0.x, y: $0.y) },
                           reverseGet: { Point(x: -$0.x, y: $0.y) })   // Iso<Point, Point>
 
 @Suite struct IsoTests {
-
     // MARK: - Round-trip laws
 
     @Test func roundTripForward() {
@@ -186,7 +185,6 @@ private func mutableBinding<V>(_ initial: V) -> (binding: Binding<V>, read: () -
 }
 
 @Suite struct BindingOpticsTests {
-
     // MARK: - Lens
 
     @Test func bindingLens_get() {

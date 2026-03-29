@@ -1,6 +1,6 @@
-import DataStructure
-import CoreFPOperators
 import CoreFP
+import CoreFPOperators
+import DataStructure
 
 // (<*>) :: [Stateful<s, (a -> b)>] -> [Stateful<s, a>] -> [Stateful<s, b>]
 public func <*> <S, A, B>(_ fns: [Stateful<S, (A) -> B>], _ vals: [Stateful<S, A>]) -> [Stateful<S, B>] {

@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct WriterReaderTests {
-
     // MARK: - Writer<W, Reader<Env, A>> — Writer as outer, Reader as inner
 
     @Test func mapT() {

@@ -4,7 +4,6 @@ import CoreFP
 // Type: NonEmpty<A>?
 
 public extension Optional {
-
     /// flatMapT for NonEmpty<A>? — nil short-circuits; some sequences the inner NonEmpty.
     /// nil       → nil
     /// some(ne)  → ne.flatMap(fn) wrapped back in Optional

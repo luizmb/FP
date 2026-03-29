@@ -1,6 +1,6 @@
-import DataStructure
-import CoreFPOperators
 import CoreFP
+import CoreFPOperators
+import DataStructure
 
 // (<*>) :: Validation<e, Stateful<s,(a->b)>> -> Validation<e, Stateful<s,a>> -> Validation<e, Stateful<s,b>>
 public func <*> <E: Semigroup, S, A, B>(

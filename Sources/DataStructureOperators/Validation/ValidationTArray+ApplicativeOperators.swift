@@ -1,6 +1,6 @@
-import DataStructure
-import CoreFPOperators
 import CoreFP
+import CoreFPOperators
+import DataStructure
 
 // (<*>) :: Validation<e, [(a->b)]> -> Validation<e, [a]> -> Validation<e, [b]>
 public func <*> <E: Semigroup, A, B>(_ fns: Validation<E, [(A) -> B]>, _ values: Validation<E, [A]>) -> Validation<E, [B]> {

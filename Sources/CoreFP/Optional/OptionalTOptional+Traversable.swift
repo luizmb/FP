@@ -7,7 +7,7 @@ public extension Optional {
         case .none:
             .some(.none)
         case .some(let a):
-            f(a).map(Optional<B>.some)
+            f(a).map(B?.some)
         }
     }
 

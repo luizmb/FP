@@ -1,7 +1,7 @@
 #if canImport(Combine)
-import Foundation
-import CoreFP
 import Combine
+import CoreFP
+import Foundation
 
 // StatefulT + Publisher — free functions for Stateful<S, any Publisher<A, E>>
 
@@ -39,7 +39,8 @@ public func seqRightStatefulPublisher<S, A, B, E: Error>(
     _ rhs: Stateful<S, any Publisher<B, E>>
 ) -> Stateful<S, any Publisher<B, E>> {
     Stateful<S, any Publisher<B, E>> { s in
-        lhs.run(&s).eraseToAnyPublisher()
+        lhs.run(&s)
+            .eraseToAnyPublisher()
             .zip(rhs.run(&s).eraseToAnyPublisher())
             .map(\.1)
             .eraseToAnyPublisher()
@@ -53,7 +54,8 @@ public func seqLeftStatefulPublisher<S, A, B, E: Error>(
     _ rhs: Stateful<S, any Publisher<B, E>>
 ) -> Stateful<S, any Publisher<A, E>> {
     Stateful<S, any Publisher<A, E>> { s in
-        lhs.run(&s).eraseToAnyPublisher()
+        lhs.run(&s)
+            .eraseToAnyPublisher()
             .zip(rhs.run(&s).eraseToAnyPublisher())
             .map(\.0)
             .eraseToAnyPublisher()

@@ -1,11 +1,10 @@
-import DataStructureOperators
-import DataStructure
-import Testing
 @testable import CoreFP
 import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct ReaderMonadTests {
-
     struct Environment {
         let multiplier: Int
         let addend: Int

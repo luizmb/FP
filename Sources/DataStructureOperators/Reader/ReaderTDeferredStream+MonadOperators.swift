@@ -1,6 +1,6 @@
-import DataStructure
 import CoreFP
 import CoreFPOperators
+import DataStructure
 
 // ReaderTDeferredStream: outer = Reader, inner = DeferredStream
 // Type: Reader<Env, DeferredStream<A>>

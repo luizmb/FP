@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct WriterTOptionalTests {
-
     // MARK: - Writer<W, A?> — Writer as outer, Optional as inner
 
     @Test func mapTSome() {

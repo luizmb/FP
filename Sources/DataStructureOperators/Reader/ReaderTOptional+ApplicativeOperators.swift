@@ -1,30 +1,30 @@
-import DataStructure
-import Foundation
 import CoreFP
 import CoreFPOperators
+import DataStructure
+import Foundation
 
 // ReaderT + Optional
 
 // (<*>) :: Reader e (Optional<(a -> b)>) -> Reader e (Optional<a>) -> Reader e (Optional<b>)
 public func <*> <Env, A, B>(
-    _ readerF: Reader<Env, Optional<(A) -> B>>,
-    _ readerA: Reader<Env, Optional<A>>
-) -> Reader<Env, Optional<B>> {
+    _ readerF: Reader<Env, ((A) -> B)?>,
+    _ readerA: Reader<Env, A?>
+) -> Reader<Env, B?> {
     applyReaderOptional(readerF, readerA)
 }
 
 // (*>) :: Reader e (Optional<a>) -> Reader e (Optional<b>) -> Reader e (Optional<b>)
 public func *> <Env, A, B>(
-    _ lhs: Reader<Env, Optional<A>>,
-    _ rhs: Reader<Env, Optional<B>>
-) -> Reader<Env, Optional<B>> {
+    _ lhs: Reader<Env, A?>,
+    _ rhs: Reader<Env, B?>
+) -> Reader<Env, B?> {
     seqRightReaderOptional(lhs, rhs)
 }
 
 // (<*) :: Reader e (Optional<a>) -> Reader e (Optional<b>) -> Reader e (Optional<a>)
 public func <* <Env, A, B>(
-    _ lhs: Reader<Env, Optional<A>>,
-    _ rhs: Reader<Env, Optional<B>>
-) -> Reader<Env, Optional<A>> {
+    _ lhs: Reader<Env, A?>,
+    _ rhs: Reader<Env, B?>
+) -> Reader<Env, A?> {
     seqLeftReaderOptional(lhs, rhs)
 }

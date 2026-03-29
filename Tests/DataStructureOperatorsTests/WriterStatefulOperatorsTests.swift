@@ -1,11 +1,10 @@
-import DataStructureOperators
-import DataStructure
-import Testing
-import CoreFPOperators
 import CoreFP
+import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct WriterStatefulOperatorsTests {
-
     @Test func writerMapTWithStatefulInner() {
         let w = Writer<[String], Stateful<Int, Int>>(Stateful { s in s }, ["x"])
         let result = { $0 * 4 } <£^> w

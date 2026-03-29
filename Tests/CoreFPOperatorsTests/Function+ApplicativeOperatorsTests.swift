@@ -1,9 +1,8 @@
-import Testing
 @testable import CoreFP
 @testable import CoreFPOperators
+import Testing
 
 @Suite struct FunctionApplicativeTests {
-
     // MARK: - Basic Applicative Tests
 
     @Test func basicApply() {

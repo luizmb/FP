@@ -1,3 +1,4 @@
+// swiftlint:disable discouraged_optional_collection
 import CoreFP
 
 // OptionalTArray: outer = Optional, inner = Array
@@ -17,3 +18,4 @@ public func *> <A, B>(_ lhs: [A]?, _ rhs: [B]?) -> [B]? {
 public func <* <A, B>(_ lhs: [A]?, _ rhs: [B]?) -> [A]? {
     seqLeftOptionalArray(lhs, rhs)
 }
+// swiftlint:enable discouraged_optional_collection

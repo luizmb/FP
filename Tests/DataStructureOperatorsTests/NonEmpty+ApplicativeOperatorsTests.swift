@@ -1,11 +1,10 @@
-import DataStructureOperators
-import DataStructure
-import Testing
 import CoreFP
 import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct NonEmptyApplicativeOperatorsTests {
-
     // MARK: - <*> apply
 
     @Test func applyOperator_singleFunction() {

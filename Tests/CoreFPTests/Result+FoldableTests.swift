@@ -1,10 +1,9 @@
-import Testing
 import CoreFP
+import Testing
 
 private enum TestError: Error { case err }
 
 @Suite struct ResultFoldableTests {
-
     // MARK: - foldMap
 
     @Test func foldMapSuccess() {

@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct StatefulTValidationTests {
-
     // MARK: - Stateful<S, Validation<E, A>> — State as outer, Validation as inner
 
     @Test func mapTSuccess() {

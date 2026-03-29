@@ -1,6 +1,6 @@
-import Testing
 import CoreFP
 @testable import CoreFPOperators
+import Testing
 
 // MARK: - Fixtures
 
@@ -131,7 +131,7 @@ struct PrismLensCompositionTests {
     }
 
     private var circleStructPrism: Prism<Drawing, Circle> { prism(\Drawing.circle, review: Drawing.circle) }
-    private var radiusLens: Lens<Circle, Double>          { lens(\Circle.radius) }
+    private var radiusLens: Lens<Circle, Double> { lens(\Circle.radius) }
     private var drawingRadius: AffineTraversal<Drawing, Double> { circleStructPrism >>> radiusLens }
 
     @Test func preview_hit() {
@@ -175,8 +175,8 @@ struct PrismPrismCompositionTests {
         }
     }
 
-    private var innerPrism: Prism<Outer, Shape>   { prism(\Outer.inner, review: Outer.inner) }
-    private var deepCircle: Prism<Outer, Double>  { innerPrism >>> circlePrism }
+    private var innerPrism: Prism<Outer, Shape> { prism(\Outer.inner, review: Outer.inner) }
+    private var deepCircle: Prism<Outer, Double> { innerPrism >>> circlePrism }
 
     @Test func preview_deepHit() {
         #expect(deepCircle.preview(.inner(.circle(7.0))) == 7.0)
@@ -209,8 +209,8 @@ struct ThreeLevelCompositionTests {
         var shape: Shape
     }
 
-    private var shapeLens: Lens<Container, Shape>                    { lens(\Container.shape) }
-    private var containerCircle: AffineTraversal<Container, Double>  { shapeLens >>> circlePrism }
+    private var shapeLens: Lens<Container, Shape> { lens(\Container.shape) }
+    private var containerCircle: AffineTraversal<Container, Double> { shapeLens >>> circlePrism }
 
     @Test func over_hit() {
         let c = Container(person: alice, shape: .circle(2.0))

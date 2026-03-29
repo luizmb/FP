@@ -1,11 +1,10 @@
-import DataStructureOperators
-import DataStructure
-import Testing
-import CoreFPOperators
 import CoreFP
+import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct StatefulTReaderOperatorsTests {
-
     @Test func fmap() {
         let s = Stateful<Int, Reader<String, Int>> { _ in Reader { _ in 5 } }
         let result = { $0 * 2 } <£^> s

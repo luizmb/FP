@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct StatefulTDeferredStreamTests {
-
     // MARK: - Stateful<S, DeferredStream<A>> — State as outer, DeferredStream as inner
     // Note: flatMapT is not implementable for this stack.
 
@@ -14,7 +13,8 @@ import CoreFP
                 c.yield(2)
                 c.yield(3)
                 c.finish()
-            } }
+            }
+            }
         }
         let mapped = s.mapT { $0 * 10 }
         var results: [Int] = []
@@ -31,7 +31,8 @@ import CoreFP
             return DeferredStream { AsyncStream { c in
                 c.yield(v)
                 c.finish()
-            } }
+            }
+            }
         }
         let mapped = s.mapT { $0 + 100 }
         let (stream, finalState) = mapped.runStateful(7)
@@ -48,13 +49,15 @@ import CoreFP
             DeferredStream { AsyncStream { c in
                 c.yield { "\($0)" }
                 c.finish()
-            } }
+            }
+            }
         }
         let sa = Stateful<Int, DeferredStream<Int>> { _ in
             DeferredStream { AsyncStream { c in
                 c.yield(42)
                 c.finish()
-            } }
+            }
+            }
         }
         let result = applyStatefulDeferredStream(sf, sa)
         var results: [String] = []

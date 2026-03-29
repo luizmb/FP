@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct EitherTStatefulApplicativeTests {
-
     // MARK: - Either<L, Stateful<S, A>> — Either as outer, Stateful as inner
 
     @Test func applyBothRight() {
@@ -17,16 +16,14 @@ import CoreFP
         let eithF: Either<String, Stateful<Int, (Int) -> String>> = .left("err")
         let eithA: Either<String, Stateful<Int, Int>> = .right(.pure(5))
         let result = applyEitherStateful(eithF, eithA)
-        if case .left(let l) = result { #expect(l == "err") }
-        else { Issue.record("Expected .left") }
+        if case .left(let l) = result { #expect(l == "err") } else { Issue.record("Expected .left") }
     }
 
     @Test func applyLeftVal() {
         let eithF: Either<String, Stateful<Int, (Int) -> String>> = .right(.pure({ "\($0)" }))
         let eithA: Either<String, Stateful<Int, Int>> = .left("err")
         let result = applyEitherStateful(eithF, eithA)
-        if case .left(let l) = result { #expect(l == "err") }
-        else { Issue.record("Expected .left") }
+        if case .left(let l) = result { #expect(l == "err") } else { Issue.record("Expected .left") }
     }
 
     @Test func liftA2BothRight() {
@@ -47,8 +44,7 @@ import CoreFP
         let lhs: Either<String, Stateful<Int, Int>> = .left("fail")
         let rhs: Either<String, Stateful<Int, String>> = .right(.pure("hello"))
         let result = seqRightEitherStateful(lhs, rhs)
-        if case .left(let l) = result { #expect(l == "fail") }
-        else { Issue.record("Expected .left") }
+        if case .left(let l) = result { #expect(l == "fail") } else { Issue.record("Expected .left") }
     }
 
     @Test func seqLeftBothRight() {
@@ -62,7 +58,6 @@ import CoreFP
         let lhs: Either<String, Stateful<Int, Int>> = .right(.pure(99))
         let rhs: Either<String, Stateful<Int, String>> = .left("fail")
         let result = seqLeftEitherStateful(lhs, rhs)
-        if case .left(let l) = result { #expect(l == "fail") }
-        else { Issue.record("Expected .left") }
+        if case .left(let l) = result { #expect(l == "fail") } else { Issue.record("Expected .left") }
     }
 }

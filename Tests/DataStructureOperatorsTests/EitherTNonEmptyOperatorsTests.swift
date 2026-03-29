@@ -1,11 +1,10 @@
-import DataStructureOperators
-import DataStructure
-import Testing
 import CoreFP
 import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct EitherTNonEmptyOperatorsTests {
-
     @Test func fmapOperator_forward_right() {
         let either: Either<String, NonEmpty<Int>> = .right(NonEmpty(head: 1, tail: [2, 3]))
         let result = { $0 * 10 } <£^> either

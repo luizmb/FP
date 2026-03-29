@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct WriterTDeferredStreamTests {
-
     // MARK: - Writer<W, DeferredStream<A>> — Writer as outer, DeferredStream as inner
 
     @Test func mapT() async {
@@ -11,7 +10,8 @@ import CoreFP
             c.yield(1)
             c.yield(2)
             c.finish()
-        } }
+        }
+        }
         let w = Writer<[String], DeferredStream<Int>>(stream, ["log"])
         let mapped = w.mapT { $0 * 3 }
         var results: [Int] = []
@@ -26,14 +26,16 @@ import CoreFP
         let stream = DeferredStream<Int> { AsyncStream { c in
             c.yield(5)
             c.finish()
-        } }
+        }
+        }
         let w = Writer<[String], DeferredStream<Int>>(stream, ["outer"])
         let result = w.flatMapT { n in
             Writer<[String], DeferredStream<String>>(
                 DeferredStream { AsyncStream { c in
                     c.yield("\(n)")
                     c.finish()
-                } },
+                }
+                },
                 ["inner"]
             )
         }
@@ -50,14 +52,16 @@ import CoreFP
             DeferredStream { AsyncStream { c in
                 c.yield { "\($0)" }
                 c.finish()
-            } },
+            }
+            },
             ["fn"]
         )
         let wa = Writer<[String], DeferredStream<Int>>(
             DeferredStream { AsyncStream { c in
                 c.yield(7)
                 c.finish()
-            } },
+            }
+            },
             ["val"]
         )
         let result = applyWriterDeferredStream(wf, wa)

@@ -1,8 +1,7 @@
-import Testing
 @testable import CoreFP
+import Testing
 
 @Suite struct EndoTests {
-
     // MARK: - Construction and application
 
     @Test func runEndo() {

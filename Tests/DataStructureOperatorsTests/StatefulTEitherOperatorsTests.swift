@@ -1,11 +1,10 @@
-import DataStructureOperators
-import DataStructure
-import Testing
-import CoreFPOperators
 import CoreFP
+import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct StatefulTEitherOperatorsTests {
-
     @Test func fmapRight() {
         let s = Stateful<Int, Either<String, Int>>.pure(.right(5))
         let result: Stateful<Int, Either<String, Int>> = { $0 * 2 } <£^> s

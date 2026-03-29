@@ -1,6 +1,6 @@
-import DataStructure
 import CoreFP
 import CoreFPOperators
+import DataStructure
 
 // EitherTWriter: outer = Either, inner = Writer
 // Type: Either<L, Writer<W, A>>

@@ -1,8 +1,7 @@
-import Testing
 @testable import CoreFP
+import Testing
 
 @Suite struct BoolMonoidTests {
-
     // MARK: - And
 
     @Test func andCombine() {

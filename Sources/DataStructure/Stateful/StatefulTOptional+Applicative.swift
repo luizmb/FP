@@ -1,14 +1,14 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // StatefulT + Optional — free functions for Stateful<S, A?>
 
 /// apply for Stateful<S, Optional>
 public func applyStatefulOptional<S, A, B>(
-    _ sf: Stateful<S, Optional<(A) -> B>>,
-    _ sa: Stateful<S, Optional<A>>
-) -> Stateful<S, Optional<B>> {
-    Stateful<S, Optional<B>> { s in
+    _ sf: Stateful<S, ((A) -> B)?>,
+    _ sa: Stateful<S, A?>
+) -> Stateful<S, B?> {
+    Stateful<S, B?> { s in
         guard let fn = sf.run(&s), let a = sa.run(&s) else { return nil }
         return fn(a)
     }

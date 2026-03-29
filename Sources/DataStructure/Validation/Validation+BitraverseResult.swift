@@ -13,7 +13,6 @@ public extension Validation {
             caseSuccess: { af($0).map(Validation<E1, B>.success) }
         )
     }
-
 }
 
 /// bitraverse :: (e -> Result<e1,err>) -> (a -> Result<b,err>) -> Validation e a -> Result<Validation e1 b, err>

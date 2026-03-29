@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // EitherTResult: outer = Either, inner = Result
 // Type: Either<L, Result<A,E>>

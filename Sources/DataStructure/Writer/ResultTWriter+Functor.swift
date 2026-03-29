@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // ResultTWriter: outer = Result, inner = Writer
 // Type: Result<Writer<W, A>, E>

@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct StatefulEitherTests {
-
     // MARK: - Stateful<S, Either<L, A>> — State as outer, Either as inner
 
     @Test func mapTRight() {

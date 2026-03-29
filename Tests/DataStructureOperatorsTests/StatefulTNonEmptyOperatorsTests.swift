@@ -1,11 +1,10 @@
-import DataStructureOperators
-import DataStructure
-import Testing
 import CoreFP
 import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct StatefulTNonEmptyOperatorsTests {
-
     @Test func fmapOperator_forward() {
         let s = Stateful<Int, NonEmpty<Int>>.pure(NonEmpty(head: 1, tail: [2, 3]))
         let result = { $0 * 2 } <£^> s

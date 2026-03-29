@@ -1,9 +1,8 @@
-import Testing
-import DataStructure
 import CoreFP
+import DataStructure
+import Testing
 
 @Suite struct ComonadTests {
-
     // MARK: - Writer Comonad
 
     @Test func writerExtract() {

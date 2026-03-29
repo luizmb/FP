@@ -1,11 +1,10 @@
-import DataStructureOperators
-import DataStructure
-import Testing
-import CoreFPOperators
 import CoreFP
+import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct WriterReaderOperatorsTests {
-
     @Test func writerMapTWithReaderInner() {
         let w = Writer<[String], Reader<Int, Int>>(Reader { $0 }, ["x"])
         let result = { $0 * 3 } <£^> w

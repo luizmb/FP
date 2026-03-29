@@ -4,7 +4,6 @@ import CoreFP
 // Type: NonEmpty<Result<A, E>>  (Success = A, Failure = E)
 
 public extension NonEmpty {
-
     /// flatMapT for NonEmpty<Result<A, E>> — maps over success values, preserves failures.
     /// .failure → .failure
     /// .success(a) → fn(a)  (inner flatMap)

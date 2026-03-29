@@ -6,7 +6,7 @@ public extension Either {
     // bitraverse _  rf (Right b) = fmap Right (rf b)
     func bitraverse<C, D>(_ lf: (A) -> C?, _ rf: (B) -> D?) -> Either<C, D>? {
         match(
-            caseLeft:  { lf($0).map(Either<C, D>.left) },
+            caseLeft: { lf($0).map(Either<C, D>.left) },
             caseRight: { rf($0).map(Either<C, D>.right) }
         )
     }

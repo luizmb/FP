@@ -1,7 +1,7 @@
 #if canImport(Combine)
-import Foundation
-import CoreFP
 import Combine
+import CoreFP
+import Foundation
 
 public extension Writer {
     // WriterT + Publisher — Writer<W, any Publisher<A, E>>
@@ -17,9 +17,12 @@ public extension Writer {
     ) -> Writer<W, any Publisher<B, E>>
     where A == any Publisher<Inner, E> {
         Writer<W, any Publisher<B, E>>(
-            value.eraseToAnyPublisher().flatMap { a in
-                fn(a).value.eraseToAnyPublisher()
-            }.eraseToAnyPublisher(),
+            value
+                .eraseToAnyPublisher()
+                .flatMap { a in
+                    fn(a).value.eraseToAnyPublisher()
+                }
+                .eraseToAnyPublisher(),
             log
         )
     }

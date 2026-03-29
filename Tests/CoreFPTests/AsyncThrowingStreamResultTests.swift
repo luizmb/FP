@@ -1,8 +1,7 @@
-import Testing
 @testable import CoreFP
+import Testing
 
 @Suite struct AsyncThrowingStreamResultTests {
-
     struct TestError: Error, Equatable {
         let message: String
         static let fail = TestError(message: "fail")

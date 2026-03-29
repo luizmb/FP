@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct ArrayTWriterApplicativeTests {
-
     // MARK: - [Writer<W, A>] — Array as outer, Writer as inner
 
     @Test func apply() {

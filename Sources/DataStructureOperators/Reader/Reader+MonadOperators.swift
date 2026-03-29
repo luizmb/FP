@@ -1,6 +1,6 @@
-import DataStructure
 import CoreFP
 import CoreFPOperators
+import DataStructure
 
 // (>>-) :: m a -> (a -> m b) -> m b
 public func >>- <Env, O, O1>(
