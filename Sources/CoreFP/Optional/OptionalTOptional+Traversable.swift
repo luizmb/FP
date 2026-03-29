@@ -14,6 +14,6 @@ public extension Optional {
     // sequence :: a?? -> a??
     // sequence = traverse id
     func sequence<A>() -> A?? where Wrapped == A? {
-        traverse(id)
+        traverse(CoreFP.id)
     }
 }

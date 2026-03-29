@@ -35,6 +35,6 @@ public extension Array {
     /// zip :: [a] -> [b] -> [(a, b)]
     static func zip<A1, A2>(_ lhs: [A1], _ rhs: [A2]) -> [Element]
     where Element == (A1, A2) {
-        Swift.zip(lhs, rhs).map(id)
+        Swift.zip(lhs, rhs).map(CoreFP.id)
     }
 }

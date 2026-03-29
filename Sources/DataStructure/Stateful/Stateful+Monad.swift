@@ -32,7 +32,7 @@ public extension Stateful {
     static func join<O>(
         _ nested: Stateful<S, Stateful<S, O>>
     ) -> Stateful<S, O> where A == Stateful<S, O> {
-        nested.flatMap(id)
+        nested.flatMap(CoreFP.id)
     }
 
     func void() -> Stateful<S, Void> {

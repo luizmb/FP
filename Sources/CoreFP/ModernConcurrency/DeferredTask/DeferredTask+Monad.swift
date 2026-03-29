@@ -13,7 +13,7 @@ public extension DeferredTask {
     // join :: DeferredTask (DeferredTask a) -> DeferredTask a
     static func join<A: Sendable>(_ nested: DeferredTask<DeferredTask<A>>) -> DeferredTask<A>
     where Success == DeferredTask<A> {
-        nested.flatMap(id)
+        nested.flatMap(CoreFP.id)
     }
 
     // void :: DeferredTask a -> DeferredTask ()

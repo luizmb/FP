@@ -42,13 +42,13 @@ public extension Array {
     /// Concatenates an array of arrays
     /// concat :: [[a]] -> [a]
     static func concat(_ arrays: [[Element]]) -> [Element] {
-        arrays.flatMap(id)
+        arrays.flatMap(CoreFP.id)
     }
 
     /// Monadic join - flattens nested arrays
     /// join :: m (m a) -> m a
     static func join(_ nested: [[Element]]) -> [Element] {
-        nested.flatMap(id)
+        nested.flatMap(CoreFP.id)
     }
 
     /// Discards the values, keeping only the structure

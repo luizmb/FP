@@ -43,7 +43,7 @@ public extension DeferredStream {
     // join :: DeferredStream (DeferredStream a) -> DeferredStream a
     static func join<A: Sendable>(_ nested: DeferredStream<DeferredStream<A>>) -> DeferredStream<A>
     where Element == DeferredStream<A> {
-        nested.flatMap(id)
+        nested.flatMap(CoreFP.id)
     }
 
     // void :: DeferredStream a -> DeferredStream ()

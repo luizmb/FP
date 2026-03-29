@@ -14,7 +14,7 @@ public func void<A>(_ fa: [A]) -> [Void] {
 // MARK: - Optional
 
 public func join<A>(_ nested: A??) -> A? {
-    nested.flatMap(id)
+    nested.flatMap(CoreFP.id)
 }
 
 public func void<A>(_ fa: A?) -> Void? {
@@ -24,7 +24,7 @@ public func void<A>(_ fa: A?) -> Void? {
 // MARK: - Result
 
 public func join<A, E: Error>(_ nested: Result<Result<A, E>, E>) -> Result<A, E> {
-    nested.flatMap(id)
+    nested.flatMap(CoreFP.id)
 }
 
 public func void<A, E: Error>(_ fa: Result<A, E>) -> Result<Void, E> {
