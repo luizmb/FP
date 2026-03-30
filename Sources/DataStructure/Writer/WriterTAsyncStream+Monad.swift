@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // WriterT + AsyncStream — Writer<W, AsyncStream<A>>
 //

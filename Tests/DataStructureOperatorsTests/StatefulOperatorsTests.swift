@@ -1,11 +1,9 @@
-import DataStructureOperators
-import DataStructure
-import Testing
 import CoreFPOperators
-import CoreFP
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct StatefulOperatorsTests {
-
     // MARK: - Functor operators
 
     @Test func fmapOperator() {

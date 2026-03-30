@@ -3,7 +3,6 @@ import CoreFP
 // MARK: - Foldable
 
 public extension NonEmpty {
-
     /// Left fold — accumulates left-to-right.
     func foldLeft<B>(_ initial: B, _ fn: (B, A) -> B) -> B {
         toArray.reduce(initial, fn)

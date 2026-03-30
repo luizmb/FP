@@ -3,7 +3,6 @@ import CoreFP
 // MARK: - Traversable
 
 public extension NonEmpty {
-
     // MARK: Optional effect
 
     /// Map each element to an `Optional`; return `nil` if any element fails.
@@ -79,8 +78,8 @@ public extension NonEmpty {
         }
         return tail.map(fn).reduce(headResult) { acc, next in
             switch (acc, next) {
-            case (.success(let ne), .success(let b)): .success(ne.append(b))
-            case (.failure(let e1), .failure(let e2)): .failure(E.combine(e1, e2))
+            case let (.success(ne), .success(b)): .success(ne.append(b))
+            case let (.failure(e1), .failure(e2)): .failure(E.combine(e1, e2))
             case (.success, .failure(let e)): .failure(e)
             case (.failure(let e), .success): .failure(e)
             }

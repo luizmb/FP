@@ -1,9 +1,7 @@
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct OptionalTWriterApplicativeTests {
-
     // MARK: - Writer<W, A>? — Optional as outer, Writer as inner
 
     @Test func applyBothSome() {

@@ -1,13 +1,11 @@
-import DataStructureOperators
-import DataStructure
-import Testing
-import CoreFP
 import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 private enum TestError: Error, Equatable { case bad(String) }
 
 @Suite struct NonEmptyTransformerOperatorsTests {
-
     // MARK: - NonEmpty<A?> — <£^> (fn left)
 
     @Test func nonEmptyTOptional_fmapOperator_forward() {

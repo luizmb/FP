@@ -1,6 +1,6 @@
-import Testing
 import CoreFP
 @testable import DataStructure
+import Testing
 
 // MARK: - Fixtures
 
@@ -11,7 +11,6 @@ private let three = NonEmpty(head: 1, tail: [2, 3])
 private enum TestError: Error, Equatable { case bad(String) }
 
 @Suite struct NonEmptyTests {
-
     // MARK: - Construction
 
     @Test func init_singleElement() {
@@ -93,7 +92,9 @@ private enum TestError: Error, Equatable { case bad(String) }
     // MARK: - Equatable / Comparable
 
     @Test func equatable() {
-        #expect(NonEmpty(head: 1, tail: [2]) == NonEmpty(head: 1, tail: [2]))
+        let ne1 = NonEmpty(head: 1, tail: [2])
+        let ne2 = NonEmpty(head: 1, tail: [2])
+        #expect(ne1 == ne2)
         #expect(NonEmpty(head: 1, tail: [2]) != NonEmpty(head: 1, tail: [3]))
     }
 

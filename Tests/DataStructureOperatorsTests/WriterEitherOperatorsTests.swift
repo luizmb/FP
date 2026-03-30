@@ -1,11 +1,9 @@
-import DataStructureOperators
-import DataStructure
-import Testing
 import CoreFPOperators
-import CoreFP
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct WriterEitherOperatorsTests {
-
     @Test func writerMapTWithEitherInner() {
         let w = Writer<[String], Either<String, Int>>(.right(5), ["x"])
         let result = { $0 * 2 } <£^> w

@@ -1,11 +1,9 @@
-import DataStructureOperators
-import DataStructure
-import Testing
 import CoreFPOperators
-import CoreFP
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct WriterTStatefulOperatorsTests {
-
     @Test func fmap() {
         let w = Writer<[String], Stateful<Int, Int>>(Stateful { s in s }, ["log"])
         let result = { $0 * 2 } <£^> w

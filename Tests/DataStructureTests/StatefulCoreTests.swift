@@ -1,9 +1,7 @@
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct StatefulCoreTests {
-
     // MARK: - Construction & Execution
 
     @Test func statefulEval() {

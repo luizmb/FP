@@ -1,14 +1,14 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // WriterT + Optional — free functions for Writer<W, A?>
 
 /// apply for Writer<W, Optional>
 public func applyWriterOptional<W: Monoid, A, B>(
-    _ wf: Writer<W, Optional<(A) -> B>>,
-    _ wa: Writer<W, Optional<A>>
-) -> Writer<W, Optional<B>> {
-    Writer<W, Optional<B>>(
+    _ wf: Writer<W, ((A) -> B)?>,
+    _ wa: Writer<W, A?>
+) -> Writer<W, B?> {
+    Writer<W, B?>(
         Optional.apply(wf.value, wa.value),
         W.combine(wf.log, wa.log)
     )

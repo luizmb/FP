@@ -2,36 +2,35 @@ import CoreFP
 import Testing
 
 @Suite struct BoolOperationsTests {
-
     private struct User { let name: String; let age: Int; let isAdmin: Bool }
 
     private let alice = User(name: "Alice", age: 30, isAdmin: false)
-    private let bob   = User(name: "Bob",   age: 16, isAdmin: true)
+    private let bob   = User(name: "Bob", age: 16, isAdmin: true)
 
     // MARK: - equals / notEquals
 
     @Test func equalsPartial() {
         let isAlice = equals("Alice")
         #expect(isAlice("Alice") == true)
-        #expect(isAlice("Bob")   == false)
+        #expect(isAlice("Bob") == false)
     }
 
     @Test func notEqualsPartial() {
         let notAlice = notEquals("Alice")
-        #expect(notAlice("Bob")   == true)
+        #expect(notAlice("Bob") == true)
         #expect(notAlice("Alice") == false)
     }
 
     // MARK: - not (Bool value)
 
     @Test func notBool() {
-        #expect(not(true)  == false)
+        #expect(not(true) == false)
         #expect(not(false) == true)
     }
 
     @Test func notReturnsHigherOrder() {
         let negate = not()
-        #expect(negate(true)  == false)
+        #expect(negate(true) == false)
         #expect(negate(false) == true)
     }
 
@@ -41,14 +40,14 @@ import Testing
         let isAdmin: (User) -> Bool = { $0.isAdmin }
         let nonAdmin = not(isAdmin)
         #expect(nonAdmin(alice) == true)
-        #expect(nonAdmin(bob)   == false)
+        #expect(nonAdmin(bob) == false)
     }
 
     @Test func notPredicateComposed() {
         let nameIsAlice = compose(\User.name, equals("Alice"))
         let notAlice = not(nameIsAlice)
         #expect(notAlice(alice) == false)
-        #expect(notAlice(bob)   == true)
+        #expect(notAlice(bob) == true)
     }
 
     // MARK: - and (predicate combining)
@@ -58,7 +57,7 @@ import Testing
         let isAdult: (User) -> Bool = compose(\User.age, flip(>=)(18))
         let adultNonAdmin = and(not(isAdmin), isAdult)
         #expect(adultNonAdmin(alice) == true)
-        #expect(adultNonAdmin(bob)   == false)
+        #expect(adultNonAdmin(bob) == false)
     }
 
     @Test func andPredicatesFilter() {
@@ -77,7 +76,7 @@ import Testing
         let nameIsAlice = compose(\User.name, equals("Alice"))
         let aliceOrAdmin = or(nameIsAlice, isAdmin)
         #expect(aliceOrAdmin(alice) == true)   // name matches
-        #expect(aliceOrAdmin(bob)   == true)   // isAdmin
+        #expect(aliceOrAdmin(bob) == true)   // isAdmin
     }
 
     @Test func orPredicatesFilter() {
@@ -108,14 +107,14 @@ import Testing
     // MARK: - and / or (Bool value — original overloads untouched)
 
     @Test func andBool() {
-        #expect(and(true)(true)   == true)
-        #expect(and(true)(false)  == false)
-        #expect(and(false)(true)  == false)
+        #expect(and(true)(true) == true)
+        #expect(and(true)(false) == false)
+        #expect(and(false)(true) == false)
     }
 
     @Test func orBool() {
         #expect(or(false)(false) == false)
-        #expect(or(true)(false)  == true)
-        #expect(or(false)(true)  == true)
+        #expect(or(true)(false) == true)
+        #expect(or(false)(true) == true)
     }
 }

@@ -1,6 +1,5 @@
-import DataStructure
 import CoreFPOperators
-import CoreFP
+import DataStructure
 
 // (<£^>) :: (a -> b) -> Stateful<s, Either<l, a>> -> Stateful<s, Either<l, b>>
 public func <£^> <S, L, A, B>(_ fn: @escaping (A) -> B, _ stateful: Stateful<S, Either<L, A>>) -> Stateful<S, Either<L, B>>

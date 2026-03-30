@@ -1,12 +1,11 @@
-import Testing
 import Combine
 @testable import CoreFP
 @testable import CoreFPOperators
+import Testing
 
 // MARK: - Publisher transformer functor operators
 
 @Suite struct PublisherTransformerFunctorTests {
-
     private var cancellables = Set<AnyCancellable>()
 
     // MARK: - Publisher<[A], E>
@@ -36,7 +35,7 @@ import Combine
     @Test func publisherTOptionalForwardFmap() {
         var cancellables = Set<AnyCancellable>()
         let pub: AnyPublisher<Int?, Never> = Just(Optional(5)).eraseToAnyPublisher()
-        var result: Int? = nil
+        var result: Int?
         ({ $0 * 2 } <£^> pub)
             .sink(receiveCompletion: ignore, receiveValue: { result = $0 })
             .store(in: &cancellables)
@@ -46,7 +45,7 @@ import Combine
     @Test func publisherTOptionalFlippedFmap() {
         var cancellables = Set<AnyCancellable>()
         let pub: AnyPublisher<Int?, Never> = Just(Optional(5)).eraseToAnyPublisher()
-        var result: Int? = nil
+        var result: Int?
         (pub <&^> { $0 * 2 })
             .sink(receiveCompletion: ignore, receiveValue: { result = $0 })
             .store(in: &cancellables)
@@ -71,7 +70,7 @@ import Combine
         var cancellables = Set<AnyCancellable>()
         enum Err: Error { case fail }
         let pub: AnyPublisher<Result<Int, Err>, Never> = Just(.success(3)).eraseToAnyPublisher()
-        var result: Result<Int, Err>? = nil
+        var result: Result<Int, Err>?
         ({ $0 * 2 } <£^> pub)
             .sink(receiveCompletion: ignore, receiveValue: { result = $0 })
             .store(in: &cancellables)
@@ -82,7 +81,7 @@ import Combine
         var cancellables = Set<AnyCancellable>()
         enum Err: Error { case fail }
         let pub: AnyPublisher<Result<Int, Err>, Never> = Just(.success(3)).eraseToAnyPublisher()
-        var result: Result<Int, Err>? = nil
+        var result: Result<Int, Err>?
         (pub <&^> { $0 * 2 })
             .sink(receiveCompletion: ignore, receiveValue: { result = $0 })
             .store(in: &cancellables)
@@ -93,7 +92,6 @@ import Combine
 // MARK: - AsyncSequence transformer functor operators
 
 @Suite struct AsyncSequenceTransformerFunctorTests {
-
     // MARK: - AsyncSequence<[A]>
 
     @Test func asyncSequenceTArrayForwardFmap() async {
@@ -170,7 +168,6 @@ import Combine
 // MARK: - DeferredTask transformer functor operators
 
 @Suite struct DeferredTaskTransformerFunctorTests {
-
     // MARK: - DeferredTask<[A]>
 
     @Test func deferredTaskTArrayForwardFmap() async {
@@ -225,7 +222,6 @@ import Combine
 // MARK: - DeferredStream transformer functor operators
 
 @Suite struct DeferredStreamTransformerFunctorTests {
-
     // MARK: - DeferredStream<[A]>
 
     @Test func deferredStreamTArrayForwardFmap() async {

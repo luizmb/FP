@@ -4,7 +4,8 @@ public extension DeferredStream {
         DeferredStream { AsyncStream { continuation in
             continuation.yield(value)
             continuation.finish()
-        }}
+        }
+        }
     }
 
     // seqRight :: DeferredStream a -> DeferredStream b -> DeferredStream b

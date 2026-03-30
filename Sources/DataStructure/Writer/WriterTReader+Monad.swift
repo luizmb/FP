@@ -1,5 +1,4 @@
 import Foundation
-import CoreFP
 
 // WriterT + Reader — Writer<W, Reader<Env, A>>
 //

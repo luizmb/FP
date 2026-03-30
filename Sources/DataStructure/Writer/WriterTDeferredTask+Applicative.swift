@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // WriterT + DeferredTask — free functions for Writer<W, DeferredTask<A>>
 

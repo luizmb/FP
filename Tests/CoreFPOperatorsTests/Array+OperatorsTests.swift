@@ -1,9 +1,7 @@
-import Testing
-@testable import CoreFP
 @testable import CoreFPOperators
+import Testing
 
 @Suite struct ArrayOperatorsTests {
-
     // MARK: - Functor Operators
 
     @Test func fmapOperator() {

@@ -1,18 +1,18 @@
-import DataStructureOperators
-import DataStructure
-import Testing
-import CoreFPOperators
 import CoreFP
+import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct StatefulTDeferredStreamOperatorsTests {
-
     @Test func fmap() async {
         let s = Stateful<Int, DeferredStream<Int>> { _ in
             DeferredStream { AsyncStream { c in
                 c.yield(1)
                 c.yield(2)
                 c.finish()
-            } }
+            }
+            }
         }
         let result = { $0 * 10 } <£^> s
         var values: [Int] = []
@@ -28,7 +28,8 @@ import CoreFP
                 c.yield(1)
                 c.yield(2)
                 c.finish()
-            } }
+            }
+            }
         }
         let result = s <&^> { $0 * 10 }
         var values: [Int] = []
@@ -43,7 +44,8 @@ import CoreFP
             DeferredStream { AsyncStream { c in
                 c.yield(5)
                 c.finish()
-            } }
+            }
+            }
         }
         let result = { $0 + 100 } <£^> s
         var values: [Int] = []

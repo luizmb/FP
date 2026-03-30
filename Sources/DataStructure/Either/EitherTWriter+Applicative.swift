@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // EitherTWriter: outer = Either, inner = Writer
 // Type: Either<L, Writer<W, A>>

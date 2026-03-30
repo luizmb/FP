@@ -1,6 +1,5 @@
-import DataStructure
 import CoreFP
-import CoreFPOperators
+import DataStructure
 
 // MARK: - Either
 
@@ -208,6 +207,7 @@ public func <=< <W: Monoid, Env, A, B, C>(
 
 #if canImport(Combine)
 import Combine
+import CoreFPOperators
 
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func <=< <W: Monoid, A, B, C, E: Error>(

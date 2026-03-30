@@ -7,15 +7,30 @@ on:
 jobs:
   test:
     name: Build & Test
-    runs-on: macos-15
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
 
       - name: Select Xcode
-        run: sudo xcode-select -s /Applications/Xcode_26.3.app
+        run: sudo xcode-select -s /Applications/Xcode_26.2.app
+
+      - name: Install Mint
+        run: brew install mint
+
+      - name: Install SwiftLint
+        run: mint bootstrap
+
+      - name: Install Periphery
+        run: brew install peripheryapp/periphery/periphery
+
+      - name: Lint
+        run: mint run swiftlint lint --strict
 
       - name: Build
         run: swift build 2>&1
 
       - name: Test
         run: swift test 2>&1
+
+      - name: Periphery
+        run: periphery scan

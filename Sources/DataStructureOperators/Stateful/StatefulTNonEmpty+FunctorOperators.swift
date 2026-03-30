@@ -1,6 +1,5 @@
-import DataStructure
 import CoreFPOperators
-import CoreFP
+import DataStructure
 
 // StatefulTNonEmpty: outer = Stateful, inner = NonEmpty
 // Type: Stateful<S, NonEmpty<A>>

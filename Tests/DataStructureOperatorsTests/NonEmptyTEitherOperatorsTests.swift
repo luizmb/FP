@@ -1,11 +1,9 @@
-import DataStructureOperators
-import DataStructure
-import Testing
-import CoreFP
 import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct NonEmptyTEitherOperatorsTests {
-
     @Test func fmapOperator_forward() {
         let ne = NonEmpty<Either<String, Int>>(head: .right(1), tail: [.left("err"), .right(3)])
         let result = { $0 * 10 } <£^> ne

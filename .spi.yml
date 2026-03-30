@@ -1,0 +1,15 @@
+version: 1
+builder:
+  configs:
+    - platform: macosSpm
+      documentation_targets:
+        - FP
+        - CoreFP
+        - CoreFPOperators
+        - DataStructure
+        - DataStructureOperators
+    - platform: ios
+    - platform: tvos
+    - platform: watchos
+    - platform: visionos
+    - platform: linux

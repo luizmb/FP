@@ -1,8 +1,7 @@
-import Testing
 import CoreFP
+import Testing
 
 @Suite struct OptionalFoldableTests {
-
     // MARK: - fold
 
     @Test func foldSome() {
@@ -16,14 +15,14 @@ import CoreFP
     }
 
     @Test func foldCurriedSome() {
-        let collapse = Optional<Int>.fold(onNone: 0, onSome: { $0 * 2 })
+        let collapse = Int?.fold(onNone: 0, onSome: { $0 * 2 })
         #expect(collapse(.some(5)) == 10)
         #expect(collapse(nil) == 0)
     }
 
     @Test func foldPointFree() {
         let values: [Int?] = [.some(1), nil, .some(3)]
-        let result = values.map(Optional<Int>.fold(onNone: 0, onSome: id))
+        let result = values.map(Int?.fold(onNone: 0, onSome: id))
         #expect(result == [1, 0, 3])
     }
 
@@ -40,7 +39,7 @@ import CoreFP
     }
 
     @Test func foldMapCurried() {
-        let fn = Optional<Int>.foldMap({ "\($0)" })
+        let fn = Int?.foldMap({ "\($0)" })
         #expect(fn(.some(7)) == "7")
         #expect(fn(nil) == "")
     }

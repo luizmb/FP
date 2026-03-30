@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct ResultTStatefulApplicativeTests {
-
     enum TestError: Error, Equatable { case failure }
 
     // MARK: - Result<Stateful<S, A>, E> — Result as outer, Stateful as inner
@@ -19,16 +18,14 @@ import CoreFP
         let rf: Result<Stateful<Int, (Int) -> String>, TestError> = .failure(.failure)
         let ra: Result<Stateful<Int, Int>, TestError> = .success(.pure(5))
         let result = applyResultStateful(rf, ra)
-        if case .failure(let e) = result { #expect(e == .failure) }
-        else { Issue.record("Expected .failure") }
+        if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func applyFailureVal() {
         let rf: Result<Stateful<Int, (Int) -> String>, TestError> = .success(.pure({ "\($0)" }))
         let ra: Result<Stateful<Int, Int>, TestError> = .failure(.failure)
         let result = applyResultStateful(rf, ra)
-        if case .failure(let e) = result { #expect(e == .failure) }
-        else { Issue.record("Expected .failure") }
+        if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func seqRightBothSuccess() {
@@ -42,8 +39,7 @@ import CoreFP
         let lhs: Result<Stateful<Int, Int>, TestError> = .failure(.failure)
         let rhs: Result<Stateful<Int, String>, TestError> = .success(.pure("hello"))
         let result = seqRightResultStateful(lhs, rhs)
-        if case .failure(let e) = result { #expect(e == .failure) }
-        else { Issue.record("Expected .failure") }
+        if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func seqLeftBothSuccess() {
@@ -57,7 +53,6 @@ import CoreFP
         let lhs: Result<Stateful<Int, Int>, TestError> = .success(.pure(99))
         let rhs: Result<Stateful<Int, String>, TestError> = .failure(.failure)
         let result = seqLeftResultStateful(lhs, rhs)
-        if case .failure(let e) = result { #expect(e == .failure) }
-        else { Issue.record("Expected .failure") }
+        if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 }

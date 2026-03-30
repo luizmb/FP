@@ -1,5 +1,4 @@
 import Foundation
-import CoreFP
 
 public extension Stateful {
     /// apply :: Stateful<s, (input -> a)> -> Stateful<s, input> -> Stateful<s, a>

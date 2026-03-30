@@ -41,7 +41,8 @@ public extension AsyncStream {
     //
     // Converts a non-throwing stream of Result values into a throwing stream.
     // .success elements are yielded normally; the first .failure element throws and ends the stream.
-    func toThrowingStream<Success: Sendable, E: Error & Sendable>() -> AsyncThrowingStream<Success, any Error> where Element == Result<Success, E> {
+    func toThrowingStream<Success: Sendable, E: Error & Sendable>() -> AsyncThrowingStream<Success, any Error>
+    where Element == Result<Success, E> {
         AsyncThrowingStream { continuation in
             Task {
                 for await element in self {

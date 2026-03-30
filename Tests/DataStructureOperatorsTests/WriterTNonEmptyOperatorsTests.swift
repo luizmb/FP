@@ -1,11 +1,9 @@
-import DataStructureOperators
-import DataStructure
-import Testing
-import CoreFP
 import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct WriterTNonEmptyOperatorsTests {
-
     @Test func fmapOperator_forward() {
         let w = Writer<[String], NonEmpty<Int>>(NonEmpty(head: 1, tail: [2, 3]), ["log"])
         let result = { $0 * 2 } <£^> w

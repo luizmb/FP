@@ -1,9 +1,12 @@
-import DataStructure
-import CoreFPOperators
 import CoreFP
+import CoreFPOperators
+import DataStructure
 
 // (<*>) :: Writer<w, Reader<env, (a -> b)>> -> Writer<w, Reader<env, a>> -> Writer<w, Reader<env, b>>
-public func <*> <W: Monoid, Env, A, B>(_ wf: Writer<W, Reader<Env, (A) -> B>>, _ wa: Writer<W, Reader<Env, A>>) -> Writer<W, Reader<Env, B>> {
+public func <*> <W: Monoid, Env, A, B>(
+    _ wf: Writer<W, Reader<Env, (A) -> B>>,
+    _ wa: Writer<W, Reader<Env, A>>
+) -> Writer<W, Reader<Env, B>> {
     applyWriterReader(wf, wa)
 }
 

@@ -1,11 +1,9 @@
-import DataStructureOperators
-import DataStructure
-import Testing
 import CoreFPOperators
-import CoreFP
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct ArrayTStatefulOperatorsTests {
-
     @Test func fmap() {
         let arr: [Stateful<Int, Int>] = [.get, .pure(10)]
         let result = { $0 * 2 } <£^> arr

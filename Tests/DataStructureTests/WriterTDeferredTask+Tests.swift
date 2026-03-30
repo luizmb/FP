@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct WriterTDeferredTaskTests {
-
     // MARK: - Writer<W, DeferredTask<A>> — Writer as outer, DeferredTask as inner
 
     @Test func mapT() async {

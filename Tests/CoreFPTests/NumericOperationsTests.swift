@@ -1,8 +1,7 @@
-import Testing
 @testable import CoreFP
+import Testing
 
 @Suite struct NumericOperationsTests {
-
     // MARK: - symmetricRange
 
     @Test func symmetricRangeInteger() {
@@ -77,7 +76,7 @@ import Testing
     // MARK: - power
 
     @Test func powerPositiveExponent() {
-        #expect(power(2, 10) == 1024)
+        #expect(power(2, 10) == 1_024)
         #expect(power(3, 3) == 27)
         #expect(power(5, 3) == 125)
     }

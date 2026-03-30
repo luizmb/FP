@@ -1,17 +1,17 @@
-import DataStructureOperators
-import DataStructure
-import Testing
-import CoreFPOperators
 import CoreFP
+import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct WriterTDeferredStreamOperatorsTests {
-
     @Test func fmap() async {
         let stream = DeferredStream<Int> { AsyncStream { c in
             c.yield(1)
             c.yield(2)
             c.finish()
-        } }
+        }
+        }
         let w = Writer<[String], DeferredStream<Int>>(stream, ["log"])
         let result = { $0 * 3 } <£^> w
         var values: [Int] = []
@@ -27,7 +27,8 @@ import CoreFP
             c.yield(1)
             c.yield(2)
             c.finish()
-        } }
+        }
+        }
         let w = Writer<[String], DeferredStream<Int>>(stream, ["log"])
         let result = w <&^> { $0 * 3 }
         var values: [Int] = []
@@ -42,14 +43,16 @@ import CoreFP
         let stream = DeferredStream<Int> { AsyncStream { c in
             c.yield(4)
             c.finish()
-        } }
+        }
+        }
         let w = Writer<[String], DeferredStream<Int>>(stream, ["outer"])
         let result = w >>- { n in
             Writer<[String], DeferredStream<String>>(
                 DeferredStream { AsyncStream { c in
                     c.yield("\(n * 2)")
                     c.finish()
-                } },
+                }
+                },
                 ["inner"]
             )
         }

@@ -1,9 +1,8 @@
-import Testing
 @testable import CoreFP
 @testable import CoreFPOperators
+import Testing
 
 @Suite struct OptionalMonadTests {
-
     @Test func bind() {
         let value: Int? = 5
         let result = value >>- { x in x > 0 ? .some(x * 2) : .none }
@@ -46,13 +45,13 @@ import Testing
 
     @Test func join() {
         let nested: Int?? = .some(.some(5))
-        #expect(Optional<Int>.join(nested) == 5)
+        #expect(Int?.join(nested) == 5)
 
         let nestedNone: Int?? = .some(.none)
-        #expect(Optional<Int>.join(nestedNone) == nil)
+        #expect(Int?.join(nestedNone) == nil)
 
         let outerNone: Int?? = .none
-        #expect(Optional<Int>.join(outerNone) == nil)
+        #expect(Int?.join(outerNone) == nil)
     }
 
     @Test func filter() {

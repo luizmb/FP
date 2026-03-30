@@ -1,10 +1,9 @@
-import Testing
-import Foundation
 @testable import CoreFP
 @testable import CoreFPOperators
+import Foundation
+import Testing
 
 @Suite struct SemigroupTests {
-
     @Test func arraySemigroup() {
         let arr1 = [1, 2, 3]
         let arr2 = [4, 5, 6]

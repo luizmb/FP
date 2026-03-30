@@ -14,9 +14,11 @@ public func flatMapTPublisherOptional<A, B, E: Error>(
     _ publisher: AnyPublisher<A?, E>,
     _ fn: @escaping (A) -> AnyPublisher<B?, E>
 ) -> AnyPublisher<B?, E> {
-    publisher.flatMap { optA -> AnyPublisher<B?, E> in
-        optA.map(fn) ?? Just(.none).setFailureType(to: E.self).eraseToAnyPublisher()
-    }.eraseToAnyPublisher()
+    publisher
+        .flatMap { optA -> AnyPublisher<B?, E> in
+            optA.map(fn) ?? Just(.none).setFailureType(to: E.self).eraseToAnyPublisher()
+        }
+        .eraseToAnyPublisher()
 }
 
 /// Curried version

@@ -1,8 +1,7 @@
-import Testing
 @testable import CoreFP
+import Testing
 
 @Suite struct MonoidConformanceTests {
-
     @Test func stringMonoid() {
         #expect(String.identity == "")
         #expect(String.combine(String.identity, "hello") == "hello")

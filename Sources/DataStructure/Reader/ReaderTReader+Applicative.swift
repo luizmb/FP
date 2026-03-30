@@ -1,5 +1,4 @@
 import Foundation
-import CoreFP
 
 // ReaderT + Reader (nested)
 

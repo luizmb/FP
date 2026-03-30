@@ -15,7 +15,7 @@ public func <£> <A, B, C>(
 /// Map replace operator for functions (always returns a constant)
 /// (£>) :: (a -> b) -> c -> (a -> c)
 public func £> <A, B, C>(
-    _ f: @escaping (A) -> B,
+    _: @escaping (A) -> B,
     _ value: C
 ) -> (A) -> C {
     const(value)

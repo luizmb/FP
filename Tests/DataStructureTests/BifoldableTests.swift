@@ -1,9 +1,8 @@
-import Testing
-import DataStructure
 import CoreFP
+import DataStructure
+import Testing
 
 @Suite struct BifoldableTests {
-
     // MARK: - Either (via SumType2.bifoldMap)
 
     @Test func eitherBifoldMapLeft() {

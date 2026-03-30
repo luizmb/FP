@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // ReaderTDeferredTask: outer = Reader, inner = DeferredTask
 // Type: Reader<Env, DeferredTask<A>>

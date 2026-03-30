@@ -1,10 +1,7 @@
-import CoreFP
-
 // StatefulTNonEmpty: outer = Stateful, inner = NonEmpty
 // Type: Stateful<S, NonEmpty<A>>
 
 public extension Stateful {
-
     func flatMapT<Inner, B>(
         _ fn: @escaping (Inner) -> Stateful<S, NonEmpty<B>?>
     ) -> Stateful<S, NonEmpty<B>?> where A == NonEmpty<Inner> {

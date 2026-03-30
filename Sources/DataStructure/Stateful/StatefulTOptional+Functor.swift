@@ -1,11 +1,11 @@
-import Foundation
 import CoreFP
+import Foundation
 
 public extension Stateful {
     // StatefulT + Optional — Stateful<S, A?>
 
     func mapT<Inner, B>(_ fn: @escaping (Inner) -> B) -> Stateful<S, B?> where A == Inner? {
-        mapStateful(Optional<Inner>.fmap(fn))
+        mapStateful(Inner?.fmap(fn))
     }
 
     static func fmapT<Inner, B>(

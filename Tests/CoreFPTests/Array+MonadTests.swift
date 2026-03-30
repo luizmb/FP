@@ -1,8 +1,7 @@
-import Testing
 @testable import CoreFP
+import Testing
 
 @Suite struct ArrayMonadTests {
-
     @Test func bind() {
         let array = [1, 2, 3]
         let result = Array.bind({ [$0, $0 * 2] })(array)

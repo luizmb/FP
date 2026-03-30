@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // StatefulT + AsyncStream — free functions for Stateful<S, AsyncStream<A>>
 

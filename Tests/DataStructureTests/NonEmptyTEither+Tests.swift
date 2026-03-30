@@ -1,9 +1,7 @@
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct NonEmptyTEitherTests {
-
     // MARK: - NonEmpty<Either<L, A>> — mapT
 
     @Test func mapT_right() {

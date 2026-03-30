@@ -1,11 +1,10 @@
-import Testing
 @testable import CoreFP
+import Testing
 
 // MARK: - Fixtures
 
 private struct Address {
     var street: String
-    let city: String
 }
 
 private struct Person {
@@ -34,13 +33,13 @@ struct LensTests {
 
     @Test func lensFromWritableKeyPath_get() {
         let ageLens = lens(\Person.age)
-        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave", city: "NY"))
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
         #expect(ageLens.get(person) == 30)
     }
 
     @Test func lensFromWritableKeyPath_set() {
         let ageLens = lens(\Person.age)
-        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave", city: "NY"))
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
         let updated = ageLens.set(person, 31)
         #expect(updated.age == 31)
         #expect(updated.name == "Alice")
@@ -48,7 +47,7 @@ struct LensTests {
 
     @Test func lensFromWritableKeyPath_over() {
         let ageLens = lens(\Person.age)
-        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave", city: "NY"))
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
         let updated = ageLens.over({ $0 + 1 })(person)
         #expect(updated.age == 31)
     }
@@ -57,13 +56,13 @@ struct LensTests {
 
     @Test func lensFromKeyPath_get() {
         let nameLens = lens(\.name) { (p: Person, n) in Person(age: p.age, name: n, address: p.address) }
-        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave", city: "NY"))
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
         #expect(nameLens.get(person) == "Alice")
     }
 
     @Test func lensFromKeyPath_set() {
         let nameLens = lens(\.name) { (p: Person, n) in Person(age: p.age, name: n, address: p.address) }
-        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave", city: "NY"))
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
         let updated = nameLens.set(person, "Bob")
         #expect(updated.name == "Bob")
         #expect(updated.age == 30)
@@ -74,21 +73,21 @@ struct LensTests {
     @Test("get-set: setting what you got leaves the structure unchanged")
     func law_getSet() {
         let ageLens = lens(\Person.age)
-        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave", city: "NY"))
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
         #expect(ageLens.set(person, ageLens.get(person)).age == person.age)
     }
 
     @Test("set-get: getting after setting returns the new value")
     func law_setGet() {
         let ageLens = lens(\Person.age)
-        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave", city: "NY"))
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
         #expect(ageLens.get(ageLens.set(person, 99)) == 99)
     }
 
     @Test("set-set: setting twice is the same as setting once with the last value")
     func law_setSet() {
         let ageLens = lens(\Person.age)
-        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave", city: "NY"))
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
         let once = ageLens.set(ageLens.set(person, 40), 99)
         let twice = ageLens.set(person, 99)
         #expect(once.age == twice.age)
@@ -152,19 +151,19 @@ struct AffineTraversalTests {
     )
 
     @Test func preview() {
-        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave", city: "NY"))
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
         #expect(streetAT.preview(person) == "1st Ave")
     }
 
     @Test func set() {
-        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave", city: "NY"))
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
         let updated = streetAT.set(person, "2nd Ave")
         #expect(updated.address.street == "2nd Ave")
         #expect(updated.name == "Alice")
     }
 
     @Test func over() {
-        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave", city: "NY"))
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
         let updated = streetAT.over({ $0.uppercased() })(person)
         #expect(updated.address.street == "1ST AVE")
     }

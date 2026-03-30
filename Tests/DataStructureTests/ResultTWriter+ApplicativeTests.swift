@@ -1,9 +1,8 @@
+import CoreFP
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct ResultTWriterApplicativeTests {
-
     enum TestError: Error, Equatable { case failure }
 
     // MARK: - Result<Writer<W, A>, E> — Result as outer, Writer as inner
@@ -20,16 +19,14 @@ import CoreFP
         let rf: Result<Writer<[String], (Int) -> String>, TestError> = .failure(.failure)
         let ra: Result<Writer<[String], Int>, TestError> = .success(Writer(7, ["val"]))
         let result = applyResultWriter(rf, ra)
-        if case .failure(let e) = result { #expect(e == .failure) }
-        else { Issue.record("Expected .failure") }
+        if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func applyFailureVal() {
         let rf: Result<Writer<[String], (Int) -> String>, TestError> = .success(Writer({ "\($0)" }, ["fn"]))
         let ra: Result<Writer<[String], Int>, TestError> = .failure(.failure)
         let result = applyResultWriter(rf, ra)
-        if case .failure(let e) = result { #expect(e == .failure) }
-        else { Issue.record("Expected .failure") }
+        if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func seqRightBothSuccess() {
@@ -44,8 +41,7 @@ import CoreFP
         let lhs: Result<Writer<[String], Int>, TestError> = .failure(.failure)
         let rhs: Result<Writer<[String], String>, TestError> = .success(Writer("hello", ["b"]))
         let result = seqRightResultWriter(lhs, rhs)
-        if case .failure(let e) = result { #expect(e == .failure) }
-        else { Issue.record("Expected .failure") }
+        if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func seqLeftBothSuccess() {
@@ -60,7 +56,6 @@ import CoreFP
         let lhs: Result<Writer<[String], Int>, TestError> = .success(Writer(99, ["a"]))
         let rhs: Result<Writer<[String], String>, TestError> = .failure(.failure)
         let result = seqLeftResultWriter(lhs, rhs)
-        if case .failure(let e) = result { #expect(e == .failure) }
-        else { Issue.record("Expected .failure") }
+        if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 }

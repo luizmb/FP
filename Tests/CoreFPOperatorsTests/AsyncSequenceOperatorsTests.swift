@@ -1,10 +1,7 @@
-import Testing
 @testable import CoreFP
 @testable import CoreFPOperators
-import CoreFPOperators
-
+import Testing
 @Suite struct AsyncSequenceTests {
-
     // MARK: - Functor Tests
 
     @Test func asyncSequenceFmap() async throws {

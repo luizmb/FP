@@ -1,9 +1,6 @@
-import CoreFP
-
 // MARK: - Functor
 
 public extension NonEmpty {
-
     /// Transform every element — structure preserved, contents changed.
     func map<B>(_ fn: (A) -> B) -> NonEmpty<B> {
         NonEmpty<B>(head: fn(head), tail: tail.map(fn))

@@ -1,9 +1,7 @@
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct ReaderTNonEmptyTests {
-
     struct Env { let factor: Int }
 
     // MARK: - Reader<Env, NonEmpty<A>> — mapT (functor)
@@ -26,7 +24,7 @@ import CoreFP
     // MARK: - Reader<Env, NonEmpty<A>> — flatMapT (monad)
 
     @Test func flatMapT_collects_results() {
-        let reader = Reader<Env, NonEmpty<Int>> { env in NonEmpty(head: 1, tail: [2, 3]) }
+        let reader = Reader<Env, NonEmpty<Int>> { _ in NonEmpty(head: 1, tail: [2, 3]) }
         let result = reader.flatMapT { n -> Reader<Env, NonEmpty<Int>?> in
             Reader { env in NonEmpty(head: n * env.factor) }
         }

@@ -29,7 +29,7 @@ public extension AsyncStream where Element: Sendable {
     static func liftA2<A: Sendable, B: Sendable, C: Sendable>(
         _ fn: @escaping @Sendable (A, B) -> C
     ) -> @Sendable (AsyncStream<A>, AsyncStream<B>) -> AsyncStream<C> {
-        { @Sendable (streamA, streamB) in
+        { @Sendable streamA, streamB in
             AsyncStream<C> { continuation in
                 let task = Task { @Sendable in
                     var iterA = streamA.makeAsyncIterator()
@@ -57,7 +57,7 @@ public extension AsyncStream where Element: Sendable {
                 var lhsIter = lhs.makeAsyncIterator()
                 var rhsIter = rhs.makeAsyncIterator()
 
-                while let _ = await lhsIter.next(),
+                while await lhsIter.next() != nil,
                       let b = await rhsIter.next() {
                     continuation.yield(b)
                 }

@@ -1,5 +1,4 @@
 import Foundation
-import CoreFP
 
 // ResultTStateful: outer = Result, inner = Stateful
 // Type: Result<Stateful<S, A>, E> = Result wrapping a Stateful computation
@@ -16,7 +15,9 @@ public extension Result {
         map { stateful in stateful.flatMap(fn) }
     }
 
-    static func bindT<S, A, B>(_ fn: @escaping (A) -> Stateful<S, B>) -> (Result<Stateful<S, A>, Failure>) -> Result<Stateful<S, B>, Failure> {
+    static func bindT<S, A, B>(
+        _ fn: @escaping (A) -> Stateful<S, B>
+    ) -> (Result<Stateful<S, A>, Failure>) -> Result<Stateful<S, B>, Failure> {
         { result in result.flatMapT(fn) }
     }
 }

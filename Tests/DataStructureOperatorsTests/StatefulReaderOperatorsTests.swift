@@ -1,11 +1,9 @@
-import DataStructureOperators
-import DataStructure
-import Testing
 import CoreFPOperators
-import CoreFP
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct StatefulReaderOperatorsTests {
-
     // MARK: - Reader<Env, Stateful<S, A>> applicative operators
 
     @Test func readerTStatefulApply() {

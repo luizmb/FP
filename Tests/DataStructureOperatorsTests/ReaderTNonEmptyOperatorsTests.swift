@@ -1,11 +1,9 @@
-import DataStructureOperators
-import DataStructure
-import Testing
-import CoreFP
 import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct ReaderTNonEmptyOperatorsTests {
-
     struct Env { let factor: Int }
 
     @Test func fmapOperator_forward() {

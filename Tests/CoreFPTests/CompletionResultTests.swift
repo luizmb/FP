@@ -1,11 +1,8 @@
-import Testing
 import Combine
 @testable import CoreFP
-import CoreFP
-
+import Testing
 @MainActor
 @Suite struct CompletionResultTests {
-
     enum TestError: Error, Equatable {
         case test
         case other

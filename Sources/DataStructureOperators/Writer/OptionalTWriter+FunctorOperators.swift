@@ -1,6 +1,6 @@
-import DataStructure
-import CoreFPOperators
 import CoreFP
+import CoreFPOperators
+import DataStructure
 
 // (<£^>) :: (a -> b) -> Writer<w, a>? -> Writer<w, b>?
 public func <£^> <W: Monoid, A, B>(_ fn: @escaping (A) -> B, _ opt: Writer<W, A>?) -> Writer<W, B>? {

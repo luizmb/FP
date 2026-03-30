@@ -1,8 +1,8 @@
-import Testing
 @testable import CoreFP
+// swiftlint:disable discouraged_optional_collection
+import Testing
 
 @Suite struct TraversableTests {
-
     private enum TestError: Error, Equatable {
         case fail
     }
@@ -165,3 +165,4 @@ import Testing
         #expect(result == [[1, 3], [1, 4], [2, 3], [2, 4]])
     }
 }
+// swiftlint:enable discouraged_optional_collection

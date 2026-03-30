@@ -1,7 +1,7 @@
-import DataStructure
-import Foundation
 import CoreFP
 import CoreFPOperators
+import DataStructure
+import Foundation
 
 // ReaderT + Reader (nested)
 
@@ -22,6 +22,9 @@ public func <£ <A, B, Env1, Env2>(_ value: A, _ reader: Reader<Env1, Reader<Env
 }
 
 // (<&^>) :: f (g a) -> (a -> b) -> f (g b)
-public func <&^> <A, B, Env1, Env2>(_ reader: Reader<Env1, Reader<Env2, A>>, _ transform: @escaping (A) -> B) -> Reader<Env1, Reader<Env2, B>> {
+public func <&^> <A, B, Env1, Env2>(
+    _ reader: Reader<Env1, Reader<Env2, A>>,
+    _ transform: @escaping (A) -> B
+) -> Reader<Env1, Reader<Env2, B>> {
     transform <£^> reader
 }

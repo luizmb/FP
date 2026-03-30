@@ -125,6 +125,24 @@ DeferredTask.kleisli(fetchUser, fetchOrders)(42)
 
 ---
 
+## `race` — concurrent competition
+
+`race` runs two tasks concurrently and returns the result of whichever completes first. The slower task is cancelled.
+
+```swift
+let cdn    = DeferredTask<Data> { await cdn.fetch(url) }
+let origin = DeferredTask<Data> { await origin.fetch(url) }
+
+let data = await race(cdn, origin).run()
+// Whichever responds first wins; the other is cancelled.
+```
+
+`race` is a free function (not `<|>`) because `DeferredTask<A>` has no `empty` — a task that never resolves would deadlock, so a lawful Alternative instance is impossible on the base type.
+
+For fallback semantics (first non-nil / first success), use `<|>` on the transformer variants — see [Alternative](#alternative) below.
+
+---
+
 ## Zip — parallel combination
 
 `zip` runs multiple independent tasks concurrently and combines their results.
@@ -183,6 +201,34 @@ let fetchResult: DeferredTask<Result<User, APIError>> = DeferredTask {
 
 { $0.name } <£^> fetchResult   // DeferredTask<Result<String, APIError>>
 ```
+
+### Alternative — `<|>` on transformer variants
+
+Both `DeferredTaskTOptional` and `DeferredTaskTResult` support `<|>`. Unlike `race`, these have a meaningful `empty` value (`nil` and `.failure(…)` respectively), so they form lawful Alternative instances.
+
+Both start concurrently; the slower task is cancelled when the first winner is found.
+
+```swift
+// DeferredTask<A?> — first non-nil wins; both-nil returns nil
+let primary:  DeferredTask<User?> = DeferredTask { await primaryDB.find(id: 42) }
+let fallback: DeferredTask<User?> = DeferredTask { await replicaDB.find(id: 42) }
+let user = await (primary <|> fallback).run()   // User? — whichever is non-nil first
+
+// Named function
+altDeferredTaskOptional(primary, fallback)
+
+// DeferredTask<Result<A,E>> — first .success wins; both-fail returns last failure
+let fast: DeferredTask<Result<Data, APIError>> = DeferredTask { await cdn.fetch() }
+let slow: DeferredTask<Result<Data, APIError>> = DeferredTask { await origin.fetch() }
+let data = await (fast <|> slow).run()   // Result<Data, APIError>
+
+// Named function
+altDeferredTaskResult(fast, slow)
+```
+
+For racing two `DeferredTask<A>` values with no empty/fallback semantics, use `race` instead.
+
+---
 
 ### `DeferredTaskTArray` — `DeferredTask<[A]>` (outer = DeferredTask, inner = Array)
 

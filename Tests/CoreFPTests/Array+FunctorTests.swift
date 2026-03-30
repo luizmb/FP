@@ -1,8 +1,7 @@
-import Testing
 @testable import CoreFP
+import Testing
 
 @Suite struct ArrayFunctorTests {
-
     @Test func fmap() {
         let array = [1, 2, 3]
         let result = Array.fmap({ $0 * 2 })(array)

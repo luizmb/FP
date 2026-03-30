@@ -1,14 +1,19 @@
-import DataStructure
 import CoreFPOperators
-import CoreFP
+import DataStructure
 
 // (>>-) :: Stateful<s, Result<a, e>> -> (a -> Stateful<s, Result<b, e>>) -> Stateful<s, Result<b, e>>
-public func >>- <S, A, B, E: Error>(_ stateful: Stateful<S, Result<A, E>>, _ fn: @escaping (A) -> Stateful<S, Result<B, E>>) -> Stateful<S, Result<B, E>> {
+public func >>- <S, A, B, E: Error>(
+    _ stateful: Stateful<S, Result<A, E>>,
+    _ fn: @escaping (A) -> Stateful<S, Result<B, E>>
+) -> Stateful<S, Result<B, E>> {
     stateful.flatMapT(fn)
 }
 
 // (-<<) :: (a -> Stateful<s, Result<b, e>>) -> Stateful<s, Result<a, e>> -> Stateful<s, Result<b, e>>
-public func -<< <S, A, B, E: Error>(_ fn: @escaping (A) -> Stateful<S, Result<B, E>>, _ stateful: Stateful<S, Result<A, E>>) -> Stateful<S, Result<B, E>> {
+public func -<< <S, A, B, E: Error>(
+    _ fn: @escaping (A) -> Stateful<S, Result<B, E>>,
+    _ stateful: Stateful<S, Result<A, E>>
+) -> Stateful<S, Result<B, E>> {
     stateful.flatMapT(fn)
 }
 

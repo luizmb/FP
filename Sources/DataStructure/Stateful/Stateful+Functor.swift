@@ -1,5 +1,4 @@
 import Foundation
-import CoreFP
 
 public extension Stateful {
     func mapStateful<B>(_ fn: @escaping (A) -> B) -> Stateful<S, B> {

@@ -1,11 +1,9 @@
-import Testing
+import CoreFPOperators
 import DataStructure
 import DataStructureOperators
-import CoreFP
-import CoreFPOperators
+import Testing
 
 @Suite struct ComonadOperatorsTests {
-
     // MARK: - Writer ->>
 
     @Test func writerExtendOperator() {

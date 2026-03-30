@@ -1,11 +1,9 @@
+import CoreFPOperators
 import DataStructure
 import DataStructureOperators
-import CoreFPOperators
 import Testing
-import CoreFP
 
 @Suite struct ValidationOperatorsTests {
-
     // MARK: - Functor operators
 
     @Test func fmapOperatorSuccess() {

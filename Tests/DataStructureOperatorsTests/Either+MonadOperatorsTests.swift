@@ -1,11 +1,10 @@
-import DataStructureOperators
-import DataStructure
-import Testing
 import CoreFP
 import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct EitherMonadTests {
-
     // MARK: - Basic Monad Tests
 
     @Test func flatMap() {

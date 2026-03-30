@@ -1,12 +1,10 @@
-import Testing
 import Combine
 @testable import CoreFP
-import CoreFP
 import Foundation
+import Testing
 
 @MainActor
 @Suite struct PublisherTests {
-
     enum TestError: Error, Equatable {
         case test
     }

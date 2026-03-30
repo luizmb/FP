@@ -1,7 +1,7 @@
-import DataStructure
-import Foundation
 import CoreFP
 import CoreFPOperators
+import DataStructure
+import Foundation
 
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
 public func <£> <B1, A, B>(_ transform: @escaping (B) -> B1, _ either: Either<A, B>) -> Either<A, B1> {

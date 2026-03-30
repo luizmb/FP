@@ -1,5 +1,4 @@
 import CoreFP
-import CoreFPOperators
 
 // (<*>) :: DeferredTask<[a->b]> -> DeferredTask<[a]> -> DeferredTask<[b]>
 public func <*> <A: Sendable, B: Sendable>(

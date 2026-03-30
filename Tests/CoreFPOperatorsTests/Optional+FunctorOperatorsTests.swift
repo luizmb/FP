@@ -1,9 +1,8 @@
-import Testing
 @testable import CoreFP
 @testable import CoreFPOperators
+import Testing
 
 @Suite struct OptionalFunctorTests {
-
     // MARK: - Basic Functor Tests
 
     @Test func fmap() {
@@ -18,7 +17,7 @@ import Testing
 
     @Test func curriedFmap() {
         let double: (Int) -> Int = { $0 * 2 }
-        let fmap = Optional<Int>.fmap(double)
+        let fmap = Int?.fmap(double)
 
         #expect(fmap(5) == 10)
         #expect(fmap(nil) == nil)

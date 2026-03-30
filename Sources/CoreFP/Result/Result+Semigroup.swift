@@ -1,6 +1,5 @@
 extension Result {
     public enum Monoids {
-
         /// Semigroup: success wins over failure; combines two successes;
         /// picks the left for two failures (Failure need not be Semigroup).
         public struct Optimistic: RawRepresentable {

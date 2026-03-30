@@ -1,7 +1,6 @@
 #if canImport(Combine)
 import Combine
 import Foundation
-import CoreFP
 
 // PublisherTEither: outer = AnyPublisher, inner = Either
 // Type: AnyPublisher<Either<L,A>, E>

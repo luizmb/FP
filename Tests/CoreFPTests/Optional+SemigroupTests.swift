@@ -1,8 +1,7 @@
-import Testing
 @testable import CoreFP
+import Testing
 
 @Suite struct OptionalSemigroupTests {
-
     // MARK: - Semigroup
 
     @Test func combinesBothPresent() {
@@ -26,7 +25,7 @@ import Testing
     @Test func noneWhenBothAbsent() {
         let lhs: String? = nil
         let rhs: String? = nil
-        #expect(Optional<String>.combine(lhs, rhs) == nil)
+        #expect(String?.combine(lhs, rhs) == nil)
     }
 
     @Test func semigroupAssociativity() {
@@ -41,9 +40,9 @@ import Testing
     // MARK: - Monoid
 
     @Test func identity() {
-        #expect(Optional<String>.identity == nil)
-        #expect(Optional.combine(Optional<String>.identity, "hello") == "hello")
-        #expect(Optional.combine("hello", Optional<String>.identity) == "hello")
+        #expect(String?.identity == nil)
+        #expect(Optional.combine(String?.identity, "hello") == "hello")
+        #expect(Optional.combine("hello", String?.identity) == "hello")
     }
 
     @Test func mconcatOptionals() {

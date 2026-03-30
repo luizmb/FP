@@ -1,9 +1,7 @@
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct EitherTWriterApplicativeTests {
-
     // MARK: - Either<L, Writer<W, A>> — Either as outer, Writer as inner
 
     @Test func applyBothRight() {

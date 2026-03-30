@@ -1,9 +1,7 @@
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct WriterTResultTests {
-
     // MARK: - Writer<W, Result<A, E>> — Writer as outer, Result as inner
 
     @Test func mapTSuccess() {

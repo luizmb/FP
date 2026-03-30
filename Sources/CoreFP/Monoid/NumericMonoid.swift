@@ -2,7 +2,6 @@
 /// Requires `ExpressibleByIntegerLiteral` (satisfied by all standard numeric types)
 /// so that both 0 and 1 can be expressed as literals for identity elements.
 public enum NumericMonoid<T: Numeric & ExpressibleByIntegerLiteral> {
-
     /// Monoid under addition, with identity 0.
     public struct Sum: Monoid, RawRepresentable {
         public let rawValue: T

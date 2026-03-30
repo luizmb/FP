@@ -1,10 +1,7 @@
-import CoreFP
-
 // NonEmptyTOptional: outer = NonEmpty, inner = Optional
 // Type: NonEmpty<A?>
 
 public extension NonEmpty {
-
     /// flatMapT for NonEmpty<A?> — maps over present values, preserves nil slots.
     /// nil  → nil
     /// some → NonEmpty<B?> (inner flatMap)

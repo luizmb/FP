@@ -1,11 +1,9 @@
-import DataStructureOperators
-import DataStructure
-import Testing
 import CoreFPOperators
-import CoreFP
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct StatefulTArrayOperatorsTests {
-
     @Test func fmap() {
         let s = Stateful<Int, [Int]>.pure([1, 2, 3])
         let result = { $0 * 2 } <£^> s

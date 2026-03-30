@@ -1,9 +1,7 @@
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct StatefulTNonEmptyTests {
-
     // MARK: - Stateful<S, NonEmpty<A>> — mapT (functor)
 
     @Test func mapT() {

@@ -1,13 +1,9 @@
-import Testing
 import Combine
 @testable import CoreFP
 @testable import CoreFPOperators
-import CoreFPOperators
-import CoreFP
-
+import Testing
 @MainActor
 @Suite struct CombineOperatorsTests {
-
     // MARK: - Functor Tests
 
     @Test func fmap() {
@@ -20,7 +16,8 @@ import CoreFP
         doubled.sink(
             receiveCompletion: ignore,
             receiveValue: { results.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(results == [2, 4, 6])
     }
@@ -37,12 +34,14 @@ import CoreFP
         publisher.sink(
             receiveCompletion: ignore,
             receiveValue: { originalResults.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         mapped.sink(
             receiveCompletion: ignore,
             receiveValue: { mappedResults.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(originalResults == mappedResults)
     }
@@ -64,12 +63,14 @@ import CoreFP
         composed.sink(
             receiveCompletion: ignore,
             receiveValue: { composedResults.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         separate.sink(
             receiveCompletion: ignore,
             receiveValue: { separateResults.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(composedResults == separateResults)
     }
@@ -85,7 +86,8 @@ import CoreFP
         doubled.sink(
             receiveCompletion: ignore,
             receiveValue: { results.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(results == [2, 4, 6])
     }
@@ -101,7 +103,8 @@ import CoreFP
         replaced.sink(
             receiveCompletion: ignore,
             receiveValue: { results.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(results == [99, 99, 99])
     }
@@ -117,7 +120,8 @@ import CoreFP
         replaced.sink(
             receiveCompletion: ignore,
             receiveValue: { results.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(results == [42, 42, 42])
     }
@@ -134,7 +138,8 @@ import CoreFP
         doubled.sink(
             receiveCompletion: ignore,
             receiveValue: { results.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(results == [2, 4, 6])
     }
@@ -158,7 +163,8 @@ import CoreFP
                 }
             },
             receiveValue: ignore
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(capturedError == .mapped)
     }
@@ -180,7 +186,8 @@ import CoreFP
         bimappedSuccess.sink(
             receiveCompletion: ignore,
             receiveValue: { results.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         var capturedError: TestError?
         bimappedFailure.sink(
@@ -190,7 +197,8 @@ import CoreFP
                 }
             },
             receiveValue: ignore
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(results == [2, 4, 6])
         #expect(capturedError == .mapped)
@@ -211,7 +219,8 @@ import CoreFP
         result.sink(
             receiveCompletion: ignore,
             receiveValue: { results.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(results == [11, 22])
     }
@@ -227,7 +236,8 @@ import CoreFP
         zipped.sink(
             receiveCompletion: ignore,
             receiveValue: { results.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(results.count == 3)
         #expect(results[0].0 == 1)
@@ -249,7 +259,8 @@ import CoreFP
         applied.sink(
             receiveCompletion: ignore,
             receiveValue: { results.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(results == [10, 13])
     }
@@ -265,7 +276,8 @@ import CoreFP
         result.sink(
             receiveCompletion: ignore,
             receiveValue: { results.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(results == [10, 20])
     }
@@ -281,7 +293,8 @@ import CoreFP
         result.sink(
             receiveCompletion: ignore,
             receiveValue: { results.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(results == [1, 2])
     }
@@ -302,7 +315,8 @@ import CoreFP
         bound.sink(
             receiveCompletion: ignore,
             receiveValue: { results.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(results == [1, 10, 2, 20])
     }
@@ -319,7 +333,8 @@ import CoreFP
         result.sink(
             receiveCompletion: ignore,
             receiveValue: { results.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(results == [2, 4])
     }
@@ -338,7 +353,8 @@ import CoreFP
         result.sink(
             receiveCompletion: ignore,
             receiveValue: { results.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(results == [3, 6])
     }
@@ -355,7 +371,8 @@ import CoreFP
         result.sink(
             receiveCompletion: ignore,
             receiveValue: { results.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(results == ["10"])
     }
@@ -372,7 +389,8 @@ import CoreFP
         result.sink(
             receiveCompletion: ignore,
             receiveValue: { results.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(results == ["10"])
     }
@@ -387,7 +405,8 @@ import CoreFP
         result.sink(
             receiveCompletion: ignore,
             receiveValue: { results.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(results == [2, 4, 6])
     }
@@ -408,12 +427,14 @@ import CoreFP
         left.sink(
             receiveCompletion: ignore,
             receiveValue: { leftResults.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         right.sink(
             receiveCompletion: ignore,
             receiveValue: { rightResults.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(leftResults == rightResults)
     }
@@ -431,12 +452,14 @@ import CoreFP
         publisher.sink(
             receiveCompletion: ignore,
             receiveValue: { originalResults.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         bound.sink(
             receiveCompletion: ignore,
             receiveValue: { boundResults.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(originalResults == boundResults)
     }
@@ -460,12 +483,14 @@ import CoreFP
         left.sink(
             receiveCompletion: ignore,
             receiveValue: { leftResults.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         right.sink(
             receiveCompletion: ignore,
             receiveValue: { rightResults.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
 
         #expect(leftResults == rightResults)
     }

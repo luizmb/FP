@@ -1,5 +1,4 @@
 import Foundation
-import CoreFP
 
 // AsyncStreamTStateful: outer = AsyncStream, inner = Stateful
 // Type: AsyncStream<Stateful<S, A>>

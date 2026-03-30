@@ -1,11 +1,9 @@
-import DataStructureOperators
-import DataStructure
-import Testing
 import CoreFPOperators
-import CoreFP
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct OptionalTStatefulOperatorsTests {
-
     @Test func fmapSome() {
         let opt: Stateful<Int, Int>? = .some(.get)
         let result = { $0 * 2 } <£^> opt

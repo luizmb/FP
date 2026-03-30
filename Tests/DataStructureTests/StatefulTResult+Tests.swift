@@ -1,9 +1,7 @@
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct StatefulTResultTests {
-
     enum TestError: Error, Equatable { case failure }
 
     // MARK: - Stateful<S, Result<A, E>> — State as outer, Result as inner

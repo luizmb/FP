@@ -1,3 +1,4 @@
+// swiftlint:disable discouraged_optional_collection
 /// Sequence a list of optionals
 /// sequence :: [a?] -> [a]?
 public func sequence<A>(_ optionals: [A?]) -> [A]? {
@@ -11,3 +12,4 @@ public func traverse<A, B>(_ fn: @escaping (A) -> B?) -> ([A]) -> [B]? {
         array.traverse(fn)
     }
 }
+// swiftlint:enable discouraged_optional_collection

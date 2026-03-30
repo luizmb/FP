@@ -621,6 +621,23 @@ Result<Int, Error>.success(1)   <|> .success(3)   // .success(1)
 let a = DeferredStream<Int>.wrap(AsyncStream.just(1, 2))
 let b = DeferredStream<Int>.wrap(AsyncStream.just(3, 4))
 for await v in (a <|> b) { print(v) }  // 1, 2, 3, 4
+
+// DeferredTask<A?> — race: both start concurrently, first non-nil wins, other cancelled
+let primary:  DeferredTask<User?> = DeferredTask { await primaryAPI.find(id: 42) }
+let fallback: DeferredTask<User?> = DeferredTask { await fallbackAPI.find(id: 42) }
+let user = await (primary <|> fallback).run()
+
+// DeferredTask<Result<A,E>> — race: both start concurrently, first .success wins
+let fast: DeferredTask<Result<Data, Error>> = DeferredTask { await cdn.fetch(url) }
+let slow: DeferredTask<Result<Data, Error>> = DeferredTask { await origin.fetch(url) }
+let data = await (fast <|> slow).run()
+```
+
+`DeferredTask` has no `empty` (a never-resolving task would deadlock), so `<|>` is only available on the transformer variants `DeferredTask<A?>` and `DeferredTask<Result<A,E>>`. For racing two tasks with no fallback semantics, use `race`:
+
+```swift
+// race — first-to-complete wins, other is cancelled (base DeferredTask<A>)
+let fastest = await race(taskA, taskB).run()
 ```
 
 ---
@@ -1321,7 +1338,7 @@ All operators require `CoreFPOperators` (for built-in types) or `DataStructureOp
 | `>=>` | `<=<` | Kleisli composition — left-to-right / right-to-left | `Optional`, `Array`, `Result`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Writer` |
 | `>>>` | `<<<` | Function / optics composition — left-to-right / right-to-left | Functions, `Iso`, `Lens`, `Prism`, `AffineTraversal` |
 | `£` / `<\|` | `\|>` | Function application — fn left / value left | Any function |
-| `<\|>` | — | Alternative / choice | `Optional`, `Array`, `Result`, `Publisher`, `DeferredTask`, `DeferredStream` |
+| `<\|>` | — | Alternative / choice | `Optional`, `Array`, `Result`, `Publisher`, `DeferredTask<A?>`, `DeferredTask<Result<A,E>>`, `DeferredStream` |
 | `<>` | — | Semigroup append | `String`, `Array`, `Optional`, `Dictionary`, `Set`, `Result`, `Int.Monoids.*`, `Bool.Monoids.*`, … |
 | `++` | — | Concatenation | `String`, `Array` |
 | `^` _(prefix)_ | — | Lift `WritableKeyPath` → `Lens`; `KeyPath` → partial `Lens` builder | `WritableKeyPath`, `KeyPath` |

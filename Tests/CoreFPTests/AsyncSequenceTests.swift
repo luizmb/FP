@@ -1,9 +1,6 @@
-import Testing
 @testable import CoreFP
-import CoreFP
-
+import Testing
 @Suite struct AsyncSequenceTests {
-
     // MARK: - Functor Tests (Core Methods)
 
     @Test func fmap() async throws {
@@ -95,5 +92,4 @@ import CoreFP
 
         #expect(results == [1, 10, 2, 20])
     }
-
 }

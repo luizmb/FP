@@ -1,14 +1,20 @@
-import DataStructure
-import CoreFPOperators
 import CoreFP
+import CoreFPOperators
+import DataStructure
 
 // (>>-) :: Writer<w, Either<l, a>> -> (a -> Writer<w, Either<l, b>>) -> Writer<w, Either<l, b>>
-public func >>- <W: Monoid, L, A, B>(_ writer: Writer<W, Either<L, A>>, _ fn: @escaping (A) -> Writer<W, Either<L, B>>) -> Writer<W, Either<L, B>> {
+public func >>- <W: Monoid, L, A, B>(
+    _ writer: Writer<W, Either<L, A>>,
+    _ fn: @escaping (A) -> Writer<W, Either<L, B>>
+) -> Writer<W, Either<L, B>> {
     writer.flatMapT(fn)
 }
 
 // (-<<) :: (a -> Writer<w, Either<l, b>>) -> Writer<w, Either<l, a>> -> Writer<w, Either<l, b>>
-public func -<< <W: Monoid, L, A, B>(_ fn: @escaping (A) -> Writer<W, Either<L, B>>, _ writer: Writer<W, Either<L, A>>) -> Writer<W, Either<L, B>> {
+public func -<< <W: Monoid, L, A, B>(
+    _ fn: @escaping (A) -> Writer<W, Either<L, B>>,
+    _ writer: Writer<W, Either<L, A>>
+) -> Writer<W, Either<L, B>> {
     writer.flatMapT(fn)
 }
 

@@ -1,11 +1,9 @@
-import DataStructureOperators
-import DataStructure
-import Testing
 import CoreFPOperators
-import CoreFP
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct OptionalTWriterOperatorsTests {
-
     @Test func fmapSome() {
         let opt: Writer<[String], Int>? = .some(Writer(5, ["x"]))
         let result = { $0 * 2 } <£^> opt

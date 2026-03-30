@@ -1,10 +1,7 @@
-import CoreFP
-
 // NonEmptyTResult: outer = NonEmpty, inner = Result
 // Type: NonEmpty<Result<A, E>>  (Success = A, Failure = E)
 
 public extension NonEmpty {
-
     /// mapT for NonEmpty<Result<A, E>> — maps over the success values.
     func mapT<Inner, E, Output>(_ fn: (Inner) -> Output) -> NonEmpty<Result<Output, E>>
     where A == Result<Inner, E> {

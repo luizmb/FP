@@ -1,9 +1,7 @@
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct WriterTNonEmptyTests {
-
     // MARK: - Writer<W, NonEmpty<A>> — mapT (functor)
 
     @Test func mapT() {

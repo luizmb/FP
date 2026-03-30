@@ -1,11 +1,10 @@
-import DataStructureOperators
-import DataStructure
-import Testing
-import CoreFPOperators
 import CoreFP
+import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct WriterTDeferredTaskOperatorsTests {
-
     @Test func fmap() async {
         let w = Writer<[String], DeferredTask<Int>>(DeferredTask { 5 }, ["log"])
         let result = { $0 * 2 } <£^> w

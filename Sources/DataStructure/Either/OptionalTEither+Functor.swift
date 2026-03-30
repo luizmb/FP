@@ -1,5 +1,4 @@
 import Foundation
-import CoreFP
 
 // OptionalTEither: outer = Optional, inner = Either
 // Type: Either<L,A>? = Optional<Either<L,A>>

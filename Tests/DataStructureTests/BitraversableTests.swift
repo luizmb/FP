@@ -1,9 +1,7 @@
-import Testing
 import DataStructure
-import CoreFP
+import Testing
 
 @Suite struct BitraversableTests {
-
     private enum TestError: Error, Equatable { case fail }
 
     // MARK: - Either + Array

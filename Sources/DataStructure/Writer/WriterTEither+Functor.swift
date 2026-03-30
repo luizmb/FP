@@ -1,5 +1,4 @@
 import Foundation
-import CoreFP
 
 public extension Writer {
     // WriterT + Either — Writer<W, Either<L, A>>

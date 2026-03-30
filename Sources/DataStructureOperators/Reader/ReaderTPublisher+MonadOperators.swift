@@ -1,6 +1,5 @@
 import DataStructure
 #if canImport(Combine)
-import CoreFP
 import Combine
 import CoreFPOperators
 

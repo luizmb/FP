@@ -1,9 +1,7 @@
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct WriterTArrayTests {
-
     // MARK: - Writer<W, [A]> — Writer as outer, Array as inner
 
     @Test func mapT() {

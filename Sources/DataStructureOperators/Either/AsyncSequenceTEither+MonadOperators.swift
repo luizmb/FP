@@ -1,6 +1,5 @@
-import DataStructure
-import CoreFP
 import CoreFPOperators
+import DataStructure
 
 // AsyncSequenceTEither: AsyncStream<Either<L,A>>
 

@@ -1,9 +1,7 @@
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct ReaderTStatefulApplicativeTests {
-
     struct Env { let multiplier: Int }
 
     // MARK: - Reader<Env, Stateful<S, A>> — Reader as outer, Stateful as inner

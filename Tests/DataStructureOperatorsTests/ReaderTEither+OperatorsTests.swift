@@ -1,11 +1,9 @@
-import DataStructureOperators
+import CoreFPOperators
 import DataStructure
+import DataStructureOperators
 import Testing
-@testable import CoreFPOperators
-import CoreFP
 
 @Suite struct ReaderEitherOperatorsTests {
-
     struct Environment {
         let multiplier: Int
     }

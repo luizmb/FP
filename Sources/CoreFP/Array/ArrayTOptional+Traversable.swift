@@ -1,3 +1,4 @@
+// swiftlint:disable discouraged_optional_collection
 public extension Array {
     // traverse :: (a -> b?) -> [a] -> [b]?
     // traverse _ []     = Just []
@@ -14,3 +15,4 @@ public extension Array {
         traverse(CoreFP.id)
     }
 }
+// swiftlint:enable discouraged_optional_collection

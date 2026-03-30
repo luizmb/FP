@@ -1,9 +1,8 @@
-import Testing
 @testable import CoreFP
 @testable import CoreFPOperators
+import Testing
 
 @Suite struct EndoOperatorsTests {
-
     @Test func semigroupOperator_appliesLhsThenRhs() {
         let addOne = Endo<Int> { $0 + 1 }
         let double = Endo<Int> { $0 * 2 }

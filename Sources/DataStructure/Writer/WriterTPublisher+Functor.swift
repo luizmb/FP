@@ -1,7 +1,7 @@
 #if canImport(Combine)
-import Foundation
-import CoreFP
 import Combine
+import CoreFP
+import Foundation
 
 public extension Writer {
     // WriterT + Publisher — Writer<W, any Publisher<A, E>>

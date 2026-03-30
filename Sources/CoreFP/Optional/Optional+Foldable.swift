@@ -37,8 +37,7 @@ public extension Optional {
         if let wrapped = self {
             f(wrapped)
             return .some(wrapped)
-        }
-        else {
+        } else {
             otherwise()
             return nil
         }

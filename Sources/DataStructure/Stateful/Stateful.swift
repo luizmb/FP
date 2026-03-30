@@ -1,5 +1,4 @@
 import Foundation
-import CoreFP
 
 public struct Stateful<S, A> {
     public let run: (inout S) -> A

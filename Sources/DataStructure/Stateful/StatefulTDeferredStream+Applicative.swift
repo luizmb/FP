@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // StatefulTDeferredStream: outer = Stateful, inner = DeferredStream
 // Type: Stateful<S, DeferredStream<A>>

@@ -1,9 +1,7 @@
-import Testing
 import DataStructure
-import CoreFP
+import Testing
 
 @Suite struct EitherFoldableTests {
-
     // MARK: - foldMap
 
     @Test func foldMapRight() {

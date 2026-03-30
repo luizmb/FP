@@ -1,11 +1,10 @@
-import DataStructureOperators
-import DataStructure
-import Testing
-import CoreFPOperators
 import CoreFP
+import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct ResultTStatefulOperatorsTests {
-
     enum TestError: Error, Equatable { case failure }
 
     @Test func fmapSuccess() {
@@ -23,8 +22,7 @@ import CoreFP
     @Test func fmapFailure() {
         let result: Result<Stateful<Int, Int>, TestError> = .failure(.failure)
         let mapped: Result<Stateful<Int, Int>, TestError> = { $0 * 2 } <£^> result
-        if case .failure(let e) = mapped { #expect(e == .failure) }
-        else { Issue.record("Expected .failure") }
+        if case .failure(let e) = mapped { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func bindSuccess() {
@@ -36,8 +34,7 @@ import CoreFP
     @Test func bindFailure() {
         let result: Result<Stateful<Int, Int>, TestError> = .failure(.failure)
         let bound = result >>- { n in Stateful<Int, String>.pure("\(n)") }
-        if case .failure(let e) = bound { #expect(e == .failure) }
-        else { Issue.record("Expected .failure") }
+        if case .failure(let e) = bound { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func kleisli() {
@@ -58,8 +55,7 @@ import CoreFP
         let rf: Result<Stateful<Int, (Int) -> String>, TestError> = .failure(.failure)
         let ra: Result<Stateful<Int, Int>, TestError> = .success(.pure(5))
         let result = rf <*> ra
-        if case .failure(let e) = result { #expect(e == .failure) }
-        else { Issue.record("Expected .failure") }
+        if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func seqRight() {

@@ -1,11 +1,11 @@
-import Testing
 import CoreFP
 @testable import CoreFPOperators
+import Testing
 
 // MARK: - Fixtures
 
-private let addOne   = iso(get: { $0 + 1 },  reverseGet: { $0 - 1 })   // Iso<Int, Int>
-private let timesTwo = iso(get: { $0 * 2 },  reverseGet: { $0 / 2 })   // Iso<Int, Int>
+private let addOne   = iso(get: { $0 + 1 }, reverseGet: { $0 - 1 })   // Iso<Int, Int>
+private let timesTwo = iso(get: { $0 * 2 }, reverseGet: { $0 / 2 })   // Iso<Int, Int>
 
 private struct Box: Equatable { var value: Int }
 private let boxValueLens: Lens<Box, Int> = lens(\.value)
@@ -23,7 +23,6 @@ private let taggedAT: AffineTraversal<Tag, Int> = AffineTraversal(
 // MARK: - Iso >>> Iso
 
 @Suite struct IsoIsoCompositionTests {
-
     @Test func forwardGet() {
         let composed = addOne >>> timesTwo   // get = +1 then *2
         #expect(composed.get(5) == 12)       // (5+1)*2 = 12
@@ -54,7 +53,6 @@ private let taggedAT: AffineTraversal<Tag, Int> = AffineTraversal(
 // MARK: - Iso >>> Lens
 
 @Suite struct IsoLensCompositionTests {
-
     private let doubleBoxIso = iso(get: { Box(value: $0.value * 2) },
                                    reverseGet: { Box(value: $0.value / 2) })
 
@@ -79,7 +77,6 @@ private let taggedAT: AffineTraversal<Tag, Int> = AffineTraversal(
 // MARK: - Lens >>> Iso
 
 @Suite struct LensIsoCompositionTests {
-
     @Test func lensThenIso_get() {
         let composed: Lens<Box, Int> = boxValueLens >>> addOne
         #expect(composed.get(Box(value: 5)) == 6)
@@ -102,7 +99,6 @@ private let taggedAT: AffineTraversal<Tag, Int> = AffineTraversal(
 // MARK: - Iso >>> Prism
 
 @Suite struct IsoPrismCompositionTests {
-
     // A prism that only focuses on non-negative ints
     private let nonNegPrism: Prism<Int, Int> = prism(
         preview: { $0 >= 0 ? $0 : nil },
@@ -136,7 +132,6 @@ private let taggedAT: AffineTraversal<Tag, Int> = AffineTraversal(
 // MARK: - Prism >>> Iso
 
 @Suite struct PrismIsoCompositionTests {
-
     @Test func prismThenIso_preview() {
         let composed: Prism<Tag, Int> = taggedPrism >>> addOne
         #expect(composed.preview(.tagged(5)) == .some(6))
@@ -160,7 +155,6 @@ private let taggedAT: AffineTraversal<Tag, Int> = AffineTraversal(
 // MARK: - AffineTraversal >>> Iso
 
 @Suite struct AffineTraversalIsoCompositionTests {
-
     @Test func affineTraversalThenIso_preview() {
         let composed: AffineTraversal<Tag, Int> = taggedAT >>> addOne
         #expect(composed.preview(.tagged(5)) == .some(6))
@@ -185,7 +179,6 @@ private let taggedAT: AffineTraversal<Tag, Int> = AffineTraversal(
 // MARK: - Iso >>> AffineTraversal
 
 @Suite struct IsoAffineTraversalCompositionTests {
-
     private let positivePrismAT: AffineTraversal<Int, Int> = AffineTraversal(
         preview: { $0 > 0 ? $0 : nil },
         set: { _, a in a }

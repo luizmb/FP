@@ -14,15 +14,17 @@ public func flatMapTPublisherArray<A, B, E: Error>(
     _ publisher: AnyPublisher<[A], E>,
     _ fn: @escaping (A) -> AnyPublisher<[B], E>
 ) -> AnyPublisher<[B], E> {
-    publisher.flatMap { arr -> AnyPublisher<[B], E> in
-        let publishers = arr.map(fn)
-        guard !publishers.isEmpty else {
-            return Just([]).setFailureType(to: E.self).eraseToAnyPublisher()
+    publisher
+        .flatMap { arr -> AnyPublisher<[B], E> in
+            let publishers = arr.map(fn)
+            guard !publishers.isEmpty else {
+                return Just([]).setFailureType(to: E.self).eraseToAnyPublisher()
+            }
+            return publishers.dropFirst().reduce(publishers[0]) { acc, next in
+                acc.zip(next).map { $0 + $1 }.eraseToAnyPublisher()
+            }
         }
-        return publishers.dropFirst().reduce(publishers[0]) { acc, next in
-            acc.zip(next).map { $0 + $1 }.eraseToAnyPublisher()
-        }
-    }.eraseToAnyPublisher()
+        .eraseToAnyPublisher()
 }
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)

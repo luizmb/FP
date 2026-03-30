@@ -1,9 +1,7 @@
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct WriterStatefulTests {
-
     // MARK: - Writer<W, Stateful<S, A>> — Writer as outer, Stateful as inner
 
     @Test func mapT() {

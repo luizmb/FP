@@ -1,8 +1,7 @@
-import Testing
 @testable import CoreFP
+import Testing
 
 @Suite struct NumericMonoidTests {
-
     // MARK: - Sum
 
     @Test func intSum() {

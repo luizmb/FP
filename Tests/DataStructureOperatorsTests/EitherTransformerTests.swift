@@ -1,11 +1,9 @@
-import DataStructureOperators
+import CoreFPOperators
 import DataStructure
+import DataStructureOperators
 import Testing
-@testable import CoreFP
-@testable import CoreFPOperators
 
 @Suite struct EitherTransformerTests {
-
     private enum L: Equatable { case err }
     private enum E: Error, Equatable { case fail }
 
@@ -193,61 +191,53 @@ import Testing
     @Test func eitherTStatefulMapTRight() {
         let either: Either<L, Stateful<Int, Int>> = .right(Stateful { s in s })
         let result = { $0 * 2 } <£^> either
-        if case .right(let s) = result { #expect(s.eval(5) == 10) }
-        else { Issue.record("Expected .right") }
+        if case .right(let s) = result { #expect(s.eval(5) == 10) } else { Issue.record("Expected .right") }
     }
 
     @Test func eitherTStatefulMapTLeft() {
         let either: Either<L, Stateful<Int, Int>> = .left(.err)
         let result: Either<L, Stateful<Int, Int>> = { $0 * 2 } <£^> either
-        if case .left(let l) = result { #expect(l == .err) }
-        else { Issue.record("Expected .left") }
+        if case .left(let l) = result { #expect(l == .err) } else { Issue.record("Expected .left") }
     }
 
     @Test func eitherTStatefulFlatMapTRight() {
         let either: Either<L, Stateful<Int, Int>> = .right(Stateful { s in s })
         let result = either >>- { n in Stateful<Int, String> { _ in "\(n)" } }
-        if case .right(let s) = result { #expect(s.eval(7) == "7") }
-        else { Issue.record("Expected .right") }
+        if case .right(let s) = result { #expect(s.eval(7) == "7") } else { Issue.record("Expected .right") }
     }
 
     @Test func eitherTStatefulFlatMapTLeft() {
         let either: Either<L, Stateful<Int, Int>> = .left(.err)
         let result = either >>- { n in Stateful<Int, String> { _ in "\(n)" } }
-        if case .left(let l) = result { #expect(l == .err) }
-        else { Issue.record("Expected .left") }
+        if case .left(let l) = result { #expect(l == .err) } else { Issue.record("Expected .left") }
     }
 
     @Test func eitherTStatefulKleisli() {
         let f: (Int) -> Either<L, Stateful<Int, Int>> = { n in .right(Stateful { _ in n + 1 }) }
         let g: (Int) -> Stateful<Int, String> = { n in Stateful { _ in "\(n)" } }
         let result = (f >=> g)(4)
-        if case .right(let s) = result { #expect(s.eval(0) == "5") }
-        else { Issue.record("Expected .right") }
+        if case .right(let s) = result { #expect(s.eval(0) == "5") } else { Issue.record("Expected .right") }
     }
 
     @Test func eitherTStatefulApply() {
         let eithF: Either<L, Stateful<Int, (Int) -> String>> = .right(.pure({ "\($0)" }))
         let eithA: Either<L, Stateful<Int, Int>> = .right(.get)
         let result = eithF <*> eithA
-        if case .right(let s) = result { #expect(s.eval(5) == "5") }
-        else { Issue.record("Expected .right") }
+        if case .right(let s) = result { #expect(s.eval(5) == "5") } else { Issue.record("Expected .right") }
     }
 
     @Test func eitherTStatefulSeqRight() {
         let lhs: Either<L, Stateful<Int, Int>> = .right(.pure(1))
         let rhs: Either<L, Stateful<Int, String>> = .right(.pure("hello"))
         let result = lhs *> rhs
-        if case .right(let s) = result { #expect(s.eval(0) == "hello") }
-        else { Issue.record("Expected .right") }
+        if case .right(let s) = result { #expect(s.eval(0) == "hello") } else { Issue.record("Expected .right") }
     }
 
     @Test func eitherTStatefulSeqLeft() {
         let lhs: Either<L, Stateful<Int, Int>> = .right(.pure(99))
         let rhs: Either<L, Stateful<Int, String>> = .right(.pure("ignored"))
         let result = lhs <* rhs
-        if case .right(let s) = result { #expect(s.eval(0) == 99) }
-        else { Issue.record("Expected .right") }
+        if case .right(let s) = result { #expect(s.eval(0) == 99) } else { Issue.record("Expected .right") }
     }
 
     // MARK: - EitherTWriter

@@ -1,12 +1,10 @@
-import DataStructure
-import Testing
 import Combine
 @testable import CoreFP
-
+import DataStructure
+import Testing
 
 @MainActor
 @Suite struct CompletionEitherTests {
-
     enum TestError: Error, Equatable {
         case test
         case other

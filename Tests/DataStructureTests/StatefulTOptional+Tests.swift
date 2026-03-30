@@ -1,9 +1,7 @@
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct StatefulTOptionalTests {
-
     // MARK: - Stateful<S, A?> — State as outer, Optional as inner
 
     @Test func mapTSome() {
@@ -57,7 +55,7 @@ import CoreFP
         #expect(mapped == nil)
     }
 
-    @Test func optionalTStatefulFlatMapTSome() {
+    @Test func optionalTStatefulFlatMapTSome() throws {
         let opt: Stateful<Int, Int>? = .some(Stateful<Int, Int>.get)
         let result = opt.flatMapT { value in
             Stateful<Int, String> { state in
@@ -65,7 +63,8 @@ import CoreFP
                 return "\(value)"
             }
         }
-        let (output, finalState) = result!.runStateful(3)
+        let stateful = try #require(result)
+        let (output, finalState) = stateful.runStateful(3)
         #expect(output == "3")
         #expect(finalState == 6)
     }

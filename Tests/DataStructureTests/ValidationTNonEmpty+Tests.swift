@@ -1,9 +1,7 @@
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct ValidationTNonEmptyTests {
-
     // MARK: - Validation<E, NonEmpty<A>> — fmapTValidationNonEmpty
 
     @Test func fmapT_success() {

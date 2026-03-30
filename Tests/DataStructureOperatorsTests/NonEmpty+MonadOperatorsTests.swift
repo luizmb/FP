@@ -1,11 +1,9 @@
-import DataStructureOperators
-import DataStructure
-import Testing
-import CoreFP
 import CoreFPOperators
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct NonEmptyMonadOperatorsTests {
-
     // MARK: - >>- bind (container left)
 
     @Test func bindOperator_forward() {

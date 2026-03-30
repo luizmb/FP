@@ -1,7 +1,6 @@
+import CoreFPOperators
 import DataStructure
 import Foundation
-import CoreFP
-import CoreFPOperators
 
 // ReaderTNonEmpty: outer = Reader, inner = NonEmpty
 // Type: Reader<Environment, NonEmpty<A>>

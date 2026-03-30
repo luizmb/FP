@@ -7,7 +7,7 @@ infix operator <*: FunctorOps                       // Haskell Applicative Funct
 infix operator <|>: AlternativePrecedence           // Haskell Or/Alternative
 infix operator >=>: KleisliCompositionRight         // Haskell Kleisli composition (infixr 1)
 infix operator <=<: KleisliCompositionRight         // Haskell reverse Kleisli composition (infixr 1)
-infix operator >>-: MonadBindLeft                   // Haskell Bind (infixl 1) - using >>- to avoid conflict with Swift's >>= bitwise operator
+infix operator >>-: MonadBindLeft                   // Haskell Bind (infixl 1) — avoids conflict with Swift's >>= bitwise operator
 infix operator -<<: KleisliCompositionRight         // Haskell flipped Bind (infixr 1)
 infix operator ->>: MonadBindLeft                   // Comonad extend / coflatMap (infixl 1) — dual of >>-  (w ->> f = extend f w)
 infix operator <<-: KleisliCompositionRight         // Flipped comonad extend  (infixr 1) — dual of -<<  (f <<- w = extend f w)

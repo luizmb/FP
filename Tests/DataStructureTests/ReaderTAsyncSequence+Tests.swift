@@ -1,9 +1,7 @@
 import DataStructure
 import Testing
-import CoreFP
 
 @Suite struct ReaderConcurrencyFPTests {
-
     struct Environment {
         let multiplier: Int
     }

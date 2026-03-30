@@ -1,5 +1,4 @@
 import Foundation
-import CoreFP
 
 // WriterT + Stateful — Writer<W, Stateful<S, A>>
 //

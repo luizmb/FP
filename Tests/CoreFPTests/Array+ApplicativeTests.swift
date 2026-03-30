@@ -1,8 +1,7 @@
-import Testing
 @testable import CoreFP
+import Testing
 
 @Suite struct ArrayApplicativeTests {
-
     @Test func liftA2() {
         let arr1 = [1, 2]
         let arr2 = [10, 20]

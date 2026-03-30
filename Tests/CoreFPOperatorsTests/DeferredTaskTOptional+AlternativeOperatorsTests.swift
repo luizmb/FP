@@ -1,11 +1,10 @@
-import Testing
 @testable import CoreFP
 @testable import CoreFPOperators
+import Testing
 
 private enum TestError: Error, Equatable { case err }
 
 @Suite struct DeferredTaskTOptionalAlternativeOperatorsTests {
-
     @Test func altOperatorFirstNonNilWins() async {
         let lhs = DeferredTask<Int?> { nil }
         let rhs = DeferredTask<Int?> { 42 }

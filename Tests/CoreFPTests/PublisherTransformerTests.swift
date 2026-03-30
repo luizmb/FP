@@ -1,10 +1,9 @@
 #if canImport(Combine)
 import Combine
-import Testing
 @testable import CoreFP
+import Testing
 
 @Suite struct PublisherTransformerTests {
-
     // Helper to collect values from synchronous publishers
     private func collect<A, E: Error>(_ publisher: AnyPublisher<A, E>) -> [A] {
         var results: [A] = []
@@ -12,7 +11,8 @@ import Testing
         publisher.sink(
             receiveCompletion: { _ in },
             receiveValue: { results.append($0) }
-        ).store(in: &cancellables)
+        )
+        .store(in: &cancellables)
         return results
     }
 

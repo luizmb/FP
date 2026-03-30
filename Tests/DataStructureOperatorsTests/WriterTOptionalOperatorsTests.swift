@@ -1,11 +1,9 @@
-import DataStructureOperators
-import DataStructure
-import Testing
 import CoreFPOperators
-import CoreFP
+import DataStructure
+import DataStructureOperators
+import Testing
 
 @Suite struct WriterTOptionalOperatorsTests {
-
     @Test func fmapSome() {
         let w = Writer<[String], Int?>(.some(5), ["log"])
         let result = { $0 * 2 } <£^> w

@@ -1,9 +1,8 @@
-import Testing
 @testable import CoreFP
 @testable import CoreFPOperators
+import Testing
 
 @Suite struct FunctionFunctorTests {
-
     // MARK: - Basic Functor Tests
 
     @Test func basicFmap() {

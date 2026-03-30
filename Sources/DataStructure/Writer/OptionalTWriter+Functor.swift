@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // OptionalTWriter: outer = Optional, inner = Writer
 // Type: Writer<W, A>? = Optional<Writer<W, A>>

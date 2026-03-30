@@ -1,9 +1,8 @@
-import Testing
 @testable import CoreFP
 @testable import CoreFPOperators
+import Testing
 
 @Suite struct ArrayTResultTests {
-
     private enum Err: Error, Equatable { case fail }
 
     // MARK: - Functor

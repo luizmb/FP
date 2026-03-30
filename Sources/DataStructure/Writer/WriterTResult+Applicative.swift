@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // WriterT + Result — free functions for Writer<W, Result<A, E>>
 

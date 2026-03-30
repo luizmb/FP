@@ -1,5 +1,5 @@
-import Foundation
 import CoreFP
+import Foundation
 
 // WriterT + Stateful — free functions for Writer<W, Stateful<S, A>>
 

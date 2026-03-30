@@ -1,0 +1,5 @@
+disabled_rules:
+  - empty_collection_literal  # == [] is idiomatic and readable in test assertions
+  - empty_string              # == "" is idiomatic and readable in test assertions
+  - file_length               # comprehensive test suites are legitimately long
+  - type_body_length          # test suite structs grow with each test case added

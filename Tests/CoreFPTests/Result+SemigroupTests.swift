@@ -1,5 +1,5 @@
-import Testing
 @testable import CoreFP
+import Testing
 
 // A test error conforming to Monoid so we can exercise all 4 variants.
 private struct Err: Error, Monoid, Equatable {
@@ -9,7 +9,6 @@ private struct Err: Error, Monoid, Equatable {
 }
 
 @Suite struct ResultSemigroupTests {
-
     // MARK: - Optimistic (Semigroup, Success: Semigroup)
 
     @Test func optimisticCombinesTwoSuccesses() {

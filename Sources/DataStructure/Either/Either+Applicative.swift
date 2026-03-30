@@ -62,7 +62,8 @@ public extension Either {
         handling: @escaping (Ba, Bb) -> B
     ) -> Either<A, B> {
         .match(
-            lhs, rhs,
+            lhs,
+            rhs,
             caseLeftLeft: withArg(\.0)(Either.left),
             caseLeftRight: withArg(\.0)(Either.left),
             caseRightLeft: withArg(\.1)(Either.left),

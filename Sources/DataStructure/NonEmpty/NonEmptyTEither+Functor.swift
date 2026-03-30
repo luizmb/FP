@@ -1,10 +1,7 @@
-import CoreFP
-
 // NonEmptyTEither: outer = NonEmpty, inner = Either
 // Type: NonEmpty<Either<L, A>>
 
 public extension NonEmpty {
-
     /// mapT for NonEmpty<Either<L, A>> — maps over the Right values, preserves Lefts.
     func mapT<L, Inner, B>(_ fn: @escaping (Inner) -> B) -> NonEmpty<Either<L, B>>
     where A == Either<L, Inner> {

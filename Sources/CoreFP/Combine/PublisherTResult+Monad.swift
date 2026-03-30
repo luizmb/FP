@@ -13,14 +13,16 @@ public func flatMapTPublisherResult<A, B, E: Error, E2: Error>(
     _ publisher: AnyPublisher<Result<A, E2>, E>,
     _ fn: @escaping (A) -> AnyPublisher<Result<B, E2>, E>
 ) -> AnyPublisher<Result<B, E2>, E> {
-    publisher.flatMap { result -> AnyPublisher<Result<B, E2>, E> in
-        switch result {
-        case .failure(let e2):
-            return Just(.failure(e2)).setFailureType(to: E.self).eraseToAnyPublisher()
-        case .success(let a):
-            return fn(a)
+    publisher
+        .flatMap { result -> AnyPublisher<Result<B, E2>, E> in
+            switch result {
+            case .failure(let e2):
+                return Just(.failure(e2)).setFailureType(to: E.self).eraseToAnyPublisher()
+            case .success(let a):
+                return fn(a)
+            }
         }
-    }.eraseToAnyPublisher()
+        .eraseToAnyPublisher()
 }
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)

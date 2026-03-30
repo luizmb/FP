@@ -1,9 +1,9 @@
-import Testing
 @testable import CoreFP
 @testable import CoreFPOperators
+// swiftlint:disable discouraged_optional_collection
+import Testing
 
 @Suite struct OptionalTArrayTests {
-
     // MARK: - Functor
 
     @Test func mapTSome() {
@@ -127,3 +127,4 @@ import Testing
         #expect(h(3) == ["3", "6"])
     }
 }
+// swiftlint:enable discouraged_optional_collection

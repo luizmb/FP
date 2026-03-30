@@ -1,5 +1,3 @@
-import CoreFP
-
 // EitherTNonEmpty: outer = Either, inner = NonEmpty
 // Type: Either<L, NonEmpty<A>>
 
@@ -11,7 +9,7 @@ public func flatMapTEitherNonEmpty<L, A, B>(
     _ fn: @escaping (A) -> Either<L, NonEmpty<B>?>
 ) -> Either<L, NonEmpty<B>?> {
     either.flatMap { ne in
-        var accumulated: NonEmpty<B>? = nil
+        var accumulated: NonEmpty<B>?
         for element in ne.toArray {
             switch fn(element) {
             case .left(let l): return .left(l)

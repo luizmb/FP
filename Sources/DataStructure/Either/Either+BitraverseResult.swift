@@ -9,15 +9,14 @@ public extension Either {
         _ rf: (B) -> Result<D, Err>
     ) -> Result<Either<C, D>, Err> {
         match(
-            caseLeft:  { lf($0).map(Either<C, D>.left) },
+            caseLeft: { lf($0).map(Either<C, D>.left) },
             caseRight: { rf($0).map(Either<C, D>.right) }
         )
     }
 
     // bisequence :: Either Result<c,err> Result<d,err> -> Result<Either c d, err>
     func bisequence<C, D, Err: Error>() -> Result<Either<C, D>, Err>
-        where A == Result<C, Err>, B == Result<D, Err>
-    {
+        where A == Result<C, Err>, B == Result<D, Err> {
         bitraverse(CoreFP.id, CoreFP.id)
     }
 }

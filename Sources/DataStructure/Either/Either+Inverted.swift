@@ -1,5 +1,3 @@
-import CoreFP
-
 public extension Either {
     func inverted() -> Either<B, A> {
         match(

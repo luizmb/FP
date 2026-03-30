@@ -1,10 +1,9 @@
-import Testing
-import Foundation
 @testable import CoreFP
 @testable import CoreFPOperators
+import Foundation
+import Testing
 
 @Suite struct ResultMonadTests {
-
     @Test func bind() {
         let value: Result<Int, NSError> = .success(5)
         let result = value >>- { x in .success(x * 2) }
