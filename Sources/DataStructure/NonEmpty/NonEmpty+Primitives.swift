@@ -1,4 +1,3 @@
-import CoreFP
 
 public extension NonEmpty {
     // MARK: - Accessors

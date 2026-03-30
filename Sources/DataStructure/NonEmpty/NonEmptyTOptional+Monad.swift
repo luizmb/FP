@@ -1,4 +1,3 @@
-import CoreFP
 
 // NonEmptyTOptional: outer = NonEmpty, inner = Optional
 // Type: NonEmpty<A?>

@@ -1,4 +1,3 @@
-import CoreFP
 
 // NonEmptyTResult: outer = NonEmpty, inner = Result
 // Type: NonEmpty<Result<A, E>>  (Success = A, Failure = E)

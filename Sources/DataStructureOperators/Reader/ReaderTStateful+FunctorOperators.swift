@@ -1,6 +1,5 @@
-import CoreFP
-import CoreFPOperators
 import DataStructure
+import CoreFPOperators
 
 // ReaderTStateful: outer = Reader, inner = Stateful
 // Type: Reader<Env, Stateful<S, A>>

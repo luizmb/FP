@@ -1,4 +1,3 @@
-import CoreFP
 import Foundation
 
 public struct Stateful<S, A> {

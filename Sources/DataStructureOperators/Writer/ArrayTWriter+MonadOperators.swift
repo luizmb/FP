@@ -1,6 +1,6 @@
 import CoreFP
-import CoreFPOperators
 import DataStructure
+import CoreFPOperators
 
 // (>>-) :: [Writer<w, a>] -> (a -> Writer<w, b>) -> [Writer<w, b>]
 public func >>- <W: Monoid, A, B>(_ arr: [Writer<W, A>], _ fn: @escaping (A) -> Writer<W, B>) -> [Writer<W, B>] {

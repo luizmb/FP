@@ -1,8 +1,7 @@
-@testable import CoreFP
-@testable import CoreFPOperators
 import DataStructure
 import DataStructureOperators
 import Testing
+import CoreFPOperators
 
 @Suite struct EitherTransformerTests {
     private enum L: Equatable { case err }

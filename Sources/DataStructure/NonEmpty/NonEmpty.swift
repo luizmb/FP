@@ -1,4 +1,3 @@
-import CoreFP
 
 // MARK: - NonEmpty<A>
 

@@ -1,4 +1,3 @@
-import CoreFP
 import Foundation
 
 // EitherTResult: outer = Either, inner = Result

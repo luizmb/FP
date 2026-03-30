@@ -1,6 +1,5 @@
 #if canImport(Combine)
 import Combine
-import CoreFP
 import Foundation
 
 public extension Reader {

@@ -1,4 +1,3 @@
-import CoreFP
 import DataStructure
 import Testing
 

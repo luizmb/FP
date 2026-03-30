@@ -20,6 +20,9 @@ jobs:
       - name: Install SwiftLint
         run: mint bootstrap
 
+      - name: Install Periphery
+        run: brew install peripheryapp/periphery/periphery
+
       - name: Lint
         run: mint run swiftlint lint --strict
 
@@ -30,4 +33,4 @@ jobs:
         run: swift test 2>&1
 
       - name: Periphery
-        run: mint run periphery scan
+        run: periphery scan

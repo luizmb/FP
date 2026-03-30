@@ -1,6 +1,5 @@
-import CoreFP
-import CoreFPOperators
 import DataStructure
+import CoreFPOperators
 
 // EitherTStateful: outer = Either, inner = Stateful
 // Type: Either<L, Stateful<S, A>>

@@ -1,6 +1,6 @@
 import CoreFP
-import CoreFPOperators
 import DataStructure
+import CoreFPOperators
 
 // (<*>) :: Reader<env, DeferredStream<(a -> b)>> -> Reader<env, DeferredStream<a>> -> Reader<env, DeferredStream<b>>
 public func <*> <Env, A: Sendable, B: Sendable>(

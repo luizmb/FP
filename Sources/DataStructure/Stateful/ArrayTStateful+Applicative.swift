@@ -1,4 +1,3 @@
-import CoreFP
 import Foundation
 
 // ArrayTStateful: outer = Array, inner = Stateful

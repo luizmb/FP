@@ -1,6 +1,6 @@
 import CoreFP
-import CoreFPOperators
 import DataStructure
+import CoreFPOperators
 
 // (<£^>) :: (a -> b) -> DeferredStream<Either<l,a>> -> DeferredStream<Either<l,b>>
 public func <£^> <L: Sendable, A: Sendable, B: Sendable>(

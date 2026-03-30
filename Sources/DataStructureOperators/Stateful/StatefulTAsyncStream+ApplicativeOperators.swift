@@ -1,6 +1,5 @@
-import CoreFP
-import CoreFPOperators
 import DataStructure
+import CoreFPOperators
 
 // (*>) :: Stateful<s, AsyncStream<a>> -> Stateful<s, AsyncStream<b>> -> Stateful<s, AsyncMapSequence<...>>
 // Note: <*> is not available — AsyncStream has no apply free function due to its complex return type.

@@ -1,6 +1,6 @@
 import CoreFP
-import CoreFPOperators
 import DataStructure
+import CoreFPOperators
 
 // (<£^>) :: (a -> b) -> Validation<e, Either<l, a>> -> Validation<e, Either<l, b>>
 public func <£^> <E: Semigroup, L, A, B>(_ fn: @escaping (A) -> B, _ v: Validation<E, Either<L, A>>) -> Validation<E, Either<L, B>> {

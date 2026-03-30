@@ -1,8 +1,7 @@
-import CoreFP
-import CoreFPOperators
 import DataStructure
 import DataStructureOperators
 import Testing
+import CoreFPOperators
 
 @Suite struct StatefulReaderOperatorsTests {
     // MARK: - Reader<Env, Stateful<S, A>> applicative operators

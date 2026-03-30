@@ -1,4 +1,3 @@
-import CoreFP
 import Foundation
 
 // StatefulT + Reader — free functions for Stateful<S, Reader<Env, A>>

@@ -1,4 +1,3 @@
-import CoreFP
 
 // ReaderTNonEmpty: outer = Reader, inner = NonEmpty
 // Type: Reader<Environment, NonEmpty<A>>

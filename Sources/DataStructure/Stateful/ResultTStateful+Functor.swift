@@ -1,4 +1,3 @@
-import CoreFP
 import Foundation
 
 // ResultTStateful: outer = Result, inner = Stateful

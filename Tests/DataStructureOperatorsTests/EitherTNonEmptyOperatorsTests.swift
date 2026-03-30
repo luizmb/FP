@@ -1,8 +1,7 @@
-import CoreFP
-import CoreFPOperators
 import DataStructure
 import DataStructureOperators
 import Testing
+import CoreFPOperators
 
 @Suite struct EitherTNonEmptyOperatorsTests {
     @Test func fmapOperator_forward_right() {

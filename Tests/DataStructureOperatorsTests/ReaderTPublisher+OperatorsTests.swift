@@ -1,9 +1,9 @@
 import Combine
 import CoreFP
-import CoreFPOperators
 import DataStructure
 import DataStructureOperators
 import Testing
+import CoreFPOperators
 
 @MainActor
 @Suite struct ReaderCombineOperatorsTests {

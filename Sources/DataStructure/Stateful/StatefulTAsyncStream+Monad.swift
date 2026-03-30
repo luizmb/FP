@@ -1,4 +1,3 @@
-import CoreFP
 import Foundation
 
 // StatefulT + AsyncStream — Stateful<S, AsyncStream<A>>

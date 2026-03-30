@@ -1,4 +1,3 @@
-import CoreFP
 import Foundation
 
 // OptionalTEither: outer = Optional, inner = Either

@@ -4,12 +4,12 @@ public enum Of<T> {}
 public enum Of2<T, U> {}
 public enum Of3<T, U, V> {}
 
-public func absurd<T>(_ never: Never) -> T { }
+public func absurd<T>(_: Never) -> T { }
 public extension Of {
-    static func absurd(_ never: Never) -> T { }
+    static func absurd(_: Never) -> T { }
 }
 
-public func ignore<each T>(_ t: repeat each T) { }
+public func ignore<each T>(_: repeat each T) { }
 
 public extension Of {
     static func ignore() -> (T) -> Void { CoreFP.ignore }

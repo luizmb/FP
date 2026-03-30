@@ -1,4 +1,3 @@
-import CoreFP
 import Foundation
 
 // ReaderTStateful: outer = Reader, inner = Stateful

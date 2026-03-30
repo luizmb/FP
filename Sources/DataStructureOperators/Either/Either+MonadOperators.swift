@@ -1,6 +1,5 @@
-import CoreFP
-import CoreFPOperators
 import DataStructure
+import CoreFPOperators
 
 // (>>-) :: m a -> (a -> m b) -> m b
 public func >>- <A, B, B1>(_ either: Either<A, B>, _ fn: @escaping (B) -> Either<A, B1>) -> Either<A, B1> {

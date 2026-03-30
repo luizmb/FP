@@ -1,7 +1,6 @@
 import DataStructure
 #if canImport(Combine)
 import Combine
-import CoreFP
 import CoreFPOperators
 
 // MARK: - ReaderT + Publisher

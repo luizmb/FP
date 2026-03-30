@@ -1,4 +1,3 @@
-@testable import CoreFP
 @testable import CoreFPOperators
 import Testing
 

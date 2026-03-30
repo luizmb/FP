@@ -1,4 +1,3 @@
-import CoreFP
 import Foundation
 
 // ArrayTEither: outer = Array, inner = Either

@@ -1,7 +1,7 @@
 import CoreFP
-import CoreFPOperators
 import DataStructure
 import Foundation
+import CoreFPOperators
 
 // ReaderT + AsyncSequence
 

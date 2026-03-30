@@ -1,6 +1,6 @@
 import CoreFP
-import CoreFPOperators
 import DataStructure
+import CoreFPOperators
 
 // (>>-) :: DeferredTask<Validation<e,a>> -> (a -> DeferredTask<Validation<e,b>>) -> DeferredTask<Validation<e,b>>
 public func >>- <E: Semigroup & Sendable, A: Sendable, B: Sendable>(

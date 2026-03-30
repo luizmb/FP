@@ -1,6 +1,6 @@
 import CoreFP
-import CoreFPOperators
 import DataStructure
+import CoreFPOperators
 
 // (<*>) :: Writer<w, Reader<env, (a -> b)>> -> Writer<w, Reader<env, a>> -> Writer<w, Reader<env, b>>
 public func <*> <W: Monoid, Env, A, B>(

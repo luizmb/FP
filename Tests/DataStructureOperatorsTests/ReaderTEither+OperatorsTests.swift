@@ -1,8 +1,7 @@
-import CoreFP
-@testable import CoreFPOperators
 import DataStructure
 import DataStructureOperators
 import Testing
+import CoreFPOperators
 
 @Suite struct ReaderEitherOperatorsTests {
     struct Environment {

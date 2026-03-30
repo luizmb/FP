@@ -1,6 +1,6 @@
 import CoreFP
-import CoreFPOperators
 import DataStructure
+import CoreFPOperators
 
 // (<£^>) :: (a -> b) -> Validation<e, Result<a, err>> -> Validation<e, Result<b, err>>
 public func <£^> <E: Semigroup, A, B, Err: Error>(

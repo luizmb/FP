@@ -1,8 +1,7 @@
 #if canImport(Combine)
 import Combine
-import CoreFP
-import CoreFPOperators
 import DataStructure
+import CoreFPOperators
 
 // (>>-) :: AnyPublisher<Stateful<s, a>, e> -> (a -> Stateful<s, b>) -> AnyPublisher<Stateful<s, b>, e>
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)

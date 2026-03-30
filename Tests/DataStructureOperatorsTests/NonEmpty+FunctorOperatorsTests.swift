@@ -1,8 +1,8 @@
 import CoreFP
-import CoreFPOperators
 import DataStructure
 import DataStructureOperators
 import Testing
+import CoreFPOperators
 
 @Suite struct NonEmptyFunctorOperatorsTests {
     private let three = NonEmpty(head: 1, tail: [2, 3])

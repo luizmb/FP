@@ -1,4 +1,3 @@
-import CoreFP
 import Foundation
 
 // EitherTStateful: outer = Either, inner = Stateful

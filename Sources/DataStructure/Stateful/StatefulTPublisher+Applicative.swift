@@ -1,6 +1,5 @@
 #if canImport(Combine)
 import Combine
-import CoreFP
 import Foundation
 
 // StatefulT + Publisher — free functions for Stateful<S, any Publisher<A, E>>

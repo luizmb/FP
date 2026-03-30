@@ -1,6 +1,6 @@
 import CoreFP
-import CoreFPOperators
 import DataStructure
+import CoreFPOperators
 
 // ReaderTDeferredTask: outer = Reader, inner = DeferredTask
 // Type: Reader<Env, DeferredTask<A>>

@@ -1,6 +1,5 @@
-import CoreFP
-import CoreFPOperators
 import DataStructure
+import CoreFPOperators
 
 // (>>-) :: Stateful<s, Result<a, e>> -> (a -> Stateful<s, Result<b, e>>) -> Stateful<s, Result<b, e>>
 public func >>- <S, A, B, E: Error>(

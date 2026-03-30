@@ -1,4 +1,3 @@
-import CoreFP
 import Foundation
 
 // OptionalTStateful: outer = Optional, inner = Stateful

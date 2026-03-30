@@ -1,6 +1,5 @@
-import CoreFP
-import CoreFPOperators
 import DataStructure
+import CoreFPOperators
 
 // EitherTArray: outer = Either, inner = Array
 // Type: Either<L, [A]>
