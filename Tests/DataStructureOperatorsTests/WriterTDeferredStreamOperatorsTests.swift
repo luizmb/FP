@@ -1,8 +1,8 @@
 import CoreFP
+import CoreFPOperators
 import DataStructure
 import DataStructureOperators
 import Testing
-import CoreFPOperators
 
 @Suite struct WriterTDeferredStreamOperatorsTests {
     @Test func fmap() async {

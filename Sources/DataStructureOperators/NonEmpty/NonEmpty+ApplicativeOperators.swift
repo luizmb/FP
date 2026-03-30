@@ -1,5 +1,5 @@
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // MARK: - Applicative operators for NonEmpty
 

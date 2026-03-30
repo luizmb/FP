@@ -1,5 +1,5 @@
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // MARK: - Monad operators for NonEmpty
 

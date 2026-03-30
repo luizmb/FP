@@ -1,6 +1,6 @@
 import CoreFP
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // (>>-) :: Writer<w, Validation<e, a>> -> (a -> Writer<w, Validation<e, b>>) -> Writer<w, Validation<e, b>>
 public func >>- <W: Monoid, E: Semigroup, A, B>(

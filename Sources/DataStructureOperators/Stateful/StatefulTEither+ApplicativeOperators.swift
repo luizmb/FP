@@ -1,5 +1,5 @@
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // (<*>) :: Stateful<s, Either<l, (a -> b)>> -> Stateful<s, Either<l, a>> -> Stateful<s, Either<l, b>>
 public func <*> <S, L, A, B>(_ sf: Stateful<S, Either<L, (A) -> B>>, _ sa: Stateful<S, Either<L, A>>) -> Stateful<S, Either<L, B>> {

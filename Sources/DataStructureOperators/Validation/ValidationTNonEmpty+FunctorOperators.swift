@@ -1,6 +1,6 @@
 import CoreFP
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // ValidationTNonEmpty: outer = Validation, inner = NonEmpty
 // Type: Validation<E, NonEmpty<A>>

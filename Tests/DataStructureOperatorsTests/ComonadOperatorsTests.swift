@@ -1,7 +1,7 @@
+import CoreFPOperators
 import DataStructure
 import DataStructureOperators
 import Testing
-import CoreFPOperators
 
 @Suite struct ComonadOperatorsTests {
     // MARK: - Writer ->>

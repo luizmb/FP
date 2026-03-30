@@ -1,6 +1,6 @@
 import CoreFP
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // (<*>) :: Stateful<s, DeferredStream<(a -> b)>> -> Stateful<s, DeferredStream<a>> -> Stateful<s, DeferredStream<b>>
 public func <*> <S, A: Sendable, B: Sendable>(

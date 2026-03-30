@@ -1,6 +1,6 @@
+import CoreFPOperators
 import DataStructure
 import Testing
-import CoreFPOperators
 
 @Suite struct ReaderMonadTests {
     struct Environment {

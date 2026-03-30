@@ -1,6 +1,6 @@
 import CoreFP
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // (<*>) :: DeferredTask<Either<l,a->b>> -> DeferredTask<Either<l,a>> -> DeferredTask<Either<l,b>>
 public func <*> <L: Sendable, A: Sendable, B: Sendable>(

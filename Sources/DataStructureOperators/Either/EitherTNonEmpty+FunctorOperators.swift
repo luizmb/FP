@@ -1,5 +1,5 @@
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // EitherTNonEmpty: outer = Either, inner = NonEmpty
 // Type: Either<L, NonEmpty<A>>

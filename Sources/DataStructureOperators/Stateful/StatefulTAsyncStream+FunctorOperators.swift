@@ -1,5 +1,5 @@
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // (<£^>) :: (a -> b) -> Stateful<s, AsyncStream<a>> -> Stateful<s, AsyncMapSequence<AsyncStream<a>, b>>
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)

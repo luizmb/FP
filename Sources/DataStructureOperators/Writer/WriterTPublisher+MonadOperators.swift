@@ -1,8 +1,8 @@
 #if canImport(Combine)
 import Combine
 import CoreFP
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // (>>-) :: Writer<w, any Publisher<a, e>> -> (a -> Writer<w, any Publisher<b, e>>) -> Writer<w, any Publisher<b, e>>
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)

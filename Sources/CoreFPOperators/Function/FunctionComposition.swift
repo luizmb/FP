@@ -1,4 +1,3 @@
-
 // MARK: - Function Composition
 
 /// Left-to-right function composition

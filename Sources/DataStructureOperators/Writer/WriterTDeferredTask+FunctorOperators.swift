@@ -1,6 +1,6 @@
 import CoreFP
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // (<£^>) :: (a -> b) -> Writer<w, DeferredTask<a>> -> Writer<w, DeferredTask<b>>
 public func <£^> <W: Monoid, A: Sendable, B: Sendable>(

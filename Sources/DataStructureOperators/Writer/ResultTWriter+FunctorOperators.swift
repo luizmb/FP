@@ -1,6 +1,6 @@
 import CoreFP
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // (<£^>) :: (a -> b) -> Result<Writer<w, a>, e> -> Result<Writer<w, b>, e>
 public func <£^> <W: Monoid, A, B, E: Error>(_ fn: @escaping (A) -> B, _ result: Result<Writer<W, A>, E>) -> Result<Writer<W, B>, E> {

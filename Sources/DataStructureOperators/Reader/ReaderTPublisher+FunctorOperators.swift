@@ -1,8 +1,8 @@
 import DataStructure
 #if canImport(Combine)
 import Combine
-import Foundation
 import CoreFPOperators
+import Foundation
 
 // ReaderT + Publisher
 

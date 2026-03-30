@@ -1,6 +1,6 @@
 import CoreFP
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // (<*>) :: Result<Writer<w, (a -> b)>, e> -> Result<Writer<w, a>, e> -> Result<Writer<w, b>, e>
 public func <*> <W: Monoid, A, B, E: Error>(

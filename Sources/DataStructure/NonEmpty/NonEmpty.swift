@@ -1,4 +1,3 @@
-
 // MARK: - NonEmpty<A>
 
 /// A sequence guaranteed to contain at least one element.

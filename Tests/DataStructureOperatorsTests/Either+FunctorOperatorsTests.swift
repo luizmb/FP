@@ -1,8 +1,8 @@
 import CoreFP
+import CoreFPOperators
 import DataStructure
 import DataStructureOperators
 import Testing
-import CoreFPOperators
 
 @Suite struct EitherFunctorTests {
     // MARK: - Basic Functor Tests

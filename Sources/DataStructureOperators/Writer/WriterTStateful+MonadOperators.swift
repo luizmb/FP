@@ -1,6 +1,6 @@
 import CoreFP
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // (>>-) :: Writer<w, Stateful<s, a>> -> (a -> Writer<w, Stateful<s, b>>) -> Writer<w, Stateful<s, b>>
 public func >>- <W: Monoid, S, A, B>(

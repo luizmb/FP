@@ -1,4 +1,3 @@
-
 // WriterTNonEmpty: outer = Writer, inner = NonEmpty
 // Type: Writer<W, NonEmpty<A>>
 

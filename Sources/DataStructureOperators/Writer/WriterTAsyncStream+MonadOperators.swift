@@ -1,6 +1,6 @@
 import CoreFP
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // (>>-) :: Writer<w, AsyncStream<a>> -> (a async throws -> Writer<w, b: AsyncSequence>) -> Writer<w, AsyncThrowingFlatMapSequence<...>>
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)

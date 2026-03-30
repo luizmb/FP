@@ -1,4 +1,3 @@
-
 // MARK: - Functor
 
 public extension NonEmpty {

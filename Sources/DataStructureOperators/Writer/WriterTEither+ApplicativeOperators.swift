@@ -1,6 +1,6 @@
 import CoreFP
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // (<*>) :: Writer<w, Either<l, (a -> b)>> -> Writer<w, Either<l, a>> -> Writer<w, Either<l, b>>
 public func <*> <W: Monoid, L, A, B>(_ wf: Writer<W, Either<L, (A) -> B>>, _ wa: Writer<W, Either<L, A>>) -> Writer<W, Either<L, B>> {

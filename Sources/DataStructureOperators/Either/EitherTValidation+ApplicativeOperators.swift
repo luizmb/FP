@@ -1,6 +1,6 @@
 import CoreFP
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // (<*>) :: Either<l, Validation<e,(a->b)>> -> Either<l, Validation<e,a>> -> Either<l, Validation<e,b>>
 public func <*> <L, E: Semigroup, A, B>(

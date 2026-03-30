@@ -1,6 +1,6 @@
+import CoreFPOperators
 import DataStructure
 import Foundation
-import CoreFPOperators
 
 // (<*>) :: Either<a, (b0 -> b)> -> Either<a, b0> -> Either<a, b>
 public func <*> <A, B0, B>(_ lhs: Either<A, (B0) -> B>, _ rhs: Either<A, B0>) -> Either<A, B> {

@@ -1,4 +1,3 @@
-
 // StatefulTNonEmpty: outer = Stateful, inner = NonEmpty
 // Type: Stateful<S, NonEmpty<A>>
 

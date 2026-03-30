@@ -1,6 +1,6 @@
 import CoreFP
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // (*>) :: Writer<w, AsyncStream<a>> -> Writer<w, AsyncStream<b>> -> Writer<w, AsyncMapSequence<...>>
 // Note: <*> is not available — AsyncStream has no apply free function due to its complex return type.

@@ -1,7 +1,7 @@
+import CoreFPOperators
 import DataStructure
 import DataStructureOperators
 import Testing
-import CoreFPOperators
 
 private enum TestError: Error, Equatable { case bad(String) }
 

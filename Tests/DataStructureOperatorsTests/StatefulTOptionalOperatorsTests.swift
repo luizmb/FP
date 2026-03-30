@@ -1,7 +1,7 @@
+import CoreFPOperators
 import DataStructure
 import DataStructureOperators
 import Testing
-import CoreFPOperators
 
 @Suite struct StatefulTOptionalOperatorsTests {
     @Test func fmapSome() {

@@ -1,5 +1,5 @@
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // (<*>) :: Stateful<s, Reader<env, (a -> b)>> -> Stateful<s, Reader<env, a>> -> Stateful<s, Reader<env, b>>
 public func <*> <S, Env, A, B>(_ sf: Stateful<S, Reader<Env, (A) -> B>>, _ sa: Stateful<S, Reader<Env, A>>) -> Stateful<S, Reader<Env, B>> {

@@ -1,6 +1,6 @@
 import CoreFP
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // ReaderTWriter: outer = Reader, inner = Writer
 // Type: Reader<Env, Writer<W, A>>

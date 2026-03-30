@@ -1,4 +1,3 @@
-
 // NonEmptyTEither: outer = NonEmpty, inner = Either
 // Type: NonEmpty<Either<L, A>>
 

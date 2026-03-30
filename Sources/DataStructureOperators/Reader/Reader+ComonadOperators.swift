@@ -1,6 +1,6 @@
 import CoreFP
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // r ->> f  =  extend f r  (infixl 1, requires Env: Monoid)
 public func ->> <Env: Monoid, A, B>(

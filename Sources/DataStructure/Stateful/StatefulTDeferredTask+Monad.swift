@@ -1,4 +1,3 @@
-
 // StatefulTDeferredTask: outer = Stateful, inner = DeferredTask
 // Type: Stateful<S, DeferredTask<A>>
 //

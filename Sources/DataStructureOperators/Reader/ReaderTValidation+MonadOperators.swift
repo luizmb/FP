@@ -1,6 +1,6 @@
 import CoreFP
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // (>>-) :: Reader<env, Validation<e, a>> -> (a -> Reader<env, Validation<e, b>>) -> Reader<env, Validation<e, b>>
 public func >>- <Env, E: Semigroup, A, B>(

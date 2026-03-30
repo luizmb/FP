@@ -1,6 +1,6 @@
 import CoreFP
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // (>>-) :: DeferredStream<Either<l,a>> -> (a -> DeferredStream<Either<l,b>>) -> DeferredStream<Either<l,b>>
 public func >>- <L: Sendable, A: Sendable, B: Sendable>(

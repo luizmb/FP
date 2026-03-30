@@ -1,4 +1,3 @@
-
 // OptionalTNonEmpty: outer = Optional, inner = NonEmpty
 // Type: NonEmpty<A>?
 

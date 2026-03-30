@@ -1,6 +1,6 @@
 import CoreFP
-import DataStructure
 import CoreFPOperators
+import DataStructure
 
 // (>>-) :: Writer<w, DeferredStream<a>> -> (a -> Writer<w, DeferredStream<b>>) -> Writer<w, DeferredStream<b>>
 public func >>- <W: Monoid, A: Sendable, B: Sendable>(
