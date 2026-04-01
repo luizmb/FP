@@ -1,150 +1,145 @@
 import FP
 
 // ============================================================
-// APPLICATIVE
-// liftA2 :: (a -> b -> c) -> f a -> f b -> f c
-// apply  :: f (a -> b) -> f a -> f b
+// APPLICATIVE  —  liftA2 :: (a -> b -> c) -> f a -> f b -> f c
 //
-// Applicative extends Functor to support applying a wrapped function
-// to a wrapped value, and combining multiple independent effects.
-//
-// Unlike Monad, the effects are independent — neither depends on
-// the result of the other. This enables static analysis and parallelism.
-//
-// Laws:
-//   Identity:     pure id <*> v == v
-//   Composition:  pure (.) <*> u <*> v <*> w == u <*> (v <*> w)
-//   Homomorphism: pure f <*> pure x == pure (f x)
-//   Interchange:  u <*> pure y == pure ($ y) <*> u
+// Combine independent effects. Unlike Monad, neither value
+// depends on the other — they can be evaluated in any order.
+// Laws: identity, composition, homomorphism, interchange.
 // ============================================================
 
 // MARK: - Optional
 
-// let x: Int? = 3
-// let y: Int? = 4
-// let none: Int? = nil
+func learnApplicativeOptional() {
+    let x: Int? = 3
+    let y: Int? = 4
+    let none: Int? = nil
 
-// --- liftA2: combine two independent optionals with a binary function ---
-// Optional<Int>.liftA2(+)(x, y)            // .some(7)
-// Optional<Int>.liftA2(+)(x, none)         // .none — any nil propagates
-// Optional<Int>.liftA2(+)(none, none)       // .none
+    // liftA2 — combine two independents with a binary fn
+    print(Optional<Int>.liftA2(+)(x, y))             // Optional(7)
+    print(Optional<Int>.liftA2(+)(x, none))          // nil — any nil propagates
 
-// --- apply: wrapped function applied to wrapped value ---
-// let wrappedFn: ((Int) -> Int)? = .some { $0 * 2 }
-// Optional.apply(wrappedFn, x)             // .some(6)
-// Optional.apply(.none, x)                 // .none
+    // apply — wrapped function applied to wrapped value
+    let fn: ((Int) -> Int)? = .some { $0 * 2 }
+    print(Optional.apply(fn, x))                     // Optional(6)
+    print(fn <*> x)                                  // Optional(6) — operator
+    print(fn <*> none)                               // nil
 
-// --- Operator <*> ---
-// wrappedFn <*> x                          // .some(6)
-// wrappedFn <*> none                       // .none
+    // seqRight / seqLeft — run both, discard one side
+    print(x.seqRight(y))                             // Optional(4)
+    print(x *> y)                                    // Optional(4) — operator
+    print(x.seqLeft(y))                              // Optional(3)
+    print(x <* y)                                    // Optional(3) — operator
+    print(x <* none)                                 // nil — none propagates
 
-// --- seqRight: run both, discard left, keep right ---
-// x.seqRight(y)                            // .some(4)
-// none.seqRight(y)                         // .none
-// x *> y                                   // .some(4) — operator
-
-// --- seqLeft: run both, keep left, discard right ---
-// x.seqLeft(y)                             // .some(3)
-// x.seqLeft(none)                          // .none
-// x <* y                                   // .some(3) — operator
-
-// --- zip: tuple up two optionals ---
-// Optional<(Int, Int)>.zip(x, y)           // .some((3, 4))
-// Optional<(Int, Int)>.zip(x, none)        // .none
-
+    // zip
+    print(Optional<(Int, Int)>.zip(x, y))            // Optional((3, 4))
+    print(Optional<(Int, Int)>.zip(x, none))         // nil
+}
+// learnApplicativeOptional()
 
 // MARK: - Array
 
-// let xs = [1, 2, 3]
-// let ys = [10, 20]
+func learnApplicativeArray() {
+    let xs = [1, 2, 3]
+    let ys = [10, 20]
 
-// --- liftA2: cartesian product mapped through a function ---
-// [Int].liftA2(+)(xs, ys)                  // [11, 21, 12, 22, 13, 23]
-// // Every element of xs combined with every element of ys
+    // liftA2 — cartesian product mapped through a binary fn
+    print(Array<Int>.liftA2(+)(xs, ys))              // [11, 21, 12, 22, 13, 23]
 
-// --- apply: each wrapped function applied to each value ---
-// let fns: [(Int) -> Int] = [{ $0 + 1 }, { $0 * 2 }]
-// fns <*> xs                               // [2, 3, 4, 2, 4, 6]
+    // apply — each fn applied to each value
+    let fns: [(Int) -> Int] = [{ $0 + 1 }, { $0 * 2 }]
+    print(fns <*> xs)                                // [2, 3, 4, 2, 4, 6]
 
-// --- seqRight: cartesian product, keep right ---
-// xs *> ys                                 // [10, 20, 10, 20, 10, 20]
-
-// --- seqLeft: cartesian product, keep left ---
-// xs <* ys                                 // [1, 1, 2, 2, 3, 3]
-
+    // seqRight / seqLeft
+    print(xs *> ys)                                  // [10, 20, 10, 20, 10, 20]
+    print(xs <* ys)                                  // [1, 1, 2, 2, 3, 3]
+}
+// learnApplicativeArray()
 
 // MARK: - Result
 
-// let ok1: Result<String, Int> = .success(3)
-// let ok2: Result<String, Int> = .success(4)
-// let err: Result<String, Int> = .failure("oops")
+func learnApplicativeResult() {
+    let ok1: Result<String, Int> = .success(3)
+    let ok2: Result<String, Int> = .success(4)
+    let err: Result<String, Int> = .failure("oops")
 
-// --- liftA2 ---
-// Result<String, Int>.liftA2(+)(ok1, ok2)  // .success(7)
-// Result<String, Int>.liftA2(+)(ok1, err)  // .failure("oops") — short-circuits on first error
+    print(Result<String, Int>.liftA2(+)(ok1, ok2))  // success(7)
+    print(Result<String, Int>.liftA2(+)(ok1, err))  // failure("oops") — short-circuits
 
-// --- apply ---
-// let wrappedFn: Result<String, (Int) -> Int> = .success { $0 * 2 }
-// wrappedFn <*> ok1                        // .success(6)
-// wrappedFn <*> err                        // .failure("oops")
+    let fn: Result<String, (Int) -> Int> = .success { $0 * 2 }
+    print(fn <*> ok1)                                // success(6)
+    print(fn <*> err)                                // failure("oops")
 
-// --- seqRight / seqLeft ---
-// ok1 *> ok2                               // .success(4)
-// ok1 <* ok2                               // .success(3)
-// ok1 *> err                               // .failure("oops")
-
+    print(ok1 *> ok2)                                // success(4)
+    print(ok1 <* ok2)                                // success(3)
+}
+// learnApplicativeResult()
 
 // MARK: - Either
 
-// let r1: Either<String, Int> = .right(3)
-// let r2: Either<String, Int> = .right(4)
-// let l1: Either<String, Int> = .left("fail")
+func learnApplicativeEither() {
+    let r1: Either<String, Int> = .right(3)
+    let r2: Either<String, Int> = .right(4)
+    let l1: Either<String, Int> = .left("fail")
 
-// --- liftA2 ---
-// Either<String, Int>.liftA2(+)(r1, r2)    // .right(7)
-// Either<String, Int>.liftA2(+)(r1, l1)    // .left("fail")
+    print(Either<String, Int>.liftA2(+)(r1, r2))    // right(7)
+    print(Either<String, Int>.liftA2(+)(r1, l1))    // left("fail") — short-circuits
 
-// --- apply ---
-// let fn: Either<String, (Int) -> Int> = .right { $0 + 10 }
-// fn <*> r1                                // .right(13)
-// fn <*> l1                                // .left("fail")
+    let fn: Either<String, (Int) -> Int> = .right { $0 + 10 }
+    print(fn <*> r1)                                 // right(13)
+    print(r1 *> r2)                                  // right(4)
+    print(r1 <* r2)                                  // right(3)
+}
+// learnApplicativeEither()
 
-// --- seqRight / seqLeft ---
-// r1 *> r2                                 // .right(4)
-// r1 <* r2                                 // .right(3)
+// MARK: - Validation (accumulates ALL errors — the key difference)
 
+func learnApplicativeValidation() {
+    let ok1: Validation<[String], Int>  = .success(3)
+    let ok2: Validation<[String], Int>  = .success(4)
+    let e1:  Validation<[String], Int>  = .failure(["name is empty"])
+    let e2:  Validation<[String], Int>  = .failure(["age is negative"])
 
-// MARK: - Validation
-// KEY DIFFERENCE: apply accumulates ALL errors rather than short-circuiting on the first.
+    // liftA2 — collects ALL errors, not just the first
+    print(Validation<[String], Int>.liftA2(+)(ok1, ok2))  // success(7)
+    print(Validation<[String], Int>.liftA2(+)(e1, ok2))   // failure(["name is empty"])
+    print(Validation<[String], Int>.liftA2(+)(e1, e2))
+    // failure(["name is empty", "age is negative"]) ← BOTH errors!
 
-// let v1: Validation<[String], Int> = .success(3)
-// let v2: Validation<[String], Int> = .success(4)
-// let e1: Validation<[String], Int> = .failure(["name is empty"])
-// let e2: Validation<[String], Int> = .failure(["age is negative"])
+    // Compare: Either short-circuits on first error
+    let l1: Either<[String], Int> = .left(["name is empty"])
+    let l2: Either<[String], Int> = .left(["age is negative"])
+    print(Either<[String], Int>.liftA2(+)(l1, l2))
+    // left(["name is empty"]) ← only first!
 
-// --- liftA2: succeeds only if both succeed, otherwise merges all errors ---
-// Validation<[String], Int>.liftA2(+)(v1, v2)   // .success(7)
-// Validation<[String], Int>.liftA2(+)(e1, v2)   // .failure(["name is empty"])
-// Validation<[String], Int>.liftA2(+)(e1, e2)   // .failure(["name is empty", "age is negative"]) ← both!
+    // zip — accumulate errors across fields
+    print(Validation<[String], (Int, Int)>.zip(ok1, ok2))  // success((3, 4))
+    print(Validation<[String], (Int, Int)>.zip(e1, e2))    // failure(["name is empty", "age is negative"])
 
-// --- zip: accumulate errors from both sides ---
-// Validation<[String], (Int, Int)>.zip(v1, v2)  // .success((3, 4))
-// Validation<[String], (Int, Int)>.zip(e1, e2)  // .failure(["name is empty", "age is negative"])
-
-// --- zip3: same for three fields ---
-// let e3: Validation<[String], String> = .failure(["email is invalid"])
-// Validation<[String], (Int, Int, String)>.zip3(e1, e2, e3)
-// // .failure(["name is empty", "age is negative", "email is invalid"])
-
+    // zip3 — three fields
+    let e3: Validation<[String], String> = .failure(["email invalid"])
+    print(Validation<[String], (Int, Int, String)>.zip3(e1, e2, e3))
+    // failure(["name is empty", "age is negative", "email invalid"])
+}
+// learnApplicativeValidation()
 
 // MARK: - Reader
 
-// struct Env { let base: Int }
+struct ApplicativeReaderEnv { let x: Int; let y: Int }
 
-// --- liftA2: two independent readers combined ---
-// let r1 = Reader<Env, Int> { $0.base }
-// let r2 = Reader<Env, Int> { $0.base * 2 }
-// let combined = Reader<Env, Int>.liftA2(+)(r1, r2)  // Reader that returns base + base*2 = base*3
-// combined.runReader(Env(base: 5))                   // 15
+func learnApplicativeReader() {
+    let rx = Reader<ApplicativeReaderEnv, Int>.asks(\.x)
+    let ry = Reader<ApplicativeReaderEnv, Int>.asks(\.y)
+
+    // liftA2 — both readers share the same env, results combined
+    let sum = Reader<ApplicativeReaderEnv, Int>.liftA2(+)(rx, ry)
+    print(sum.runReader(ApplicativeReaderEnv(x: 3, y: 4)))   // 7
+
+    // seqRight — run both, keep second
+    let keepY = rx *> ry
+    print(keepY.runReader(ApplicativeReaderEnv(x: 3, y: 4))) // 4
+}
+// learnApplicativeReader()
 
 //: [Previous](@previous) | [Next](@next)

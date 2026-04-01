@@ -3,123 +3,107 @@ import FP
 // ============================================================
 // VALIDATION<E: Semigroup, A>
 //
-// Validation is like Either but with one crucial difference:
-// its Applicative instance ACCUMULATES errors rather than
-// short-circuiting on the first. This makes it ideal for
-// form validation, config parsing, and any scenario where
-// you want to collect all problems at once.
+// Like Either, but apply/liftA2 ACCUMULATE errors instead of
+// short-circuiting on the first. E must be a Semigroup so
+// errors can be merged. Use [String] for multiple messages.
 //
-// Note: Validation has no Monad instance that accumulates —
-// flatMap would need to run the second computation to know
-// if it succeeds, which short-circuits. Only the Applicative
-// (<*>, liftA2, zip) accumulates.
-//
-// E must be a Semigroup so that errors can be combined.
-// [String] is the simplest choice for multiple error messages.
+// Note: No Monad instance that accumulates — flatMap would
+// need to run the second step to know if it succeeds, so it
+// inherently short-circuits. Only the Applicative accumulates.
 // ============================================================
 
 // MARK: - Construction & Pattern Matching
 
-// let ok: Validation<[String], Int>  = .success(42)
-// let bad: Validation<[String], Int> = .failure(["value is negative"])
+func learnValidationConstruction() {
+    let ok:  Validation<[String], Int> = .success(42)
+    let bad: Validation<[String], Int> = .failure(["value is negative"])
 
-// ok.match(caseFailure: { "errors: \($0)" }, caseSuccess: { "ok: \($0)" })  // "ok: 42"
-// bad.match(caseFailure: { "errors: \($0)" }, caseSuccess: { "ok: \($0)" }) // "errors: [\"value is negative\"]"
+    print(ok.match( caseFailure: { "errors: \($0)" }, caseSuccess: { "ok: \($0)" }))   // "ok: 42"
+    print(bad.match(caseFailure: { "errors: \($0)" }, caseSuccess: { "ok: \($0)" }))   // "errors: [...]"
+}
+// learnValidationConstruction()
 
+// MARK: - Functor
 
-// MARK: - Functor (maps over success, ignores failure)
+func learnValidationFunctor() {
+    let ok:  Validation<[String], Int> = .success(5)
+    let bad: Validation<[String], Int> = .failure(["bad"])
 
-// let ok: Validation<[String], Int> = .success(5)
-// let bad: Validation<[String], Int> = .failure(["bad"])
-
-// --- Named function ---
-// Validation<[String], Int>.fmap { $0 * 2 }(ok)    // .success(10)
-// Validation<[String], Int>.fmap { $0 * 2 }(bad)   // .failure(["bad"])
-
-// --- Operators ---
-// { $0 * 2 } <£> ok                        // .success(10)
-// ok <&> { $0 * 2 }                        // .success(10)
-
+    print(Validation<[String], Int>.fmap { $0 * 2 }(ok))    // success(10)
+    print(Validation<[String], Int>.fmap { $0 * 2 }(bad))   // failure(["bad"])
+    print({ $0 * 2 } <£> ok)                                 // success(10)
+    print(ok <&> { $0 * 2 })                                 // success(10)
+}
+// learnValidationFunctor()
 
 // MARK: - Applicative (accumulates ALL errors)
-// This is the defining feature of Validation.
 
-// let e1: Validation<[String], Int>    = .failure(["name is empty"])
-// let e2: Validation<[String], Int>    = .failure(["age is negative"])
-// let e3: Validation<[String], String> = .failure(["email is invalid"])
-// let ok1: Validation<[String], Int>   = .success(1)
-// let ok2: Validation<[String], Int>   = .success(2)
+func learnValidationApplicative() {
+    let ok1: Validation<[String], Int> = .success(3)
+    let ok2: Validation<[String], Int> = .success(4)
+    let e1:  Validation<[String], Int> = .failure(["name empty"])
+    let e2:  Validation<[String], Int> = .failure(["age negative"])
 
-// --- liftA2: BOTH must succeed; if either fails, ALL errors collected ---
-// Validation<[String], Int>.liftA2(+)(ok1, ok2)  // .success(3)
-// Validation<[String], Int>.liftA2(+)(e1, ok2)   // .failure(["name is empty"])
-// Validation<[String], Int>.liftA2(+)(e1, e2)    // .failure(["name is empty", "age is negative"]) ← ALL errors!
+    // liftA2 — collects ALL failures
+    print(Validation<[String], Int>.liftA2(+)(ok1, ok2))    // success(7)
+    print(Validation<[String], Int>.liftA2(+)(e1, ok2))     // failure(["name empty"])
+    print(Validation<[String], Int>.liftA2(+)(e1, e2))
+    // failure(["name empty", "age negative"]) ← BOTH
 
-// --- Compare with Either (short-circuits) ---
-// Either<[String], Int>.liftA2(+)(Either.left(["name is empty"]), Either.left(["age is negative"]))
-// // .left(["name is empty"]) ← only first error!
+    // Compare: Either short-circuits
+    print(Either<[String], Int>.liftA2(+)(.left(["name empty"]), .left(["age negative"])))
+    // left(["name empty"]) ← only first!
 
-// --- apply ---
-// let fn: Validation<[String], (Int) -> Int> = .success { $0 + 10 }
-// Validation<[String], Int>.apply(fn, ok1)  // .success(11)
-// Validation<[String], Int>.apply(fn, e1)   // .failure(["name is empty"])
+    // seqRight — accumulates errors, returns right value
+    print(e1.seqRight(e2))
+    // failure(["name empty", "age negative"]) ← BOTH even when discarding values
+}
+// learnValidationApplicative()
 
-// --- seqRight / seqLeft (still accumulates) ---
-// ok1.seqRight(ok2)                         // .success(2)
-// e1.seqRight(e2)                           // .failure(["name is empty", "age is negative"])
+// MARK: - zip variants
 
-// --- zip: pair up two validated values ---
-// Validation<[String], (Int, Int)>.zip(ok1, ok2)   // .success((1, 2))
-// Validation<[String], (Int, Int)>.zip(e1, e2)     // .failure(["name is empty", "age is negative"])
+func learnValidationZip() {
+    let ok1: Validation<[String], Int>    = .success(1)
+    let ok2: Validation<[String], Int>    = .success(2)
+    let e1:  Validation<[String], Int>    = .failure(["field A"])
+    let e2:  Validation<[String], Int>    = .failure(["field B"])
+    let e3:  Validation<[String], String> = .failure(["field C"])
 
-// --- zip3: three fields ---
-// Validation<[String], (Int, Int, String)>.zip3(e1, e2, e3)
-// // .failure(["name is empty", "age is negative", "email is invalid"])
+    // zip
+    print(Validation<[String], (Int, Int)>.zip(ok1, ok2))         // success((1, 2))
+    print(Validation<[String], (Int, Int)>.zip(e1, e2))           // failure(["field A", "field B"])
 
-// --- zip4: four fields ---
-// let e4: Validation<[String], Bool> = .failure(["terms not accepted"])
-// Validation<[String], (Int, Int, String, Bool)>.zip4(e1, e2, e3, e4)
-// // .failure(["name is empty", "age is negative", "email is invalid", "terms not accepted"])
+    // zip3
+    print(Validation<[String], (Int, Int, String)>.zip3(e1, e2, e3))
+    // failure(["field A", "field B", "field C"])
+}
+// learnValidationZip()
 
+// MARK: - Practical: form validation
 
-// MARK: - Practical: Form Validation
+func learnValidationForm() {
+    func validateName(_ s: String) -> Validation<[String], String> {
+        s.isEmpty ? .failure(["Name cannot be empty"]) : .success(s)
+    }
+    func validateAge(_ n: Int) -> Validation<[String], Int> {
+        n >= 18 ? .success(n) : .failure(["Must be 18 or older"])
+    }
+    func validateEmail(_ s: String) -> Validation<[String], String> {
+        s.contains("@") ? .success(s) : .failure(["Invalid email"])
+    }
 
-// struct RegistrationForm {
-//     let name: String
-//     let age: Int
-//     let email: String
-// }
+    // All valid
+    print(Validation<[String], (String, Int, String)>.zip3(
+        validateName("Alice"), validateAge(25), validateEmail("alice@example.com")
+    ))
+    // success(("Alice", 25, "alice@example.com"))
 
-// func validateName(_ name: String) -> Validation<[String], String> {
-//     name.isEmpty ? .failure(["Name cannot be empty"]) : .success(name)
-// }
-
-// func validateAge(_ age: Int) -> Validation<[String], Int> {
-//     age >= 18 ? .success(age) : .failure(["Must be 18 or older"])
-// }
-
-// func validateEmail(_ email: String) -> Validation<[String], String> {
-//     email.contains("@") ? .success(email) : .failure(["Invalid email address"])
-// }
-
-// --- Combine all validations, collecting ALL errors ---
-// let nameV   = validateName("")
-// let ageV    = validateAge(15)
-// let emailV  = validateEmail("not-an-email")
-
-// let result = Validation<[String], RegistrationForm>.liftA2(
-//     { name in { age in { email in RegistrationForm(name: name, age: age, email: email) } } }
-// )
-// // More idiomatically with zip3:
-// // Validation<[String], (String, Int, String)>.zip3(nameV, ageV, emailV)
-// // .failure(["Name cannot be empty", "Must be 18 or older", "Invalid email address"])
-
-// --- All valid ---
-// Validation<[String], (String, Int, String)>.zip3(
-//     validateName("Alice"),
-//     validateAge(25),
-//     validateEmail("alice@example.com")
-// )
-// // .success(("Alice", 25, "alice@example.com"))
+    // All invalid — all three errors collected at once
+    print(Validation<[String], (String, Int, String)>.zip3(
+        validateName(""), validateAge(15), validateEmail("not-an-email")
+    ))
+    // failure(["Name cannot be empty", "Must be 18 or older", "Invalid email"])
+}
+// learnValidationForm()
 
 //: [Previous](@previous) | [Next](@next)

@@ -4,150 +4,126 @@ import PlaygroundSupport
 // ============================================================
 // DEFERREDSTREAM<Element>
 //
-// DeferredStream is the streaming counterpart to DeferredTask.
-// It wraps a lazy AsyncStream factory: the factory is not called
-// until the first iteration begins. This makes it composable and
-// safe to pass around without triggering side effects.
-//
-// Conforms to AsyncSequence — use it in `for await` loops.
-//
-// Functor, Applicative, and Monad instances allow you to transform
-// and compose streams before any element is produced.
+// Lazy AsyncSequence — the factory isn't called until the first
+// iteration. Streaming counterpart to DeferredTask.
+// Uncomment PlaygroundPage line below to capture async output.
 // ============================================================
 
-// ---- Uncomment the block below to enable async execution ----
 // PlaygroundPage.current.needsIndefiniteExecution = true
-
 
 // MARK: - Construction
 
-// --- From an AsyncStream factory (lazy — factory not called yet) ---
-// let stream = DeferredStream {
-//     AsyncStream<Int> { continuation in
-//         for i in 1...5 {
-//             continuation.yield(i)
-//         }
-//         continuation.finish()
-//     }
-// }
-// // Nothing runs. The factory is stored, not invoked.
+func learnDeferredStreamConstruction() {
+    // Factory stored, not invoked yet
+    let stream = DeferredStream {
+        AsyncStream<Int> { continuation in
+            for i in 1...5 { continuation.yield(i) }
+            continuation.finish()
+        }
+    }
 
-// --- Iterate (triggers the factory) ---
-// Task {
-//     for await value in stream {
-//         print(value)                     // 1, 2, 3, 4, 5
-//     }
-//     PlaygroundPage.current.finishExecution()
-// }
+    Task {
+        var collected: [Int] = []
+        for await value in stream { collected.append(value) }
+        print(collected)                                     // [1, 2, 3, 4, 5]
+    }
+}
+// learnDeferredStreamConstruction()
 
+// MARK: - Functor
 
-// MARK: - Functor (transform each element, still lazy)
+func learnDeferredStreamFunctor() {
+    let stream = DeferredStream {
+        AsyncStream<Int> { c in
+            for i in 1...3 { c.yield(i) }
+            c.finish()
+        }
+    }
 
-// let stream = DeferredStream {
-//     AsyncStream<Int> { continuation in
-//         for i in 1...3 { continuation.yield(i) }
-//         continuation.finish()
-//     }
-// }
+    let doubled  = stream.fmap { $0 * 2 }
+    let withOp   = { $0 * 2 } <£> stream
+    let replaced = stream £> "x"
 
-// --- Named function ---
-// let doubled = stream.fmap { $0 * 2 }    // DeferredStream<Int> — still lazy
+    Task {
+        var r1: [Int] = [], r2: [Int] = [], r3: [String] = []
+        for await v in doubled  { r1.append(v) }
+        for await v in withOp   { r2.append(v) }
+        for await v in replaced { r3.append(v) }
+        print(r1)                                            // [2, 4, 6]
+        print(r2)                                            // [2, 4, 6]
+        print(r3)                                            // ["x", "x", "x"]
+    }
+}
+// learnDeferredStreamFunctor()
 
-// --- Operators ---
-// let doubled2 = { $0 * 2 } <£> stream    // same
-// let doubled3 = stream <&> { $0 * 2 }    // same
+// MARK: - Monad
 
-// Task {
-//     for await value in doubled {
-//         print(value)                     // 2, 4, 6
-//     }
-//     PlaygroundPage.current.finishExecution()
-// }
+func learnDeferredStreamMonad() {
+    let stream = DeferredStream {
+        AsyncStream<Int> { c in
+            for i in 1...3 { c.yield(i) }
+            c.finish()
+        }
+    }
 
-// --- replace all elements with a constant ---
-// let constant = stream £> "hello"
-// Task {
-//     for await value in constant {
-//         print(value)                     // "hello", "hello", "hello"
-//     }
-//     PlaygroundPage.current.finishExecution()
-// }
+    // flatMap — each element expands into a sub-stream, results flattened
+    let expanded = stream.flatMap { n in
+        DeferredStream {
+            AsyncStream<Int> { c in
+                c.yield(n)
+                c.yield(n * 10)
+                c.finish()
+            }
+        }
+    }
 
-
-// MARK: - Monad (flatMap each element into a new stream, then flatten)
-
-// let stream = DeferredStream {
-//     AsyncStream<Int> { continuation in
-//         for i in 1...3 { continuation.yield(i) }
-//         continuation.finish()
-//     }
-// }
-
-// --- flatMap: each element expands into a sub-stream ---
-// let expanded = stream.flatMap { n in
-//     DeferredStream {
-//         AsyncStream<Int> { continuation in
-//             continuation.yield(n)
-//             continuation.yield(n * 10)
-//             continuation.finish()
-//         }
-//     }
-// }
-
-// Task {
-//     for await value in expanded {
-//         print(value)                     // 1, 10, 2, 20, 3, 30
-//     }
-//     PlaygroundPage.current.finishExecution()
-// }
-
-// --- bind (curried) ---
-// let expand: (Int) -> DeferredStream<Int> = { n in
-//     DeferredStream { AsyncStream { c in c.yield(n); c.yield(-n); c.finish() } }
-// }
-// let bound = DeferredStream<Int>.bind(expand)(stream)
-// // Task { for await v in bound { print(v) } ... }  // 1, -1, 2, -2, 3, -3
-
+    Task {
+        var result: [Int] = []
+        for await v in expanded { result.append(v) }
+        print(result)                                        // [1, 10, 2, 20, 3, 30]
+    }
+}
+// learnDeferredStreamMonad()
 
 // MARK: - Applicative
 
-// let streamA = DeferredStream {
-//     AsyncStream<Int> { c in c.yield(1); c.yield(2); c.finish() }
-// }
-// let streamB = DeferredStream {
-//     AsyncStream<Int> { c in c.yield(10); c.yield(20); c.finish() }
-// }
+func learnDeferredStreamApplicative() {
+    let streamA = DeferredStream { AsyncStream<Int> { c in c.yield(1); c.yield(2); c.finish() } }
+    let streamB = DeferredStream { AsyncStream<Int> { c in c.yield(10); c.yield(20); c.finish() } }
 
-// --- liftA2 ---
-// let sumStream = DeferredStream<Int>.liftA2(+)(streamA, streamB)
+    let sumStream = DeferredStream<Int>.liftA2(+)(streamA, streamB)
 
+    Task {
+        var result: [Int] = []
+        for await v in sumStream { result.append(v) }
+        print(result)
+    }
+}
+// learnDeferredStreamApplicative()
 
-// MARK: - Practical: live data pipeline
+// MARK: - Practical: alert stream
 
-// --- Simulated ticker that emits prices ---
-// let prices = DeferredStream {
-//     AsyncStream<Double> { continuation in
-//         for price in [1.0, 1.2, 0.9, 1.5, 1.1] {
-//             continuation.yield(price)
-//         }
-//         continuation.finish()
-//     }
-// }
+func learnDeferredStreamPractical() {
+    let prices = DeferredStream {
+        AsyncStream<Double> { c in
+            for price in [1.0, 1.2, 0.9, 1.5, 1.1] { c.yield(price) }
+            c.finish()
+        }
+    }
 
-// --- Transform: only keep prices above threshold, format as string ---
-// let alerts = prices
-//     <&> { price in (price, price > 1.3) }
-//     >>- { pair in
-//         pair.1
-//             ? DeferredStream { AsyncStream { c in c.yield("ALERT: \(pair.0)"); c.finish() } }
-//             : DeferredStream { AsyncStream { c in c.finish() } }
-//     }
+    // Filter via flatMap — emit only when price exceeds threshold
+    let alerts = prices.flatMap { price -> DeferredStream<String> in
+        price > 1.3
+            ? DeferredStream { AsyncStream { c in c.yield("ALERT: \(price)"); c.finish() } }
+            : DeferredStream { AsyncStream { c in c.finish() } }
+    }
 
-// Task {
-//     for await alert in alerts {
-//         print(alert)                     // "ALERT: 1.5"
-//     }
-//     PlaygroundPage.current.finishExecution()
-// }
+    Task {
+        for await alert in alerts {
+            print(alert)                                     // "ALERT: 1.5"
+        }
+    }
+}
+// learnDeferredStreamPractical()
 
 //: [Previous](@previous) | [Next](@next)

@@ -3,148 +3,126 @@ import PlaygroundSupport
 
 // ============================================================
 // DEFERREDTASK<A>
-// run          :: DeferredTask<A> -> async -> A
-// eraseToTask  :: DeferredTask<A> -> Task<A, Never>
 //
-// DeferredTask is the IO monad for Swift async/await.
-// It wraps a lazy async computation: nothing executes until
-// .run() is explicitly called. You can build, compose, and
-// transform DeferredTasks freely — they're just descriptions
-// of work, not running computations.
-//
-// This makes side effects explicit, testable, and composable.
-//
-// Haskell equivalent: IO a  /  cats-effect IO
+// Lazy async computation — nothing runs until .run() is called.
+// Descriptions of work, not running work. Like Haskell's IO.
+// Uncomment PlaygroundPage line below to capture async output.
 // ============================================================
 
-// ---- Uncomment the block below to enable async execution ----
 // PlaygroundPage.current.needsIndefiniteExecution = true
-
 
 // MARK: - Construction & Running
 
-// --- A task that does nothing yet ---
-// let task = DeferredTask { 42 }
-// // Nothing has run. The closure is stored, not executed.
+func learnDeferredTaskConstruction() {
+    let task = DeferredTask { 42 }
+    // Nothing has executed yet. Only .run() triggers the closure.
 
-// --- Run it (must be inside an async context) ---
-// Task {
-//     let result = await task.run()        // 42 — runs NOW
-//     print(result)
-//     PlaygroundPage.current.finishExecution()
-// }
+    let eager = Task {
+        let result = await task.run()
+        print(result)                                        // 42
+    }
+    _ = eager
+}
+// learnDeferredTaskConstruction()
 
-// --- eraseToTask: fire-and-forget ---
-// let t = DeferredTask { print("side effect!") }
-// // t.eraseToTask()                       // starts a new Task immediately
+// MARK: - Functor
 
+func learnDeferredTaskFunctor() {
+    let task     = DeferredTask { 5 }
+    let doubled  = task.fmap { $0 * 2 }                     // still lazy
+    let withOp1  = { $0 * 2 } <£> task
+    let withOp2  = task <&> { $0 * 2 }
+    let replaced = task £> "done"
 
-// MARK: - Functor (transform the result, still lazy)
+    Task {
+        print(await doubled.run())                           // 10
+        print(await withOp1.run())                           // 10
+        print(await withOp2.run())                           // 10
+        print(await replaced.run())                          // "done"
+    }
+}
+// learnDeferredTaskFunctor()
 
-// let task = DeferredTask { 5 }
+// MARK: - Applicative
 
-// --- Named function ---
-// let doubled = task.fmap { $0 * 2 }      // DeferredTask { 10 } — still not running
+func learnDeferredTaskApplicative() {
+    let taskA = DeferredTask { 3 }
+    let taskB = DeferredTask { 4 }
 
-// --- Operators ---
-// let doubled2 = { $0 * 2 } <£> task      // same
-// let doubled3 = task <&> { $0 * 2 }      // same
+    // liftA2 — both run, results combined
+    let sumTask = DeferredTask<Int>.liftA2(+)(taskA, taskB)
 
-// Task {
-//     let result = await doubled.run()     // 10
-//     print(result)
-//     PlaygroundPage.current.finishExecution()
-// }
+    // apply
+    let fnTask  = DeferredTask<(Int) -> Int> { { $0 * 10 } }
+    let product = fnTask <*> taskA
 
+    Task {
+        print(await sumTask.run())                           // 7
+        print(await product.run())                           // 30
+    }
+}
+// learnDeferredTaskApplicative()
 
-// MARK: - Applicative (run two tasks, combine results)
+// MARK: - Monad
 
-// let taskA = DeferredTask { 3 }
-// let taskB = DeferredTask { 4 }
+func learnDeferredTaskMonad() {
+    let fetchId   = DeferredTask { 42 }
+    let fetchUser = { (id: Int) in DeferredTask { "User #\(id)" } }
 
-// --- liftA2: both tasks run, results combined ---
-// let sumTask = DeferredTask<Int>.liftA2(+)(taskA, taskB)
+    // flatMap — second task depends on first result
+    let pipeline  = fetchId.flatMap(fetchUser)
 
-// Task {
-//     let result = await sumTask.run()     // 7
-//     print(result)
-//     PlaygroundPage.current.finishExecution()
-// }
+    // bind + operator
+    let piped     = fetchId >>- fetchUser
 
-// --- apply ---
-// let fnTask = DeferredTask<(Int) -> Int> { { $0 * 10 } }
-// let product = fnTask <*> taskA
+    // join — flatten nested DeferredTask
+    let nested    = DeferredTask { DeferredTask { "hello" } }
+    let flat      = DeferredTask<String>.join(nested)
 
-// Task {
-//     let result = await product.run()     // 30
-//     print(result)
-//     PlaygroundPage.current.finishExecution()
-// }
+    Task {
+        print(await pipeline.run())                          // "User #42"
+        print(await piped.run())                             // "User #42"
+        print(await flat.run())                              // "hello"
+    }
+}
+// learnDeferredTaskMonad()
 
+// MARK: - Kleisli
 
-// MARK: - Monad (sequential async work — second step depends on first)
+func learnDeferredTaskKleisli() {
+    let countChars: (String) -> DeferredTask<Int>    = { s in DeferredTask { s.count } }
+    let describe:   (Int) -> DeferredTask<String>    = { n in DeferredTask { "length: \(n)" } }
+    let shout:      (String) -> DeferredTask<String> = { s in DeferredTask { s.uppercased() } }
 
-// let fetchId = DeferredTask { 42 }
-// let fetchUser: (Int) -> DeferredTask<String> = { id in DeferredTask { "User #\(id)" } }
+    let pipeline = countChars >=> describe >=> shout
 
-// --- flatMap ---
-// let pipeline = fetchId.flatMap(fetchUser)
+    Task {
+        print(await pipeline("hello").run())                 // "LENGTH: 5"
+    }
+}
+// learnDeferredTaskKleisli()
 
-// Task {
-//     let user = await pipeline.run()      // "User #42"
-//     print(user)
-//     PlaygroundPage.current.finishExecution()
-// }
+// MARK: - Practical: lazy effect pipeline
 
-// --- bind (curried) ---
-// let bound = DeferredTask<Int>.bind(fetchUser)(fetchId)
+func learnDeferredTaskPractical() {
+    func authenticate(token: String) -> DeferredTask<Bool> {
+        DeferredTask { token == "secret" }
+    }
+    func fetchData() -> DeferredTask<[String]> {
+        DeferredTask { ["item1", "item2", "item3"] }
+    }
 
-// --- Operators ---
-// let piped = fetchId >>- fetchUser        // "User #42"
+    let program = authenticate(token: "secret")
+        .flatMap { isAuthed in
+            isAuthed ? fetchData() : DeferredTask { [] }
+        }
+        .fmap { items in "Fetched \(items.count) items" }
 
-// --- join: flatten nested DeferredTask ---
-// let nested = DeferredTask { DeferredTask { "hello" } }
-// // let flat = DeferredTask<String>.join(nested) — awaits the outer, then the inner
-
-
-// MARK: - Kleisli (compose async functions)
-
-// let step1: (String) -> DeferredTask<Int>    = { s in DeferredTask { s.count } }
-// let step2: (Int) -> DeferredTask<String>    = { n in DeferredTask { "length: \(n)" } }
-// let step3: (String) -> DeferredTask<String> = { s in DeferredTask { s.uppercased() } }
-
-// let pipeline = step1 >=> step2 >=> step3   // right-associative: step1 then step2 then step3
-
-// Task {
-//     let result = await pipeline("hello").run()  // "LENGTH: 5"
-//     print(result)
-//     PlaygroundPage.current.finishExecution()
-// }
-
-
-// MARK: - Practical: lazy effect sequencing
-
-// struct API {
-//     static func authenticate(token: String) -> DeferredTask<Bool> {
-//         DeferredTask { token == "secret" }
-//     }
-
-//     static func fetchData(userId: Int) -> DeferredTask<[String]> {
-//         DeferredTask { ["item1", "item2", "item3"] }
-//     }
-// }
-
-// let program = API.authenticate(token: "secret")
-//     .flatMap { isAuthed -> DeferredTask<[String]> in
-//         guard isAuthed else { return DeferredTask { [] } }
-//         return API.fetchData(userId: 1)
-//     }
-//     .fmap { items in "Fetched \(items.count) items" }
-
-// Task {
-//     let result = await program.run()     // "Fetched 3 items"
-//     print(result)
-//     PlaygroundPage.current.finishExecution()
-// }
+    // Nothing has run yet!
+    Task {
+        print(await program.run())                           // "Fetched 3 items"
+    }
+}
+// learnDeferredTaskPractical()
 
 //: [Previous](@previous) | [Next](@next)

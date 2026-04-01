@@ -2,141 +2,108 @@ import FP
 
 // ============================================================
 // READER<Environment, Output>
-// runReader :: Reader<E, A> -> E -> A
 //
-// Reader is the dependency injection monad. It wraps a function
-// (Environment) -> Output. The environment is threaded through
-// automatically — you never pass it explicitly until the very end.
-//
-// Think of it as a computation that needs an environment to run.
-// You describe the whole computation by composing Readers,
-// then inject the actual dependencies once at the call site.
-//
-// Haskell equivalent: Reader / ReaderT
+// The dependency injection monad. Wraps (Environment) -> Output.
+// Thread dependencies automatically — inject once at the edge.
 // ============================================================
+
+struct AppConfig {
+    let multiplier: Int
+    let greeting: String
+}
 
 // MARK: - Construction & Running
 
-// struct AppConfig {
-//     let multiplier: Int
-//     let greeting: String
-// }
+func learnReaderConstruction() {
+    let r = Reader<AppConfig, Int> { config in config.multiplier * 2 }
 
-// --- Explicit init ---
-// let r1 = Reader<AppConfig, Int> { config in config.multiplier * 2 }
+    // Run — inject the environment
+    print(r.runReader(AppConfig(multiplier: 3, greeting: "Hi")))  // 6
+    print(r(AppConfig(multiplier: 5, greeting: "Hi")))            // 10 — callAsFunction
+}
+// learnReaderConstruction()
 
-// --- Run it (inject the environment) ---
-// r1.runReader(AppConfig(multiplier: 3, greeting: "Hi"))   // 6
-// r1(AppConfig(multiplier: 3, greeting: "Hi"))             // 6 — callAsFunction
+// MARK: - ask / asks / local
 
+func learnReaderAsk() {
+    // ask — return the whole environment
+    let getAll = Reader<AppConfig, AppConfig>.ask
+    print(getAll.runReader(AppConfig(multiplier: 3, greeting: "Hi")).multiplier)  // 3
 
-// MARK: - ask and asks (reading from the environment)
+    // asks — project a value
+    let getMultiplier = Reader<AppConfig, Int>.asks(\.multiplier)
+    let getGreeting   = Reader<AppConfig, String>.asks(\.greeting)
+    print(getMultiplier.runReader(AppConfig(multiplier: 5, greeting: "Hi")))      // 5
+    print(getGreeting.runReader(AppConfig(multiplier: 3, greeting: "Hello")))     // "Hello"
 
-// --- ask: returns the whole environment ---
-// let getAll = Reader<AppConfig, AppConfig>.ask
-// getAll.runReader(AppConfig(multiplier: 3, greeting: "Hi"))  // AppConfig(3, "Hi")
+    // asks with transformation
+    let doubled = Reader<AppConfig, Int>.asks { $0.multiplier * 2 }
+    print(doubled.runReader(AppConfig(multiplier: 4, greeting: "Hi")))            // 8
 
-// --- asks: project a value from the environment ---
-// let getMultiplier = Reader<AppConfig, Int>.asks(\.multiplier)
-// getMultiplier.runReader(AppConfig(multiplier: 5, greeting: "Hi"))   // 5
-
-// let getGreeting = Reader<AppConfig, String>.asks(\.greeting)
-// getGreeting.runReader(AppConfig(multiplier: 3, greeting: "Hello")) // "Hello"
-
-// --- asks with a transformation ---
-// let doubledMultiplier = Reader<AppConfig, Int>.asks { $0.multiplier * 2 }
-// doubledMultiplier.runReader(AppConfig(multiplier: 4, greeting: "Hi"))  // 8
-
-
-// MARK: - local (run in a modified environment)
-
-// let r = Reader<AppConfig, Int>.asks(\.multiplier)
-
-// --- local: temporarily modify the environment for a sub-computation ---
-// let doubled = r.local { AppConfig(multiplier: $0.multiplier * 2, greeting: $0.greeting) }
-// r.runReader(AppConfig(multiplier: 3, greeting: "Hi"))       // 3
-// doubled.runReader(AppConfig(multiplier: 3, greeting: "Hi")) // 6
-
+    // local — run in a modified environment
+    let r = Reader<AppConfig, Int>.asks(\.multiplier)
+    let tripled = r.local { AppConfig(multiplier: $0.multiplier * 3, greeting: $0.greeting) }
+    print(r.runReader(AppConfig(multiplier: 3, greeting: "Hi")))                  // 3
+    print(tripled.runReader(AppConfig(multiplier: 3, greeting: "Hi")))            // 9
+}
+// learnReaderAsk()
 
 // MARK: - Functor
 
-// let r = Reader<AppConfig, Int>.asks(\.multiplier)
+func learnReaderFunctor() {
+    let r = Reader<AppConfig, Int>.asks(\.multiplier)
 
-// --- Named function (mapReader) ---
-// r.mapReader { $0 + 100 }                 // Reader that adds 100 to multiplier
-// // .runReader(AppConfig(multiplier: 3, ...)) // 103
+    let shifted = r.mapReader { $0 + 100 }
+    print(shifted.runReader(AppConfig(multiplier: 3, greeting: "Hi")))            // 103
 
-// --- fmap (curried static) ---
-// Reader<AppConfig, Int>.fmap { $0 + 100 }(r)
+    let withOp = { $0 + 100 } <£> r
+    print(withOp.runReader(AppConfig(multiplier: 3, greeting: "Hi")))             // 103
+}
+// learnReaderFunctor()
 
-// --- Operators ---
-// { $0 + 100 } <£> r
-// r <&> { $0 + 100 }
+// MARK: - Applicative
 
+struct ReaderEnvXY { let x: Int; let y: Int }
 
-// MARK: - Applicative (combine two independent readers)
+func learnReaderApplicative() {
+    let rx = Reader<ReaderEnvXY, Int>.asks(\.x)
+    let ry = Reader<ReaderEnvXY, Int>.asks(\.y)
 
-// struct Config { let x: Int; let y: Int }
+    // liftA2 — both readers share the same env
+    let sum = Reader<ReaderEnvXY, Int>.liftA2(+)(rx, ry)
+    print(sum.runReader(ReaderEnvXY(x: 3, y: 4)))                                // 7
 
-// let rx = Reader<Config, Int>.asks(\.x)
-// let ry = Reader<Config, Int>.asks(\.y)
+    // apply
+    let fn = Reader<ReaderEnvXY, (Int) -> Int> { env in { $0 * env.x } }
+    print((fn <*> ry).runReader(ReaderEnvXY(x: 3, y: 4)))                       // 12
 
-// --- liftA2: both readers share the same environment ---
-// let sum = Reader<Config, Int>.liftA2(+)(rx, ry)
-// sum.runReader(Config(x: 3, y: 4))        // 7
+    // seqRight
+    print((rx *> ry).runReader(ReaderEnvXY(x: 3, y: 4)))                        // 4
+}
+// learnReaderApplicative()
 
-// --- apply ---
-// let fn = Reader<Config, (Int) -> Int> { config in { $0 * config.x } }
-// (fn <*> ry).runReader(Config(x: 3, y: 4))  // 12 (4 * 3)
+// MARK: - Monad
 
-// --- seqRight: run both, keep second ---
-// (rx *> ry).runReader(Config(x: 3, y: 4))  // 4
+struct ReaderDB { let users: [Int: String] }
 
+func learnReaderMonad() {
+    let getUser = Reader<ReaderDB, String?>.asks { $0.users[1] }
 
-// MARK: - Monad (sequential, each step can depend on previous result)
+    // flatMap — second Reader computed from first result
+    let greet = getUser.flatMap { name in
+        Reader<ReaderDB, String> { _ in name.map { "Hello, \($0)!" } ?? "Unknown" }
+    }
+    print(greet.runReader(ReaderDB(users: [1: "Alice"])))                         // "Hello, Alice!"
+    print(greet.runReader(ReaderDB(users: [:])))                                  // "Unknown"
 
-// struct DB { let users: [Int: String] }
-
-// let getUser = Reader<DB, String?>.asks { db in db.users[1] }
-
-// --- flatMap: second reader computed from first result ---
-// let greet = getUser.flatMap { name in
-//     Reader<DB, String> { _ in name.map { "Hello, \($0)!" } ?? "User not found" }
-// }
-// greet.runReader(DB(users: [1: "Alice"]))   // "Hello, Alice!"
-// greet.runReader(DB(users: [2: "Bob"]))     // "User not found"
-
-// --- bind (curried) ---
-// let r = Reader<DB, String?>.asks { $0.users[1] }
-// Reader<DB, String?>.bind { name in Reader { _ in name.map { $0.uppercased() } } }(r)
-
-// --- Kleisli: compose two Reader-returning functions ---
-// let lookupUser: (Int) -> Reader<DB, String?> = { id in Reader { $0.users[id] } }
-// let lookupGreeting: (String?) -> Reader<DB, String> = { name in
-//     Reader { _ in name.map { "Hi, \($0)" } ?? "Unknown" }
-// }
-// let pipeline = lookupUser >=> lookupGreeting
-// pipeline(1).runReader(DB(users: [1: "Alice"]))  // "Hi, Alice"
-
-
-// MARK: - Practical: dependency injection
-
-// protocol Logger { func log(_ message: String) }
-// protocol Database { func fetch(_ id: Int) -> String? }
-
-// struct AppEnv {
-//     let logger: Logger
-//     let database: Database
-// }
-
-// --- Compose a use-case from two concerns without passing dependencies manually ---
-// let fetchAndLog = Reader<AppEnv, String?> { env in
-//     let result = env.database.fetch(42)
-//     env.logger.log("fetched: \(result ?? "nil")")
-//     return result
-// }
-
-// --- Inject at the call site ---
-// fetchAndLog.runReader(AppEnv(logger: myLogger, database: myDB))
+    // Kleisli
+    let lookupUser:  (Int) -> Reader<ReaderDB, String?> = { id in Reader { $0.users[id] } }
+    let greetOpt: (String?) -> Reader<ReaderDB, String> = { name in
+        Reader { _ in name.map { "Hi, \($0)" } ?? "Unknown" }
+    }
+    let pipeline = lookupUser >=> greetOpt
+    print(pipeline(1).runReader(ReaderDB(users: [1: "Bob"])))                    // "Hi, Bob"
+}
+// learnReaderMonad()
 
 //: [Previous](@previous) | [Next](@next)

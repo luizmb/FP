@@ -3,110 +3,108 @@ import FP
 // ============================================================
 // NONEMPTY<A>
 //
-// NonEmpty<A> is a sequence guaranteed to contain at least one
-// element. It has a head (guaranteed) and a tail ([A]).
-//
-// Key property: it is a Semigroup but NOT a Monoid.
-// Two non-empty sequences always combine into a non-empty one,
-// but there is no empty value — the identity element doesn't exist.
-// Therefore: use sconcat (not mconcat) when folding.
-//
-// Functor, Applicative, and Monad instances are available.
+// A sequence guaranteed to have at least one element.
+// Semigroup but NOT Monoid — no empty value exists.
+// Use sconcat (not mconcat) when folding a list of them.
 // ============================================================
 
 // MARK: - Construction
 
-// --- Direct init ---
-// let digits = NonEmpty(head: 1, tail: [2, 3, 4])   // NonEmpty<Int>
-// let single = NonEmpty(head: "only")                // NonEmpty<String>
+func learnNonEmptyConstruction() {
+    // Direct init
+    let digits = NonEmpty(head: 1, tail: [2, 3, 4])
+    let single = NonEmpty(head: "only")
 
-// --- Free function constructors ---
-// let nums = nonEmpty(head: 1, tail: [2, 3])         // NonEmpty<Int>
+    print(digits)                                            // NonEmpty([1, 2, 3, 4])
+    print(single)                                            // NonEmpty(["only"])
 
-// --- From Array (returns Optional — the array might be empty) ---
-// let fromArr: NonEmpty<Int>? = nonEmpty([1, 2, 3])  // .some(NonEmpty(1, [2, 3]))
-// let fromEmpty: NonEmpty<Int>? = nonEmpty([])       // .none — type-safe!
+    // Free function constructors
+    let nums = nonEmpty(head: 1, tail: [2, 3])
+    print(nums)                                              // NonEmpty([1, 2, 3])
 
+    // From Array — returns Optional (the array might be empty)
+    let fromArr:   NonEmpty<Int>? = nonEmpty([1, 2, 3])
+    let fromEmpty: NonEmpty<Int>? = nonEmpty([])
+    print(fromArr as Any)                                    // Optional(NonEmpty([1, 2, 3]))
+    print(fromEmpty as Any)                                  // nil
+}
+// learnNonEmptyConstruction()
 
 // MARK: - Properties
 
-// let ne = NonEmpty(head: 1, tail: [2, 3, 4, 5])
+func learnNonEmptyProperties() {
+    let ne = NonEmpty(head: 1, tail: [2, 3, 4, 5])
 
-// ne.head                                  // 1 — always exists, never optional
-// ne.tail                                  // [2, 3, 4, 5]
-// ne.last                                  // 5
-// ne.count                                 // 5
-// ne.toArray                               // [1, 2, 3, 4, 5]
-// ne.description                           // "NonEmpty([1, 2, 3, 4, 5])"
-
+    print(ne.head)                                           // 1 — always present, never Optional
+    print(ne.tail)                                           // [2, 3, 4, 5]
+    print(ne.last)                                           // 5
+    print(ne.count)                                          // 5
+    print(ne.toArray)                                        // [1, 2, 3, 4, 5]
+}
+// learnNonEmptyProperties()
 
 // MARK: - Functor
 
-// let ne = NonEmpty(head: 1, tail: [2, 3])
+func learnNonEmptyFunctor() {
+    let ne = NonEmpty(head: 1, tail: [2, 3])
 
-// --- Named function ---
-// ne.map { $0 * 2 }                        // NonEmpty(head: 2, tail: [4, 6])
-
-// --- Operators ---
-// { $0 * 2 } <£> ne                        // NonEmpty(head: 2, tail: [4, 6])
-// ne <&> { $0 * 2 }                        // NonEmpty(head: 2, tail: [4, 6])
-// ne £> 0                                  // NonEmpty(head: 0, tail: [0, 0])
-
-
-// MARK: - Applicative
-
-// let ne = NonEmpty(head: 1, tail: [2, 3])
-// let fns = NonEmpty(head: { (x: Int) in x + 10 }, tail: [{ $0 * 2 }])
-
-// --- apply: each function applied to each value (cartesian product) ---
-// fns <*> ne                               // NonEmpty(11, [12, 13, 2, 4, 6])
-
-// --- liftA2 ---
-// let ne2 = NonEmpty(head: 10, tail: [20])
-// NonEmpty<Int>.liftA2(+)(ne, ne2)         // NonEmpty(11, [21, 12, 22, 13, 23])
-
+    print(ne.map { $0 * 2 })                                 // NonEmpty([2, 4, 6])
+    print({ $0 * 2 } <£> ne)                                 // NonEmpty([2, 4, 6]) — fn left
+    print(ne <&> { $0 * 2 })                                 // NonEmpty([2, 4, 6]) — value left
+    print(ne £> 0)                                           // NonEmpty([0, 0, 0])
+}
+// learnNonEmptyFunctor()
 
 // MARK: - Monad
 
-// let ne = NonEmpty(head: 1, tail: [2, 3])
+func learnNonEmptyMonad() {
+    let ne = NonEmpty(head: 1, tail: [2, 3])
 
-// --- flatMap: expand each element, flatten into NonEmpty ---
-// ne.flatMap { n in NonEmpty(head: n, tail: [n * 10]) }
-// // NonEmpty(head: 1, tail: [10, 2, 20, 3, 30])
+    // flatMap — expand each element, flatten into NonEmpty
+    let expanded = ne.flatMap { n in NonEmpty(head: n, tail: [n * 10]) }
+    print(expanded)                                          // NonEmpty([1, 10, 2, 20, 3, 30])
 
-// --- bind (curried) ---
-// let expand: (Int) -> NonEmpty<Int> = { n in NonEmpty(head: n, tail: [-n]) }
-// NonEmpty<Int>.bind(expand)(ne)           // NonEmpty(1, [-1, 2, -2, 3, -3])
-// ne >>- expand                           // NonEmpty(1, [-1, 2, -2, 3, -3])
+    // bind (curried)
+    let expand: (Int) -> NonEmpty<Int> = { n in NonEmpty(head: n, tail: [-n]) }
+    print(NonEmpty<Int>.bind(expand)(ne))                    // NonEmpty([1, -1, 2, -2, 3, -3])
+    print(ne >>- expand)                                     // NonEmpty([1, -1, 2, -2, 3, -3])
+}
+// learnNonEmptyMonad()
 
+// MARK: - Semigroup (NOT Monoid)
 
-// MARK: - Semigroup (but NOT Monoid — no empty value)
+func learnNonEmptySemigroup() {
+    let a = NonEmpty(head: 1, tail: [2, 3])
+    let b = NonEmpty(head: 4, tail: [5])
+    let c = NonEmpty(head: 6, tail: [])
 
-// let a = NonEmpty(head: 1, tail: [2, 3])
-// let b = NonEmpty(head: 4, tail: [5])
-// let c = NonEmpty(head: 6, tail: [])
+    // combine
+    print(NonEmpty.combine(a, b))                            // NonEmpty([1, 2, 3, 4, 5])
+    print(a <> b)                                            // NonEmpty([1, 2, 3, 4, 5])
 
-// --- combine (Semigroup) ---
-// NonEmpty.combine(a, b)                   // NonEmpty(1, [2, 3, 4, 5])
-// a <> b                                   // NonEmpty(1, [2, 3, 4, 5])
+    // sconcat — fold via Semigroup (no identity needed)
+    print(sconcat(a, [b, c]))                                // NonEmpty([1, 2, 3, 4, 5, 6])
 
-// --- sconcat (fold non-empty list via Semigroup) ---
-// sconcat(a, [b, c])                       // NonEmpty(1, [2, 3, 4, 5, 6])
-// // Note: mconcat is NOT available for NonEmpty — there's no identity element
+    // mconcat is NOT available — there is no empty NonEmpty
+}
+// learnNonEmptySemigroup()
 
+// MARK: - Practical: type-safe non-empty input
 
-// MARK: - Practical: guarantee non-empty input
+func learnNonEmptyPractical() {
+    func processItems(_ items: NonEmpty<String>) -> String {
+        "Processing \(items.count) item(s), first: \(items.head)"
+    }
 
-// func process(_ items: NonEmpty<String>) -> String {
-//     "Processing \(items.count) items, starting with: \(items.head)"
-// }
+    // Safe — only callable when we actually have items
+    if let items = nonEmpty(["apple", "banana", "cherry"]) {
+        print(processItems(items))                           // "Processing 3 item(s), first: apple"
+    }
 
-// --- Safe: only call if we know we have items ---
-// if let items = nonEmpty(["apple", "banana", "cherry"]) {
-//     process(items)                        // "Processing 3 items, starting with: apple"
-// }
-
-// --- The head is always safe to access — no Optional unwrapping needed ---
-// let firstItem: String = items.head       // guaranteed, no ?
+    // head is always safe — no Optional, no force unwrap
+    let fruits = NonEmpty(head: "apple", tail: ["banana"])
+    print(fruits.head)                                       // "apple"
+}
+// learnNonEmptyPractical()
 
 //: [Previous](@previous) | [Next](@next)

@@ -3,143 +3,232 @@ import FP
 // ============================================================
 // FUNCTION UTILITIES
 //
-// Building blocks for point-free, tacit programming.
-// These are the combinators that make function composition
-// and partial application ergonomic.
+// Building blocks for tacit/point-free programming.
+//   id, const, ignore     — trivial combinators
+//   curry / uncurry       — arity transforms
+//   flip / partialApply   — argument reordering / partial application
+//   lazy / unlazy         — zero-argument wrapping
+//   compose / apply       — function composition and application
+//   Endo<A>               — endomorphism monoid under composition
 // ============================================================
 
-// MARK: - id (identity)
-// Returns its argument unchanged. Useful as a no-op in pipelines.
+// MARK: - id
 
-// id(42)                                   // 42
-// id("hello")                              // "hello"
-// [1, 2, 3].map(id)                        // [1, 2, 3]
-// Optional<Int>.join(.some(.some(5)))       // 5 — join uses id internally
+func learnId() {
+    print(id(42))                                             // 42
+    print(id("hello"))                                        // "hello"
 
+    // Useful as a no-op transform in map/flatMap chains
+    let values: [Int] = [1, 2, 3]
+    print(values.map(id))                                     // [1, 2, 3]
 
-// MARK: - const (constant function)
-// Returns a function that ignores its input and returns a fixed value.
+    // £ (apply) with id is the same as calling directly
+    print(id £ 100)                                           // 100
+}
+// learnId()
 
-// const(42)("ignored")                     // 42
-// const(42)(true, "also ignored")          // 42
-// [1, 2, 3].map(const("x"))               // ["x", "x", "x"]
-// Optional<Int>.fmap(const(0))(.some(5))   // .some(0)
+// MARK: - const
 
+func learnConst() {
+    // const(x) returns a function that ignores its argument and returns x
+    let alwaysFive: (String) -> Int = const(5)
+    print(alwaysFive("anything"))                             // 5
+    print(alwaysFive(""))                                     // 5
+
+    // Useful to replace lambdas like `{ _ in value }`
+    let words = ["apple", "banana", "cherry"]
+    print(words.map(const("x")))                              // ["x", "x", "x"]
+
+    // Compare with £> operator which does the same thing inline
+    print(words <&> const("x"))                               // ["x", "x", "x"]
+}
+// learnConst()
 
 // MARK: - ignore
-// Discards its argument and returns Void. Point-free void.
 
-// [1, 2, 3].map(ignore)                    // [(), (), ()]
-// let task = DeferredTask { 42 }.fmap(ignore)  // DeferredTask<Void>
+func learnIgnore() {
+    // ignore discards all its arguments and returns Void
+    ignore(1, 2, 3)                                           // ()
 
+    // Useful when a closure must return Void but you have a value
+    let task: () -> Void = { ignore(42) }
+    task()
+
+    // Of<T>.ignore() gives you a typed (T) -> Void function
+    let discard = Of<Int>.ignore()
+    print(type(of: discard))                                  // (Int) -> ()
+    discard(99)
+}
+// learnIgnore()
 
 // MARK: - curry / uncurry
-// curry:   (A, B) -> C   becomes   (A) -> (B) -> C
-// uncurry: (A) -> (B) -> C   becomes   (A, B) -> C
 
-// func add(_ a: Int, _ b: Int) -> Int { a + b }
+func learnCurryUncurry() {
+    // curry — (A, B) -> C   becomes   (A) -> (B) -> C
+    let add: (Int, Int) -> Int = { $0 + $1 }
+    let curriedAdd = curry(add)                               // (Int) -> (Int) -> Int
 
-// let curriedAdd = curry(add)              // (Int) -> (Int) -> Int
-// curriedAdd(3)(4)                         // 7
-// let add3 = curriedAdd(3)                 // (Int) -> Int — partial application
-// add3(10)                                 // 13
-// [1, 2, 3].map(add3)                      // [4, 5, 6] — point-free map
+    print(curriedAdd(3)(4))                                   // 7
 
-// let uncurriedAdd = uncurry(curriedAdd)   // (Int, Int) -> Int
-// uncurriedAdd(3, 4)                       // 7
+    let add3 = curriedAdd(3)                                  // (Int) -> Int — partially applied
+    print([1, 2, 3].map(add3))                                // [4, 5, 6]
 
+    // uncurry — inverse: (A) -> (B) -> C   becomes   (A, B) -> C
+    let uncurriedAdd = uncurry(curriedAdd)
+    print(uncurriedAdd(3, 4))                                 // 7
+}
+// learnCurryUncurry()
 
-// MARK: - flip
-// Swap the first two arguments of a curried or uncurried function.
+// MARK: - flip / partialApply
 
-// func subtract(_ a: Int, _ b: Int) -> Int { a - b }
-// let flippedSubtract = flip(subtract)     // (Int) -> (Int) -> Int, but b first
-// flippedSubtract(3)(10)                   // 10 - 3 = 7 (was subtract(10, 3))
+func learnFlipPartialApply() {
+    // flip — swaps argument order (curried form)
+    let subtract: (Int, Int) -> Int = { $0 - $1 }
+    let flipped = flip(subtract)                              // (Int) -> (Int) -> Int  (b first)
 
-// let divide: (Double) -> (Double) -> Double = { a in { b in a / b } }
-// let divideBy = flip(divide)              // now: divisor first
-// let divideBy2 = divideBy(2.0)           // (Double) -> Double — divide by 2
-// [10.0, 20.0, 30.0].map(divideBy2)        // [5.0, 10.0, 15.0]
+    print(subtract(10, 3))                                    // 7
+    print(flipped(3)(10))                                     // 7 — same result, reversed call order
 
+    // partialApply — curry + immediately apply the first argument
+    let multiplyBy: (Int, Int) -> Int = { $0 * $1 }
+    let triple = partialApply(multiplyBy, 3)                  // (Int) -> Int
+    print([1, 2, 3, 4].map(triple))                           // [3, 6, 9, 12]
 
-// MARK: - partialApply
-// Apply one argument of a two-argument function. Like curry + apply.
-
-// func greet(_ greeting: String, _ name: String) -> String { "\(greeting), \(name)!" }
-// let sayHello = partialApply(greet, "Hello")  // (String) -> String
-// sayHello("Alice")                        // "Hello, Alice!"
-// sayHello("Bob")                          // "Hello, Bob!"
-// ["Alice", "Bob"].map(sayHello)           // ["Hello, Alice!", "Hello, Bob!"]
-
-
-// MARK: - Function composition (>>> and <<<)
-// >>>  left-to-right:  (f >>> g)(x) = g(f(x))
-// <<<  right-to-left:  (f <<< g)(x) = f(g(x))
-
-// let addOne:  (Int) -> Int = { $0 + 1 }
-// let double:  (Int) -> Int = { $0 * 2 }
-// let negate:  (Int) -> Int = { -$0 }
-
-// --- Forward: addOne, then double, then negate ---
-// let pipeline = addOne >>> double >>> negate
-// pipeline(3)                              // -(( 3+1 )*2) = -8
-
-// --- Backward: same order written right-to-left ---
-// let pipeline2 = negate <<< double <<< addOne
-// pipeline2(3)                             // -8 (same)
-
-// --- Point-free map pipeline ---
-// [1, 2, 3].map(addOne >>> double)         // [4, 6, 8]
-// [1, 2, 3].map(negate <<< double)         // [-2, -4, -6]
-
-
-// MARK: - Function application (£, <|, |>)
-// £  / <|  — fn left, value right  (like Haskell's $)
-// |>        — value left, fn right  (pipe operator)
-
-// let addOne: (Int) -> Int = { $0 + 1 }
-
-// --- £ / <| ---
-// addOne £ 5                               // 6 — same as addOne(5)
-// addOne <| 5                              // 6
-// negate <| double <| addOne <| 3          // -8 — right-associative, reads right-to-left
-
-// --- |> (pipe, value left) ---
-// 3 |> addOne                              // 4
-// 3 |> addOne |> double |> negate          // -8 — left-associative, reads left-to-right
-
+    // partialApplyFlip — partially apply the SECOND argument
+    let addTo10 = partialApplyFlip({ (a: Int, b: Int) in a + b }, 10)
+    print([1, 2, 3].map(addTo10))                             // [11, 12, 13]
+}
+// learnFlipPartialApply()
 
 // MARK: - lazy / unlazy
-// lazy: wrap a value or function in a zero-argument closure
-// unlazy: apply the Void argument
 
-// let lazyValue = lazy(42)                 // () -> Int
-// lazyValue()                              // 42
+func learnLazyUnlazy() {
+    // lazy — wraps a value in () -> A   (adds a layer of deferred evaluation)
+    let lazyInt = lazy(42)                                    // () -> Int
+    print(lazyInt())                                          // 42
 
-// let lazyAdd = lazy(addOne)               // () -> (Int) -> Int
-// lazyAdd()(5)                             // 6
+    // lazy — wraps a function in () -> (A) -> B
+    let lazyDouble = lazy { (n: Int) in n * 2 }              // () -> (Int) -> Int
+    print(lazyDouble()(5))                                    // 10
 
-// let lazyFn: (Int) -> () -> String = { n in lazy("value: \(n)") }
-// unlazy(lazyFn)(5)                        // "value: 5"
+    // unlazy — removes the () layer (evaluates immediately)
+    let eager = unlazy(lazyInt)                               // Int = 42
+    print(eager)                                              // 42
 
+    // unlazy on () -> (A) -> B gives (A) -> B
+    let doubled = unlazy(lazyDouble)                          // (Int) -> Int
+    print([1, 2, 3].map(doubled))                             // [2, 4, 6]
+}
+// learnLazyUnlazy()
 
-// MARK: - Endo (see also: Monoid and Semigroup page)
-// A named wrapper for (A) -> A. Its Monoid is function composition.
+// MARK: - compose / apply
 
-// let trim    = Endo<String> { $0.trimmingCharacters(in: .whitespaces) }
-// let lower   = Endo<String> { $0.lowercased() }
-// let addBang = Endo<String> { $0 + "!" }
+func learnComposeApply() {
+    let addOne:  (Int) -> Int    = { $0 + 1 }
+    let double:  (Int) -> Int    = { $0 * 2 }
+    let toStr:   (Int) -> String = { "result: \($0)" }
 
-// --- Free constructor ---
-// let exclaim = endo { (s: String) in s + "!" }
+    // compose — left-to-right function composition (named function)
+    let pipeline = compose(addOne, compose(double, toStr))    // (Int) -> String
+    print(pipeline(4))                                        // "result: 10"
 
-// --- Combine via <> or mconcat ---
-// let normalize = trim <> lower <> addBang
-// normalize.runEndo("  HELLO  ")           // "hello!"
-// normalize("  HELLO  ")                   // "hello!" — callAsFunction
+    // >>> operator — left-to-right, more readable
+    let pipeline2 = addOne >>> double >>> toStr
+    print(pipeline2(4))                                       // "result: 10"
 
-// --- mconcat from a dynamic list of transforms ---
-// let rules: [Endo<String>] = [trim, lower, addBang]
-// mconcat(rules)("  WORLD  ")             // "world!"
+    // <<< operator — right-to-left (mathematical / Haskell order)
+    let pipeline3 = toStr <<< double <<< addOne
+    print(pipeline3(4))                                       // "result: 10"
+
+    // apply — call a function with a value (named form)
+    print(apply(4, pipeline2))                                // "result: 10"
+
+    // £ operator — function-left application  (fn £ value)
+    print(pipeline2 £ 4)                                      // "result: 10"
+
+    // |> operator — value-left application  (value |> fn)
+    print(4 |> pipeline2)                                     // "result: 10"
+
+    // Point-free map using >>>
+    print([1, 2, 3].map(addOne >>> double))                   // [4, 6, 8]
+}
+// learnComposeApply()
+
+// MARK: - compose3 / compose4
+
+func learnComposeN() {
+    // compose3 / compose4 — compose 3 or 4 functions without nesting
+    let step1: (Int) -> Int      = { $0 + 1 }
+    let step2: (Int) -> Double   = { Double($0) }
+    let step3: (Double) -> String = { String(format: "%.1f", $0) }
+
+    let three = compose3(step1, step2, step3)
+    print(three(9))                                           // "10.0"
+}
+// learnComposeN()
+
+// MARK: - Endo<A>
+
+func learnEndo() {
+    // Endo wraps an endomorphism: (A) -> A
+    let trim    = Endo<String> { $0.trimmingCharacters(in: .whitespaces) }
+    let lower   = Endo<String> { $0.lowercased() }
+    let exclaim = Endo<String> { $0 + "!" }
+
+    // Run directly (callAsFunction support)
+    print(trim.runEndo("  Hello  "))                          // "Hello"
+    print(trim("  Hello  "))                                  // "Hello" — callAsFunction
+
+    // Semigroup: combine via <> (left-to-right composition)
+    let trimLower = trim <> lower
+    print(trimLower("  HELLO  "))                             // "hello"
+
+    // Monoid identity — do-nothing transformation
+    print(Endo<String>.identity.runEndo("unchanged"))         // "unchanged"
+
+    // mconcat — collapse a list of Endos into one pipeline
+    let normalize = mconcat([trim, lower, exclaim])
+    print(normalize.runEndo("  HELLO  "))                     // "hello!"
+    print(normalize("  HELLO  "))                             // "hello!" — callAsFunction
+
+    // Free constructor
+    let shout = endo { (s: String) in s.uppercased() }
+    let shoutAndExclaim = shout <> exclaim
+    print(shoutAndExclaim("hello"))                           // "HELLO!"
+}
+// learnEndo()
+
+// MARK: - Point-free pipeline (putting it all together)
+
+struct Person { let name: String; let score: Int }
+
+func learnPointFree() {
+    let people = [
+        Person(name: "  alice ", score: 42),
+        Person(name: "BOB",      score: 7),
+        Person(name: " Carol",   score: 100)
+    ]
+
+    // Normalise names point-free using >>>
+    let normaliseName: (String) -> String =
+        { $0.trimmingCharacters(in: .whitespaces) } >>> { $0.lowercased() }
+
+    print(people.map(\.name).map(normaliseName))              // ["alice", "bob", "carol"]
+
+    // Partial application for filtering (score >= threshold)
+    let highScorer = partialApplyFlip(
+        { (threshold: Int, person: Person) in person.score >= threshold },
+        50
+    )
+    print(people.filter(highScorer).map(\.name))              // ["  alice ", " Carol"]
+
+    // Endo pipeline for string normalisation
+    let sanitise: Endo<String> = mconcat([
+        endo { $0.trimmingCharacters(in: .whitespaces) },
+        endo { $0.lowercased() }
+    ])
+    print(people.map(\.name).map(sanitise.runEndo))           // ["alice", "bob", "carol"]
+}
+// learnPointFree()
 
 //: [Previous](@previous)

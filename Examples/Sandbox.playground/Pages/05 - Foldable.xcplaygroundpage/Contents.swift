@@ -1,90 +1,92 @@
 import FP
 
 // ============================================================
-// FOLDABLE
-// foldLeft  :: b -> (b -> a -> b) -> f a -> b
-// foldRight :: (a -> b -> b) -> b -> f a -> b
-// foldMap   :: Monoid m => (a -> m) -> f a -> m
+// FOLDABLE  —  reduce a structure to a summary value
 //
-// Foldable is the typeclass for structures that can be reduced
-// to a summary value. foldLeft processes elements left-to-right
-// (strict, efficient for most uses). foldRight processes
-// right-to-left (important for laziness and list construction).
-// foldMap maps each element to a Monoid, then combines.
+// foldLeft  :: b -> (b -> a -> b) -> f a -> b  (left-associative, strict)
+// foldRight :: (a -> b -> b) -> b -> f a -> b  (right-associative)
+// foldMap   :: Monoid m => (a -> m) -> f a -> m
 // ============================================================
 
-// MARK: - Array / foldLeft
+// MARK: - foldLeft
 
-// let nums = [1, 2, 3, 4, 5]
+func learnFoldLeft() {
+    let nums = [1, 2, 3, 4, 5]
 
-// --- Named function (curried: initial -> combiner -> array -> result) ---
-// Array<Int>.foldLeft(0, +)(nums)           // 15 — sum
-// Array<Int>.foldLeft(1, *)(nums)           // 120 — product
-// Array<Int>.foldLeft("", { acc, n in acc + "\(n)" })(nums)  // "12345"
+    // Sum, product
+    print(Array<Int>.foldLeft(0, +)(nums))                   // 15
+    print(Array<Int>.foldLeft(1, *)(nums))                   // 120
 
-// --- Compute max without using max() ---
-// Array<Int>.foldLeft(Int.min, Swift.max)(nums)  // 5
+    // Build a string left-to-right
+    print(Array<Int>.foldLeft("") { acc, n in acc + "\(n)" }(nums))  // "12345"
 
-// --- Build a reversed array ---
-// Array<Int>.foldLeft([]) { acc, x in [x] + acc }(nums)  // [5, 4, 3, 2, 1]
+    // Max without using max()
+    print(Array<Int>.foldLeft(Int.min, { Swift.max($0, $1) })(nums))  // 5
 
+    // Reverse a list
+    print(Array<Int>.foldLeft([]) { acc, x in [x] + acc }(nums))      // [5,4,3,2,1]
 
-// MARK: - Array / foldRight
+    // Count elements matching a predicate
+    print(Array<Int>.foldLeft(0) { acc, n in acc + (n % 2 == 0 ? 1 : 0) }(nums))  // 2
+}
+// learnFoldLeft()
 
-// let nums = [1, 2, 3, 4, 5]
+// MARK: - foldRight
 
-// --- Named function (curried: combiner -> initial -> array -> result) ---
-// Array<Int>.foldRight(+, 0)(nums)          // 15 — same as foldLeft for + (associative)
-// Array<Int>.foldRight({ x, acc in [x] + acc }, [])(nums)  // [1, 2, 3, 4, 5] — id for list
+func learnFoldRight() {
+    let nums = [1, 2, 3, 4, 5]
 
-// --- foldRight naturally builds lists (prepend = correct order) ---
-// Array<Int>.foldRight({ x, acc in [x * 2] + acc }, [])(nums)  // [2, 4, 6, 8, 10]
+    // Sum (same as foldLeft for associative ops)
+    print(Array<Int>.foldRight(+, 0)(nums))                  // 15
 
-// --- The difference: foldLeft reverses, foldRight preserves ---
-// let consLeft  = Array<Int>.foldLeft([])  { acc, x in acc + [x] }(nums)   // [1,2,3,4,5]
-// let consRight = Array<Int>.foldRight({ x, acc in [x] + acc }, [])(nums)  // [1,2,3,4,5]
+    // Build list in original order (prepend = correct order)
+    print(Array<Int>.foldRight({ x, acc in [x] + acc }, [])(nums))   // [1,2,3,4,5]
 
+    // Map via foldRight
+    print(Array<Int>.foldRight({ x, acc in [x * 2] + acc }, [])(nums))  // [2,4,6,8,10]
+}
+// learnFoldRight()
 
-// MARK: - Array / foldMap
+// MARK: - foldMap
 
-// foldMap maps each element to a Monoid, then folds via mconcat.
-// The Monoid determines what "combining" means.
+func learnFoldMap() {
+    let nums = [1, 2, 3, 4, 5]
+    let words = ["hello", "world", "!"]
 
-// --- Count elements (using Int as additive Monoid via Array.count approach) ---
-// let nums = [1, 2, 3, 4, 5]
+    // Map to String (Monoid via concatenation), then combine
+    print(Array<Int>.foldMap { "\($0)" }(nums))              // "12345"
+    print(Array<String>.foldMap { $0.uppercased() }(words))  // "HELLOWORLD!"
 
-// --- Map to strings and concatenate ---
-// Array<Int>.foldMap { "\($0)" }(nums)      // "12345" — String is a Semigroup
+    // Count positives: map to Int.Monoids.Sum (0 or 1), combine via +
+    let mixed = [-1, 2, -3, 4, 5]
+    print(Array<Int>.foldMap { n in Int.Monoids.Sum(n > 0 ? 1 : 0) }(mixed))
+    // Sum(3)
 
-// --- Check if any element satisfies a predicate using Endo ---
-// let positives: [Int] = [-1, 2, -3, 4, 5]
-// // Count positive numbers:
-// Array<Int>.foldMap { n in [n] }.filter { $0 > 0 }(positives)  // isn't quite right
-// // Better: map to Int.Monoids.Sum to count
-// Array<Int>.foldMap { n -> Int in n > 0 ? 1 : 0 }(positives)  // 3
-
-// --- Using Endo: chain transformations from a list of functions ---
-// let transforms: [(Int) -> Int] = [{ $0 + 1 }, { $0 * 2 }, { $0 - 3 }]
-// let combined = Array.foldMap(Endo.init)(transforms)
-// combined.runEndo(5)                       // ((5 + 1) * 2) - 3 = 9
-
+    // Chain transformations using Endo as the Monoid
+    let transforms: [(Int) -> Int] = [{ $0 + 1 }, { $0 * 2 }, { $0 - 3 }]
+    let combined = Array.foldMap(Endo.init)(transforms)
+    print(combined.runEndo(5))                               // ((5+1)*2)-3 = 9
+}
+// learnFoldMap()
 
 // MARK: - Optional (also Foldable)
-// Optional can be folded: .none contributes nothing, .some contributes one element.
 
-// let x: Int? = .some(5)
-// let none: Int? = .none
+func learnFoldableOptional() {
+    let x: Int?    = .some(5)
+    let none: Int? = .none
 
-// --- Use Optional's toList to convert to Array then fold ---
-// let asArray: [Int] = x.map { [$0] } ?? []    // [5]
-// let noneArr: [Int] = none.map { [$0] } ?? []  // []
+    // withDefault — fold with a fallback
+    print(x.withDefault(0))                                  // 5
+    print(none.withDefault(0))                               // 0
 
-// --- Fold over Optional using withDefault ---
-// x.withDefault(0)                          // 5
-// none.withDefault(0)                       // 0
+    // Treat Optional as a list of 0 or 1 elements
+    print(x.map { [$0] } ?? [])                              // [5]
+    print(none.map { [$0] } ?? [])                           // []
 
-// --- foldMap on Optional: contribute to a Monoid if present ---
-// x.map { "\($0)" } ?? ""                   // "5"
-// none.map { "\($0)" } ?? ""                // ""
+    // foldMap-like: contribute to a Monoid if present
+    print(x.map(String.init) ?? "")                         // "5"
+    print(none.map(String.init) ?? "")                      // ""
+}
+// learnFoldableOptional()
 
 //: [Previous](@previous) | [Next](@next)

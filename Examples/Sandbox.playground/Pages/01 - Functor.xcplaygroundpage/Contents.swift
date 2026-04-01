@@ -1,136 +1,148 @@
 import FP
 
 // ============================================================
-// FUNCTOR
-// fmap :: (a -> b) -> f a -> f b
+// FUNCTOR  —  fmap :: (a -> b) -> f a -> f b
 //
-// A Functor is any context f that supports mapping a pure function
-// over its wrapped value without changing the structure.
-//
-// Laws:
-//   Identity:    fmap id == id
-//   Composition: fmap (f . g) == fmap f . fmap g
+// Map a pure function over a wrapped value without changing
+// the structure. Laws: identity, composition.
 // ============================================================
 
 // MARK: - Optional
 
+func learnFunctorOptional() {
+    let x: Int? = 5
+    let none: Int? = nil
 
-let x: Int? = 5
-let none: Int? = nil
+    // Named function (curried static)
+    print(Optional<Int>.fmap { $0 * 2 }(x))        // Optional(10)
+    print(Optional<Int>.fmap { $0 * 2 }(none))     // nil
 
-// --- Named function (curried static) ---
-Optional<Int>.fmap { $0 * 2 }(x)        // .some(10)
-Optional<Int>.fmap { $0 * 2 }(none)      // .none
+    // Instance method
+    print(x.map { $0 * 2 })                         // Optional(10)
 
-// --- Instance method ---
-x.map { $0 * 2 }                         // .some(10)
-
-// --- Operators ---
-{ $0 * 2 } <£> x                         // .some(10) — fn left
-x <&> { $0 * 2 }                         // .some(10) — value left
-x £> "hello"                             // .some("hello") — replace, keep structure
-"hello" <£ x                             // .some("hello") — flipped replace
+    // Operators
+    print({ $0 * 2 } <£> x)                         // Optional(10) — fn left
+    print(x <&> { $0 * 2 })                         // Optional(10) — value left
+    print(x £> "hello")                             // Optional("hello") — replace
+    print("hello" <£ x)                             // Optional("hello") — flipped
+}
+// learnFunctorOptional()
 
 // MARK: - Array
 
-// let arr = [1, 2, 3]
+func learnFunctorArray() {
+    let arr = [1, 2, 3]
 
-// --- Named function (curried static) ---
-// [Int].fmap { $0 * 2 }(arr)               // [2, 4, 6]
-// let double = [Int].fmap { $0 * 2 }
-// double(arr)                              // [2, 4, 6]
+    // Named function (curried static)
+    print(Array<Int>.fmap { $0 * 2 }(arr))          // [2, 4, 6]
 
-// --- Instance method ---
-// arr.map { $0 * 2 }                       // [2, 4, 6]
+    // Instance method
+    print(arr.map { $0 * 2 })                        // [2, 4, 6]
 
-// --- Operators ---
-// { $0 * 2 } <£> arr                       // [2, 4, 6] — fn left
-// arr <&> { $0 * 2 }                       // [2, 4, 6] — value left
-// arr £> 0                                 // [0, 0, 0] — replace each element
-
+    // Operators
+    print({ $0 * 2 } <£> arr)                        // [2, 4, 6] — fn left
+    print(arr <&> { $0 * 2 })                        // [2, 4, 6] — value left
+    print(arr £> 0)                                   // [0, 0, 0] — replace each
+}
+// learnFunctorArray()
 
 // MARK: - Result
 
-// let ok: Result<String, Int> = .success(5)
-// let err: Result<String, Int> = .failure("oops")
+func learnFunctorResult() {
+    let ok:  Result<String, Int> = .success(5)
+    let err: Result<String, Int> = .failure("oops")
 
-// --- Named function (curried static) ---
-// Result<String, Int>.fmap { $0 * 2 }(ok)  // .success(10)
-// Result<String, Int>.fmap { $0 * 2 }(err) // .failure("oops") — structure preserved
+    print(Result<String, Int>.fmap { $0 * 2 }(ok))  // success(10)
+    print(Result<String, Int>.fmap { $0 * 2 }(err)) // failure("oops")
+    print({ $0 * 2 } <£> ok)                         // success(10)
+    print(ok <&> { $0 * 2 })                         // success(10)
 
-// --- Instance method ---
-// ok.map { $0 * 2 }                        // .success(10)
-
-// --- Operators ---
-// { $0 * 2 } <£> ok                        // .success(10)
-// ok <&> { $0 * 2 }                        // .success(10)
-// ok £> "done"                             // .success("done")
-
+    // Bifunctor — map each side independently
+    print(ok.mapRight { $0 * 2 })                    // success(10)
+    print(err.mapLeft { "[\($0)]" })                 // failure("[oops]")
+    print(ok.bimap({ "[\($0)]" }, { $0 * 2 }))      // success(10)
+}
+// learnFunctorResult()
 
 // MARK: - Either
 
-// let right: Either<String, Int> = .right(5)
-// let left: Either<String, Int> = .left("error")
+func learnFunctorEither() {
+    let right: Either<String, Int> = .right(5)
+    let left:  Either<String, Int> = .left("error")
 
-// --- Named function (curried static) ---
-// Either<String, Int>.fmap { $0 * 2 }(right) // .right(10)
-// Either<String, Int>.fmap { $0 * 2 }(left)  // .left("error") — left untouched
+    print(Either<String, Int>.fmap { $0 * 2 }(right)) // right(10)
+    print(Either<String, Int>.fmap { $0 * 2 }(left))  // left("error")
+    print({ $0 * 2 } <£> right)                        // right(10)
+    print(right <&> { $0 * 2 })                        // right(10)
 
-// --- Operators ---
-// { $0 * 2 } <£> right                     // .right(10)
-// right <&> { $0 * 2 }                     // .right(10)
-
-// --- Bifunctor: map both sides independently ---
-// right.mapRight { $0 * 2 }                // .right(10)
-// right.mapLeft  { "[\($0)]" }             // .right(5) — left side unchanged
-// left.mapLeft   { "[\($0)]" }             // .left("[error]")
-// right.bimap({ "[\($0)]" }, { $0 * 2 })  // .right(10)
-
+    // Bifunctor
+    print(right.mapRight { $0 * 2 })                   // right(10)
+    print(left.mapLeft { "[\($0)]" })                  // left("[error]")
+    print(right.bimap({ "[\($0)]" }, { $0 * 2 }))     // right(10)
+    print(left.bimap ({ "[\($0)]" }, { $0 * 2 }))     // left("[error]")
+}
+// learnFunctorEither()
 
 // MARK: - Reader
 
-// struct AppConfig { let multiplier: Int }
+struct FunctorReaderEnv { let factor: Int }
 
-// --- Named function ---
-// let r = Reader<AppConfig, Int> { config in 3 * config.multiplier }
-// r.mapReader { $0 + 1 }                   // Reader that returns 3*m + 1
+func learnFunctorReader() {
+    let r = Reader<FunctorReaderEnv, Int> { $0.factor }
 
-// --- Operators ---
-// let r2 = Reader<AppConfig, Int> { $0.multiplier }
-// { $0 + 10 } <£> r2                       // Reader that adds 10 to the multiplier
+    let doubled = r.mapReader { $0 * 2 }
+    print(doubled.runReader(FunctorReaderEnv(factor: 3)))   // 6
 
+    let shifted = { $0 + 10 } <£> r
+    print(shifted.runReader(FunctorReaderEnv(factor: 3)))   // 13
+}
+// learnFunctorReader()
 
 // MARK: - Writer
 
-// let w = Writer(42, ["computed value"])    // Writer<[String], Int>
+func learnFunctorWriter() {
+    let w = Writer(5, ["got 5"])
 
-// --- Named function ---
-// w.fmap { $0 * 2 }                        // Writer(84, ["computed value"])
+    let doubled  = w.fmap { $0 * 2 }
+    print(doubled.runWriter())                       // (10, ["got 5"])
 
-// --- Operators ---
-// { $0 * 2 } <£> w                         // Writer(84, ["computed value"])
+    let withOp   = { $0 * 2 } <£> w
+    print(withOp.runWriter())                        // (10, ["got 5"])
 
+    let replaced = w £> "done"
+    print(replaced.runWriter())                      // ("done", ["got 5"])
+}
+// learnFunctorWriter()
 
 // MARK: - Stateful
 
-// let s = Stateful<Int, String> { state in "count: \(state)" }
+func learnFunctorStateful() {
+    let s = Stateful<Int, Int> { state in state * 2 }
 
-// --- Named function ---
-// s.fmap { $0.uppercased() }               // Stateful that returns "COUNT: ..."
+    let asString = s.fmap { "value: \($0)" }
+    print(asString.eval(5))                          // "value: 10"
 
-// --- Operators ---
-// { $0.uppercased() } <£> s                // same via operator
-
+    let withOp = { "v: \($0)" } <£> s
+    print(withOp.eval(3))                            // "v: 6"
+}
+// learnFunctorStateful()
 
 // MARK: - DeferredTask
 
-// let task = DeferredTask { 42 }
+func learnFunctorDeferredTask() {
+    let task     = DeferredTask { 5 }
+    let doubled  = task.fmap { $0 * 2 }             // still lazy
+    let withOp1  = { $0 * 2 } <£> task
+    let withOp2  = task <&> { $0 * 2 }
+    let replaced = task £> "done"
 
-// --- Named function ---
-// task.fmap { $0 * 2 }                     // DeferredTask { 84 } — still lazy!
-
-// --- Operators ---
-// { $0 * 2 } <£> task                      // DeferredTask { 84 }
-// task <&> { $0 * 2 }                      // same, value left
+    Task {
+        print(await doubled.run())                   // 10
+        print(await withOp1.run())                   // 10
+        print(await withOp2.run())                   // 10
+        print(await replaced.run())                  // "done"
+    }
+}
+// learnFunctorDeferredTask()
 
 //: [Next](@next)
