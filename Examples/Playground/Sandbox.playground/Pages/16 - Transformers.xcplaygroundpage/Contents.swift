@@ -14,7 +14,7 @@ import FP
 
 // MARK: - OptionalTArray  ([A]?)
 
-func learnOptionalTArray() {
+func optionalTArray() {
     let opt: [Int]?  = .some([1, 2, 3])
     let none: [Int]? = .none
 
@@ -43,11 +43,11 @@ func learnOptionalTArray() {
     Optional<[Int]>.liftA2T(+)(opt, opt2) as Any    // Optional([11, 21, 12, 22, 13, 23])
     Optional<[Int]>.liftA2T(+)(none, opt2) as Any   // nil
 }
-// learnOptionalTArray()
+// learn(optionalTArray)
 
 // MARK: - OptionalTResult  (Result<E, A>?)
 
-func learnOptionalTResult() {
+func optionalTResult() {
     let opt:  Result<Int, AnyError>? = .some(.success(5))
     let fail: Result<Int, AnyError>? = .some(.failure(AnyError("err")))
     let none: Result<Int, AnyError>? = .none
@@ -60,11 +60,11 @@ func learnOptionalTResult() {
     ({ $0 * 2 } <£^> opt) as Any  // Optional(success(10))
     (opt <&^> { $0 * 2 }) as Any  // Optional(success(10))
 }
-// learnOptionalTResult()
+// learn(optionalTResult)
 
 // MARK: - EitherTArray  (Either<L, [A]>)
 
-func learnEitherTArray() {
+func eitherTArray() {
     let right: Either<String, [Int]> = .right([1, 2, 3])
     let left:  Either<String, [Int]> = .left("error")
 
@@ -76,7 +76,7 @@ func learnEitherTArray() {
     fmapTEitherArray({ $0 * 2 })(right)   // right([2, 4, 6])
 
     // Operators
-    { $0 * 2 } <£^> right                 // right([2, 4, 6])
+    _ = { $0 * 2 } <£^> right             // right([2, 4, 6])
     right <&^> { $0 * 2 }                 // right([2, 4, 6])
 
     // flatMapT
@@ -85,11 +85,11 @@ func learnEitherTArray() {
     right.flatMapT { n -> Either<String, [Int]> in n > 1 ? .right([n]) : .left("too small") }
     // left("too small") — first element triggered the left
 }
-// learnEitherTArray()
+// learn(eitherTArray)
 
 // MARK: - DeferredTaskTEither  (DeferredTask<Either<L, A>>)
 
-func learnDeferredTaskTEither() {
+func deferredTaskTEither() async {
     let taskRight: DeferredTask<Either<String, Int>> = DeferredTask { .right(42) }
     let taskLeft:  DeferredTask<Either<String, Int>> = DeferredTask { .left("not found") }
 
@@ -97,34 +97,30 @@ func learnDeferredTaskTEither() {
     let mapped = taskRight.mapT { $0 * 2 }                   // still lazy
     let withOp = { $0 * 2 } <£^> taskRight
 
-    Task {
-        await mapped.run()                              // right(84)
-        await withOp.run()                              // right(84)
-        await taskLeft.mapT { $0 * 2 }.run()           // left("not found")
-    }
+    await mapped.run()                              // right(84)
+    await withOp.run()                              // right(84)
+    await taskLeft.mapT { $0 * 2 }.run()           // left("not found")
 
     // flatMapT — chain async-failable steps
     let chained = taskRight.flatMapT { n in
         DeferredTask { n > 0 ? Either<String, Int>.right(n + 1) : .left("non-positive") }
     }
 
-    Task {
-        await chained.run()   // right(43)
-    }
+    await chained.run()   // right(43)
 }
-// learnDeferredTaskTEither()
+// learn(deferredTaskTEither)
 
 // MARK: - ArrayTOptional  ([A?])
 
-func learnArrayTOptional() {
+func arrayTOptional() {
     let arr: [Int?] = [.some(1), .none, .some(3)]
 
     // mapT — map over present values, nil stays nil
     arr.mapT { $0 * 2 }      // [Optional(2), nil, Optional(6)]
 
-    { $0 * 2 } <£^> arr      // [Optional(2), nil, Optional(6)]
+    _ = { $0 * 2 } <£^> arr  // [Optional(2), nil, Optional(6)]
     arr <&^> { $0 * 2 }      // [Optional(2), nil, Optional(6)]
 }
-// learnArrayTOptional()
+// learn(arrayTOptional)
 
 //: [Previous](@previous) | [Next](@next)

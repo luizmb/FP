@@ -14,7 +14,7 @@ import FP
 
 // MARK: - id
 
-func learnId() {
+func id() {
     id(42)          // 42
     id("hello")     // "hello"
 
@@ -25,11 +25,11 @@ func learnId() {
     // £ (apply) with id is the same as calling directly
     id £ 100        // 100
 }
-// learnId()
+// learn(id)
 
 // MARK: - const
 
-func learnConst() {
+func const() {
     // const(x) returns a function that ignores its argument and returns x
     let alwaysFive: (String) -> Int = const(5)
     alwaysFive("anything")   // 5
@@ -42,11 +42,11 @@ func learnConst() {
     // Compare with £> operator which does the same thing inline
     words <&> const("x")     // ["x", "x", "x"]
 }
-// learnConst()
+// learn(const)
 
 // MARK: - ignore
 
-func learnIgnore() {
+func ignore() {
     // ignore discards all its arguments and returns Void
     ignore(1, 2, 3)   // ()
 
@@ -59,11 +59,11 @@ func learnIgnore() {
     type(of: discard)   // (Int) -> ()
     discard(99)
 }
-// learnIgnore()
+// learn(ignore)
 
 // MARK: - curry / uncurry
 
-func learnCurryUncurry() {
+func curryUncurry() {
     // curry — (A, B) -> C   becomes   (A) -> (B) -> C
     let add: (Int, Int) -> Int = { $0 + $1 }
     let curriedAdd = curry(add)                   // (Int) -> (Int) -> Int
@@ -77,11 +77,11 @@ func learnCurryUncurry() {
     let uncurriedAdd = uncurry(curriedAdd)
     uncurriedAdd(3, 4)                            // 7
 }
-// learnCurryUncurry()
+// learn(curryUncurry)
 
 // MARK: - flip / partialApply
 
-func learnFlipPartialApply() {
+func flipPartialApply() {
     // flip — swaps argument order (curried form)
     let subtract: (Int, Int) -> Int = { $0 - $1 }
     let flipped = flip(subtract)                  // (Int) -> (Int) -> Int  (b first)
@@ -98,11 +98,11 @@ func learnFlipPartialApply() {
     let addTo10 = partialApplyFlip({ (a: Int, b: Int) in a + b }, 10)
     [1, 2, 3].map(addTo10)                        // [11, 12, 13]
 }
-// learnFlipPartialApply()
+// learn(flipPartialApply)
 
 // MARK: - lazy / unlazy
 
-func learnLazyUnlazy() {
+func lazyUnlazy() {
     // lazy — wraps a value in () -> A   (adds a layer of deferred evaluation)
     let lazyInt = lazy(42)                        // () -> Int
     lazyInt()                                     // 42
@@ -119,11 +119,11 @@ func learnLazyUnlazy() {
     let doubled = unlazy(lazyDouble)              // (Int) -> Int
     [1, 2, 3].map(doubled)                        // [2, 4, 6]
 }
-// learnLazyUnlazy()
+// learn(lazyUnlazy)
 
 // MARK: - compose / apply
 
-func learnComposeApply() {
+func composeApply() {
     let addOne:  (Int) -> Int    = { $0 + 1 }
     let double:  (Int) -> Int    = { $0 * 2 }
     let toStr:   (Int) -> String = { "result: \($0)" }
@@ -152,11 +152,11 @@ func learnComposeApply() {
     // Point-free map using >>>
     [1, 2, 3].map(addOne >>> double)                          // [4, 6, 8]
 }
-// learnComposeApply()
+// learn(composeApply)
 
 // MARK: - compose3 / compose4
 
-func learnComposeN() {
+func composeN() {
     // compose3 / compose4 — compose 3 or 4 functions without nesting
     let step1: (Int) -> Int       = { $0 + 1 }
     let step2: (Int) -> Double    = { Double($0) }
@@ -165,11 +165,11 @@ func learnComposeN() {
     let three = compose3(step1, step2, step3)
     three(9)   // "10.0"
 }
-// learnComposeN()
+// learn(composeN)
 
 // MARK: - Endo<A>
 
-func learnEndo() {
+func endo() {
     // Endo wraps an endomorphism: (A) -> A
     let trim    = Endo<String> { $0.trimmingCharacters(in: .whitespaces) }
     let lower   = Endo<String> { $0.lowercased() }
@@ -196,13 +196,13 @@ func learnEndo() {
     let shoutAndExclaim = shout <> exclaim
     shoutAndExclaim("hello")                     // "HELLO!"
 }
-// learnEndo()
+// learn(endo)
 
 // MARK: - Point-free pipeline (putting it all together)
 
 struct Person { let name: String; let score: Int }
 
-func learnPointFree() {
+func pointFree() {
     let people = [
         Person(name: "  alice ", score: 42),
         Person(name: "BOB",      score: 7),
@@ -229,6 +229,6 @@ func learnPointFree() {
     ])
     people.map(\.name).map(sanitise.runEndo)      // ["alice", "bob", "carol"]
 }
-// learnPointFree()
+// learn(pointFree)
 
 //: [Previous](@previous)

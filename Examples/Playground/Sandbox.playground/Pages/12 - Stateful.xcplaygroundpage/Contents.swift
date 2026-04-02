@@ -10,7 +10,7 @@ import FP
 
 // MARK: - Construction & Running
 
-func learnStatefulConstruction() {
+func statefulConstruction() {
     let readState = Stateful<Int, Int>  { s in s }
     let increment = Stateful<Int, Void> { s in s += 1 }
     let double    = Stateful<Int, Void> { s in s *= 2 }
@@ -22,11 +22,11 @@ func learnStatefulConstruction() {
     readState.runStateful(42)  // (42, 42)
     double.runStateful(3)      // ((), 6)
 }
-// learnStatefulConstruction()
+// learn(statefulConstruction)
 
 // MARK: - get / put / modify patterns
 
-func learnStatefulGetPutModify() {
+func statefulGetPutModify() {
     let getState    = Stateful<Int, Int>  { s in s }
     let putState    = { (n: Int) in Stateful<Int, Void> { s in s = n } }
     let modifyState = { (f: @escaping (Int) -> Int) in Stateful<Int, Void> { s in s = f(s) } }
@@ -35,11 +35,11 @@ func learnStatefulGetPutModify() {
     putState(100).runStateful(42)         // ((), 100)
     modifyState { $0 * 2 }.runStateful(5) // ((), 10)
 }
-// learnStatefulGetPutModify()
+// learn(statefulGetPutModify)
 
 // MARK: - Functor
 
-func learnStatefulFunctor() {
+func statefulFunctor() {
     let s = Stateful<Int, Int> { state in state * 2 }
 
     let asString = s.fmap { "value: \($0)" }
@@ -48,11 +48,11 @@ func learnStatefulFunctor() {
     let withOp = { "v:\($0)" } <£> s
     withOp.eval(3)               // "v:6"
 }
-// learnStatefulFunctor()
+// learn(statefulFunctor)
 
 // MARK: - Monad
 
-func learnStatefulMonad() {
+func statefulMonad() {
     let getState  = Stateful<Int, Int>  { s in s }
     let increment = Stateful<Int, Void> { s in s += 1 }
 
@@ -71,11 +71,11 @@ func learnStatefulMonad() {
     let step: (Int) -> Stateful<Int, String> = { n in Stateful { s in s = n * 2; return "set \(n*2)" } }
     (getState >>- step).runStateful(5)                 // ("set 10", 10)
 }
-// learnStatefulMonad()
+// learn(statefulMonad)
 
 // MARK: - Practical: stack machine
 
-func learnStatefulStack() {
+func statefulStack() {
     typealias Stack = [Int]
 
     let push: (Int) -> Stateful<Stack, Void> = { n in Stateful { stack in stack.append(n) } }
@@ -93,11 +93,11 @@ func learnStatefulStack() {
     let readTop = peek
     readTop.eval([10, 20, 30])    // Optional(30)
 }
-// learnStatefulStack()
+// learn(statefulStack)
 
 // MARK: - Practical: unique ID generator
 
-func learnStatefulIdGenerator() {
+func statefulIdGenerator() {
     let nextId = Stateful<Int, Int> { counter in
         let id = counter
         counter += 1
@@ -109,6 +109,6 @@ func learnStatefulIdGenerator() {
 
     allocateThree.runStateful(0)   // ((0, 1, 2), 3)
 }
-// learnStatefulIdGenerator()
+// learn(statefulIdGenerator)
 
 //: [Previous](@previous) | [Next](@next)

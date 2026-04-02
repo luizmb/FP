@@ -10,7 +10,7 @@ import FP
 
 // MARK: - Construction
 
-func learnNonEmptyConstruction() {
+func nonEmptyConstruction() {
     // Direct init
     let digits = NonEmpty(head: 1, tail: [2, 3, 4])
     let single = NonEmpty(head: "only")
@@ -28,11 +28,11 @@ func learnNonEmptyConstruction() {
     fromArr as Any    // Optional(NonEmpty([1, 2, 3]))
     fromEmpty as Any  // nil
 }
-// learnNonEmptyConstruction()
+// learn(nonEmptyConstruction)
 
 // MARK: - Properties
 
-func learnNonEmptyProperties() {
+func nonEmptyProperties() {
     let ne = NonEmpty(head: 1, tail: [2, 3, 4, 5])
 
     ne.head     // 1 — always present, never Optional
@@ -41,23 +41,23 @@ func learnNonEmptyProperties() {
     ne.count    // 5
     ne.toArray  // [1, 2, 3, 4, 5]
 }
-// learnNonEmptyProperties()
+// learn(nonEmptyProperties)
 
 // MARK: - Functor
 
-func learnNonEmptyFunctor() {
+func nonEmptyFunctor() {
     let ne = NonEmpty(head: 1, tail: [2, 3])
 
     ne.map { $0 * 2 }      // NonEmpty([2, 4, 6])
-    { $0 * 2 } <£> ne      // NonEmpty([2, 4, 6]) — fn left
+    _ = { $0 * 2 } <£> ne  // NonEmpty([2, 4, 6]) — fn left
     ne <&> { $0 * 2 }      // NonEmpty([2, 4, 6]) — value left
     ne £> 0                // NonEmpty([0, 0, 0])
 }
-// learnNonEmptyFunctor()
+// learn(nonEmptyFunctor)
 
 // MARK: - Monad
 
-func learnNonEmptyMonad() {
+func nonEmptyMonad() {
     let ne = NonEmpty(head: 1, tail: [2, 3])
 
     // flatMap — expand each element, flatten into NonEmpty
@@ -69,11 +69,11 @@ func learnNonEmptyMonad() {
     NonEmpty<Int>.bind(expand)(ne)   // NonEmpty([1, -1, 2, -2, 3, -3])
     ne >>- expand                    // NonEmpty([1, -1, 2, -2, 3, -3])
 }
-// learnNonEmptyMonad()
+// learn(nonEmptyMonad)
 
 // MARK: - Semigroup (NOT Monoid)
 
-func learnNonEmptySemigroup() {
+func nonEmptySemigroup() {
     let a = NonEmpty(head: 1, tail: [2, 3])
     let b = NonEmpty(head: 4, tail: [5])
     let c = NonEmpty(head: 6, tail: [])
@@ -87,11 +87,11 @@ func learnNonEmptySemigroup() {
 
     // mconcat is NOT available — there is no empty NonEmpty
 }
-// learnNonEmptySemigroup()
+// learn(nonEmptySemigroup)
 
 // MARK: - Practical: type-safe non-empty input
 
-func learnNonEmptyPractical() {
+func nonEmptyPractical() {
     func processItems(_ items: NonEmpty<String>) -> String {
         "Processing \(items.count) item(s), first: \(items.head)"
     }
@@ -105,6 +105,6 @@ func learnNonEmptyPractical() {
     let fruits = NonEmpty(head: "apple", tail: ["banana"])
     fruits.head   // "apple"
 }
-// learnNonEmptyPractical()
+// learn(nonEmptyPractical)
 
 //: [Previous](@previous) | [Next](@next)

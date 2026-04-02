@@ -9,7 +9,7 @@ import FP
 
 // MARK: - Optional
 
-func learnAlternativeOptional() {
+func alternativeOptional() {
     let a: Int?    = .some(1)
     let b: Int?    = .some(2)
     let none: Int? = .none
@@ -30,11 +30,11 @@ func learnAlternativeOptional() {
     let fallback:  Int? = .some(0)
     fromCache <|> fromDB <|> fallback   // Optional(0)
 }
-// learnAlternativeOptional()
+// learn(alternativeOptional)
 
 // MARK: - Array
 
-func learnAlternativeArray() {
+func alternativeArray() {
     let xs = [1, 2, 3]
     let ys = [4, 5]
 
@@ -46,11 +46,11 @@ func learnAlternativeArray() {
     [] <|> ys                 // [4, 5]
     xs <|> []                 // [1, 2, 3]
 }
-// learnAlternativeArray()
+// learn(alternativeArray)
 
 // MARK: - Either
 
-func learnAlternativeEither() {
+func alternativeEither() {
     let r1: Either<String, Int> = .right(1)
     let l1: Either<String, Int> = .left("first error")
     let l2: Either<String, Int> = .left("second error")
@@ -70,11 +70,11 @@ func learnAlternativeEither() {
     let secondary: Either<String, Int> = .right(42)
     primary <|> secondary               // right(42)
 }
-// learnAlternativeEither()
+// learn(alternativeEither)
 
 // MARK: - Result
 
-func learnAlternativeResult() {
+func alternativeResult() {
     let ok1:  Result<Int, AnyError> = .success(1)
     let fail1: Result<Int, AnyError> = .failure(AnyError("first"))
     let fail2: Result<Int, AnyError> = .failure(AnyError("second"))
@@ -89,6 +89,6 @@ func learnAlternativeResult() {
     ok1   <|> fail1                           // success(1)
     fail1 <|> fail2                           // failure(AnyError("second"))
 }
-// learnAlternativeResult()
+// learn(alternativeResult)
 
 //: [Previous](@previous) | [Next](@next)

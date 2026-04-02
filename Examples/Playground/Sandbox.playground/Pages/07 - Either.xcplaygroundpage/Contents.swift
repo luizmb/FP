@@ -11,7 +11,7 @@ import FP
 
 // MARK: - Construction & Pattern Matching
 
-func learnEitherConstruction() {
+func eitherConstruction() {
     let right: Either<String, Int> = .right(42)
     let left:  Either<String, Int> = .left("not found")
 
@@ -29,19 +29,19 @@ func learnEitherConstruction() {
     left.isA    // true
     left.isB    // false
 }
-// learnEitherConstruction()
+// learn(eitherConstruction)
 
 // MARK: - Functor (Bifunctor)
 
-func learnEitherFunctor() {
+func eitherFunctor() {
     let right: Either<String, Int> = .right(5)
     let left:  Either<String, Int> = .left("error")
 
     // fmap — maps the right side
     Either<String, Int>.fmap { $0 * 2 }(right)   // right(10)
     Either<String, Int>.fmap { $0 * 2 }(left)    // left("error")
-    { $0 * 2 } <£> right                          // right(10)
-    { $0 * 2 } <£> left                           // left("error")
+    _ = { $0 * 2 } <£> right                      // right(10)
+    _ = { $0 * 2 } <£> left                       // left("error")
     right <&> { $0 * 2 }                          // right(10)
     left <&> { $0 * 2 }                           // left("error")
 
@@ -61,11 +61,11 @@ func learnEitherFunctor() {
     "done" <£ right                               // right("done")
     "done" <£ left                                // left("error")
 }
-// learnEitherFunctor()
+// learn(eitherFunctor)
 
 // MARK: - Applicative
 
-func learnEitherApplicative() {
+func eitherApplicative() {
     let r1: Either<String, Int> = .right(3)
     let r2: Either<String, Int> = .right(4)
     let l1: Either<String, Int> = .left("fail")
@@ -84,11 +84,11 @@ func learnEitherApplicative() {
     r1 <* r2                                         // right(3)
     l1 <* r2                                         // left("fail")
 }
-// learnEitherApplicative()
+// learn(eitherApplicative)
 
 // MARK: - Monad
 
-func learnEitherMonad() {
+func eitherMonad() {
     let right: Either<String, Int> = .right(5)
     let left:  Either<String, Int> = .left("error")
 
@@ -116,11 +116,11 @@ func learnEitherMonad() {
     check("-1")                                       // left("negative")
     check("abc")                                      // left("NaN")
 }
-// learnEitherMonad()
+// learn(eitherMonad)
 
 // MARK: - Alternative
 
-func learnEitherAlternative() {
+func eitherAlternative() {
     let r:  Either<String, Int> = .right(1)
     let l1: Either<String, Int> = .left("first")
     let l2: Either<String, Int> = .left("second")
@@ -135,6 +135,6 @@ func learnEitherAlternative() {
     l1 <|> r                          // right(1)
     l1 <|> l2                         // left("second") — last left
 }
-// learnEitherAlternative()
+// learn(eitherAlternative)
 
 //: [Previous](@previous) | [Next](@next)

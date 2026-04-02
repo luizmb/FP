@@ -14,18 +14,18 @@ struct AppConfig {
 
 // MARK: - Construction & Running
 
-func learnReaderConstruction() {
+func readerConstruction() {
     let r = Reader<AppConfig, Int> { config in config.multiplier * 2 }
 
     // Run — inject the environment
     r.runReader(AppConfig(multiplier: 3, greeting: "Hi"))   // 6
     r(AppConfig(multiplier: 5, greeting: "Hi"))             // 10 — callAsFunction
 }
-// learnReaderConstruction()
+// learn(readerConstruction)
 
 // MARK: - ask / asks / local
 
-func learnReaderAsk() {
+func readerAsk() {
     // ask — return the whole environment
     let getAll = Reader<AppConfig, AppConfig>.ask
     getAll.runReader(AppConfig(multiplier: 3, greeting: "Hi")).multiplier   // 3
@@ -46,11 +46,11 @@ func learnReaderAsk() {
     r.runReader(AppConfig(multiplier: 3, greeting: "Hi"))                   // 3
     tripled.runReader(AppConfig(multiplier: 3, greeting: "Hi"))             // 9
 }
-// learnReaderAsk()
+// learn(readerAsk)
 
 // MARK: - Functor
 
-func learnReaderFunctor() {
+func readerFunctor() {
     let r = Reader<AppConfig, Int>.asks(\.multiplier)
 
     let shifted = r.mapReader { $0 + 100 }
@@ -59,13 +59,13 @@ func learnReaderFunctor() {
     let withOp = { $0 + 100 } <£> r
     withOp.runReader(AppConfig(multiplier: 3, greeting: "Hi"))     // 103
 }
-// learnReaderFunctor()
+// learn(readerFunctor)
 
 // MARK: - Applicative
 
 struct ReaderEnvXY { let x: Int; let y: Int }
 
-func learnReaderApplicative() {
+func readerApplicative() {
     let rx = Reader<ReaderEnvXY, Int>.asks(\.x)
     let ry = Reader<ReaderEnvXY, Int>.asks(\.y)
 
@@ -80,13 +80,13 @@ func learnReaderApplicative() {
     // seqRight
     (rx *> ry).runReader(ReaderEnvXY(x: 3, y: 4))                    // 4
 }
-// learnReaderApplicative()
+// learn(readerApplicative)
 
 // MARK: - Monad
 
 struct ReaderDB { let users: [Int: String] }
 
-func learnReaderMonad() {
+func readerMonad() {
     let getUser = Reader<ReaderDB, String?>.asks { $0.users[1] }
 
     // flatMap — second Reader computed from first result
@@ -104,6 +104,6 @@ func learnReaderMonad() {
     let pipeline = lookupUser >=> greetOpt
     pipeline(1).runReader(ReaderDB(users: [1: "Bob"]))                 // "Hi, Bob"
 }
-// learnReaderMonad()
+// learn(readerMonad)
 
 //: [Previous](@previous) | [Next](@next)

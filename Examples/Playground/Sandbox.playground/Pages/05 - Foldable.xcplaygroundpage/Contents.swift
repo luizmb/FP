@@ -10,7 +10,7 @@ import FP
 
 // MARK: - foldLeft
 
-func learnFoldLeft() {
+func foldLeft() {
     let nums = [1, 2, 3, 4, 5]
 
     // Sum, product
@@ -29,11 +29,11 @@ func learnFoldLeft() {
     // Count elements matching a predicate
     Array<Int>.foldLeft(0) { acc, n in acc + (n % 2 == 0 ? 1 : 0) }(nums)  // 2
 }
-// learnFoldLeft()
+// learn(foldLeft)
 
 // MARK: - foldRight
 
-func learnFoldRight() {
+func foldRight() {
     let nums = [1, 2, 3, 4, 5]
 
     // Sum (same as foldLeft for associative ops)
@@ -45,11 +45,11 @@ func learnFoldRight() {
     // Map via foldRight
     Array<Int>.foldRight({ x, acc in [x * 2] + acc }, [])(nums)  // [2,4,6,8,10]
 }
-// learnFoldRight()
+// learn(foldRight)
 
 // MARK: - foldMap
 
-func learnFoldMap() {
+func foldMap() {
     let nums = [1, 2, 3, 4, 5]
     let words = ["hello", "world", "!"]
 
@@ -67,17 +67,17 @@ func learnFoldMap() {
     let combined = Array.foldMap(Endo.init)(transforms)
     combined.runEndo(5)                               // ((5+1)*2)-3 = 9
 }
-// learnFoldMap()
+// learn(foldMap)
 
 // MARK: - Optional (also Foldable)
 
-func learnFoldableOptional() {
+func foldableOptional() {
     let x: Int?    = .some(5)
     let none: Int? = .none
 
     // withDefault — fold with a fallback
-    x.withDefault(0)                                  // 5
-    none.withDefault(0)                               // 0
+    x |> withDefault(0)                               // 5
+    none |> withDefault(0)                            // 0
 
     // Treat Optional as a list of 0 or 1 elements
     x.map { [$0] } ?? []                              // [5]
@@ -87,6 +87,6 @@ func learnFoldableOptional() {
     x.map(String.init) ?? ""                          // "5"
     none.map(String.init) ?? ""                       // ""
 }
-// learnFoldableOptional()
+// learn(foldableOptional)
 
 //: [Previous](@previous) | [Next](@next)

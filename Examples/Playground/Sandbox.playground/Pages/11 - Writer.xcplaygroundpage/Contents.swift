@@ -9,7 +9,7 @@ import FP
 
 // MARK: - Construction & Extraction
 
-func learnWriterConstruction() {
+func writerConstruction() {
     let w1 = Writer(42, ["computed answer"])
     let w2 = Writer("hello", "log entry; ")
 
@@ -18,11 +18,11 @@ func learnWriterConstruction() {
     w1.execWriter()   // ["computed answer"] — log only
     w2.runWriter()    // ("hello", "log entry; ")
 }
-// learnWriterConstruction()
+// learn(writerConstruction)
 
 // MARK: - Functor
 
-func learnWriterFunctor() {
+func writerFunctor() {
     let w = Writer(5, ["got 5"])
 
     let doubled  = w.fmap { $0 * 2 }
@@ -33,11 +33,11 @@ func learnWriterFunctor() {
     withOp.runWriter()     // (10, ["got 5"])
     replaced.runWriter()   // ("done", ["got 5"])
 }
-// learnWriterFunctor()
+// learn(writerFunctor)
 
 // MARK: - Applicative
 
-func learnWriterApplicative() {
+func writerApplicative() {
     let wFn  = Writer({ (x: Int) in x + 10 }, ["applied fn"])
     let wVal = Writer(5, ["got value"])
 
@@ -55,11 +55,11 @@ func learnWriterApplicative() {
     (w1 *> w2).runWriter()                                     // (4, ["first", "second"])
     (w1 <* w2).runWriter()                                     // (3, ["first", "second"])
 }
-// learnWriterApplicative()
+// learn(writerApplicative)
 
 // MARK: - Monad
 
-func learnWriterMonad() {
+func writerMonad() {
     // flatMap appends logs automatically via Monoid.combine
     let pipeline = Writer(5, ["start"])
         .flatMap { n in Writer(n + 1, ["added 1 → \(n + 1)"]) }
@@ -79,11 +79,11 @@ func learnWriterMonad() {
     let step2: (Int) -> Writer<[String], Int> = { n in Writer(n * 3, ["×3"]) }
     (step1 >=> step2)(4).runWriter()             // (15, ["inc", "×3"])
 }
-// learnWriterMonad()
+// learn(writerMonad)
 
 // MARK: - Practical: audit log
 
-func learnWriterAuditLog() {
+func writerAuditLog() {
     func withdraw(_ amount: Double) -> (Double) -> Writer<[String], Double> {
         { balance in
             guard balance >= amount else {
@@ -105,6 +105,6 @@ func learnWriterAuditLog() {
     transaction.execWriter()
     // ["[START] Balance: 100", "[OK] Withdrew 30.0", "[OK] Deposited 50.0", "[OK] Withdrew 20.0"]
 }
-// learnWriterAuditLog()
+// learn(writerAuditLog)
 
 //: [Previous](@previous) | [Next](@next)

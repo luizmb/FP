@@ -1,19 +1,15 @@
 import FP
-import PlaygroundSupport
 
 // ============================================================
 // DEFERREDSTREAM<Element>
 //
 // Lazy AsyncSequence — the factory isn't called until the first
 // iteration. Streaming counterpart to DeferredTask.
-// Uncomment PlaygroundPage line below to capture async output.
 // ============================================================
-
-// PlaygroundPage.current.needsIndefiniteExecution = true
 
 // MARK: - Construction
 
-func learnDeferredStreamConstruction() {
+func deferredStreamConstruction() async {
     // Factory stored, not invoked yet
     let stream = DeferredStream {
         AsyncStream<Int> { continuation in
@@ -22,17 +18,15 @@ func learnDeferredStreamConstruction() {
         }
     }
 
-    Task {
-        var collected: [Int] = []
-        for await value in stream { collected.append(value) }
-        collected   // [1, 2, 3, 4, 5]
-    }
+    var collected: [Int] = []
+    for await value in stream { collected.append(value) }
+    collected   // [1, 2, 3, 4, 5]
 }
-// learnDeferredStreamConstruction()
+// learn(deferredStreamConstruction)
 
 // MARK: - Functor
 
-func learnDeferredStreamFunctor() {
+func deferredStreamFunctor() async {
     let stream = DeferredStream {
         AsyncStream<Int> { c in
             for i in 1...3 { c.yield(i) }
@@ -44,21 +38,19 @@ func learnDeferredStreamFunctor() {
     let withOp   = { $0 * 2 } <£> stream
     let replaced = stream £> "x"
 
-    Task {
-        var r1: [Int] = [], r2: [Int] = [], r3: [String] = []
-        for await v in doubled  { r1.append(v) }
-        for await v in withOp   { r2.append(v) }
-        for await v in replaced { r3.append(v) }
-        r1   // [2, 4, 6]
-        r2   // [2, 4, 6]
-        r3   // ["x", "x", "x"]
-    }
+    var r1: [Int] = [], r2: [Int] = [], r3: [String] = []
+    for await v in doubled  { r1.append(v) }
+    for await v in withOp   { r2.append(v) }
+    for await v in replaced { r3.append(v) }
+    r1   // [2, 4, 6]
+    r2   // [2, 4, 6]
+    r3   // ["x", "x", "x"]
 }
-// learnDeferredStreamFunctor()
+// learn(deferredStreamFunctor)
 
 // MARK: - Monad
 
-func learnDeferredStreamMonad() {
+func deferredStreamMonad() async {
     let stream = DeferredStream {
         AsyncStream<Int> { c in
             for i in 1...3 { c.yield(i) }
@@ -77,33 +69,29 @@ func learnDeferredStreamMonad() {
         }
     }
 
-    Task {
-        var result: [Int] = []
-        for await v in expanded { result.append(v) }
-        result   // [1, 10, 2, 20, 3, 30]
-    }
+    var result: [Int] = []
+    for await v in expanded { result.append(v) }
+    result   // [1, 10, 2, 20, 3, 30]
 }
-// learnDeferredStreamMonad()
+// learn(deferredStreamMonad)
 
 // MARK: - Applicative
 
-func learnDeferredStreamApplicative() {
+func deferredStreamApplicative() async {
     let streamA = DeferredStream { AsyncStream<Int> { c in c.yield(1); c.yield(2); c.finish() } }
     let streamB = DeferredStream { AsyncStream<Int> { c in c.yield(10); c.yield(20); c.finish() } }
 
     let sumStream = DeferredStream<Int>.liftA2(+)(streamA, streamB)
 
-    Task {
-        var result: [Int] = []
-        for await v in sumStream { result.append(v) }
-        result
-    }
+    var result: [Int] = []
+    for await v in sumStream { result.append(v) }
+    result   // [11, 22]
 }
-// learnDeferredStreamApplicative()
+// learn(deferredStreamApplicative)
 
 // MARK: - Practical: alert stream
 
-func learnDeferredStreamPractical() {
+func deferredStreamPractical() async {
     let prices = DeferredStream {
         AsyncStream<Double> { c in
             for price in [1.0, 1.2, 0.9, 1.5, 1.1] { c.yield(price) }
@@ -118,12 +106,10 @@ func learnDeferredStreamPractical() {
             : DeferredStream { AsyncStream { c in c.finish() } }
     }
 
-    Task {
-        for await alert in alerts {
-            alert   // "ALERT: 1.5"
-        }
+    for await alert in alerts {
+        alert   // "ALERT: 1.5"
     }
 }
-// learnDeferredStreamPractical()
+// learn(deferredStreamPractical)
 
 //: [Previous](@previous) | [Next](@next)

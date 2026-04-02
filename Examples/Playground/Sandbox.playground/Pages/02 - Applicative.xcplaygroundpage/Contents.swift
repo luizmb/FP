@@ -1,4 +1,5 @@
 import FP
+import Combine
 
 // ============================================================
 // APPLICATIVE  —  liftA2 :: (a -> b -> c) -> f a -> f b -> f c
@@ -10,7 +11,7 @@ import FP
 
 // MARK: - Optional
 
-func learnApplicativeOptional() {
+func applicativeOptional() {
     let x: Int? = 3
     let y: Int? = 4
     let none: Int? = nil
@@ -42,11 +43,11 @@ func learnApplicativeOptional() {
     Optional<(Int, Int)>.zip(x, y)      // Optional((3, 4))
     Optional<(Int, Int)>.zip(x, none)   // nil
 }
-// learnApplicativeOptional()
+// learn(applicativeOptional)
 
 // MARK: - Array
 
-func learnApplicativeArray() {
+func applicativeArray() {
     let xs = [1, 2, 3]
     let ys = [10, 20]
 
@@ -61,11 +62,11 @@ func learnApplicativeArray() {
     xs *> ys                         // [10, 20, 10, 20, 10, 20]
     xs <* ys                         // [1, 1, 2, 2, 3, 3]
 }
-// learnApplicativeArray()
+// learn(applicativeArray)
 
 // MARK: - Result
 
-func learnApplicativeResult() {
+func applicativeResult() {
     let ok1: Result<Int, AnyError> = .success(3)
     let ok2: Result<Int, AnyError> = .success(4)
     let err: Result<Int, AnyError> = .failure(AnyError("oops"))
@@ -84,11 +85,11 @@ func learnApplicativeResult() {
     ok1 <* ok2                                   // success(3)
     ok1 <* err                                   // failure(AnyError("oops"))
 }
-// learnApplicativeResult()
+// learn(applicativeResult)
 
 // MARK: - Either
 
-func learnApplicativeEither() {
+func applicativeEither() {
     let r1: Either<String, Int> = .right(3)
     let r2: Either<String, Int> = .right(4)
     let l1: Either<String, Int> = .left("fail")
@@ -107,11 +108,11 @@ func learnApplicativeEither() {
     r1 <* r2                                  // right(3)
     l1 <* r2                                  // left("fail")
 }
-// learnApplicativeEither()
+// learn(applicativeEither)
 
 // MARK: - Validation (accumulates ALL errors — the key difference)
 
-func learnApplicativeValidation() {
+func applicativeValidation() {
     let ok1: Validation<[String], Int>  = .success(3)
     let ok2: Validation<[String], Int>  = .success(4)
     let e1:  Validation<[String], Int>  = .failure(["name is empty"])
@@ -138,13 +139,13 @@ func learnApplicativeValidation() {
     Validation<[String], (Int, Int, String)>.zip3(e1, e2, e3)
     // failure(["name is empty", "age is negative", "email invalid"])
 }
-// learnApplicativeValidation()
+// learn(applicativeValidation)
 
 // MARK: - Reader
 
 struct ApplicativeReaderEnv { let x: Int; let y: Int }
 
-func learnApplicativeReader() {
+func applicativeReader() {
     let rx = Reader<ApplicativeReaderEnv, Int>.asks(\.x)
     let ry = Reader<ApplicativeReaderEnv, Int>.asks(\.y)
 
@@ -156,6 +157,149 @@ func learnApplicativeReader() {
     let keepY = rx *> ry
     keepY.runReader(ApplicativeReaderEnv(x: 3, y: 4))  // 4
 }
-// learnApplicativeReader()
+// learn(applicativeReader)
+
+// MARK: - Writer
+
+func applicativeWriter() {
+    let w1 = Writer(3, ["got 3"])
+    let w2 = Writer(4, ["got 4"])
+
+    // liftA2 — both run, logs appended left-to-right
+    Writer<[String], Int>.liftA2(+)(w1, w2).runWriter()    // (7, ["got 3", "got 4"])
+
+    // apply — wrapped function applied to wrapped value
+    let wf: Writer<[String], (Int) -> String> = Writer({ n in "val:\(n)" }, ["fn"])
+    (wf <*> w1).runWriter()     // ("val:3", ["fn", "got 3"])
+
+    // seqRight / seqLeft — run both, keep one side; logs always appended
+    (w1 *> w2).runWriter()      // (4, ["got 3", "got 4"])
+    (w1 <* w2).runWriter()      // (3, ["got 3", "got 4"])
+
+    // zip
+    Writer<[String], (Int, Int)>.zip(w1, w2).runWriter()   // ((3, 4), ["got 3", "got 4"])
+}
+// learn(applicativeWriter)
+
+// MARK: - Stateful
+
+func applicativeStateful() {
+    // NOTE: unlike Optional/Array, Stateful's applicative threads state left-to-right —
+    // each computation sees the state mutated by previous ones.
+    let readState = Stateful<Int, Int> { s in s }
+    let addOne    = Stateful<Int, Int> { s in s += 1; return s }
+
+    // liftA2 — state threaded: readState sees 3, addOne increments to 4
+    Stateful<Int, Int>.liftA2(+)(readState, addOne).runStateful(3)  // (7, 4) — 3+4=7, state=4
+
+    // apply — wrapped function applied to wrapped value
+    let fnSt: Stateful<Int, (Int) -> String> = Stateful { s in
+        let s = s
+        return { n in "s:\(s),n:\(n)" }
+    }
+    (fnSt <*> readState).eval(7)    // "s:7,n:7"
+
+    // seqRight / seqLeft
+    let incr = Stateful<Int, Void> { s in s += 1 }
+    (incr *> readState).eval(0)     // 1 (incr ran first, then read)
+    (readState <* incr).eval(5)     // 5 (readState result kept; state becomes 6)
+
+    // zip
+    Stateful<Int, (Int, Int)>.zip(readState, addOne).runStateful(3)  // ((3, 4), 4)
+}
+// learn(applicativeStateful)
+
+// MARK: - DeferredTask
+
+func applicativeDeferredTask() async {
+    let taskA = DeferredTask { 3 }
+    let taskB = DeferredTask { 4 }
+
+    // liftA2 — both run sequentially, results combined
+    let sumTask = liftA2DeferredTask(+)(taskA, taskB)
+
+    // apply — wrapped function applied to wrapped value
+    let fnTask  = DeferredTask<@Sendable (Int) -> Int> { { $0 * 10 } }
+    let product = fnTask <*> taskA
+
+    // seqRight / seqLeft
+    let seqR   = taskA *> taskB
+    let seqL   = taskA <* taskB
+
+    // zip
+    let zipped = DeferredTask<Int>.zip(taskA, taskB)
+
+    await sumTask.run()    // 7
+    await product.run()    // 30
+    await seqR.run()       // 4
+    await seqL.run()       // 3
+    await zipped.run()     // (3, 4)
+}
+// learn(applicativeDeferredTask)
+
+// MARK: - DeferredStream
+
+func applicativeDeferredStream() async {
+    // NOTE: DeferredStream's liftA2 is zip-based — pairs elements positionally,
+    // stopping when either stream ends. This differs from Array's cartesian product.
+    let streamA = DeferredStream { AsyncStream<Int> { c in c.yield(1); c.yield(2); c.finish() } }
+    let streamB = DeferredStream { AsyncStream<Int> { c in c.yield(10); c.yield(20); c.finish() } }
+
+    // liftA2 — zip elements pairwise, apply fn
+    let sumStream = liftA2DeferredStream(+)(streamA, streamB)
+    let seqR      = streamA *> streamB
+    let seqL      = streamA <* streamB
+    let zipped    = DeferredStream<Int>.zip(streamA, streamB)
+
+    var sum: [Int] = []
+    for await v in sumStream { sum.append(v) }
+    sum    // [11, 22] — (1+10), (2+20)
+
+    var zp: [(Int, Int)] = []
+    for await v in zipped { zp.append(v) }
+    zp     // [(1, 10), (2, 20)]
+
+    var sr: [Int] = [], sl: [Int] = []
+    for await v in seqR { sr.append(v) }
+    for await v in seqL { sl.append(v) }
+    sr    // [10, 20]
+    sl    // [1, 2]
+}
+// learn(applicativeDeferredStream)
+
+// MARK: - Publisher (Combine)
+
+func applicativePublisher() async {
+    let pub1: AnyPublisher<Int, Never> = Just(3).eraseToAnyPublisher()
+    let pub2: AnyPublisher<Int, Never> = Just(4).eraseToAnyPublisher()
+
+    // liftA2 — zip-based: pair the single elements, apply fn
+    let sumPub  = AnyPublisher<Int, Never>.liftA2(+)(pub1, pub2).eraseToAnyPublisher()
+
+    // apply — wrapped function applied to wrapped value
+    let fnPub   = Just({ (n: Int) in n * 2 }).eraseToAnyPublisher()
+    let applied = (fnPub <*> pub1).eraseToAnyPublisher()
+
+    // seqRight / seqLeft
+    let seqR    = (pub1 *> pub2).eraseToAnyPublisher()
+    let seqL    = (pub1 <* pub2).eraseToAnyPublisher()
+
+    // zip
+    let zipped  = AnyPublisher<(Int, Int), Never>.zip(pub1, pub2).eraseToAnyPublisher()
+
+    var r1 = [Int](), r2 = [Int](), r3 = [Int](), r4 = [Int]()
+    var r5 = [(Int, Int)]()
+    for await v in sumPub.values   { r1.append(v) }
+    for await v in applied.values  { r2.append(v) }
+    for await v in seqR.values     { r3.append(v) }
+    for await v in seqL.values     { r4.append(v) }
+    for await v in zipped.values   { r5.append(v) }
+    r1   // [7]
+    r2   // [6]
+    r3   // [4]
+    r4   // [3]
+    r5   // [(3, 4)]
+}
+// learn(applicativePublisher)
 
 //: [Previous](@previous) | [Next](@next)

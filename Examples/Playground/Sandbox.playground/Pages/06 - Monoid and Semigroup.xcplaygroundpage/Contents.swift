@@ -13,18 +13,18 @@ import FP
 
 // MARK: - String
 
-func learnMonoidString() {
+func monoidString() {
     String.combine("Hello, ", "World!")               // "Hello, World!"
     sconcat("Hello", [", ", "World", "!"])            // "Hello, World!"
     mconcat(["a", "b", "c"])                          // "abc"
     mconcat([String]())                               // "" — identity
     "foo" <> "bar"                                    // "foobar" — operator
 }
-// learnMonoidString()
+// learn(monoidString)
 
 // MARK: - Array
 
-func learnMonoidArray() {
+func monoidArray() {
     [Int].combine([1, 2], [3, 4])                     // [1, 2, 3, 4]
     sconcat([1, 2], [[3], [4, 5]])                    // [1, 2, 3, 4, 5]
     mconcat([[1, 2], [3], [4, 5]])                    // [1, 2, 3, 4, 5]
@@ -32,11 +32,11 @@ func learnMonoidArray() {
     [1, 2] <> [3, 4]                                  // [1, 2, 3, 4]
     [1, 2] ++ [3, 4]                                  // [1, 2, 3, 4] — ++ also works
 }
-// learnMonoidArray()
+// learn(monoidArray)
 
 // MARK: - Int (numeric Monoid wrappers)
 
-func learnMonoidInt() {
+func monoidInt() {
     // Sum
     let s1 = Int.Monoids.Sum(3), s2 = Int.Monoids.Sum(4)
     s1 <> s2                                          // Sum(7)
@@ -47,18 +47,12 @@ func learnMonoidInt() {
     let p1 = Int.Monoids.Product(3), p2 = Int.Monoids.Product(4)
     p1 <> p2                                          // Product(12)
     Int.Monoids.Product.identity                      // Product(1)
-
-    // Min / Max
-    let vals: [Int.Monoids.Min] = [.init(5), .init(2), .init(9)]
-    mconcat(vals)                                     // Min(2)
-    let vals2: [Int.Monoids.Max] = [.init(5), .init(2), .init(9)]
-    mconcat(vals2)                                    // Max(9)
 }
-// learnMonoidInt()
+// learn(monoidInt)
 
 // MARK: - Optional (Semigroup lifts into Optional)
 
-func learnMonoidOptional() {
+func monoidOptional() {
     let a: String? = .some("hello")
     let b: String? = .some(" world")
     let none: String? = .none
@@ -69,11 +63,11 @@ func learnMonoidOptional() {
     a <> b                                            // Optional("hello world")
     a <> none                                         // Optional("hello")
 }
-// learnMonoidOptional()
+// learn(monoidOptional)
 
 // MARK: - Endo (Monoid of endomorphisms)
 
-func learnMonoidEndo() {
+func monoidEndo() {
     let trim    = Endo<String> { $0.trimmingCharacters(in: .whitespaces) }
     let lower   = Endo<String> { $0.lowercased() }
     let exclaim = Endo<String> { $0 + "!" }
@@ -95,6 +89,6 @@ func learnMonoidEndo() {
     let bang = endo { (s: String) in s + "!" }
     bang("hi")                                        // "hi!"
 }
-// learnMonoidEndo()
+// learn(monoidEndo)
 
 //: [Previous](@previous) | [Next](@next)

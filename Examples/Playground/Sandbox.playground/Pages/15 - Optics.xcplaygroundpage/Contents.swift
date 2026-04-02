@@ -16,7 +16,7 @@ import FP
 
 struct Person { var name: String; var age: Int }
 
-func learnLens() {
+func lens() {
     let nameLens: Lens<Person, String> = lens(\.name)
     let ageLens:  Lens<Person, Int>    = lens(\.age)
 
@@ -34,9 +34,9 @@ func learnLens() {
     nameLens.over { $0.uppercased() }(alice)   // Person(name: "ALICE", age: 30)
     ageLens.over { $0 + 1 }(alice)            // Person(name: "Alice", age: 31)
 }
-// learnLens()
+// learn(lens)
 
-func learnLensManualSet() {
+func lensManualSet() {
     // For let properties or computed values — provide setter explicitly
     struct Point { let x: Double; let y: Double }
 
@@ -47,7 +47,7 @@ func learnLensManualSet() {
     xLens.set(p, 5.0)            // Point(x: 5.0, y: 2.0)
     xLens.over { $0 * 3 }(p)    // Point(x: 3.0, y: 2.0)
 }
-// learnLensManualSet()
+// learn(lensManualSet)
 
 // MARK: - Prism
 
@@ -60,7 +60,7 @@ enum Shape {
     }
 }
 
-func learnPrism() {
+func prism() {
     let circlePrism = prism(\.circleRadius, review: Shape.circle)
     let circle = Shape.circle(5.0)
     let rect   = Shape.rectangle(3.0, 4.0)
@@ -76,11 +76,11 @@ func learnPrism() {
     circlePrism.over { $0 * 2 }(circle) // circle(10.0)
     circlePrism.over { $0 * 2 }(rect)   // rectangle(3.0, 4.0) — unchanged
 }
-// learnPrism()
+// learn(prism)
 
 // MARK: - Iso
 
-func learnIso() {
+func iso() {
     let celsiusToFahrenheit = iso(
         get:        { (c: Double) in c * 9 / 5 + 32 },
         reverseGet: { (f: Double) in (f - 32) * 5 / 9 }
@@ -98,13 +98,13 @@ func learnIso() {
     asLens.get(0)         // 32.0
     asLens.set(0, 32)     // 0.0 — reverseGet(32)
 }
-// learnIso()
+// learn(iso)
 
 // MARK: - Composition
 
 struct Company { var ceo: Person }
 
-func learnOpticsComposition() {
+func opticsComposition() {
     let ceoLens:  Lens<Company, Person> = lens(\.ceo)
     let nameLens: Lens<Person, String>  = lens(\.name)
 
@@ -121,9 +121,9 @@ func learnOpticsComposition() {
     let ceoNameLens2 = nameLens <<< ceoLens
     ceoNameLens2.get(acme)                             // "Alice"
 }
-// learnOpticsComposition()
+// learn(opticsComposition)
 
-func learnLensPrismComposition() {
+func lensPrismComposition() {
     // Lens + Prism composes into AffineTraversal
     struct User { var status: Shape }
 
@@ -139,6 +139,6 @@ func learnLensPrismComposition() {
     radiusTraversal.set(circleUser, 7.0).status        // circle(7.0)
     radiusTraversal.set(rectUser, 7.0).status          // rectangle(1.0, 2.0) — unchanged
 }
-// learnLensPrismComposition()
+// learn(lensPrismComposition)
 
 //: [Previous](@previous) | [Next](@next)
