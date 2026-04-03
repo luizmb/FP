@@ -67,6 +67,43 @@ func monoidInt() {
 }
 // learn(monoidInt)
 
+// MARK: - SIMD (element-wise Monoid wrappers)
+
+func monoidSIMD() {
+    // Sum — element-wise addition (integer uses &+)
+    let s1 = SIMD4<Int>.Monoids.Sum(SIMD4(1, 2, 3, 4))
+    let s2 = SIMD4<Int>.Monoids.Sum(SIMD4(10, 20, 30, 40))
+    s1 <> s2                                              // Sum(SIMD4(11, 22, 33, 44))
+    SIMD4<Int>.Monoids.Sum.identity                       // Sum(SIMD4(0, 0, 0, 0))
+    mconcat([s1, s2])                                     // Sum(SIMD4(11, 22, 33, 44))
+
+    // Product — element-wise multiplication (integer uses &*)
+    let p1 = SIMD2<Int>.Monoids.Product(SIMD2(3, 5))
+    let p2 = SIMD2<Int>.Monoids.Product(SIMD2(4, 2))
+    p1 <> p2                                              // Product(SIMD2(12, 10))
+    SIMD2<Int>.Monoids.Product.identity                   // Product(SIMD2(1, 1))
+
+    // Min — element-wise minimum, identity Scalar.max per lane
+    let m1 = SIMD2<Int>.Monoids.Min(SIMD2(5, 1))
+    let m2 = SIMD2<Int>.Monoids.Min(SIMD2(2, 7))
+    m1 <> m2                                              // Min(SIMD2(2, 1))
+
+    // Max — element-wise maximum, identity Scalar.min per lane
+    let x1 = SIMD2<Int>.Monoids.Max(SIMD2(5, 1))
+    let x2 = SIMD2<Int>.Monoids.Max(SIMD2(2, 7))
+    x1 <> x2                                              // Max(SIMD2(5, 7))
+
+    // Works with Float too
+    let f1 = SIMD2<Float>.Monoids.Sum(SIMD2(1.5, 2.5))
+    let f2 = SIMD2<Float>.Monoids.Sum(SIMD2(0.5, 0.5))
+    f1 <> f2                                              // Sum(SIMD2(2.0, 3.0))
+
+    // mconcat across multiple vectors
+    let vs = [SIMD2(5, 9), SIMD2(1, 3), SIMD2(8, 2)].map { SIMD2<Int>.Monoids.Min($0) }
+    mconcat(vs)                                           // Min(SIMD2(1, 2))
+}
+// learn(monoidSIMD)
+
 // MARK: - Bool (Bool.Monoids wrappers)
 
 func monoidBool() {

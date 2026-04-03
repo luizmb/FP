@@ -236,6 +236,27 @@ Double.Monoids.Min.combine(2.5, 1.1)                       // Min(1.1)
 Double.Monoids.Max.combine(2.5, 1.1)                       // Max(2.5)
 ```
 
+**SIMD vectors** get the same four wrappers via `SIMDMonoid`, operating element-wise on each lane. Integer scalars use wrapping arithmetic (`&+`, `&*`) while floating-point scalars use standard arithmetic:
+
+```swift
+// Element-wise sum — identity is the zero vector
+let a = SIMD4<Int>.Monoids.Sum(SIMD4(1, 2, 3, 4))
+let b = SIMD4<Int>.Monoids.Sum(SIMD4(10, 20, 30, 40))
+SIMD4<Int>.Monoids.Sum.combine(a, b).rawValue               // SIMD4(11, 22, 33, 44)
+
+// Element-wise product — identity is the ones vector
+SIMD2<Float>.Monoids.Product.combine(
+    .init(SIMD2(2.0, 3.0)),
+    .init(SIMD2(4.0, 5.0))
+).rawValue                                                   // SIMD2(8.0, 15.0)
+
+// Element-wise min / max
+let v = [SIMD2(5, 9), SIMD2(1, 3), SIMD2(8, 2)].map { SIMD2<Int>.Monoids.Min($0) }
+mconcat(v).rawValue                                          // SIMD2(1, 2)
+```
+
+All SIMD sizes from `SIMD2` through `SIMD64` are supported for every `SIMDMonoidScalar` type (`Int`, `Int8`–`Int64`, `UInt`–`UInt64`, `Float`, `Double`).
+
 `Bool` works the same way:
 
 ```swift
@@ -1357,7 +1378,7 @@ All operators require `CoreFPOperators` (for built-in types) or `DataStructureOp
 | `>>>` | `<<<` | Function / optics composition — left-to-right / right-to-left | Functions, `Iso`, `Lens`, `Prism`, `AffineTraversal` |
 | `£` / `<\|` | `\|>` | Function application — fn left / value left | Any function |
 | `<\|>` | — | Alternative / choice | `Optional`, `Array`, `Result`, `Publisher`, `DeferredTask<A?>`, `DeferredTask<Result<A,E>>`, `DeferredStream` |
-| `<>` | — | Semigroup append | `String`, `Array`, `Optional`, `Dictionary`, `Set`, `Result`, `Int.Monoids.*`, `Bool.Monoids.*`, … |
+| `<>` | — | Semigroup append | `String`, `Array`, `Optional`, `Dictionary`, `Set`, `Result`, `Int.Monoids.*`, `Bool.Monoids.*`, `SIMD4<Int>.Monoids.*`, … |
 | `++` | — | Concatenation | `String`, `Array` |
 | `^` _(prefix)_ | — | Lift `WritableKeyPath` → `Lens`; `KeyPath` → partial `Lens` builder | `WritableKeyPath`, `KeyPath` |
 | `^` _(infix)_ | — | Numeric power — `base ^ exp` | `SignedNumeric` |
