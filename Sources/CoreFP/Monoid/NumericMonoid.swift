@@ -41,6 +41,56 @@ public enum NumericMonoid<T: Numeric & ExpressibleByIntegerLiteral> {
     }
 }
 
+public protocol HasMax: Comparable {
+    static var max: Self { get }
+}
+
+public protocol HasMin: Comparable {
+    static var min: Self { get }
+}
+
+extension NumericMonoid where T: HasMax {
+    /// Monoid under comparison, finding the minimum value, with identity Self.max.
+    public struct Min: Monoid, RawRepresentable {
+        public let rawValue: T
+
+        public init(_ rawValue: T) {
+            self.rawValue = rawValue
+        }
+
+        public init?(rawValue: T) {
+            self.init(rawValue)
+        }
+
+        public static func combine(_ lhs: Min, _ rhs: Min) -> Min {
+            Min(min(lhs.rawValue, rhs.rawValue))
+        }
+
+        public static var identity: Min { Min(.max) }
+    }
+}
+
+extension NumericMonoid where T: HasMin {
+    /// Monoid under comparison, finding the maximum value, with identity Self.min.
+    public struct Max: Monoid, RawRepresentable {
+        public let rawValue: T
+
+        public init(_ rawValue: T) {
+            self.rawValue = rawValue
+        }
+
+        public init?(rawValue: T) {
+            self.init(rawValue)
+        }
+
+        public static func combine(_ lhs: Max, _ rhs: Max) -> Max {
+            Max(max(lhs.rawValue, rhs.rawValue))
+        }
+
+        public static var identity: Max { Max(.min) }
+    }
+}
+
 // MARK: - ExpressibleByIntegerLiteral (all numeric types)
 
 extension NumericMonoid.Sum: ExpressibleByIntegerLiteral {
@@ -50,6 +100,18 @@ extension NumericMonoid.Sum: ExpressibleByIntegerLiteral {
 }
 
 extension NumericMonoid.Product: ExpressibleByIntegerLiteral {
+    public init(integerLiteral value: T.IntegerLiteralType) {
+        self.init(T(integerLiteral: value))
+    }
+}
+
+extension NumericMonoid.Min: ExpressibleByIntegerLiteral {
+    public init(integerLiteral value: T.IntegerLiteralType) {
+        self.init(T(integerLiteral: value))
+    }
+}
+
+extension NumericMonoid.Max: ExpressibleByIntegerLiteral {
     public init(integerLiteral value: T.IntegerLiteralType) {
         self.init(T(integerLiteral: value))
     }
@@ -69,60 +131,126 @@ extension NumericMonoid.Product: ExpressibleByFloatLiteral where T: ExpressibleB
     }
 }
 
+extension NumericMonoid.Min: ExpressibleByFloatLiteral where T: ExpressibleByFloatLiteral {
+    public init(floatLiteral value: T.FloatLiteralType) {
+        self.init(T(floatLiteral: value))
+    }
+}
+
+extension NumericMonoid.Max: ExpressibleByFloatLiteral where T: ExpressibleByFloatLiteral {
+    public init(floatLiteral value: T.FloatLiteralType) {
+        self.init(T(floatLiteral: value))
+    }
+}
+
 // MARK: - Numeric type aliases
 
-extension Int {
+extension Int: HasMax, HasMin {
     public typealias Monoids = NumericMonoid<Int>
 }
 
-extension Int8 {
+extension Int8: HasMax, HasMin {
     public typealias Monoids = NumericMonoid<Int8>
 }
 
-extension Int16 {
+extension Int16: HasMax, HasMin {
     public typealias Monoids = NumericMonoid<Int16>
 }
 
-extension Int32 {
+extension Int32: HasMax, HasMin {
     public typealias Monoids = NumericMonoid<Int32>
 }
 
-extension Int64 {
+extension Int64: HasMax, HasMin {
     public typealias Monoids = NumericMonoid<Int64>
 }
 
-extension UInt {
+extension UInt: HasMax, HasMin {
     public typealias Monoids = NumericMonoid<UInt>
 }
 
-extension UInt8 {
+extension UInt8: HasMax, HasMin {
     public typealias Monoids = NumericMonoid<UInt8>
 }
 
-extension UInt16 {
+extension UInt16: HasMax, HasMin {
     public typealias Monoids = NumericMonoid<UInt16>
 }
 
-extension UInt32 {
+extension UInt32: HasMax, HasMin {
     public typealias Monoids = NumericMonoid<UInt32>
 }
 
-extension UInt64 {
+extension UInt64: HasMax, HasMin {
     public typealias Monoids = NumericMonoid<UInt64>
 }
 
-extension Float {
+extension Float: HasMax, HasMin {
     public typealias Monoids = NumericMonoid<Float>
+
+    public static var min: Float {
+        -Float.greatestFiniteMagnitude
+    }
+
+    public static var max: Float {
+        Float.greatestFiniteMagnitude
+    }
 }
 
-extension Double {
+extension Double: HasMax, HasMin {
     public typealias Monoids = NumericMonoid<Double>
+
+    public static var min: Double {
+        -Double.greatestFiniteMagnitude
+    }
+
+    public static var max: Double {
+        Double.greatestFiniteMagnitude
+    }
 }
+
+#if arch(x86_64)
+extension Float80: HasMax, HasMin {
+    public typealias Monoids = NumericMonoid<Float80>
+
+    public static var min: Float80 {
+        -Float80.greatestFiniteMagnitude
+    }
+
+    public static var max: Float80 {
+        Float80.greatestFiniteMagnitude
+    }
+}
+#endif
 
 #if canImport(CoreGraphics)
 import CoreGraphics
 
-extension CGFloat {
+extension CGFloat: HasMax, HasMin {
     public typealias Monoids = NumericMonoid<CGFloat>
+
+    public static var min: CGFloat {
+        -CGFloat.greatestFiniteMagnitude
+    }
+
+    public static var max: CGFloat {
+        CGFloat.greatestFiniteMagnitude
+    }
+}
+#endif
+
+#if canImport(Foundation)
+import Foundation
+
+extension Decimal: HasMax, HasMin {
+    public typealias Monoids = NumericMonoid<Decimal>
+
+    public static var min: Decimal {
+        -Decimal.greatestFiniteMagnitude
+    }
+
+    public static var max: Decimal {
+        Decimal.greatestFiniteMagnitude
+    }
 }
 #endif
