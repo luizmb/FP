@@ -291,6 +291,67 @@ Bool.Monoids.Xor.identity                             // Xor(false)
 mconcat([Bool.Monoids.Xor(true), .init(false), .init(true)]).rawValue  // false
 ```
 
+**Optional**
+
+`Optional<A>` is a `Semigroup` when `A` is a `Semigroup`, and a `Monoid` when `A` is a `Monoid`. This matches Haskell's `Maybe` instance exactly: both present → combine the wrapped values; one nil → return the non-nil side; both nil → nil. The identity is `.none`.
+
+```swift
+let a: String? = "hello"
+let b: String? = " world"
+
+Optional<String>.combine(a, b)           // Optional("hello world") — both present: combine
+Optional<String>.combine(a, .none)       // Optional("hello")       — only left present
+Optional<String>.combine(.none, b)       // Optional(" world")      — only right present
+Optional<String>.combine(.none, .none)   // nil
+Optional<String>.identity                // nil
+
+a <> b                                   // Optional("hello world") — operator
+mconcat([a, .none, b])                   // Optional("hello world")
+mconcat([.none, .none] as [String?])     // nil — identity
+```
+
+**Result**
+
+`Result<Success, Failure>` has no canonical `Monoid` in Haskell's `base` — `Either` faces the same problem there. This library provides four explicit newtype wrappers inside `Result.Monoids` so you name your intent rather than relying on an arbitrary default:
+
+| Wrapper | Bias | When both sides match |
+|---|---|---|
+| `Optimistic` | success wins | only successes combine; two failures keep the left; `Failure` need not be `Semigroup` |
+| `OptimisticCombining` | success wins | both sides combine; identity is `.failure(Failure.identity)` |
+| `Pessimistic` | failure wins | only failures combine; two successes keep the left; `Success` need not be `Semigroup` |
+| `PessimisticCombining` | failure wins | both sides combine; identity is `.success(Success.identity)` |
+
+```swift
+typealias R = Result<String, String>
+
+// Optimistic — success wins; failures fall through; two failures keep the left
+R.Monoids.Optimistic(.success("hello")) <> R.Monoids.Optimistic(.success(" world"))  // .success("hello world")
+R.Monoids.Optimistic(.success("hello")) <> R.Monoids.Optimistic(.failure("oops"))    // .success("hello")
+R.Monoids.Optimistic(.failure("e1"))    <> R.Monoids.Optimistic(.failure("e2"))      // .failure("e1")
+
+// OptimisticCombining — success wins; both sides combine when matching; Monoid
+R.Monoids.OptimisticCombining(.success("hello")) <> R.Monoids.OptimisticCombining(.success(" world"))  // .success("hello world")
+R.Monoids.OptimisticCombining(.failure("bad"))   <> R.Monoids.OptimisticCombining(.failure(" stuff"))  // .failure("bad stuff")
+R.Monoids.OptimisticCombining.identity                                                                   // .failure("") — Failure.identity
+
+// Pessimistic — failure wins; successes fall through; two successes keep the left
+R.Monoids.Pessimistic(.failure("bad")) <> R.Monoids.Pessimistic(.failure(" stuff"))  // .failure("bad stuff")
+R.Monoids.Pessimistic(.failure("bad")) <> R.Monoids.Pessimistic(.success("ok"))      // .failure("bad")
+R.Monoids.Pessimistic(.success("ok"))  <> R.Monoids.Pessimistic(.success("ok2"))     // .success("ok")
+
+// PessimisticCombining — failure wins; both sides combine when matching; Monoid
+R.Monoids.PessimisticCombining(.success("hello")) <> R.Monoids.PessimisticCombining(.success(" world"))  // .success("hello world")
+R.Monoids.PessimisticCombining(.failure("bad"))   <> R.Monoids.PessimisticCombining(.success("ok"))      // .failure("bad")
+R.Monoids.PessimisticCombining.identity                                                                    // .success("") — Success.identity
+
+// mconcat is available for the two Monoid variants (OptimisticCombining / PessimisticCombining)
+mconcat([
+    R.Monoids.OptimisticCombining(.success("hello")),
+    R.Monoids.OptimisticCombining(.failure("oops")),
+    R.Monoids.OptimisticCombining(.success(" world")),
+])  // .success("hello world") — successes win and combine
+```
+
 An empty tray of lasagna would be the identity element — making lasagna a monoid too.
 
 ### Map (Functor)
