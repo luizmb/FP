@@ -5,14 +5,14 @@ import Testing
     // MARK: - Sum
 
     @Test func intSum() {
-        #expect(Int.Monoids.Sum.combine(.init(3), .init(4)) == .init(7))
-        #expect(Int.Monoids.Sum.identity == .init(0))
-        #expect(Int.Monoids.Sum.combine(.identity, .init(5)) == .init(5))
+        #expect(Int.Monoids.Sum.combine(3, 4) == 7)
+        #expect(Int.Monoids.Sum.identity == 0)
+        #expect(Int.Monoids.Sum.combine(.identity, 5) == 5)
     }
 
     @Test func doubleSum() {
-        #expect(Double.Monoids.Sum.combine(.init(1.5), .init(2.5)) == .init(4.0))
-        #expect(Double.Monoids.Sum.identity == .init(0.0))
+        #expect(Double.Monoids.Sum.combine(1.5, 2.5) == 4.0)
+        #expect(Double.Monoids.Sum.identity == 0.0)
     }
 
     @Test func sumMconcat() {
@@ -26,14 +26,14 @@ import Testing
     // MARK: - Product
 
     @Test func intProduct() {
-        #expect(Int.Monoids.Product.combine(.init(3), .init(4)) == .init(12))
-        #expect(Int.Monoids.Product.identity == .init(1))
-        #expect(Int.Monoids.Product.combine(.identity, .init(5)) == .init(5))
+        #expect(Int.Monoids.Product.combine(3, 4) == 12)
+        #expect(Int.Monoids.Product.identity == 1)
+        #expect(Int.Monoids.Product.combine(.identity, 5) == 5)
     }
 
     @Test func doubleProduct() {
-        #expect(Double.Monoids.Product.combine(.init(2.0), .init(3.0)) == .init(6.0))
-        #expect(Double.Monoids.Product.identity == .init(1.0))
+        #expect(Double.Monoids.Product.combine(2.0, 3.0) == 6.0)
+        #expect(Double.Monoids.Product.identity == 1.0)
     }
 
     @Test func productMconcat() {
@@ -54,10 +54,10 @@ import Testing
     // MARK: - Other integer types
 
     @Test func int32Sum() {
-        #expect(Int32.Monoids.Sum.combine(.init(100), .init(200)) == .init(300))
+        #expect(Int32.Monoids.Sum.combine(100, 200) == 300)
     }
 
     @Test func uint64Product() {
-        #expect(UInt64.Monoids.Product.combine(.init(3), .init(5)) == .init(15))
+        #expect(UInt64.Monoids.Product.combine(3, 5) == 15)
     }
 }
