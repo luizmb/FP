@@ -198,37 +198,69 @@ func endo() {
 }
 // learn(endo)
 
+// MARK: - Numeric Utilities
+
+func numericUtilities() {
+    // symmetricRange — named form: produces ClosedRange from center ± delta
+    symmetricRange(5, delta: 2)            // 3...7
+    symmetricRange(10.0, delta: 0.5)       // 9.5...10.5
+
+    // ± operator (ASCII alias: +/-)
+    5 ± 2                                  // 3...7
+    10.0 ± 0.5                             // 9.5...10.5
+    5 +/- 2                                // 3...7
+
+    // rangeMatch — named form: value ~= range (flipped)
+    rangeMatch(5, in: 3...7)               // true
+    rangeMatch(10, in: 3...7)              // false
+
+    // ≅ operator — flipped pattern match: value ≅ range
+    5 ≅ 3...7                              // true
+    10 ≅ 3...7                             // false
+    5 ≅ 5 ± 2                              // true
+    200 ≅ 200...299                        // true — HTTP success range
+    404 ≅ 200...299                        // false
+
+    // power — named form for floating-point exponentiation
+    power(2.0, 10)                         // 1024.0
+    power(3.0, 3)                          // 27.0
+
+    // ^ operator (BinaryFloatingPoint only — Int uses power())
+    2.0 ^ 10                               // 1024.0
+    3.0 ^ 3                                // 27.0
+    5.0 ^ 0                                // 1.0
+}
+// learn(numericUtilities)
+
 // MARK: - Point-free pipeline (putting it all together)
 
 struct Person { let name: String; let score: Int }
 
-func pointFree() {
+func tacitProgramming() {
     let people = [
         Person(name: "  alice ", score: 42),
         Person(name: "BOB",      score: 7),
         Person(name: " Carol",   score: 100)
     ]
 
-    // Normalise names point-free using >>>
-    let normaliseName: (String) -> String =
-        { $0.trimmingCharacters(in: .whitespaces) } >>> { $0.lowercased() }
+    // Normalise names tacit using >>>
+    let trim: (String) -> String = { $0.trimmingCharacters(in: .whitespaces) }
+    let lower: (String) -> String = { $0.lowercased() }
+    let normaliseName = trim >>> lower
 
-    people.map(\.name).map(normaliseName)         // ["alice", "bob", "carol"]
+    people.map(\.name).map(normaliseName)                    // ["alice", "bob", "carol"]
 
     // Partial application for filtering (score >= threshold)
-    let highScorer = partialApplyFlip(
-        { (threshold: Int, person: Person) in person.score >= threshold },
-        50
-    )
-    people.filter(highScorer).map(\.name)         // ["  alice ", " Carol"]
+    let highScorer = 42 |> ((\Person.score >>> curry(>=)) |> flip)
+    people.filter(highScorer).map(\.name >>> normaliseName)  // ["alice", "carol"]
 
     // Endo pipeline for string normalisation
     let sanitise: Endo<String> = mconcat([
-        endo { $0.trimmingCharacters(in: .whitespaces) },
-        endo { $0.lowercased() }
+        trim |> endo,
+        lower |> endo
     ])
-    people.map(\.name).map(sanitise.runEndo)      // ["alice", "bob", "carol"]
+    people.map(\.name).map(sanitise.runEndo)                 // ["alice", "bob", "carol"]
 }
-// learn(pointFree)
+ learn(tacitProgramming)
 
 //: [Previous](@previous)

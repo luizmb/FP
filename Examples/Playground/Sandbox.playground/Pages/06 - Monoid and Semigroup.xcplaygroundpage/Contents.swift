@@ -37,18 +37,64 @@ func monoidArray() {
 // MARK: - Int (numeric Monoid wrappers)
 
 func monoidInt() {
-    // Sum
+    // Sum — identity 0
     let s1 = Int.Monoids.Sum(3), s2 = Int.Monoids.Sum(4)
     s1 <> s2                                          // Sum(7)
     Int.Monoids.Sum.identity                          // Sum(0)
     mconcat([s1, s2, Int.Monoids.Sum(10)])            // Sum(17)
 
-    // Product
+    // Product — identity 1
     let p1 = Int.Monoids.Product(3), p2 = Int.Monoids.Product(4)
     p1 <> p2                                          // Product(12)
     Int.Monoids.Product.identity                      // Product(1)
+    mconcat([p1, p2, Int.Monoids.Product(5)])         // Product(60)
+
+    // Min — identity Int.max, collapses to minimum
+    let m1 = Int.Monoids.Min(7), m2 = Int.Monoids.Min(3)
+    m1 <> m2                                          // Min(3)
+    Int.Monoids.Min.identity                          // Min(Int.max)
+    mconcat([Int.Monoids.Min(5), .init(1), .init(9)]) // Min(1)
+
+    // Max — identity Int.min, collapses to maximum
+    let x1 = Int.Monoids.Max(7), x2 = Int.Monoids.Max(3)
+    x1 <> x2                                          // Max(7)
+    Int.Monoids.Max.identity                          // Max(Int.min)
+    mconcat([Int.Monoids.Max(5), .init(1), .init(9)]) // Max(9)
+
+    // Works with Double too
+    Double.Monoids.Min(2.5) <> Double.Monoids.Min(1.1)   // Min(1.1)
+    Double.Monoids.Max(2.5) <> Double.Monoids.Max(1.1)   // Max(2.5)
 }
 // learn(monoidInt)
+
+// MARK: - Bool (Bool.Monoids wrappers)
+
+func monoidBool() {
+    // And — conjunction, identity true
+    Bool.Monoids.And.combine(.init(true), .init(false))   // And(false)
+    Bool.Monoids.And.identity                              // And(true)
+    mconcat([Bool.Monoids.And(true), .init(true)])         // And(true)
+    mconcat([Bool.Monoids.And(true), .init(false)])        // And(false)
+    mconcat([Bool.Monoids.And]())                          // And(true) — identity
+
+    // Or — disjunction, identity false
+    Bool.Monoids.Or.combine(.init(false), .init(true))    // Or(true)
+    Bool.Monoids.Or.identity                               // Or(false)
+    mconcat([Bool.Monoids.Or(false), .init(false)])        // Or(false)
+    mconcat([Bool.Monoids.Or(false), .init(true)])         // Or(true)
+
+    // Xor — exclusive disjunction, identity false
+    Bool.Monoids.Xor.combine(.init(true), .init(false))   // Xor(true)
+    Bool.Monoids.Xor.combine(.init(true), .init(true))    // Xor(false)
+    Bool.Monoids.Xor.identity                              // Xor(false)
+    mconcat([Bool.Monoids.Xor(true), .init(true), .init(true)])   // Xor(true)
+
+    // <> operator works on all
+    Bool.Monoids.And(true) <> Bool.Monoids.And(false)     // And(false)
+    Bool.Monoids.Or(false) <> Bool.Monoids.Or(false)      // Or(false)
+    Bool.Monoids.Xor(true) <> Bool.Monoids.Xor(true)      // Xor(false)
+}
+// learn(monoidBool)
 
 // MARK: - Optional (Semigroup lifts into Optional)
 

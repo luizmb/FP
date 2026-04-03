@@ -104,9 +104,9 @@ func eitherMonad() {
     validate -<< left                                                     // left("error")
 
     // join
-    Either<String, Int>.join(.right(.right(42)))     // right(42)
-    Either<String, Int>.join(.right(.left("inner"))) // left("inner")
-    Either<String, Int>.join(.left("outer"))         // left("outer")
+    Either<String, Either<String, Int>>.join(.right(.right(42)))     // right(42)
+    Either<String, Either<String, Int>>.join(.right(.left("inner"))) // left("inner")
+    Either<String, Either<String, Int>>.join(.left("outer"))         // left("outer")
 
     // Kleisli
     let parse:   (String) -> Either<String, Int> = { Int($0).map(Either.right) ?? .left("NaN") }

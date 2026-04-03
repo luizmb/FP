@@ -40,13 +40,17 @@ func monadOptional() {
     // Kleisli — compose two (a -> m b) arrows
     let parseInt: (String) -> Int? = { Int($0) }
     let nonneg:   (Int) -> Int?    = { $0 >= 0 ? .some($0) : .none }
-    let composed  = parseInt >=> nonneg
-    composed("5")                                     // Optional(5)
-    composed("-1")                                    // nil
-    composed("abc")                                   // nil
+    let composed   = Optional<Int>.kleisli(parseInt, nonneg)   // named
+    let composedOp = parseInt >=> nonneg                       // operator
+    composed("5")   // Optional(5)
+    composedOp("5") // Optional(5)
+    composed("-1")   // nil
+    composed("abc")  // nil
 
-    let reversed  = nonneg <=< parseInt               // right-to-left, same result
-    reversed("5")                                     // Optional(5)
+    let reversed   = Optional<Int>.kleisliBack(nonneg, parseInt)   // named, right-to-left
+    let reversedOp = nonneg <=< parseInt                           // operator
+    reversed("5")   // Optional(5)
+    reversedOp("5") // Optional(5)
 }
 // learn(monadOptional)
 
@@ -70,11 +74,15 @@ func monadArray() {
     // Kleisli
     let digits:  (Int) -> [Int] = { n in n < 10 ? [n] : [n / 10, n % 10] }
     let doubled: (Int) -> [Int] = { [$0, $0 * 2] }
-    let split  = digits >=> doubled
-    split(12)                                         // [1, 2, 2, 4]
+    let split   = Array<Int>.kleisli(digits, doubled)   // named
+    let splitOp = digits >=> doubled                    // operator
+    split(12)    // [1, 2, 2, 4]
+    splitOp(12)  // [1, 2, 2, 4]
 
-    let splitR = doubled <=< digits                   // right-to-left, same result
-    splitR(12)                                        // [1, 2, 2, 4]
+    let splitR   = Array<Int>.kleisliBack(doubled, digits)   // named, right-to-left
+    let splitROp = doubled <=< digits                        // operator
+    splitR(12)   // [1, 2, 2, 4]
+    splitROp(12) // [1, 2, 2, 4]
 }
 // learn(monadArray)
 
@@ -85,12 +93,17 @@ func monadResult() {
     let err: Result<Int, AnyError> = .failure(AnyError("bad"))
 
     ok.flatMap { $0 > 3 ? .success($0 * 2) : .failure(AnyError("too small")) }   // success(10)
-    err.flatMap { .success($0 * 2) }                                               // failure("bad")
+    err.flatMap { .success($0 * 2) }                                              // failure("bad")
+
+    // bind (curried static)
+    let fail: (Int) -> Result<Int, AnyError> = { _ in .failure(AnyError("step failed")) }
+    Result<Int, AnyError>.bind(fail)(ok)                                         // failure("step failed")
+    Result<Int, AnyError>.bind(fail)(err)                                        // failure("bad")
 
     // Operators
-    ok >>- { _ in Result<Int, AnyError>.failure(AnyError("step failed")) }        // failure("step failed")
-    err >>- { .success($0 * 2) }                                                   // failure("bad")
-    _ = { _ in Result<Int, AnyError>.failure(AnyError("step failed")) } -<< ok    // failure("step failed")
+    ok >>- fail                                                                   // failure("step failed")
+    err >>- { .success($0 * 2) }                                                  // failure("bad")
+    _ = fail -<< ok                                                               // failure("step failed")
 
     // join — flatten nested Result (typed vars needed for inference)
     let nestedOk:   Result<Result<Int, AnyError>, AnyError> = .success(.success(42))
@@ -103,10 +116,17 @@ func monadResult() {
     // Kleisli
     let parse:    (String) -> Result<Int, AnyError> = { Int($0).map(Result.success) ?? .failure(AnyError("NaN")) }
     let positive: (Int) -> Result<Int, AnyError>    = { $0 > 0 ? .success($0) : .failure(AnyError("≤ 0")) }
-    let check = parse >=> positive
-    check("42")                                       // success(42)
-    check("-1")                                       // failure("≤ 0")
-    check("abc")                                      // failure("NaN")
+    let check   = Result<Int, AnyError>.kleisli(parse, positive)   // named
+    let checkOp = parse >=> positive                               // operator
+    check("42")   // success(42)
+    checkOp("42") // success(42)
+    check("-1")   // failure("≤ 0")
+    check("abc")  // failure("NaN")
+
+    let checkR   = Result<Int, AnyError>.kleisliBack(positive, parse)   // named, right-to-left
+    let checkROp = positive <=< parse                                    // operator
+    checkR("42")   // success(42)
+    checkROp("42") // success(42)
 }
 // learn(monadResult)
 
@@ -120,8 +140,12 @@ func monadEither() {
     right.flatMap { _ in Either<String, Int>.left("step failed") } // left("step failed")
     left.flatMap  { Either<String, Int>.right($0 * 2) }            // left("error")
 
-    // bind + operators
+    // bind (curried static)
     let validate: (Int) -> Either<String, Int> = { $0 > 0 ? .right($0) : .left("non-positive") }
+    Either<String, Int>.bind(validate)(right)                                  // right(5)
+    Either<String, Int>.bind(validate)(left)                                   // left("error")
+
+    // Operators
     right >>- validate                                             // right(5)
     left >>- validate                                              // left("error")
     validate -<< right                                             // right(5)
@@ -135,13 +159,17 @@ func monadEither() {
     // Kleisli
     let parse:  (String) -> Either<String, Int> = { Int($0).map(Either.right) ?? .left("NaN") }
     let nonneg: (Int) -> Either<String, Int>    = { $0 >= 0 ? .right($0) : .left("negative") }
-    let check  = parse >=> nonneg
-    check("42")                                       // right(42)
-    check("-1")                                       // left("negative")
-    check("abc")                                      // left("NaN")
+    let check   = Either<String, Int>.kleisli(parse, nonneg)   // named
+    let checkOp = parse >=> nonneg                              // operator
+    check("42")   // right(42)
+    checkOp("42") // right(42)
+    check("-1")   // left("negative")
+    check("abc")  // left("NaN")
 
-    let checkR = nonneg <=< parse                     // right-to-left, same result
-    checkR("42")                                      // right(42)
+    let checkR   = Either<String, Int>.kleisliBack(nonneg, parse)   // named, right-to-left
+    let checkROp = nonneg <=< parse                                  // operator
+    checkR("42")   // right(42)
+    checkROp("42") // right(42)
 }
 // learn(monadEither)
 
@@ -158,12 +186,13 @@ func monadReader() {
     greet.runReader(MonadReaderDB(users: [1: "Alice"]))   // "Hello, Alice!"
     greet.runReader(MonadReaderDB(users: [:]))             // "Unknown"
 
-    // bind + operators
+    // bind (curried static)
     let addPrefix: (String?) -> Reader<MonadReaderDB, String> = { name in
         Reader { _ in name.map { ">> \($0)" } ?? "Unknown" }
     }
-    _ = getUser >>- addPrefix                             // Reader — value left
-    _ = addPrefix -<< getUser                             // Reader — fn left
+    _ = Reader<MonadReaderDB, String?>.bind(addPrefix)(getUser)   // named
+    _ = getUser >>- addPrefix                                       // value left
+    _ = addPrefix -<< getUser                                       // fn left
 
     // join — flatten nested Reader
     let nested = Reader<MonadReaderDB, Reader<MonadReaderDB, String>> { _ in
@@ -177,10 +206,14 @@ func monadReader() {
     let greetOpt:   (String?) -> Reader<MonadReaderDB, String> = { name in
         Reader { _ in name.map { "Hi, \($0)" } ?? "Unknown" }
     }
-    let pipeline  = lookupUser >=> greetOpt
-    let pipelineR = greetOpt <=< lookupUser              // right-to-left, same result
-    pipeline(1).runReader(MonadReaderDB(users: [1: "Bob"]))   // "Hi, Bob"
-    pipelineR(1).runReader(MonadReaderDB(users: [1: "Bob"]))  // "Hi, Bob"
+    let pipeline    = Reader<MonadReaderDB, String?>.kleisli(lookupUser, greetOpt)        // named
+    let pipelineOp  = lookupUser >=> greetOpt                                            // operator
+    let pipelineR   = Reader<MonadReaderDB, String?>.kleisliBack(greetOpt, lookupUser)   // named, right-to-left
+    let pipelineROp = greetOpt <=< lookupUser                                            // operator
+    pipeline(1).runReader(MonadReaderDB(users: [1: "Bob"]))    // "Hi, Bob"
+    pipelineOp(1).runReader(MonadReaderDB(users: [1: "Bob"]))  // "Hi, Bob"
+    pipelineR(1).runReader(MonadReaderDB(users: [1: "Bob"]))   // "Hi, Bob"
+    pipelineROp(1).runReader(MonadReaderDB(users: [1: "Bob"])) // "Hi, Bob"
 }
 // learn(monadReader)
 
@@ -196,8 +229,11 @@ func monadWriter() {
     w.execWriter()                                      // ["start", "added 1", "doubled"]
     w.runWriter()                                       // (12, ["start", "added 1", "doubled"])
 
-    // bind (curried) + operators
+    // bind (curried static)
     let step: (Int) -> Writer<[String], Int> = { n in Writer(n * 2, ["×2 → \(n * 2)"]) }
+    Writer<[String], Int>.bind(step)(Writer(3, ["start"])).runWriter()   // (6, ["start", "×2 → 6"])
+
+    // Operators
     (Writer(3, ["start"]) >>- step).runWriter()         // (6, ["start", "×2 → 6"])
     (step -<< Writer(3, ["start"])).runWriter()         // (6, ["start", "×2 → 6"])
 
@@ -208,10 +244,14 @@ func monadWriter() {
     // Kleisli
     let log:    (Int) -> Writer<[String], Int> = { n in Writer(n, ["saw \(n)"]) }
     let double: (Int) -> Writer<[String], Int> = { n in Writer(n * 2, ["×2 → \(n * 2)"]) }
-    let pipeline  = log >=> double
-    let pipelineR = double <=< log                      // right-to-left, same result
-    pipeline(5).runWriter()                             // (10, ["saw 5", "×2 → 10"])
-    pipelineR(5).runWriter()                            // (10, ["saw 5", "×2 → 10"])
+    let pipeline    = Writer<[String], Int>.kleisli(log, double)         // named
+    let pipelineOp  = log >=> double                                    // operator
+    let pipelineR   = Writer<[String], Int>.kleisliBack(double, log)    // named, right-to-left
+    let pipelineROp = double <=< log                                    // operator
+    pipeline(5).runWriter()    // (10, ["saw 5", "×2 → 10"])
+    pipelineOp(5).runWriter()  // (10, ["saw 5", "×2 → 10"])
+    pipelineR(5).runWriter()   // (10, ["saw 5", "×2 → 10"])
+    pipelineROp(5).runWriter() // (10, ["saw 5", "×2 → 10"])
 }
 // learn(monadWriter)
 
@@ -232,10 +272,11 @@ func monadStateful() {
         .flatMap { _ in getState }
     thrice.runStateful(0)                               // (3, 3)
 
-    // bind + operators
+    // bind (curried static)
     let step: (()) -> Stateful<Int, Int> = { _ in getState }
-    (increment >>- step).runStateful(0)                 // (1, 1) — value left
-    (step -<< increment).runStateful(0)                 // (1, 1) — fn left
+    Stateful<Int, Void>.bind(step)(increment).runStateful(0)   // (1, 1) — named
+    (increment >>- step).runStateful(0)                         // (1, 1) — value left
+    (step -<< increment).runStateful(0)                         // (1, 1) — fn left
 
     // join — outer type must wrap the inner Stateful
     let nested = Stateful<Int, Stateful<Int, Int>> { _ in getState }
@@ -244,10 +285,14 @@ func monadStateful() {
     // Kleisli
     let addN: (Int) -> Stateful<Int, Void> = { n in Stateful { s in s += n } }
     let nextStep: (()) -> Stateful<Int, Void> = { _ in addN(5) }
-    let add3then5  = addN >=> nextStep
-    let add3then5R = nextStep <=< addN                  // right-to-left, same result
-    (add3then5(3).flatMap { _ in getState }).runStateful(0)   // (8, 8)
-    (add3then5R(3).flatMap { _ in getState }).runStateful(0)  // (8, 8)
+    let add3then5    = Stateful<Int, Void>.kleisli(addN, nextStep)       // named
+    let add3then5Op  = addN >=> nextStep                                  // operator
+    let add3then5R   = Stateful<Int, Void>.kleisliBack(nextStep, addN)   // named, right-to-left
+    let add3then5ROp = nextStep <=< addN                                  // operator
+    (add3then5(3).flatMap { _ in getState }).runStateful(0)    // (8, 8)
+    (add3then5Op(3).flatMap { _ in getState }).runStateful(0)  // (8, 8)
+    (add3then5R(3).flatMap { _ in getState }).runStateful(0)   // (8, 8)
+    (add3then5ROp(3).flatMap { _ in getState }).runStateful(0) // (8, 8)
 }
 // learn(monadStateful)
 
@@ -258,9 +303,10 @@ func monadDeferredTask() async {
     let fetchUser = { @Sendable (id: Int) in DeferredTask { "User #\(id)" } }
 
     // flatMap — second task depends on first result
-    let pipeline = fetchId.flatMap(fetchUser)
-    let piped    = fetchId >>- fetchUser       // value left
-    let pipedR   = fetchUser -<< fetchId       // fn left
+    let pipeline  = fetchId.flatMap(fetchUser)                    // instance
+    let pipelined = DeferredTask<Int>.flatMap(fetchUser)(fetchId) // static curried
+    let piped     = fetchId >>- fetchUser                         // value left
+    let pipedR    = fetchUser -<< fetchId                         // fn left
 
     // join — outer type must wrap the inner DeferredTask
     let nested = DeferredTask { DeferredTask { "hello" } }
@@ -269,14 +315,17 @@ func monadDeferredTask() async {
     // Kleisli
     let step1: @Sendable (String) -> DeferredTask<Int>    = { s in DeferredTask { s.count } }
     let step2: @Sendable (Int)    -> DeferredTask<String> = { n in DeferredTask { "len: \(n)" } }
-    let chain  = step1 >=> step2
-    let chainR = step2 <=< step1               // right-to-left, same result
+    let chain   = DeferredTask<String>.kleisli(step1, step2)   // named
+    let chainOp = step1 >=> step2                           // operator
+    let chainR  = step2 <=< step1                           // right-to-left operator
 
     await pipeline.run()          // "User #42"
+    await pipelined.run()         // "User #42"
     await piped.run()             // "User #42"
     await pipedR.run()            // "User #42"
     await flat.run()              // "hello"
     await chain("hello").run()    // "len: 5"
+    await chainOp("hello").run()  // "len: 5"
     await chainR("hello").run()   // "len: 5"
 }
 // learn(monadDeferredTask)
@@ -298,12 +347,13 @@ func monadDeferredStream() async {
         }
     }
 
-    // bind + operators
+    // static flatMap (curried)
     let expand: @Sendable (Int) -> DeferredStream<Int> = { n in
         DeferredStream { AsyncStream { c in c.yield(n); c.yield(-n); c.finish() } }
     }
-    _ = stream >>- expand    // value left
-    _ = expand -<< stream    // fn left
+    _ = DeferredStream<Int>.flatMap(expand)(stream)   // static curried
+    _ = stream >>- expand                              // value left
+    _ = expand -<< stream                              // fn left
 
     // join — outer type must wrap the inner DeferredStream
     let nested = DeferredStream {
@@ -322,8 +372,9 @@ func monadDeferredStream() async {
     let step2: @Sendable (String) -> DeferredStream<String> = { s in
         DeferredStream { AsyncStream { c in c.yield(s.uppercased()); c.finish() } }
     }
-    let pipeline  = step1 >=> step2
-    let pipelineR = step2 <=< step1   // right-to-left, same result
+    let pipeline   = DeferredStream<Int>.kleisli(step1, step2)   // named
+    let pipelineOp = step1 >=> step2                                 // operator
+    let pipelineR  = step2 <=< step1                                 // right-to-left operator
 
     var expandedResult: [Int] = []
     for await v in expanded { expandedResult.append(v) }
@@ -353,29 +404,38 @@ func monadPublisher() async {
 
     // flatMap — second publisher depends on first result (Combine native flatMap)
     let pipeline = pub.flatMap { fetchUser($0) }.eraseToAnyPublisher()
-    // bind (curried) + operators
-    let piped    = (pub >>- fetchUser).eraseToAnyPublisher()   // value left
-    let pipedR   = (fetchUser -<< pub).eraseToAnyPublisher()   // fn left
+
+    // bind (curried static)
+    let bound = AnyPublisher<Int, Never>.bind(fetchUser)(pub).eraseToAnyPublisher()   // named
+
+    // Operators
+    let piped  = (pub >>- fetchUser).eraseToAnyPublisher()   // value left
+    let pipedR = (fetchUser -<< pub).eraseToAnyPublisher()   // fn left
 
     // Kleisli
     let step1: (String) -> AnyPublisher<Int, Never>    = { s in Just(s.count).eraseToAnyPublisher() }
     let step2: (Int)    -> AnyPublisher<String, Never> = { n in Just("len:\(n)").eraseToAnyPublisher() }
-    let chain  = step1 >=> step2   // (String) -> any Publisher<String, Never>
-    let chainR = step2 <=< step1   // right-to-left, same result
+    let chain   = AnyPublisher<Int, Never>.kleisli(step1, step2)   // named
+    let chainOp = step1 >=> step2                                   // operator
+    let chainR  = step2 <=< step1                                   // right-to-left operator
 
-    var r1 = [String](), r2 = [String](), r3 = [String]()
+    var r1 = [String](), r2 = [String](), r3 = [String](), r4 = [String]()
     for await v in pipeline.values { r1.append(v) }
-    for await v in piped.values    { r2.append(v) }
-    for await v in pipedR.values   { r3.append(v) }
+    for await v in bound.values    { r2.append(v) }
+    for await v in piped.values    { r3.append(v) }
+    for await v in pipedR.values   { r4.append(v) }
     r1   // ["User #42"]
     r2   // ["User #42"]
     r3   // ["User #42"]
+    r4   // ["User #42"]
 
-    var r4 = [String](), r5 = [String]()
-    for await v in chain("hello").eraseToAnyPublisher().values  { r4.append(v) }
-    for await v in chainR("hello").eraseToAnyPublisher().values { r5.append(v) }
-    r4   // ["len:5"]
+    var r5 = [String](), r6 = [String](), r7 = [String]()
+    for await v in chain("hello").eraseToAnyPublisher().values   { r5.append(v) }
+    for await v in chainOp("hello").eraseToAnyPublisher().values { r6.append(v) }
+    for await v in chainR("hello").eraseToAnyPublisher().values  { r7.append(v) }
     r5   // ["len:5"]
+    r6   // ["len:5"]
+    r7   // ["len:5"]
 }
 // learn(monadPublisher)
 

@@ -215,6 +215,16 @@ mconcat([1, 2, 3] as [Int.Monoids.Sum]).rawValue           // 6
 Int.Monoids.Product.combine(3, 4)                          // Product(12)
 Int.Monoids.Product.identity                               // Product(1)
 mconcat([2, 3, 4] as [Int.Monoids.Product]).rawValue       // 24
+
+// Minimum — identity is Int.max (any value beats it)
+Int.Monoids.Min.combine(7, 3)                              // Min(3)
+Int.Monoids.Min.identity.rawValue                          // Int.max
+mconcat([5, 1, 9] as [Int.Monoids.Min]).rawValue           // 1
+
+// Maximum — identity is Int.min (any value beats it)
+Int.Monoids.Max.combine(7, 3)                              // Max(7)
+Int.Monoids.Max.identity.rawValue                          // Int.min
+mconcat([5, 1, 9] as [Int.Monoids.Max]).rawValue           // 9
 ```
 
 The same pattern applies to `UInt`, `Float`, `Double`, `CGFloat`, and all other numeric types. Float literals work too:
@@ -222,6 +232,8 @@ The same pattern applies to `UInt`, `Float`, `Double`, `CGFloat`, and all other 
 ```swift
 Double.Monoids.Sum.combine(1.5, 2.5)                       // Sum(4.0)
 mconcat([1.0, 2.5, 0.5] as [Double.Monoids.Sum]).rawValue  // 4.0
+Double.Monoids.Min.combine(2.5, 1.1)                       // Min(1.1)
+Double.Monoids.Max.combine(2.5, 1.1)                       // Max(2.5)
 ```
 
 `Bool` works the same way:
@@ -236,6 +248,12 @@ mconcat([Bool.Monoids.And(true), .init(true), .init(false)]).rawValue  // false
 Bool.Monoids.Or.combine(.init(false), .init(true))    // Or(true)
 Bool.Monoids.Or.identity                              // Or(false)
 mconcat([Bool.Monoids.Or(false), .init(false), .init(true)]).rawValue  // true
+
+// Exclusive disjunction (!=) — identity is false
+Bool.Monoids.Xor.combine(.init(true), .init(false))   // Xor(true)
+Bool.Monoids.Xor.combine(.init(true), .init(true))    // Xor(false)
+Bool.Monoids.Xor.identity                             // Xor(false)
+mconcat([Bool.Monoids.Xor(true), .init(false), .init(true)]).rawValue  // false
 ```
 
 An empty tray of lasagna would be the identity element — making lasagna a monoid too.

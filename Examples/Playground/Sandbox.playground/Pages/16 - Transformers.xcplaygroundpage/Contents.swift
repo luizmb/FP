@@ -40,8 +40,8 @@ func optionalTArray() {
 
     // liftA2T — cartesian product through Optional
     let opt2: [Int]? = .some([10, 20])
-    Optional<[Int]>.liftA2T(+)(opt, opt2) as Any    // Optional([11, 21, 12, 22, 13, 23])
-    Optional<[Int]>.liftA2T(+)(none, opt2) as Any   // nil
+    liftA2OptionalArray(+)(opt, opt2) as Any    // Optional([11, 21, 12, 22, 13, 23])
+    liftA2OptionalArray(+)(none, opt2) as Any   // nil
 }
 // learn(optionalTArray)
 
@@ -80,9 +80,9 @@ func eitherTArray() {
     right <&^> { $0 * 2 }                 // right([2, 4, 6])
 
     // flatMapT
-    right.flatMapT { n -> Either<String, [Int]> in .right([n, n * 10]) }
+    flatMapTEitherArray(right) { n -> Either<String, [Int]> in .right([n, n * 10]) }
     // right([1, 10, 2, 20, 3, 30])
-    right.flatMapT { n -> Either<String, [Int]> in n > 1 ? .right([n]) : .left("too small") }
+    flatMapTEitherArray(right) { n -> Either<String, [Int]> in n > 1 ? .right([n]) : .left("too small") }
     // left("too small") — first element triggered the left
 }
 // learn(eitherTArray)
@@ -94,15 +94,15 @@ func deferredTaskTEither() async {
     let taskLeft:  DeferredTask<Either<String, Int>> = DeferredTask { .left("not found") }
 
     // mapT — transform the success value inside the async Either
-    let mapped = taskRight.mapT { $0 * 2 }                   // still lazy
+    let mapped = mapTDeferredTaskEither({ $0 * 2 }, taskRight)   // named free function, still lazy
     let withOp = { $0 * 2 } <£^> taskRight
 
-    await mapped.run()                              // right(84)
-    await withOp.run()                              // right(84)
-    await taskLeft.mapT { $0 * 2 }.run()           // left("not found")
+    await mapped.run()                                           // right(84)
+    await withOp.run()                                           // right(84)
+    await mapTDeferredTaskEither({ $0 * 2 }, taskLeft).run()     // left("not found")
 
     // flatMapT — chain async-failable steps
-    let chained = taskRight.flatMapT { n in
+    let chained = flatMapTDeferredTaskEither(taskRight) { n in
         DeferredTask { n > 0 ? Either<String, Int>.right(n + 1) : .left("non-positive") }
     }
 

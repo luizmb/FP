@@ -26,12 +26,16 @@ func writerFunctor() {
     let w = Writer(5, ["got 5"])
 
     let doubled  = w.fmap { $0 * 2 }
-    let withOp   = { $0 * 2 } <£> w
-    let replaced = w £> "done"
+    let withOp1  = { $0 * 2 } <£> w        // fn left
+    let withOp2  = w <&> { $0 * 2 }        // value left
+    let replaced = w £> "done"              // replace (container left)
+    let replacedF = "done" <£ w             // replace (value left, flipped)
 
     doubled.runWriter()    // (10, ["got 5"]) — log unchanged
-    withOp.runWriter()     // (10, ["got 5"])
+    withOp1.runWriter()    // (10, ["got 5"])
+    withOp2.runWriter()    // (10, ["got 5"])
     replaced.runWriter()   // ("done", ["got 5"])
+    replacedF.runWriter()  // ("done", ["got 5"])
 }
 // learn(writerFunctor)
 
@@ -70,16 +74,61 @@ func writerMonad() {
     pipeline.execWriter()
     // ["start", "added 1 → 6", "doubled → 12", "minus 3 → 9"]
 
-    // bind (curried) + operator
+    // bind (curried static) + operators
     let step: (Int) -> Writer<[String], Int> = { n in Writer(n * 2, ["×2 → \(n * 2)"]) }
-    (Writer(3, ["init"]) >>- step).runWriter()   // (6, ["init", "×2 → 6"])
+    Writer<[String], Int>.bind(step)(Writer(3, ["init"])).runWriter()   // (6, ["init", "×2 → 6"])
+    (Writer(3, ["init"]) >>- step).runWriter()                          // (6, ["init", "×2 → 6"])
+    (step -<< Writer(3, ["init"])).runWriter()                          // (6, ["init", "×2 → 6"])
 
     // Kleisli
     let step1: (Int) -> Writer<[String], Int> = { n in Writer(n + 1, ["inc"]) }
     let step2: (Int) -> Writer<[String], Int> = { n in Writer(n * 3, ["×3"]) }
-    (step1 >=> step2)(4).runWriter()             // (15, ["inc", "×3"])
+    let chain   = Writer<[String], Int>.kleisli(step1, step2)    // named
+    let chainOp = step1 >=> step2                                // operator
+    let chainR   = Writer<[String], Int>.kleisliBack(step2, step1)   // named, right-to-left
+    let chainROp = step2 <=< step1                               // operator
+    chain(4).runWriter()    // (15, ["inc", "×3"])
+    chainOp(4).runWriter()  // (15, ["inc", "×3"])
+    chainR(4).runWriter()   // (15, ["inc", "×3"])
+    chainROp(4).runWriter() // (15, ["inc", "×3"])
 }
 // learn(writerMonad)
+
+// MARK: - Comonad
+
+func writerComonad() {
+    let w = Writer(5, ["got 5"])
+
+    // extract :: Writer w a -> a
+    w.extract                                 // 5
+
+    // extend :: (Writer w a -> b) -> Writer w a -> Writer w b
+    // Applies f to the whole writer context, preserving the original log
+    let doubled = w.extend { writer in writer.extract * 2 }
+    doubled.runWriter()                       // (10, ["got 5"])
+
+    // Named static form
+    let tripled = Writer<[String], Int>.extend { writer in writer.extract * 3 }(w)
+    tripled.runWriter()                       // (15, ["got 5"])
+
+    // coflatMap — same as extend (value-first argument order)
+    let described = w.coflatMap { writer in "value: \(writer.extract)" }
+    described.runWriter()                     // ("value: 5", ["got 5"])
+
+    // duplicate :: Writer w a -> Writer w (Writer w a)
+    let dup = w.duplicate
+    dup.runWriter()                           // (Writer(5, ["got 5"]), ["got 5"])
+    dup.extract.runWriter()                   // (5, ["got 5"])
+
+    // ->> operator (infixl 1) — w ->> f  =  extend f w
+    let withOp = w ->> { writer in writer.extract + 10 }
+    withOp.runWriter()                        // (15, ["got 5"])
+
+    // <<- operator (infixr 1) — f <<- w  =  extend f w
+    let withOpR = { (writer: Writer<[String], Int>) in writer.extract - 1 } <<- w
+    withOpR.runWriter()                       // (4, ["got 5"])
+}
+// learn(writerComonad)
 
 // MARK: - Practical: audit log
 
