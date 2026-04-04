@@ -136,6 +136,8 @@ func monoidBool() {
 // MARK: - Optional (Semigroup lifts into Optional)
 
 func monoidOptional() {
+    // Optional<A> is a Semigroup/Monoid when A is — same semantics as Haskell's Maybe.
+    // Both present → combine wrapped values; one nil → keep the present side; both nil → nil.
     let a: String? = .some("hello")
     let b: String? = .some(" world")
     let none: String? = .none
@@ -143,10 +145,68 @@ func monoidOptional() {
     Optional<String>.combine(a, b)                    // Optional("hello world")
     Optional<String>.combine(a, none)                 // Optional("hello")
     Optional<String>.combine(none, b)                 // Optional(" world")
+    Optional<String>.combine(none, none)              // nil
+    Optional<String>.identity                         // nil
+
     a <> b                                            // Optional("hello world")
     a <> none                                         // Optional("hello")
+    mconcat([a, none, b])                             // Optional("hello world")
+    mconcat([none, none] as [String?])                // nil — identity
 }
 // learn(monoidOptional)
+
+// MARK: - Result (multiple Monoid strategies)
+
+func monoidResult() {
+    // Result has no single canonical Monoid — Haskell's Either faces the same problem.
+    // Four newtype wrappers in Result.Monoids let you name your intent explicitly.
+    typealias R = Result<String, String>
+
+    // Optimistic — success wins; failures fall through; two failures keep the left.
+    // Failure need not be Semigroup.
+    let ok1 = R.Monoids.Optimistic(.success("hello"))
+    let ok2 = R.Monoids.Optimistic(.success(" world"))
+    let err = R.Monoids.Optimistic(.failure("oops"))
+    ok1 <> ok2                                        // .success("hello world")
+    ok1 <> err                                        // .success("hello")
+    err <> ok1                                        // .success("hello")
+    err <> err                                        // .failure("oops") — left wins
+
+    // OptimisticCombining — success wins; both sides combine when matching.
+    // Monoid: identity is .failure(Failure.identity)
+    let c1 = R.Monoids.OptimisticCombining(.success("hello"))
+    let c2 = R.Monoids.OptimisticCombining(.success(" world"))
+    let e1 = R.Monoids.OptimisticCombining(.failure("bad"))
+    let e2 = R.Monoids.OptimisticCombining(.failure(" stuff"))
+    c1 <> c2                                          // .success("hello world")
+    c1 <> e1                                          // .success("hello")
+    e1 <> e2                                          // .failure("bad stuff")
+    R.Monoids.OptimisticCombining.identity            // .failure("") — Failure.identity
+    mconcat([c1, e1, c2])                             // .success("hello world")
+
+    // Pessimistic — failure wins; successes fall through; two successes keep the left.
+    // Success need not be Semigroup.
+    let p1 = R.Monoids.Pessimistic(.failure("bad"))
+    let p2 = R.Monoids.Pessimistic(.failure(" stuff"))
+    let ok = R.Monoids.Pessimistic(.success("hello"))
+    p1 <> p2                                          // .failure("bad stuff")
+    p1 <> ok                                          // .failure("bad")
+    ok <> p1                                          // .failure("bad")
+    ok <> ok                                          // .success("hello") — left wins
+
+    // PessimisticCombining — failure wins; both sides combine when matching.
+    // Monoid: identity is .success(Success.identity)
+    let d1 = R.Monoids.PessimisticCombining(.failure("bad"))
+    let d2 = R.Monoids.PessimisticCombining(.failure(" stuff"))
+    let s1 = R.Monoids.PessimisticCombining(.success("hello"))
+    let s2 = R.Monoids.PessimisticCombining(.success(" world"))
+    d1 <> d2                                          // .failure("bad stuff")
+    d1 <> s1                                          // .failure("bad")
+    s1 <> s2                                          // .success("hello world")
+    R.Monoids.PessimisticCombining.identity           // .success("") — Success.identity
+    mconcat([s1, d1, s2])                             // .failure("bad")
+}
+// learn(monoidResult)
 
 // MARK: - Endo (Monoid of endomorphisms)
 
