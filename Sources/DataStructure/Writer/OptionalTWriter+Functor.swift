@@ -7,7 +7,7 @@ import Foundation
 public extension Optional {
     func mapT<W: Monoid, A, B>(_ fn: (A) -> B) -> Writer<W, B>?
     where Wrapped == Writer<W, A> {
-        map { writer in writer.fmap(fn) }
+        map { writer in writer.map(fn) }
     }
 
     static func fmapT<W: Monoid, A, B>(_ fn: @escaping (A) -> B) -> (Writer<W, A>?) -> Writer<W, B>? {

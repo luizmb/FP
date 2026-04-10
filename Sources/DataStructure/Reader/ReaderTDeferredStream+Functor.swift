@@ -8,7 +8,7 @@ public extension Reader {
         _ fn: @escaping @Sendable (A) -> B
     ) -> Reader<Environment, DeferredStream<B>>
     where Output == DeferredStream<A> {
-        mapReader { stream in stream.fmap(fn) }
+        mapReader { stream in stream.map(fn) }
     }
 
     static func fmapT<A: Sendable, B: Sendable>(

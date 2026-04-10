@@ -6,7 +6,7 @@ import Foundation
 public extension Reader {
     func mapT<S, A, B>(_ fn: @escaping (A) -> B) -> Reader<Environment, Stateful<S, B>>
     where Output == Stateful<S, A> {
-        mapReader { stateful in stateful.fmap(fn) }
+        mapReader { stateful in stateful.map(fn) }
     }
 
     static func fmapT<S, A, B>(

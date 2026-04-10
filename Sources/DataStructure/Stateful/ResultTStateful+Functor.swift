@@ -6,7 +6,7 @@ import Foundation
 public extension Result {
     func mapT<S, A, B>(_ fn: @escaping (A) -> B) -> Result<Stateful<S, B>, Failure>
     where Success == Stateful<S, A> {
-        map { stateful in stateful.fmap(fn) }
+        map { stateful in stateful.map(fn) }
     }
 
     static func fmapT<S, A, B>(_ fn: @escaping (A) -> B) -> (Result<Stateful<S, A>, Failure>) -> Result<Stateful<S, B>, Failure> {

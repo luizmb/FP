@@ -9,7 +9,7 @@ public extension Writer {
         _ fn: @escaping @Sendable (Inner) -> B
     ) -> Writer<W, AsyncMapSequence<AsyncStream<Inner>, B>>
     where A == AsyncStream<Inner> {
-        mapWriter { stream in stream.fmap(fn) }
+        mapWriter { stream in stream.map(fn) }
     }
 
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)

@@ -6,7 +6,7 @@ import Foundation
 public extension Either {
     func mapT<S, Inner, C>(_ fn: @escaping (Inner) -> C) -> Either<A, Stateful<S, C>>
     where B == Stateful<S, Inner> {
-        mapRight { stateful in stateful.fmap(fn) }
+        mapRight { stateful in stateful.map(fn) }
     }
 
     static func fmapT<S, Inner, C>(

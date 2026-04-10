@@ -8,7 +8,7 @@ public func <£> <Env, A, B>(
     _ transform: @escaping (A) -> B,
     _ reader: Reader<Env, A>
 ) -> Reader<Env, B> {
-    reader.fmap(transform)
+    reader.map(transform)
 }
 
 // ($>) :: f a -> b -> f b
@@ -16,7 +16,7 @@ public func £> <Env, A, B>(
     _ reader: Reader<Env, A>,
     _ value: B
 ) -> Reader<Env, B> {
-    reader.fmap(const(value))
+    reader.map(const(value))
 }
 
 // (<$) :: b -> f a -> f b

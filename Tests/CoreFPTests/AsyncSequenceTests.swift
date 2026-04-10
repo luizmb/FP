@@ -11,7 +11,7 @@ import Testing
             continuation.finish()
         }
 
-        let doubled = sequence.fmap { $0 * 2 }
+        let doubled = sequence.map { $0 * 2 }
 
         var results: [Int] = []
         for try await value in doubled {

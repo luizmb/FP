@@ -7,7 +7,7 @@ import Foundation
 public extension Result {
     func mapT<W: Monoid, A, B>(_ fn: (A) -> B) -> Result<Writer<W, B>, Failure>
     where Success == Writer<W, A> {
-        map { writer in writer.fmap(fn) }
+        map { writer in writer.map(fn) }
     }
 
     static func fmapT<W: Monoid, A, B>(

@@ -8,7 +8,7 @@ public extension Stateful {
         _ fn: @escaping @Sendable (Inner) -> B
     ) -> Stateful<S, DeferredStream<B>>
     where A == DeferredStream<Inner> {
-        mapStateful { stream in stream.fmap(fn) }
+        mapStateful { stream in stream.map(fn) }
     }
 
     static func fmapT<Inner: Sendable, B: Sendable>(

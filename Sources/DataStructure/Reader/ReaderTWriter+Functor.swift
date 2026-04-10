@@ -7,7 +7,7 @@ import Foundation
 public extension Reader {
     func mapT<W: Monoid, A, B>(_ fn: @escaping (A) -> B) -> Reader<Environment, Writer<W, B>>
     where Output == Writer<W, A> {
-        mapReader { writer in writer.fmap(fn) }
+        mapReader { writer in writer.map(fn) }
     }
 
     static func fmapT<W: Monoid, A, B>(

@@ -7,7 +7,7 @@ public func mapTDeferredStreamEither<L: Sendable, A: Sendable, B: Sendable>(
     _ fn: @escaping @Sendable (A) -> B,
     _ stream: DeferredStream<Either<L, A>>
 ) -> DeferredStream<Either<L, B>> {
-    stream.fmap { either in either.mapRight(fn) }
+    stream.map { either in either.mapRight(fn) }
 }
 
 public func fmapTDeferredStreamEither<L: Sendable, A: Sendable, B: Sendable>(

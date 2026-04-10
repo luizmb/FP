@@ -7,7 +7,7 @@ import Foundation
 public extension Either {
     func mapT<W: Monoid, Inner, C>(_ fn: @escaping (Inner) -> C) -> Either<A, Writer<W, C>>
     where B == Writer<W, Inner> {
-        mapRight { writer in writer.fmap(fn) }
+        mapRight { writer in writer.map(fn) }
     }
 
     static func fmapT<W: Monoid, Inner, C>(

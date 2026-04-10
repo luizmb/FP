@@ -10,7 +10,7 @@ import Foundation
 public extension Publisher {
     func mapT<W: Monoid, A, B>(_ fn: @escaping (A) -> B) -> AnyPublisher<Writer<W, B>, Failure>
     where Output == Writer<W, A> {
-        map { writer in writer.fmap(fn) }.eraseToAnyPublisher()
+        map { writer in writer.map(fn) }.eraseToAnyPublisher()
     }
 
     static func fmapT<W: Monoid, A, B>(

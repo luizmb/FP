@@ -18,7 +18,7 @@ public extension DeferredTask {
 
     // void :: DeferredTask a -> DeferredTask ()
     func void() -> DeferredTask<Void> {
-        fmap(ignore)
+        map(ignore)
     }
 
     // kleisli :: (a -> DeferredTask b) -> (b -> DeferredTask c) -> (a -> DeferredTask c)

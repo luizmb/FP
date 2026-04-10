@@ -5,7 +5,7 @@ public extension Writer {
         Writer<W, B>(fn(value), log)
     }
 
-    func fmap<B>(_ fn: (A) -> B) -> Writer<W, B> {
+    func map<B>(_ fn: (A) -> B) -> Writer<W, B> {
         mapWriter(fn)
     }
 

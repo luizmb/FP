@@ -7,7 +7,7 @@ import Foundation
 public extension AsyncStream {
     func mapT<S, A, B>(_ fn: @escaping @Sendable (A) -> B) -> AsyncMapSequence<AsyncStream<Stateful<S, A>>, Stateful<S, B>>
     where Element == Stateful<S, A> {
-        map { stateful in stateful.fmap(fn) }
+        map { stateful in stateful.map(fn) }
     }
 
     static func fmapT<S, A, B>(

@@ -7,7 +7,7 @@ public func mapTDeferredTaskValidation<E: Semigroup & Sendable, A: Sendable, B: 
     _ fn: @escaping @Sendable (A) -> B,
     _ task: DeferredTask<Validation<E, A>>
 ) -> DeferredTask<Validation<E, B>> {
-    task.fmap { v in v.mapSuccess(fn) }
+    task.map { v in v.mapSuccess(fn) }
 }
 
 public func fmapTDeferredTaskValidation<E: Semigroup & Sendable, A: Sendable, B: Sendable>(

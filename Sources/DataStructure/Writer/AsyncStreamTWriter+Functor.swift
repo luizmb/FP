@@ -8,7 +8,7 @@ import Foundation
 public extension AsyncStream {
     func mapT<W: Monoid, A, B>(_ fn: @escaping @Sendable (A) -> B) -> AsyncMapSequence<AsyncStream<Writer<W, A>>, Writer<W, B>>
     where Element == Writer<W, A> {
-        map { writer in writer.fmap(fn) }
+        map { writer in writer.map(fn) }
     }
 
     static func fmapT<W: Monoid, A, B>(

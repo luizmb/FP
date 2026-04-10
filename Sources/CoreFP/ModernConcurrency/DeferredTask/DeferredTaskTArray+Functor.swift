@@ -5,7 +5,7 @@ public func mapTDeferredTaskArray<A: Sendable, B: Sendable>(
     _ fn: @escaping @Sendable (A) -> B,
     _ task: DeferredTask<[A]>
 ) -> DeferredTask<[B]> {
-    task.fmap { arr in arr.map(fn) }
+    task.map { arr in arr.map(fn) }
 }
 
 public func fmapTDeferredTaskArray<A: Sendable, B: Sendable>(

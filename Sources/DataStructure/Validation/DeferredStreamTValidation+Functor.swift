@@ -7,7 +7,7 @@ public func mapTDeferredStreamValidation<E: Semigroup & Sendable, A: Sendable, B
     _ fn: @escaping @Sendable (A) -> B,
     _ stream: DeferredStream<Validation<E, A>>
 ) -> DeferredStream<Validation<E, B>> {
-    stream.fmap { v in v.mapSuccess(fn) }
+    stream.map { v in v.mapSuccess(fn) }
 }
 
 public func fmapTDeferredStreamValidation<E: Semigroup & Sendable, A: Sendable, B: Sendable>(

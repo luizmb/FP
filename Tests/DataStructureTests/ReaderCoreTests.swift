@@ -35,7 +35,7 @@ import Testing
             env.multiplier
         }
 
-        let mapped = reader.fmap { $0 * 2 }
+        let mapped = reader.map { $0 * 2 }
 
         let env = Environment(multiplier: 5, offset: 3)
         #expect(mapped(env) == 10)

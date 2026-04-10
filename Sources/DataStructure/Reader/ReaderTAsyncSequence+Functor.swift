@@ -7,7 +7,7 @@ public extension Reader {
     func mapT<A, B>(_ fn: @escaping @Sendable (A) -> B) -> Reader<Environment, AsyncMapSequence<AsyncStream<A>, B>>
     where Output == AsyncStream<A> {
         mapReader { stream in
-            stream.fmap(fn)
+            stream.map(fn)
         }
     }
 

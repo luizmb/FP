@@ -6,7 +6,7 @@ import Foundation
 public extension Optional {
     func mapT<S, A, B>(_ fn: @escaping (A) -> B) -> Stateful<S, B>?
     where Wrapped == Stateful<S, A> {
-        map { stateful in stateful.fmap(fn) }
+        map { stateful in stateful.map(fn) }
     }
 
     static func fmapT<S, A, B>(_ fn: @escaping (A) -> B) -> (Stateful<S, A>?) -> Stateful<S, B>? {

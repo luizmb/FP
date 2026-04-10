@@ -6,7 +6,7 @@ public func mapTDeferredStreamOptional<A: Sendable, B: Sendable>(
     _ fn: @escaping @Sendable (A) -> B,
     _ stream: DeferredStream<A?>
 ) -> DeferredStream<B?> {
-    stream.fmap { optA in optA.map(fn) }
+    stream.map { optA in optA.map(fn) }
 }
 
 public func fmapTDeferredStreamOptional<A: Sendable, B: Sendable>(

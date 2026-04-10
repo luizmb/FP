@@ -5,7 +5,7 @@ public func mapTDeferredStreamResult<A: Sendable, B: Sendable, E: Error & Sendab
     _ fn: @escaping @Sendable (A) -> B,
     _ stream: DeferredStream<Result<A, E>>
 ) -> DeferredStream<Result<B, E>> {
-    stream.fmap { result in result.map(fn) }
+    stream.map { result in result.map(fn) }
 }
 
 public func fmapTDeferredStreamResult<A: Sendable, B: Sendable, E: Error & Sendable>(

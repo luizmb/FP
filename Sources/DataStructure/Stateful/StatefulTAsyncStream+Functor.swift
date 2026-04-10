@@ -9,7 +9,7 @@ public extension Stateful {
         _ fn: @escaping @Sendable (Inner) -> B
     ) -> Stateful<S, AsyncMapSequence<AsyncStream<Inner>, B>>
     where A == AsyncStream<Inner> {
-        mapStateful { stream in stream.fmap(fn) }
+        mapStateful { stream in stream.map(fn) }
     }
 
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)

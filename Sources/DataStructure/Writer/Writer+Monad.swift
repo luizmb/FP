@@ -36,6 +36,6 @@ public extension Writer {
     }
 
     func void() -> Writer<W, Void> {
-        fmap(ignore)
+        map(ignore)
     }
 }

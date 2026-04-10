@@ -9,7 +9,7 @@ public func <£> <A, B>(
     _ fn: @escaping (A) -> B,
     _ ne: NonEmpty<A>
 ) -> NonEmpty<B> {
-    ne.fmap(fn)
+    ne.map(fn)
 }
 
 // ($>) :: NonEmpty<A> -> B -> NonEmpty<B>
@@ -17,7 +17,7 @@ public func £> <A, B>(
     _ ne: NonEmpty<A>,
     _ value: B
 ) -> NonEmpty<B> {
-    ne.fmap(const(value))
+    ne.map(const(value))
 }
 
 // (<$) :: B -> NonEmpty<A> -> NonEmpty<B>
@@ -33,5 +33,5 @@ public func <&> <A, B>(
     _ ne: NonEmpty<A>,
     _ fn: @escaping (A) -> B
 ) -> NonEmpty<B> {
-    ne.fmap(fn)
+    ne.map(fn)
 }

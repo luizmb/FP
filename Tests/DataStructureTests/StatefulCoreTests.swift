@@ -79,7 +79,7 @@ import Testing
 
     @Test func fmap() {
         let s = Stateful<Int, Int>.get
-        let mapped = s.fmap { $0 * 2 }
+        let mapped = s.map { $0 * 2 }
         #expect(mapped.eval(5) == 10)
     }
 

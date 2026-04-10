@@ -36,6 +36,6 @@ public extension Stateful {
     }
 
     func void() -> Stateful<S, Void> {
-        fmap(ignore)
+        map(ignore)
     }
 }

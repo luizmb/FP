@@ -19,7 +19,7 @@ private enum TestError: Error, Equatable { case err }
 
     @Test func fmap() async {
         let task = DeferredTask<Int> { 5 }
-        let result = await task.fmap { $0 * 2 }.run()
+        let result = await task.map { $0 * 2 }.run()
         #expect(result == 10)
     }
 

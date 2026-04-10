@@ -8,7 +8,7 @@ public func <£> <S, A, B>(
     _ transform: @escaping (A) -> B,
     _ stateful: Stateful<S, A>
 ) -> Stateful<S, B> {
-    stateful.fmap(transform)
+    stateful.map(transform)
 }
 
 // ($>) :: Stateful<s, a> -> b -> Stateful<s, b>
@@ -16,7 +16,7 @@ public func £> <S, A, B>(
     _ stateful: Stateful<S, A>,
     _ value: B
 ) -> Stateful<S, B> {
-    stateful.fmap(const(value))
+    stateful.map(const(value))
 }
 
 // (<$) :: b -> Stateful<s, a> -> Stateful<s, b>

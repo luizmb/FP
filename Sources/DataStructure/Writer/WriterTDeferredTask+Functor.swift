@@ -8,7 +8,7 @@ public extension Writer {
         _ fn: @escaping @Sendable (Inner) -> B
     ) -> Writer<W, DeferredTask<B>>
     where A == DeferredTask<Inner> {
-        Writer<W, DeferredTask<B>>(value.fmap(fn), log)
+        Writer<W, DeferredTask<B>>(value.map(fn), log)
     }
 
     static func fmapT<Inner: Sendable, B: Sendable>(

@@ -48,7 +48,7 @@ public extension DeferredStream {
 
     // void :: DeferredStream a -> DeferredStream ()
     func void() -> DeferredStream<Void> {
-        fmap(ignore)
+        map(ignore)
     }
 
     // kleisli :: (a -> DeferredStream b) -> (b -> DeferredStream c) -> (a -> DeferredStream c)

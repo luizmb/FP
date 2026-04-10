@@ -14,7 +14,7 @@ import Testing
 
     @Test func fmap() {
         let reader = Reader<Environment, Int> { env in env.multiplier }
-        let doubled = reader.fmap { $0 * 2 }
+        let doubled = reader.map { $0 * 2 }
 
         let env = Environment(multiplier: 5, addend: 3)
         #expect(doubled(env) == 10)
@@ -129,7 +129,7 @@ import Testing
     @Test func functorIdentityLaw() {
         // fmap id == id
         let reader = Reader<Environment, Int> { env in env.multiplier }
-        let mapped = reader.fmap(id)
+        let mapped = reader.map(id)
 
         let env = Environment(multiplier: 5, addend: 3)
         #expect(reader(env) == mapped(env))
@@ -142,8 +142,8 @@ import Testing
         let f: (Int) -> Int = { $0 * 2 }
         let g: (Int) -> String = { "\($0)" }
 
-        let composed = reader.fmap(compose(f, g))
-        let separate = reader.fmap(f).fmap(g)
+        let composed = reader.map(compose(f, g))
+        let separate = reader.map(f).map(g)
 
         let env = Environment(multiplier: 5, addend: 3)
         #expect(composed(env) == separate(env))

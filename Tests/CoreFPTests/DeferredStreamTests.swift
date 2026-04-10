@@ -29,7 +29,7 @@ private enum TestError: Error, Equatable { case err }
             AsyncStream<Int> { c in c.yield(1); c.yield(2); c.yield(3); c.finish() }
         }
         var results: [Int] = []
-        for await v in stream.fmap({ $0 * 2 }) { results.append(v) }
+        for await v in stream.map({ $0 * 2 }) { results.append(v) }
         #expect(results == [2, 4, 6])
     }
 

@@ -9,7 +9,7 @@ import Foundation
 public extension Publisher {
     func mapT<S, A, B>(_ fn: @escaping (A) -> B) -> AnyPublisher<Stateful<S, B>, Failure>
     where Output == Stateful<S, A> {
-        map { stateful in stateful.fmap(fn) }.eraseToAnyPublisher()
+        map { stateful in stateful.map(fn) }.eraseToAnyPublisher()
     }
 
     static func fmapT<S, A, B>(

@@ -79,7 +79,7 @@ import Testing
 
     @Test func fmap() {
         let w = Writer<[String], Int>(5, ["entry"])
-        let mapped = w.fmap { $0 * 2 }
+        let mapped = w.map { $0 * 2 }
         #expect(mapped.value == 10)
         #expect(mapped.log == ["entry"])
     }

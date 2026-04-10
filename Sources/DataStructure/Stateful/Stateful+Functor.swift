@@ -5,7 +5,7 @@ public extension Stateful {
         Stateful<S, B> { s in fn(self.run(&s)) }
     }
 
-    func fmap<B>(_ fn: @escaping (A) -> B) -> Stateful<S, B> {
+    func map<B>(_ fn: @escaping (A) -> B) -> Stateful<S, B> {
         mapStateful(fn)
     }
 

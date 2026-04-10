@@ -134,8 +134,8 @@ private enum TestError: Error, Equatable { case bad(String) }
         #expect(three.map { $0 * 10 }.toArray == [10, 20, 30])
     }
 
-    @Test func fmap_instance() {
-        #expect(three.fmap { $0 + 1 }.toArray == [2, 3, 4])
+    @Test func map_instance() {
+        #expect(three.map { $0 + 1 }.toArray == [2, 3, 4])
     }
 
     @Test func fmap_static() {
@@ -143,21 +143,21 @@ private enum TestError: Error, Equatable { case bad(String) }
         #expect(double(three).toArray == [2, 4, 6])
     }
 
-    @Test func fmap_preservesHead() {
-        let ne = three.fmap { $0 * 0 }
+    @Test func map_preservesHead() {
+        let ne = three.map { $0 * 0 }
         #expect(ne.head == 0)
     }
 
     // MARK: - Functor laws
 
     @Test func functorLaw_identity() {
-        #expect(three.fmap(id) == three)
+        #expect(three.map(id) == three)
     }
 
     @Test func functorLaw_composition() {
         let f: (Int) -> Int = { $0 + 1 }
         let g: (Int) -> Int = { $0 * 2 }
-        #expect(three.fmap(compose(f, g)) == three.fmap(f).fmap(g))
+        #expect(three.map(compose(f, g)) == three.map(f).map(g))
     }
 
     // MARK: - Applicative

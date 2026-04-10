@@ -66,7 +66,7 @@ import Testing
     // Comonad law: fmap extract . duplicate == id
     @Test func writerComonadLawFmapExtractDuplicate() {
         let w = Writer<String, Int>(5, "law")
-        let result = w.duplicate.fmap { extract($0) }
+        let result = w.duplicate.map { extract($0) }
         #expect(result == w)
     }
 
