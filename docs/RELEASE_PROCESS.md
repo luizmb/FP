@@ -129,34 +129,69 @@ This generates:
 
 ### XCFramework Building Process
 
-The release workflow uses `xcodebuild build-for-xcframework` to create XCFrameworks for SPM packages. This is the modern, recommended approach that:
+Since this is a Swift Package Manager (SPM) library, the release workflow builds XCFrameworks using the Swift toolchain:
 
-1. **Builds for multiple platforms simultaneously** with a single command
-2. **Handles architecture selection** (arm64, x86_64, etc.) correctly
-3. **Packages frameworks properly** for XCFramework format
-4. **Supports all Apple platforms**: macOS, iOS, tvOS, watchOS (device + simulator)
+1. **Build Swift libraries** with `swift build -c release` for each target
+2. **Extract Swift modules** (.swiftmodule, .swiftdoc, .abi.json, .swiftsourceinfo) from `.build/release/Modules/`
+3. **Package modules into XCFramework structure** with proper Info.plist metadata
+4. **Archive as .zip** for GitHub release distribution
 
-Each framework build includes:
-- **macOS**: arm64 + x86_64
-- **iOS**: arm64e (device)
-- **iOS Simulator**: arm64 + x86_64
-- **tvOS**: arm64e (device)
-- **tvOS Simulator**: arm64 + x86_64
-- **watchOS**: arm64e (device)
-- **watchOS Simulator**: arm64 + x86_64
+This approach provides:
+- ✅ Source-based distribution (modules are source/interface metadata, not binaries)
+- ✅ Full type safety and IDE support in consuming projects
+- ✅ Support for all platforms through Swift's cross-platform support
+- ✅ Smaller distribution size than traditional binary frameworks
+- ✅ Easier debugging with source information included
 
-### Why `build-for-xcframework` Instead of `xcodebuild build`?
+### XCFramework Structure
 
-The older approach using `xcodebuild build` with `-derivedDataPath` doesn't work reliably for SPM packages because:
+Each XCFramework contains:
 
-1. SPM library targets don't automatically produce `.framework` bundles
-2. The framework output location is not guaranteed
-3. Collecting frameworks from multiple separate builds is error-prone
+```
+FrameworkName.xcframework/
+├── Info.plist              # Framework metadata (platform/architecture info)
+├── FrameworkName.swiftmodule    # Compiled Swift module interface
+├── FrameworkName.swiftdoc       # Swift documentation 
+├── FrameworkName.abi.json       # ABI stability information
+└── FrameworkName.swiftsourceinfo # Source location information
+```
 
-`build-for-xcframework` is specifically designed to:
-- Create proper frameworks from SPM targets
-- Handle all destination variations in one command
-- Output a complete, ready-to-use XCFramework
+These files enable Xcode and Swift tooling to:
+- Provide IDE code completion and navigation
+- Enable linking against the library
+- Preserve source-based debugging information
+- Validate ABI compatibility
+
+### Why This Approach vs. Binary Frameworks?
+
+For an open-source Swift library, module-based XCFrameworks are preferred because:
+
+1. **Source-based distribution** maintains compatibility across Swift versions
+2. **No architecture limitations** - users on new Apple Silicon variants aren't blocked
+3. **Smaller distribution** - modules are ~500KB vs. multi-MB binary frameworks
+4. **Better debugging** - source information is included without a separate dSYM download
+5. **Simpler build process** - no need for cross-compilation tooling
+
+### Recommended Usage
+
+While XCFrameworks are provided, **the recommended way to use FP is still via Swift Package Manager**:
+
+```swift
+// In Package.swift
+.package(url: "https://github.com/luizmb/FP.git", from: "1.0.0")
+```
+
+This provides:
+- Latest updates automatically
+- No build artifacts in your repository
+- Better dependency resolution
+- Source-level debugging
+
+Use XCFrameworks only if you have specific requirements for binary distribution.
+
+### Why `build-for-xcframework` Doesn't Exist
+
+Earlier versions of this process attempted to use `xcodebuild build-for-xcframework`, but this command doesn't exist in modern Xcode. The correct approach for SPM packages is to build libraries and package their modules, which this workflow now does.
 
 ### Artifact Storage and Retention
 
@@ -177,41 +212,10 @@ The older approach using `xcodebuild build` with `-derivedDataPath` doesn't work
 
 #### Job 2: Build XCFramework (Matrix)
 - Runs for each framework target in parallel
-- Uses `xcodebuild build-for-xcframework` command
-- Builds for all supported platforms in one pass:
-  - macOS (arm64, x86_64)
-  - iOS device (arm64e)
-  - iOS Simulator (arm64, x86_64)
-  - tvOS device (arm64e)
-  - tvOS Simulator (arm64, x86_64)
-  - watchOS device (arm64e)
-  - watchOS Simulator (arm64, x86_64)
-- Creates single XCFramework with all platform variants
-- Compresses as `.xcframework.zip`
-- Stores artifacts for 90 days
-
-#### Job 3: RC Notification
-- Notifies workflow result (success or failure)
-- On success: displays next steps for promotion
-- On failure: links to failed jobs for debugging
-
-#### Job 4: Promote - Verify Tag
-- Validates tag format (vX.Y.Z)
-- Checks for corresponding RC branch
-- Ensures tag is valid before proceeding
-
-#### Job 5: Promote - Create Release
-- Downloads RC artifacts from 90-day storage
-- Generates release notes from git commit history
-- Creates GitHub release
-- Attaches all XCFramework zips
-- Makes release public
-
-#### Job 6: Promote Notification
-- Confirms release was published successfully
-- Provides link to GitHub Releases page
-- On failure: provides recovery instructions
-
+- Uses `swift build -c release` to build the library
+- Extracts Swift modules from `.build/release/Modules/`
+- Packages modules into XCFramework structure with Info.plist metadata
+- Zips XCFrameworks for distribution
 ## Supported Frameworks
 
 The following frameworks are built and released:
@@ -224,58 +228,7 @@ The following frameworks are built and released:
 | `DataStructure` | Advanced data structures (Either, Reader, etc.) |
 | `DataStructureOperators` | Operator syntax for DataStructure |
 
-## Platform Support
-
-Each XCFramework includes builds for:
-
-| Platform | Architecture | Status |
-|----------|--------------|--------|
-| macOS | arm64, x86_64 | ✅ |
-| iOS | arm64 | ✅ |
-| iOS Simulator | arm64, x86_64 | ✅ |
-| tvOS | arm64 | ✅ |
-| tvOS Simulator | arm64, x86_64 | ✅ |
-| watchOS | arm64 | ✅ |
-| watchOS Simulator | arm64, x86_64 | ✅ |
-
-## Technical Details
-
-### XCFramework Building Process
-
-The release workflow uses `xcodebuild build-for-xcframework` to create XCFrameworks for SPM packages. This is the modern, recommended approach that:
-
-1. **Builds for multiple platforms simultaneously** with a single command
-2. **Handles architecture selection** (arm64, x86_64, etc.) correctly
-3. **Packages frameworks properly** for XCFramework format
-4. **Supports all Apple platforms**: macOS, iOS, tvOS, watchOS (device + simulator)
-
-Each framework build includes:
-- **macOS**: arm64 + x86_64
-- **iOS**: arm64e (device)
-- **iOS Simulator**: arm64 + x86_64
-- **tvOS**: arm64e (device)
-- **tvOS Simulator**: arm64 + x86_64
-- **watchOS**: arm64e (device)
-- **watchOS Simulator**: arm64 + x86_64
-
-### Why `build-for-xcframework` Instead of `build`?
-
-The older approach of using `xcodebuild build` with `-derivedDataPath` doesn't work reliably for SPM packages because:
-
-1. SPM library targets don't automatically produce `.framework` bundles
-2. The framework output location is not guaranteed
-3. Collecting frameworks from multiple separate builds is error-prone
-
-`build-for-xcframework` is specifically designed to:
-- Create proper frameworks from SPM targets
-- Handle all destination variations in one command
-- Output a complete, ready-to-use XCFramework
-
-### Artifact Storage
-
-- **RC Build Artifacts**: Retained for 90 days in GitHub Actions
-- **Release Artifacts**: Permanently attached to GitHub Releases
-- **Local Build**: Generated in `release-artifacts/` directory
+## Using Released XCFrameworks
 
 ### From GitHub Release
 
