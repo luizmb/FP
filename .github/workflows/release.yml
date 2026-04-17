@@ -1,0 +1,346 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - 'release/*'
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      action:
+        description: 'Action to perform'
+        required: true
+        type: choice
+        options:
+          - 'build-rc'
+          - 'promote-to-release'
+      tag:
+        description: 'Release tag for promote action (e.g., v1.0.0)'
+        required: false
+
+permissions:
+  contents: write
+
+jobs:
+  # ============================================================================
+  # RELEASE CANDIDATE BUILD - Triggered on release/* branches
+  # ============================================================================
+  
+  rc-test:
+    name: RC - Test & Validate
+    if: startsWith(github.ref, 'refs/heads/release/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'build-rc')
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_26.2.app
+
+      - name: Install Mint
+        run: brew install mint
+
+      - name: Install SwiftLint
+        run: mint bootstrap
+
+      - name: Lint
+        run: mint run swiftlint lint --strict
+
+      - name: Build
+        run: swift build --build-tests 2>&1 | xcsift
+
+      - name: Test
+        run: swift test 2>&1 | xcsift
+
+      - name: Extract RC Version
+        id: version
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          VERSION=${BRANCH#release/}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          echo "RC Version: ${VERSION}"
+
+  rc-build-xcframework:
+    name: RC - Build XCFramework
+    if: startsWith(github.ref, 'refs/heads/release/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'build-rc')
+    runs-on: macos-26
+    needs: rc-test
+    strategy:
+      matrix:
+        framework: [FP, CoreFP, CoreFPOperators, DataStructure, DataStructureOperators]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_26.2.app
+
+      - name: Resolve Package Dependencies
+        run: swift package resolve
+
+      - name: Create Build Directory
+        run: mkdir -p build/${{ matrix.framework }}
+
+      - name: Build for macOS
+        run: |
+          xcodebuild \
+            -scheme ${{ matrix.framework }} \
+            -configuration Release \
+            -destination "platform=macOS" \
+            -derivedDataPath build/${{ matrix.framework }}/macOS \
+            -skip-testing \
+            build
+
+      - name: Build for iOS
+        run: |
+          xcodebuild \
+            -scheme ${{ matrix.framework }} \
+            -configuration Release \
+            -destination "generic/platform=iOS" \
+            -derivedDataPath build/${{ matrix.framework }}/iOS \
+            -skip-testing \
+            build
+
+      - name: Build for iOS Simulator
+        run: |
+          xcodebuild \
+            -scheme ${{ matrix.framework }} \
+            -configuration Release \
+            -destination "generic/platform=iOS Simulator" \
+            -derivedDataPath build/${{ matrix.framework }}/iOS-simulator \
+            -skip-testing \
+            build
+
+      - name: Build for tvOS
+        run: |
+          xcodebuild \
+            -scheme ${{ matrix.framework }} \
+            -configuration Release \
+            -destination "generic/platform=tvOS" \
+            -derivedDataPath build/${{ matrix.framework }}/tvOS \
+            -skip-testing \
+            build
+
+      - name: Build for tvOS Simulator
+        run: |
+          xcodebuild \
+            -scheme ${{ matrix.framework }} \
+            -configuration Release \
+            -destination "generic/platform=tvOS Simulator" \
+            -derivedDataPath build/${{ matrix.framework }}/tvOS-simulator \
+            -skip-testing \
+            build
+
+      - name: Build for watchOS
+        run: |
+          xcodebuild \
+            -scheme ${{ matrix.framework }} \
+            -configuration Release \
+            -destination "generic/platform=watchOS" \
+            -derivedDataPath build/${{ matrix.framework }}/watchOS \
+            -skip-testing \
+            build
+
+      - name: Build for watchOS Simulator
+        run: |
+          xcodebuild \
+            -scheme ${{ matrix.framework }} \
+            -configuration Release \
+            -destination "generic/platform=watchOS Simulator" \
+            -derivedDataPath build/${{ matrix.framework }}/watchOS-simulator \
+            -skip-testing \
+            build
+
+      - name: Create XCFramework
+        run: |
+          xcodebuild -create-xcframework \
+            -framework build/${{ matrix.framework }}/macOS/Build/Release/${{ matrix.framework }}.framework \
+            -framework build/${{ matrix.framework }}/iOS/Build/Release/${{ matrix.framework }}.framework \
+            -framework build/${{ matrix.framework }}/iOS-simulator/Build/Release/${{ matrix.framework }}.framework \
+            -framework build/${{ matrix.framework }}/tvOS/Build/Release/${{ matrix.framework }}.framework \
+            -framework build/${{ matrix.framework }}/tvOS-simulator/Build/Release/${{ matrix.framework }}.framework \
+            -framework build/${{ matrix.framework }}/watchOS/Build/Release/${{ matrix.framework }}.framework \
+            -framework build/${{ matrix.framework }}/watchOS-simulator/Build/Release/${{ matrix.framework }}.framework \
+            -output build/${{ matrix.framework }}.xcframework
+
+      - name: Archive XCFramework
+        run: |
+          cd build
+          zip -r ${{ matrix.framework }}.xcframework.zip ${{ matrix.framework }}.xcframework
+          cd -
+
+      - name: Upload XCFramework Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.framework }}-xcframework
+          path: build/${{ matrix.framework }}.xcframework.zip
+          retention-days: 90
+
+  rc-notify-status:
+    name: RC - Notify Status
+    if: startsWith(github.ref, 'refs/heads/release/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'build-rc')
+    runs-on: macos-26
+    needs: [rc-test, rc-build-xcframework]
+    steps:
+      - name: Extract Version
+        id: version
+        run: |
+          BRANCH="${{ github.ref_name }}"
+          VERSION=${BRANCH#release/}
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+
+      - name: Success Notification
+        if: success()
+        run: |
+          echo "::notice::Release Candidate ${{ steps.version.outputs.version }} is ready for promotion"
+          echo ""
+          echo "Next steps:"
+          echo "1. Verify the XCFramework artifacts above"
+          echo "2. Test integration in your projects"
+          echo "3. When ready to promote, create a release tag:"
+          echo "   git tag ${{ steps.version.outputs.version }}"
+          echo "   git push origin ${{ steps.version.outputs.version }}"
+          echo ""
+          echo "Or use workflow dispatch with action: promote-to-release"
+
+      - name: Failure Notification
+        if: failure()
+        run: |
+          echo "::error::Release Candidate build failed"
+          echo ""
+          echo "Review the failed jobs above and fix the issues."
+          echo "Push fixes to: ${{ github.ref_name }}"
+
+  # ============================================================================
+  # RELEASE PROMOTION - Triggered on version tags (v*.*.*)
+  # ============================================================================
+
+  promote-test:
+    name: Promote - Verify Tag
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate Tag Format
+        run: |
+          TAG="${{ github.ref_name }}"
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+ ]]; then
+            echo "::error::Invalid tag format: $TAG"
+            echo "Expected format: vX.Y.Z"
+            exit 1
+          fi
+          echo "::notice::Promoting tag: $TAG"
+
+      - name: Verify Tag on Release Branch
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION=${TAG#v}
+          
+          # Check if there's a corresponding release branch
+          if git show-ref --verify --quiet "refs/remotes/origin/release/$VERSION"; then
+            echo "::notice::Found corresponding release branch: release/$VERSION"
+          else
+            echo "::warning::No release branch found for release/$VERSION"
+            echo "It's OK to proceed if the tag is on main branch"
+          fi
+
+  create-release:
+    name: Promote - Create Release
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-26
+    needs: promote-test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download RC Artifacts
+        id: artifacts
+        run: |
+          TAG="${{ github.ref_name }}"
+          VERSION=${TAG#v}
+          
+          # Look for release branch with matching version
+          BRANCH="release/$VERSION"
+          if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
+            echo "::notice::Fetching artifacts from branch: $BRANCH"
+            git checkout "$BRANCH" --quiet
+          else
+            echo "::notice::Using current tag commit"
+          fi
+
+      - name: Generate Release Notes
+        id: notes
+        run: |
+          TAG="${{ github.ref_name }}"
+          PREV_TAG=$(git describe --tags --abbrev=0 ${TAG}^ 2>/dev/null || echo "")
+          
+          if [ -z "$PREV_TAG" ]; then
+            BODY="Initial release"
+          else
+            COMMITS=$(git log ${PREV_TAG}..${TAG} --oneline)
+            BODY="## Changes
+
+          ${COMMITS}
+
+          ## Installation
+
+          See [Release Process](../docs/RELEASE_PROCESS.md#using-released-xcframeworks)"
+          fi
+          
+          echo "body<<EOF" >> $GITHUB_OUTPUT
+          echo "$BODY" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: List Artifacts
+        run: |
+          if [ -d artifacts ]; then
+            echo "Found artifacts:"
+            find artifacts -name "*.zip" -exec ls -lh {} \;
+          else
+            echo "::warning::No artifacts found in artifact storage"
+          fi
+
+      - name: Create Release
+        uses: ncipollo/release-action@v1
+        if: always()
+        with:
+          tag: ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
+          body: ${{ steps.notes.outputs.body }}
+          artifacts: artifacts/*/*.zip
+          draft: false
+          prerelease: false
+
+  notify-promotion-status:
+    name: Promote - Notify Status
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: macos-26
+    needs: [promote-test, create-release]
+    steps:
+      - name: Success Notification
+        if: success()
+        run: |
+          echo "::notice::Release ${{ github.ref_name }} published successfully"
+          echo ""
+          echo "View release: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}"
+
+      - name: Failure Notification
+        if: failure()
+        run: |
+          echo "::error::Release promotion failed for tag ${{ github.ref_name }}"
+          echo ""
+          echo "This tag has been pushed but the release was not created."
+          echo "See workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          echo ""
+          echo "Recovery:"
+          echo "1. Delete the tag: git tag -d ${{ github.ref_name }} && git push origin :refs/tags/${{ github.ref_name }}"
+          echo "2. Fix issues locally"
+          echo "3. Retry: git tag ${{ github.ref_name }} && git push origin ${{ github.ref_name }}"
