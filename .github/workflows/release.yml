@@ -106,7 +106,7 @@ jobs:
           done
           
           # Create Info.plist
-          cat > "$XCFWK_PATH/Info.plist" << 'PLIST'
+          cat > "$XCFWK_PATH/Info.plist" << 'EOF'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -132,7 +132,7 @@ jobs:
   <key>XCFrameworkFormatVersion</key>
   <string>1.0</string>
 </dict>
-PLIST
+EOF
 
       - name: Verify XCFramework Created
         run: |
