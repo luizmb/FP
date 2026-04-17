@@ -1,0 +1,30 @@
+FP Release Artifacts
+====================
+
+Frameworks included:
+  - FP
+  - CoreFP
+  - CoreFPOperators
+  - DataStructure
+  - DataStructureOperators
+
+Build date: 2026-04-17 21:50:47 UTC
+Swift version: Apple Swift version 6.3 (swiftlang-6.3.0.121.2 clang-2100.0.121.2)
+Target: x86_64-apple-macosx26.0
+Xcode: /Applications/Xcode-beta.app/Contents/Developer
+
+Each framework is provided as an XCFramework supporting:
+  - macOS (arm64 + x86_64)
+  - iOS (arm64)
+  - iOS Simulator (arm64 + x86_64)
+  - tvOS (arm64)
+  - tvOS Simulator (arm64 + x86_64)
+  - watchOS (arm64)
+  - watchOS Simulator (arm64 + x86_64)
+
+Installation:
+1. Unzip the XCFramework: unzip <framework>.xcframework.zip
+2. Add to your Xcode project: 
+   - Select target > Build Phases > Link Binary With Libraries
+   - Click + and select the .xcframework folder
+

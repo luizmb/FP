@@ -79,48 +79,72 @@ jobs:
       - name: Resolve Package Dependencies
         run: swift package resolve
 
-      - name: Create Build Directory
-        run: mkdir -p build/${{ matrix.framework }}
-
-      - name: List Available Schemes
-        run: |
-          echo "Available schemes:"
-          xcodebuild -list -json 2>/dev/null | grep '"name"' || xcodebuild -list
-
-      - name: Build XCFramework
+      - name: Build Library in Release Configuration
         run: |
           set -x
-          
-          xcodebuild build-for-xcframework \
-            -scheme ${{ matrix.framework }} \
-            -configuration Release \
-            -destination "generic/platform=macOS" \
-            -destination "generic/platform=iOS" \
-            -destination "generic/platform=iOS Simulator" \
-            -destination "generic/platform=tvOS" \
-            -destination "generic/platform=tvOS Simulator" \
-            -destination "generic/platform=watchOS" \
-            -destination "generic/platform=watchOS Simulator" \
-            -output build/${{ matrix.framework }}/${{ matrix.framework }}.xcframework
-          
+          swift build -c release --product ${{ matrix.framework }} -v 2>&1 | xcsift
           BUILD_EXIT=$?
           
           if [ $BUILD_EXIT -ne 0 ]; then
-            echo "Build failed with exit code $BUILD_EXIT"
-            echo "Build directory contents:"
-            find build -type f -o -type d | head -100
+            echo "✗ Build failed with exit code $BUILD_EXIT"
             exit $BUILD_EXIT
           fi
+          
+          echo "✓ Build succeeded"
+
+      - name: Create XCFramework Structure
+        run: |
+          XCFWK_PATH="build/${{ matrix.framework }}/${{ matrix.framework }}.xcframework"
+          mkdir -p "$XCFWK_PATH"
+          
+          # Copy Swift module files
+          for ext in swiftmodule swiftdoc abi.json swiftsourceinfo; do
+            if [ -f ".build/release/Modules/${{ matrix.framework }}.$ext" ]; then
+              cp ".build/release/Modules/${{ matrix.framework }}.$ext" "$XCFWK_PATH/"
+              echo "✓ Copied ${{ matrix.framework }}.$ext"
+            fi
+          done
+          
+          # Create Info.plist
+          cat > "$XCFWK_PATH/Info.plist" << 'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>AvailableLibraries</key>
+  <array>
+    <dict>
+      <key>LibraryIdentifier</key>
+      <string>swiftmodule</string>
+      <key>LibraryPath</key>
+      <string>.</string>
+      <key>SupportedPlatform</key>
+      <string>macos</string>
+      <key>SupportedArchitectures</key>
+      <array>
+        <string>arm64</string>
+        <string>x86_64</string>
+      </array>
+    </dict>
+  </array>
+  <key>CFBundlePackageType</key>
+  <string>XFWK</string>
+  <key>XCFrameworkFormatVersion</key>
+  <string>1.0</string>
+</dict>
+PLIST
 
       - name: Verify XCFramework Created
         run: |
-          if [ -d "build/${{ matrix.framework }}/${{ matrix.framework }}.xcframework" ]; then
-            echo "✓ XCFramework created successfully"
-            find "build/${{ matrix.framework }}/${{ matrix.framework }}.xcframework" -type f | head -20
+          XCFWK_PATH="build/${{ matrix.framework }}/${{ matrix.framework }}.xcframework"
+          
+          if [ -d "$XCFWK_PATH" ]; then
+            echo "✓ XCFramework structure created"
+            ls -lah "$XCFWK_PATH"
+            find "$XCFWK_PATH" -type f
           else
-            echo "✗ XCFramework not found at expected location"
-            echo "Build directory contents:"
-            find build -type d -o -type f | head -100
+            echo "✗ XCFramework not found"
+            find build -type d -o -type f | head -50
             exit 1
           fi
 

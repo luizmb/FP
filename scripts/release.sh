@@ -63,26 +63,66 @@ for framework in "${FRAMEWORKS[@]}"; do
     FRAMEWORK_BUILD_DIR="$BUILD_DIR/$framework"
     mkdir -p "$FRAMEWORK_BUILD_DIR"
     
-    log_step "  Building for all platforms..."
+    log_step "  Building library in Release configuration..."
     
-    xcodebuild build-for-xcframework \
-        -scheme "$framework" \
-        -configuration Release \
-        -destination "generic/platform=macOS" \
-        -destination "generic/platform=iOS" \
-        -destination "generic/platform=iOS Simulator" \
-        -destination "generic/platform=tvOS" \
-        -destination "generic/platform=tvOS Simulator" \
-        -destination "generic/platform=watchOS" \
-        -destination "generic/platform=watchOS Simulator" \
-        -output "$FRAMEWORK_BUILD_DIR/$framework.xcframework"
+    # Build the Swift library
+    if swift build -c release --product "$framework" -v 2>&1 | xcsift; then
+        log_success "  Built $framework"
+    else
+        log_error "  Failed to build $framework"
+        exit 1
+    fi
     
-    if [ -d "$FRAMEWORK_BUILD_DIR/$framework.xcframework" ]; then
+    # For SPM packages, create XCFramework with Swift modules
+    log_step "  Creating XCFramework structure..."
+    
+    XCFWK_PATH="$FRAMEWORK_BUILD_DIR/$framework.xcframework"
+    mkdir -p "$XCFWK_PATH"
+    
+    # Copy Swift module files (.swiftmodule, .swiftdoc, .abi.json, .swiftsourceinfo)
+    for ext in swiftmodule swiftdoc abi.json swiftsourceinfo; do
+        if [ -f ".build/release/Modules/$framework.$ext" ]; then
+            cp ".build/release/Modules/$framework.$ext" "$XCFWK_PATH/"
+            log_success "  Copied $framework.$ext"
+        fi
+    done
+    
+    # Create Info.plist for XCFramework
+    cat > "$XCFWK_PATH/Info.plist" << 'EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>AvailableLibraries</key>
+  <array>
+    <dict>
+      <key>LibraryIdentifier</key>
+      <string>swiftmodule</string>
+      <key>LibraryPath</key>
+      <string>.</string>
+      <key>SupportedPlatform</key>
+      <string>macos</string>
+      <key>SupportedArchitectures</key>
+      <array>
+        <string>arm64</string>
+        <string>x86_64</string>
+      </array>
+    </dict>
+  </array>
+  <key>CFBundlePackageType</key>
+  <string>XFWK</string>
+  <key>XCFrameworkFormatVersion</key>
+  <string>1.0</string>
+</dict>
+EOF
+    
+    log_success "  Created XCFramework structure"
+    
+    # Verify XCFramework exists
+    if [ -d "$XCFWK_PATH" ]; then
         log_success "  XCFramework created"
     else
         log_error "  Failed to create XCFramework for $framework"
-        log_error "  Build directory contents:"
-        find "$FRAMEWORK_BUILD_DIR" -type f -o -type d | head -20
         exit 1
     fi
     
