@@ -125,6 +125,45 @@ This generates:
 - `release-artifacts/` directory with all XCFramework zips
 - `RELEASE_INFO.txt` with build metadata
 
+## Technical Details
+
+### XCFramework Building Process
+
+The release workflow uses `xcodebuild build-for-xcframework` to create XCFrameworks for SPM packages. This is the modern, recommended approach that:
+
+1. **Builds for multiple platforms simultaneously** with a single command
+2. **Handles architecture selection** (arm64, x86_64, etc.) correctly
+3. **Packages frameworks properly** for XCFramework format
+4. **Supports all Apple platforms**: macOS, iOS, tvOS, watchOS (device + simulator)
+
+Each framework build includes:
+- **macOS**: arm64 + x86_64
+- **iOS**: arm64e (device)
+- **iOS Simulator**: arm64 + x86_64
+- **tvOS**: arm64e (device)
+- **tvOS Simulator**: arm64 + x86_64
+- **watchOS**: arm64e (device)
+- **watchOS Simulator**: arm64 + x86_64
+
+### Why `build-for-xcframework` Instead of `xcodebuild build`?
+
+The older approach using `xcodebuild build` with `-derivedDataPath` doesn't work reliably for SPM packages because:
+
+1. SPM library targets don't automatically produce `.framework` bundles
+2. The framework output location is not guaranteed
+3. Collecting frameworks from multiple separate builds is error-prone
+
+`build-for-xcframework` is specifically designed to:
+- Create proper frameworks from SPM targets
+- Handle all destination variations in one command
+- Output a complete, ready-to-use XCFramework
+
+### Artifact Storage and Retention
+
+- **RC Build Artifacts**: Retained for 90 days in GitHub Actions
+- **Release Artifacts**: Permanently attached to GitHub Releases
+- **Local Build**: Generated in `release-artifacts/` directory
+
 ## Workflow Details
 
 ### GitHub Actions Workflow (`release.yml`)
@@ -137,19 +176,41 @@ This generates:
 - Only proceeds to build if all tests pass
 
 #### Job 2: Build XCFramework (Matrix)
-- Builds each framework for all supported platforms:
-  - macOS
-  - iOS (device + simulator)
-  - tvOS (device + simulator)
-  - watchOS (device + simulator)
-- Creates XCFramework combining all platform builds
+- Runs for each framework target in parallel
+- Uses `xcodebuild build-for-xcframework` command
+- Builds for all supported platforms in one pass:
+  - macOS (arm64, x86_64)
+  - iOS device (arm64e)
+  - iOS Simulator (arm64, x86_64)
+  - tvOS device (arm64e)
+  - tvOS Simulator (arm64, x86_64)
+  - watchOS device (arm64e)
+  - watchOS Simulator (arm64, x86_64)
+- Creates single XCFramework with all platform variants
 - Compresses as `.xcframework.zip`
+- Stores artifacts for 90 days
 
-#### Job 3: Create Release
-- Downloads all XCFramework artifacts
-- Generates release notes from git commits
+#### Job 3: RC Notification
+- Notifies workflow result (success or failure)
+- On success: displays next steps for promotion
+- On failure: links to failed jobs for debugging
+
+#### Job 4: Promote - Verify Tag
+- Validates tag format (vX.Y.Z)
+- Checks for corresponding RC branch
+- Ensures tag is valid before proceeding
+
+#### Job 5: Promote - Create Release
+- Downloads RC artifacts from 90-day storage
+- Generates release notes from git commit history
 - Creates GitHub release
 - Attaches all XCFramework zips
+- Makes release public
+
+#### Job 6: Promote Notification
+- Confirms release was published successfully
+- Provides link to GitHub Releases page
+- On failure: provides recovery instructions
 
 ## Supported Frameworks
 
@@ -177,7 +238,44 @@ Each XCFramework includes builds for:
 | watchOS | arm64 | ✅ |
 | watchOS Simulator | arm64, x86_64 | ✅ |
 
-## Using Released XCFrameworks
+## Technical Details
+
+### XCFramework Building Process
+
+The release workflow uses `xcodebuild build-for-xcframework` to create XCFrameworks for SPM packages. This is the modern, recommended approach that:
+
+1. **Builds for multiple platforms simultaneously** with a single command
+2. **Handles architecture selection** (arm64, x86_64, etc.) correctly
+3. **Packages frameworks properly** for XCFramework format
+4. **Supports all Apple platforms**: macOS, iOS, tvOS, watchOS (device + simulator)
+
+Each framework build includes:
+- **macOS**: arm64 + x86_64
+- **iOS**: arm64e (device)
+- **iOS Simulator**: arm64 + x86_64
+- **tvOS**: arm64e (device)
+- **tvOS Simulator**: arm64 + x86_64
+- **watchOS**: arm64e (device)
+- **watchOS Simulator**: arm64 + x86_64
+
+### Why `build-for-xcframework` Instead of `build`?
+
+The older approach of using `xcodebuild build` with `-derivedDataPath` doesn't work reliably for SPM packages because:
+
+1. SPM library targets don't automatically produce `.framework` bundles
+2. The framework output location is not guaranteed
+3. Collecting frameworks from multiple separate builds is error-prone
+
+`build-for-xcframework` is specifically designed to:
+- Create proper frameworks from SPM targets
+- Handle all destination variations in one command
+- Output a complete, ready-to-use XCFramework
+
+### Artifact Storage
+
+- **RC Build Artifacts**: Retained for 90 days in GitHub Actions
+- **Release Artifacts**: Permanently attached to GitHub Releases
+- **Local Build**: Generated in `release-artifacts/` directory
 
 ### From GitHub Release
 

@@ -63,57 +63,30 @@ for framework in "${FRAMEWORKS[@]}"; do
     FRAMEWORK_BUILD_DIR="$BUILD_DIR/$framework"
     mkdir -p "$FRAMEWORK_BUILD_DIR"
     
-    platforms=("macOS" "iOS" "iOS Simulator" "tvOS" "tvOS Simulator" "watchOS" "watchOS Simulator")
-    framework_paths=()
+    log_step "  Building for all platforms..."
     
-    for platform in "${platforms[@]}"; do
-        log_step "  Building $framework for $platform..."
-        
-        if [[ "$platform" == "macOS" ]]; then
-            destination="platform=macOS"
-            derived_data_suffix="macOS"
-        elif [[ "$platform" == "iOS Simulator" ]]; then
-            destination="generic/platform=iOS Simulator"
-            derived_data_suffix="iOS-simulator"
-        elif [[ "$platform" == "tvOS Simulator" ]]; then
-            destination="generic/platform=tvOS Simulator"
-            derived_data_suffix="tvOS-simulator"
-        elif [[ "$platform" == "watchOS Simulator" ]]; then
-            destination="generic/platform=watchOS Simulator"
-            derived_data_suffix="watchOS-simulator"
-        else
-            destination="generic/platform=$platform"
-            derived_data_suffix="${platform,,}"
-        fi
-        
-        derived_data_path="$FRAMEWORK_BUILD_DIR/$derived_data_suffix"
-        
-        xcodebuild \
-            -scheme "$framework" \
-            -configuration Release \
-            -destination "$destination" \
-            -derivedDataPath "$derived_data_path" \
-            -skip-testing \
-            build > /dev/null 2>&1
-        
-        framework_path="$derived_data_path/Build/Release/$framework.framework"
-        if [[ -d "$framework_path" ]]; then
-            framework_paths+=("-framework" "$framework_path")
-            log_success "    Built for $platform"
-        else
-            log_error "    Failed to build for $platform"
-            exit 1
-        fi
-    done
+    xcodebuild build-for-xcframework \
+        -scheme "$framework" \
+        -configuration Release \
+        -destination "generic/platform=macOS,arch=arm64" \
+        -destination "generic/platform=macOS,arch=x86_64" \
+        -destination "generic/platform=iOS,arm64e" \
+        -destination "generic/platform=iOS Simulator,arch=arm64" \
+        -destination "generic/platform=iOS Simulator,arch=x86_64" \
+        -destination "generic/platform=tvOS,arm64e" \
+        -destination "generic/platform=tvOS Simulator,arch=arm64" \
+        -destination "generic/platform=tvOS Simulator,arch=x86_64" \
+        -destination "generic/platform=watchOS,arm64e" \
+        -destination "generic/platform=watchOS Simulator,arch=arm64" \
+        -destination "generic/platform=watchOS Simulator,arch=x86_64" \
+        -output "$FRAMEWORK_BUILD_DIR/$framework.xcframework" > /dev/null 2>&1
     
-    # Create XCFramework
-    log_step "  Creating XCFramework..."
-    xcodebuild -create-xcframework \
-        "${framework_paths[@]}" \
-        -output "$FRAMEWORK_BUILD_DIR/$framework.xcframework" \
-        > /dev/null 2>&1
-    
-    log_success "  XCFramework created"
+    if [ -d "$FRAMEWORK_BUILD_DIR/$framework.xcframework" ]; then
+        log_success "  XCFramework created"
+    else
+        log_error "  Failed to create XCFramework"
+        exit 1
+    fi
     
     # Archive XCFramework
     log_step "  Archiving XCFramework..."
