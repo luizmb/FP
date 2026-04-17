@@ -105,37 +105,7 @@ jobs:
             fi
           done
           
-          # Create Info.plist
-          mkdir -p "$XCFWK_PATH"
-          PLIST_PATH="$XCFWK_PATH/Info.plist"
-          (
-            echo '<?xml version="1.0" encoding="UTF-8"?>'
-            echo '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">'
-            echo '<plist version="1.0">'
-            echo '<dict>'
-            echo '  <key>AvailableLibraries</key>'
-            echo '  <array>'
-            echo '    <dict>'
-            echo '      <key>LibraryIdentifier</key>'
-            echo '      <string>swiftmodule</string>'
-            echo '      <key>LibraryPath</key>'
-            echo '      <string>.</string>'
-            echo '      <key>SupportedPlatform</key>'
-            echo '      <string>macos</string>'
-            echo '      <key>SupportedArchitectures</key>'
-            echo '      <array>'
-            echo '        <string>arm64</string>'
-            echo '        <string>x86_64</string>'
-            echo '      </array>'
-            echo '    </dict>'
-            echo '  </array>'
-            echo '  <key>CFBundlePackageType</key>'
-            echo '  <string>XFWK</string>'
-            echo '  <key>XCFrameworkFormatVersion</key>'
-            echo '  <string>1.0</string>'
-            echo '</dict>'
-            echo '</plist>'
-          ) > "$PLIST_PATH"
+          echo "✓ XCFramework structure created"
 
       - name: Verify XCFramework Created
         run: |
