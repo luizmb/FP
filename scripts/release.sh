@@ -68,23 +68,21 @@ for framework in "${FRAMEWORKS[@]}"; do
     xcodebuild build-for-xcframework \
         -scheme "$framework" \
         -configuration Release \
-        -destination "generic/platform=macOS,arch=arm64" \
-        -destination "generic/platform=macOS,arch=x86_64" \
-        -destination "generic/platform=iOS,arm64e" \
-        -destination "generic/platform=iOS Simulator,arch=arm64" \
-        -destination "generic/platform=iOS Simulator,arch=x86_64" \
-        -destination "generic/platform=tvOS,arm64e" \
-        -destination "generic/platform=tvOS Simulator,arch=arm64" \
-        -destination "generic/platform=tvOS Simulator,arch=x86_64" \
-        -destination "generic/platform=watchOS,arm64e" \
-        -destination "generic/platform=watchOS Simulator,arch=arm64" \
-        -destination "generic/platform=watchOS Simulator,arch=x86_64" \
-        -output "$FRAMEWORK_BUILD_DIR/$framework.xcframework" > /dev/null 2>&1
+        -destination "generic/platform=macOS" \
+        -destination "generic/platform=iOS" \
+        -destination "generic/platform=iOS Simulator" \
+        -destination "generic/platform=tvOS" \
+        -destination "generic/platform=tvOS Simulator" \
+        -destination "generic/platform=watchOS" \
+        -destination "generic/platform=watchOS Simulator" \
+        -output "$FRAMEWORK_BUILD_DIR/$framework.xcframework"
     
     if [ -d "$FRAMEWORK_BUILD_DIR/$framework.xcframework" ]; then
         log_success "  XCFramework created"
     else
-        log_error "  Failed to create XCFramework"
+        log_error "  Failed to create XCFramework for $framework"
+        log_error "  Build directory contents:"
+        find "$FRAMEWORK_BUILD_DIR" -type f -o -type d | head -20
         exit 1
     fi
     

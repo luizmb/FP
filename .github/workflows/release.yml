@@ -82,23 +82,35 @@ jobs:
       - name: Create Build Directory
         run: mkdir -p build/${{ matrix.framework }}
 
+      - name: List Available Schemes
+        run: |
+          echo "Available schemes:"
+          xcodebuild -list -json 2>/dev/null | grep '"name"' || xcodebuild -list
+
       - name: Build XCFramework
         run: |
+          set -x
+          
           xcodebuild build-for-xcframework \
             -scheme ${{ matrix.framework }} \
             -configuration Release \
-            -destination "generic/platform=macOS,arch=arm64" \
-            -destination "generic/platform=macOS,arch=x86_64" \
-            -destination "generic/platform=iOS,arm64e" \
-            -destination "generic/platform=iOS Simulator,arch=arm64" \
-            -destination "generic/platform=iOS Simulator,arch=x86_64" \
-            -destination "generic/platform=tvOS,arm64e" \
-            -destination "generic/platform=tvOS Simulator,arch=arm64" \
-            -destination "generic/platform=tvOS Simulator,arch=x86_64" \
-            -destination "generic/platform=watchOS,arm64e" \
-            -destination "generic/platform=watchOS Simulator,arch=arm64" \
-            -destination "generic/platform=watchOS Simulator,arch=x86_64" \
-            -output build/${{ matrix.framework }}/${{ matrix.framework }}.xcframework 2>&1 | tee xcframework-build.log
+            -destination "generic/platform=macOS" \
+            -destination "generic/platform=iOS" \
+            -destination "generic/platform=iOS Simulator" \
+            -destination "generic/platform=tvOS" \
+            -destination "generic/platform=tvOS Simulator" \
+            -destination "generic/platform=watchOS" \
+            -destination "generic/platform=watchOS Simulator" \
+            -output build/${{ matrix.framework }}/${{ matrix.framework }}.xcframework
+          
+          BUILD_EXIT=$?
+          
+          if [ $BUILD_EXIT -ne 0 ]; then
+            echo "Build failed with exit code $BUILD_EXIT"
+            echo "Build directory contents:"
+            find build -type f -o -type d | head -100
+            exit $BUILD_EXIT
+          fi
 
       - name: Verify XCFramework Created
         run: |
@@ -108,7 +120,7 @@ jobs:
           else
             echo "✗ XCFramework not found at expected location"
             echo "Build directory contents:"
-            find build/${{ matrix.framework }} -type d -o -type f | head -50
+            find build -type d -o -type f | head -100
             exit 1
           fi
 
@@ -125,14 +137,6 @@ jobs:
           name: ${{ matrix.framework }}-xcframework
           path: build/${{ matrix.framework }}/${{ matrix.framework }}.xcframework.zip
           retention-days: 90
-
-      - name: Upload Build Log on Failure
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.framework }}-build-log
-          path: xcframework-build.log
-          retention-days: 5
 
   rc-notify-status:
     name: RC - Notify Status

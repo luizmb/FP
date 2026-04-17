@@ -344,12 +344,33 @@ import DataStructure
 
 ### Build Fails on RC Branch
 
-**Symptoms**: XCFramework build fails for one or more platforms
+**Symptoms**: XCFramework build fails for one or more frameworks
 
-- Verify Xcode version matches `.swift-version`: `cat .swift-version`
-- Check platform-specific build logs in Actions
-- Some platforms may be skipped if build environment is unavailable
-- This is OK—the XCFramework will include available platforms
+**Debugging steps**:
+
+1. **Check the "List Available Schemes" step output**
+   - This shows what schemes xcodebuild can find
+   - Should include: FP, CoreFP, CoreFPOperators, DataStructure, DataStructureOperators
+   - If a scheme is missing, the framework can't be built
+
+2. **Check the "Build XCFramework" step output**
+   - Shows exact xcodebuild command (with `set -x`)
+   - Shows build errors and warnings
+   - Shows build directory contents if build fails
+
+3. **Common issues**:
+   - **Scheme not found**: Ensure Package.swift defines all framework products
+   - **Architecture mismatch**: xcodebuild should auto-select compatible architectures
+   - **Xcode version**: Verify Xcode 26.2 is being used (set in workflow)
+
+4. **Local testing**:
+   ```bash
+   # Test if scheme is available locally
+   xcodebuild -list
+   
+   # Try building one framework locally
+   ./scripts/release.sh
+   ```
 
 ### Release Not Appearing After Tag Push
 
