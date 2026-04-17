@@ -47,10 +47,10 @@ jobs:
         run: mint run swiftlint lint --strict
 
       - name: Build
-        run: swift build --build-tests 2>&1 | xcsift
+        run: swift build --build-tests
 
       - name: Test
-        run: swift test 2>&1 | xcsift
+        run: swift test
 
       - name: Extract RC Version
         id: version
