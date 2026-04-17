@@ -106,33 +106,33 @@ jobs:
           done
           
           # Create Info.plist
-          cat > "$XCFWK_PATH/Info.plist" << 'EOF'
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-  <key>AvailableLibraries</key>
-  <array>
-    <dict>
-      <key>LibraryIdentifier</key>
-      <string>swiftmodule</string>
-      <key>LibraryPath</key>
-      <string>.</string>
-      <key>SupportedPlatform</key>
-      <string>macos</string>
-      <key>SupportedArchitectures</key>
-      <array>
-        <string>arm64</string>
-        <string>x86_64</string>
-      </array>
-    </dict>
-  </array>
-  <key>CFBundlePackageType</key>
-  <string>XFWK</string>
-  <key>XCFrameworkFormatVersion</key>
-  <string>1.0</string>
-</dict>
-EOF
+          mkdir -p "$XCFWK_PATH"
+          printf '%s\n' '<?xml version="1.0" encoding="UTF-8"?>' \
+            '<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">' \
+            '<plist version="1.0">' \
+            '<dict>' \
+            '  <key>AvailableLibraries</key>' \
+            '  <array>' \
+            '    <dict>' \
+            '      <key>LibraryIdentifier</key>' \
+            '      <string>swiftmodule</string>' \
+            '      <key>LibraryPath</key>' \
+            '      <string>.</string>' \
+            '      <key>SupportedPlatform</key>' \
+            '      <string>macos</string>' \
+            '      <key>SupportedArchitectures</key>' \
+            '      <array>' \
+            '        <string>arm64</string>' \
+            '        <string>x86_64</string>' \
+            '      </array>' \
+            '    </dict>' \
+            '  </array>' \
+            '  <key>CFBundlePackageType</key>' \
+            '  <string>XFWK</string>' \
+            '  <key>XCFrameworkFormatVersion</key>' \
+            '  <string>1.0</string>' \
+            '</dict>' \
+            '</plist>' > "$XCFWK_PATH/Info.plist"
 
       - name: Verify XCFramework Created
         run: |
