@@ -208,26 +208,31 @@ jobs:
           fetch-depth: 0
 
       - name: Download RC Artifacts
-        id: artifacts
         run: |
           TAG="${{ github.ref_name }}"
           VERSION=${TAG#v}
-          
-          # Look for release branch with matching version
           BRANCH="release/$VERSION"
-          if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH"; then
-            echo "::notice::Fetching artifacts from branch: $BRANCH"
-            git checkout "$BRANCH" --quiet
-          else
-            echo "::notice::Using current tag commit"
+
+          RUN_ID=$(gh api "repos/${{ github.repository }}/actions/runs?branch=${BRANCH}&status=success&per_page=20" \
+            --jq '[.workflow_runs[] | select(.name == "Release")] | first | .id')
+
+          if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+            echo "::error::No successful RC build found for branch $BRANCH"
+            exit 1
           fi
+
+          echo "::notice::Downloading artifacts from run $RUN_ID (branch: $BRANCH)"
+          mkdir -p artifacts
+          gh run download "$RUN_ID" --dir artifacts
+        env:
+          GH_TOKEN: ${{ github.token }}
 
       - name: Generate Release Notes
         id: notes
         run: |
           TAG="${{ github.ref_name }}"
           PREV_TAG=$(git describe --tags --abbrev=0 ${TAG}^ 2>/dev/null || echo "")
-          
+
           if [ -z "$PREV_TAG" ]; then
             BODY="Initial release"
           else
@@ -240,28 +245,18 @@ jobs:
 
           See [Release Process](../docs/RELEASE_PROCESS.md#using-released-xcframeworks)"
           fi
-          
+
           echo "body<<EOF" >> $GITHUB_OUTPUT
           echo "$BODY" >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
-      - name: Download All Artifacts
-        uses: actions/download-artifact@v4
-        with:
-          path: artifacts
-
       - name: List Artifacts
         run: |
-          if [ -d artifacts ]; then
-            echo "Found artifacts:"
-            find artifacts -name "*.zip" -exec ls -lh {} \;
-          else
-            echo "::warning::No artifacts found in artifact storage"
-          fi
+          echo "Found artifacts:"
+          find artifacts -name "*.zip" -exec ls -lh {} \;
 
       - name: Create Release
         uses: ncipollo/release-action@v1
-        if: always()
         with:
           tag: ${{ github.ref_name }}
           name: Release ${{ github.ref_name }}
