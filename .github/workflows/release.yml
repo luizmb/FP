@@ -82,14 +82,7 @@ jobs:
       - name: Build Library in Release Configuration
         run: |
           set -x
-          swift build -c release --product ${{ matrix.framework }} -v 2>&1 | xcsift
-          BUILD_EXIT=$?
-          
-          if [ $BUILD_EXIT -ne 0 ]; then
-            echo "✗ Build failed with exit code $BUILD_EXIT"
-            exit $BUILD_EXIT
-          fi
-          
+          swift build -c release --product ${{ matrix.framework }} -v
           echo "✓ Build succeeded"
 
       - name: Create XCFramework Structure
