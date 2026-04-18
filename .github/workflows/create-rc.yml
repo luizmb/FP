@@ -19,6 +19,7 @@ jobs:
         with:
           ref: main
           fetch-depth: 0
+          token: ${{ secrets.PAT_TOKEN }}
 
       - name: Validate version format
         run: |
