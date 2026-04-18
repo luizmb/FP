@@ -6,18 +6,6 @@ on:
       - 'release/*'
     tags:
       - 'v*'
-  workflow_dispatch:
-    inputs:
-      action:
-        description: 'Action to perform'
-        required: true
-        type: choice
-        options:
-          - 'build-rc'
-          - 'promote-to-release'
-      tag:
-        description: 'Release tag for promote action (e.g., v1.0.0)'
-        required: false
 
 permissions:
   contents: write
@@ -29,7 +17,7 @@ jobs:
   
   rc-test:
     name: RC - Test & Validate
-    if: startsWith(github.ref, 'refs/heads/release/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'build-rc')
+    if: startsWith(github.ref, 'refs/heads/release/')
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
@@ -62,7 +50,7 @@ jobs:
 
   rc-build-xcframework:
     name: RC - Build XCFramework
-    if: startsWith(github.ref, 'refs/heads/release/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'build-rc')
+    if: startsWith(github.ref, 'refs/heads/release/')
     runs-on: macos-26
     needs: rc-test
     strategy:
@@ -130,7 +118,7 @@ jobs:
 
   rc-notify-status:
     name: RC - Notify Status
-    if: startsWith(github.ref, 'refs/heads/release/') || (github.event_name == 'workflow_dispatch' && github.event.inputs.action == 'build-rc')
+    if: startsWith(github.ref, 'refs/heads/release/')
     runs-on: macos-26
     needs: [rc-test, rc-build-xcframework]
     steps:
