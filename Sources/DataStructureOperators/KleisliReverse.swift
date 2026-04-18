@@ -1,4 +1,5 @@
 import CoreFP
+import CoreFPOperators
 import DataStructure
 
 // MARK: - Either
