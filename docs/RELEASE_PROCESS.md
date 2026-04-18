@@ -7,8 +7,9 @@ This document describes the FP library release process using a Release Candidate
 **TL;DR - RC + Promotion Process**:
 
 ```bash
-# 1. Create a release candidate branch via GitHub Actions:
-#    Actions → Create Release Candidate → Run workflow → enter version
+# 1. Create a release candidate branch
+#    Preferred: Actions → Create Release Candidate → Run workflow → enter version
+#    Fallback:  git checkout -b release/1.0.0 && git push origin release/1.0.0
 
 # 2. CI automatically builds and tests on the branch
 # → Watch Actions tab for RC build completion
@@ -50,6 +51,13 @@ The release process includes two stages:
 **When you're ready to prepare a release:**
 
 Go to **Actions → Create Release Candidate → Run workflow** and enter the version number (e.g. `1.0.0`). The workflow creates and pushes the `release/1.0.0` branch automatically.
+
+Alternatively, create the branch manually:
+
+```bash
+git checkout -b release/1.0.0
+git push origin release/1.0.0
+```
 
 **What happens automatically:**
 - GitHub Actions detects the `release/*` branch
@@ -320,7 +328,9 @@ import DataStructure
 ### Example 1: Create and Publish v1.0.0
 
 ```bash
-# Create RC branch via Actions → Create Release Candidate → Run workflow
+# Create RC branch
+# Preferred: Actions → Create Release Candidate → Run workflow → enter "1.0.0"
+# Fallback:  git checkout -b release/1.0.0 && git push origin release/1.0.0
 
 # Wait for Actions to build...
 # Test integration...
