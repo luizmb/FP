@@ -7,9 +7,8 @@ This document describes the FP library release process using a Release Candidate
 **TL;DR - RC + Promotion Process**:
 
 ```bash
-# 1. Create a release candidate branch
-git checkout -b release/1.0.0
-git push origin release/1.0.0
+# 1. Create a release candidate branch via GitHub Actions:
+#    Actions → Create Release Candidate → Run workflow → enter version
 
 # 2. CI automatically builds and tests on the branch
 # → Watch Actions tab for RC build completion
@@ -50,13 +49,7 @@ The release process includes two stages:
 
 **When you're ready to prepare a release:**
 
-```bash
-# 1. Create the RC branch locally
-git checkout -b release/1.0.0
-
-# 2. Push the branch to GitHub
-git push origin release/1.0.0
-```
+Go to **Actions → Create Release Candidate → Run workflow** and enter the version number (e.g. `1.0.0`). The workflow creates and pushes the `release/1.0.0` branch automatically.
 
 **What happens automatically:**
 - GitHub Actions detects the `release/*` branch
@@ -108,22 +101,6 @@ git push origin v1.0.0
   git tag v1.0.0
   git push origin v1.0.0
   ```
-
-### Local Testing (Optional)
-
-For testing the build process locally:
-
-```bash
-# Make script executable (one time)
-chmod +x scripts/release.sh
-
-# Run the release build
-./scripts/release.sh
-```
-
-This generates:
-- `release-artifacts/` directory with all XCFramework zips
-- `RELEASE_INFO.txt` with build metadata
 
 ## Technical Details
 
@@ -320,9 +297,6 @@ import DataStructure
    ```bash
    # Test if scheme is available locally
    xcodebuild -list
-   
-   # Try building one framework locally
-   ./scripts/release.sh
    ```
 
 ### Release Not Appearing After Tag Push
@@ -346,9 +320,7 @@ import DataStructure
 ### Example 1: Create and Publish v1.0.0
 
 ```bash
-# Create RC branch
-git checkout -b release/1.0.0
-git push origin release/1.0.0
+# Create RC branch via Actions → Create Release Candidate → Run workflow
 
 # Wait for Actions to build...
 # Test integration...
@@ -440,15 +412,14 @@ git push origin v1.0.0
   - Runs on pull requests
   - Tests and linting
 
+- **Create Release Candidate**: [`.github/workflows/create-rc.yml`](../../.github/workflows/create-rc.yml)
+  - Manual workflow dispatch
+  - Creates and pushes `release/X.Y.Z` branch
+
 - **Release Workflow**: [`.github/workflows/release.yml`](../../.github/workflows/release.yml)
-  - Runs on version tags
+  - Runs on `release/*` branches and version tags
   - Builds XCFrameworks
   - Creates releases
-
-- **Local Script**: [`scripts/release.sh`](../../scripts/release.sh)
-  - For local testing and builds
-  - No GitHub dependency
-  - Same process as CI
 
 ## Notes
 
