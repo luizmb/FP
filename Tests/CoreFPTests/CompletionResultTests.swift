@@ -1,3 +1,4 @@
+#if canImport(Combine)
 import Combine
 @testable import CoreFP
 import Testing
@@ -106,3 +107,4 @@ import Testing
         }
     }
 }
+#endif

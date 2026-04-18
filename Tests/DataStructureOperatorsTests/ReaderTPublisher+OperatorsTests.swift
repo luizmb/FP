@@ -1,3 +1,4 @@
+#if canImport(Combine)
 import Combine
 import CoreFP
 import CoreFPOperators
@@ -195,3 +196,4 @@ import Testing
         #expect(capturedValue == 21)
     }
 }
+#endif

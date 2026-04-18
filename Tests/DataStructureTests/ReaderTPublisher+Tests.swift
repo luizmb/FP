@@ -1,3 +1,4 @@
+#if canImport(Combine)
 import Combine
 import CoreFP
 import DataStructure
@@ -103,3 +104,4 @@ import Testing
         #expect(capturedValue == "10")
     }
 }
+#endif

@@ -1,9 +1,11 @@
-import Combine
 @testable import CoreFP
 @testable import CoreFPOperators
 import Testing
 
 // MARK: - Publisher transformer functor operators
+
+#if canImport(Combine)
+import Combine
 
 @Suite struct PublisherTransformerFunctorTests {
     private var cancellables = Set<AnyCancellable>()
@@ -88,6 +90,7 @@ import Testing
         #expect(try result?.get() == 6)
     }
 }
+#endif
 
 // MARK: - AsyncSequence transformer functor operators
 

@@ -1,3 +1,4 @@
+#if canImport(Combine)
 import Combine
 @testable import CoreFP
 import Foundation
@@ -141,3 +142,4 @@ import Testing
         #expect(results == [42])
     }
 }
+#endif

@@ -1,3 +1,4 @@
+#if canImport(Combine)
 import Combine
 @testable import CoreFP
 @testable import CoreFPOperators
@@ -495,3 +496,4 @@ import Testing
         #expect(leftResults == rightResults)
     }
 }
+#endif
