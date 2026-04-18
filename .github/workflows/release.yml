@@ -261,14 +261,13 @@ jobs:
           find artifacts -name "*.zip" -exec ls -lh {} \;
 
       - name: Create Release
-        uses: ncipollo/release-action@v1
-        with:
-          tag: ${{ github.ref_name }}
-          name: Release ${{ github.ref_name }}
-          body: ${{ steps.notes.outputs.body }}
-          artifacts: artifacts/*/*.zip
-          draft: false
-          prerelease: false
+        run: |
+          gh release create "${{ github.ref_name }}" \
+            --title "Release ${{ github.ref_name }}" \
+            --notes "${{ steps.notes.outputs.body }}" \
+            artifacts/*/*.zip
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   notify-promotion-status:
     name: Promote - Notify Status
