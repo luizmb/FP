@@ -81,6 +81,18 @@ import Testing
 
     // MARK: - Applicative (Core Methods)
 
+    @Test func pure() {
+        let reader = Reader<Environment, Int>.pure(99)
+        let env = Environment(multiplier: 5, offset: 3)
+        #expect(reader(env) == 99)
+    }
+
+    @Test func pureIgnoresEnvironment() {
+        let reader = Reader<Environment, String>.pure("constant")
+        #expect(reader(Environment(multiplier: 1, offset: 0)) == "constant")
+        #expect(reader(Environment(multiplier: 99, offset: 99)) == "constant")
+    }
+
     @Test func apply() {
         let readerFn = Reader<Environment, (Int) -> Int> { env in
             { value in value + env.offset }
