@@ -249,6 +249,46 @@ let batches: DeferredStream<[Int]> = DeferredStream {
 
 ---
 
+## Combine bridges _(macOS 12+ / iOS 15+ / Apple platforms only)_
+
+Convert between `DeferredStream` and Combine's `AnyPublisher`. Both directions preserve the lazy contract — no iteration/subscription starts until explicitly triggered.
+
+### `DeferredStream` → `AnyPublisher`
+
+Forward each stream element to a publisher. The underlying stream factory starts only on subscription; cancelling the subscription cancels the task driving the stream.
+
+```swift
+let stream = DeferredStream<Int> {
+    AsyncStream { cont in
+        Task { for i in 1...5 { cont.yield(i) }; cont.finish() }
+    }
+}
+
+let publisher: AnyPublisher<Int, Never> = stream.toPublisher()
+
+publisher.sink(
+    receiveCompletion: { _ in },
+    receiveValue: { print($0) }   // 1, 2, 3, 4, 5
+).store(in: &cancellables)
+```
+
+### `AnyPublisher` → `DeferredStream`
+
+Wrap a publisher in a `DeferredStream`. The publisher is subscribed only when the stream is first iterated.
+
+```swift
+let publisher: AnyPublisher<Int, Never> = somePublisher()
+
+let stream: DeferredStream<Int> = publisher.toDeferredStream()
+
+// No subscription yet — starts on iteration
+for await value in stream {
+    print(value)
+}
+```
+
+---
+
 ## Module
 
 ```swift
