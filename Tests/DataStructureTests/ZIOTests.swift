@@ -52,6 +52,42 @@ private typealias SUT<A> = ZIO<Int, A, E>
         #expect(result == .failure(.other))
     }
 
+    @Test func contramapEnvironment() async {
+        // ZIO expects Int env, we provide String, transform via contramapEnvironment
+        let zio = ZIO<String, Int, E> { env in .pure(.success(env.count)) }
+        let transformed = zio.contramapEnvironment { (env: Int) in String(repeating: "x", count: env) }
+        let result = await transformed.provide(3).run()  // "xxx" has length 3
+        #expect(result == .success(3))
+    }
+
+    @Test func contramapEnvironmentCurried() async {
+        let zio = ZIO<String, Int, E> { env in .pure(.success(env.count)) }
+        let lifted = ZIO<String, Int, E>.contramapEnvironment { (env: Int) in String(repeating: "a", count: env) }
+        let result = await lifted(zio).provide(4).run()  // "aaaa" has length 4
+        #expect(result == .success(4))
+    }
+
+    @Test func dimap() async {
+        // Transform env from Int to String, and output from String to Int
+        let zio = ZIO<String, String, E> { env in .pure(.success("env:\(env)")) }
+        let transformed = zio.dimap(
+            { (env: Int) in String(repeating: "x", count: env) }, // contramap env
+            { (s: String) in s.count } // map output
+        )
+        let result = await transformed.provide(3).run()  // "xxx" -> "env:xxx" -> 7
+        #expect(result == .success(7))
+    }
+
+    @Test func dimapCurried() async {
+        let zio = ZIO<String, String, E> { env in .pure(.success("env:\(env)")) }
+        let lifted = ZIO<String, String, E>.dimap(
+            { (env: Int) in String(repeating: "y", count: env) },
+            { (s: String) in s.count }
+        )
+        let result = await lifted(zio).provide(2).run()  // "yy" -> "env:yy" -> 6
+        #expect(result == .success(6))
+    }
+
     // MARK: - Applicative
 
     @Test func pure() async {

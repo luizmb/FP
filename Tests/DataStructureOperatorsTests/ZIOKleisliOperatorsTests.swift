@@ -34,6 +34,23 @@ private typealias K<I, A> = ZIOKleisli<I, Int, A, E>
         #expect(result == .success("replaced"))
     }
 
+    @Test func contramapOperator() async {
+        // (i2 -> i) >>> ZIOKleisli<i, env, a, e> = ZIOKleisli<i2, env, a, e>
+        let k = ZIOKleisli<String, Int, Int, E> { input in .pure(input.count) }
+        let transformInput: @Sendable (Int) -> String = { String(repeating: "a", count: $0) }
+        let result = await (transformInput >>> k).run(3).provide(0).run()  // "aaa" has length 3
+        #expect(result == .success(3))
+    }
+
+    @Test func contramapEnvironmentOperator() async {
+        // (r2 -> r) >>> ZIOKleisli<i, r, a, e> = ZIOKleisli<i, r2, a, e>
+        // ZIOKleisli expects Int env, we provide String env, transform via contramapEnvironment
+        let k = ZIOKleisli<Int, Int, Int, E> { input in ZIO { env in .pure(.success(input + env)) } }
+        let transformEnv: @Sendable (String) -> Int = { $0.count }
+        let result = await (transformEnv >>> k).run(5).provide("xx").run()  // 5 + 2 = 7
+        #expect(result == .success(7))
+    }
+
     // MARK: - Monad bind operators (Input fixed)
 
     @Test func bindOperator() async {

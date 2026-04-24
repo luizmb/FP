@@ -30,6 +30,14 @@ private typealias SUT<A> = ZIO<Int, A, E>
         #expect(result == .success("x"))
     }
 
+    @Test func contramapEnvironmentOperator() async {
+        // (r2 -> r) >>> ZIO<r, a, e> = ZIO<r2, a, e>
+        let zio = ZIO<String, Int, E> { env in .pure(.success(env.count)) }
+        let transformEnv: @Sendable (Int) -> String = { String(repeating: "x", count: $0) }
+        let result = await (transformEnv >>> zio).provide(3).run()  // "xxx" has length 3
+        #expect(result == .success(3))
+    }
+
     // MARK: - Applicative operators
 
     @Test func applyOperator() async {
