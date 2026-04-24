@@ -70,6 +70,75 @@ let mapped = lookupUser.mapError { _ in AppError.notFound }
 
 ---
 
+## `contramap` — narrow the input (contravariant functor on `Input`)
+
+Transform the *input* before it reaches the arrow, letting it accept a wider (or different) input type.
+
+```swift
+// lookupUser :: ZIOKleisli<Int, DB, String, AppError>
+// Adapt to accept String IDs instead
+let lookupByStringId: ZIOKleisli<String, DB, String, AppError> =
+    lookupUser.contramap { Int($0) ?? 0 }
+
+// Static variant
+let adapt = ZIOKleisli<Int, DB, String, AppError>.contramap { Int($0) ?? 0 }
+
+// Free function
+let k2 = contramapZIOKleisli({ Int($0) ?? 0 }, lookupUser)
+
+// Operator — `>>>` feeds the input-transform into the ZIOKleisli
+let k3 = ({ Int($0) ?? 0 } as @Sendable (String) -> Int) >>> lookupUser
+```
+
+---
+
+## `contramapEnvironment` — narrow the environment (contravariant functor on `Env`)
+
+Transform the *environment* before it is supplied to the inner ZIO.
+
+```swift
+struct AppEnv { var db: DB }
+
+let appLookup: ZIOKleisli<Int, AppEnv, String, AppError> =
+    lookupUser.contramapEnvironment(\.db)
+
+// Static variant
+let adapt = ZIOKleisli<Int, DB, String, AppError>.contramapEnvironment(\.db)
+
+// Free function
+let k2 = contramapEnvironmentZIOKleisli(\.db, lookupUser)
+
+// Operator — `>>>` feeds the env-transform into the ZIOKleisli
+let k3 = (\.db as @Sendable (AppEnv) -> DB) >>> lookupUser
+```
+
+---
+
+## `dimap` — transform input, environment, and output together
+
+Combines `contramap` (on `Input`), `contramapEnvironment` (on `Env`), and `map` (on `Success`) in one step.
+
+```swift
+struct AppEnv { var db: DB }
+
+let fullAdapter: ZIOKleisli<String, AppEnv, String, AppError> =
+    lookupUser.dimap(
+        { Int($0) ?? 0 },  // (String) -> Int   — narrow input
+        \.db,               // (AppEnv) -> DB    — narrow env
+        { $0.uppercased() } // (String) -> String — transform output
+    )
+
+// Static variant
+ZIOKleisli<Int, DB, String, AppError>.dimap(
+    { Int($0) ?? 0 }, \.db, { $0.uppercased() }
+)(lookupUser)
+
+// Free function
+dimapZIOKleisli({ Int($0) ?? 0 }, \.db, { $0.uppercased() }, lookupUser)
+```
+
+---
+
 ## `replace` — substitute a constant on success
 
 ```swift

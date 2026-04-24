@@ -82,6 +82,51 @@ let mapped = someZIO.mapError { raw in UIError.message(raw.localizedDescription)
 
 ---
 
+## `contramapEnvironment` — narrow the environment (contravariant functor on `Env`)
+
+Transform the environment *before* it is passed into the ZIO, widening the accepted type from a specific `Env` to any `GlobalEnv` that contains it.
+
+```swift
+struct AppEnv { var db: DB }
+
+let userZIO: ZIO<DB, String, AppError> = ZIO { db in ... }
+
+// Adapt so it can run with AppEnv instead of DB directly
+let appZIO: ZIO<AppEnv, String, AppError> = userZIO.contramapEnvironment(\.db)
+let result = await appZIO.provide(AppEnv(db: DB())).run()
+
+// Static variant
+let adapt: (ZIO<DB, String, AppError>) -> ZIO<AppEnv, String, AppError>
+    = ZIO.contramapEnvironment(\.db)
+
+// Free function
+let appZIO2 = contramapEnvironmentZIO(\.db, userZIO)
+
+// Operator — `>>>` feeds the env-transform into the ZIO
+let appZIO3 = (\.db as @Sendable (AppEnv) -> DB) >>> userZIO
+```
+
+---
+
+## `dimap` — transform both environment and success (bivariant functor)
+
+Combines `contramapEnvironment` (contravariant on `Env`) with `map` (covariant on `Success`) in one pass.
+
+```swift
+let result: ZIO<AppEnv, String, AppError> = userZIO.dimap(
+    \.db,              // (AppEnv) -> DB   — narrow env
+    { $0.uppercased() } // (String) -> String — transform output
+)
+
+// Static variant
+ZIO.dimap(\.db, { $0.uppercased() })(userZIO)
+
+// Free function
+dimapZIO(\.db, { $0.uppercased() }, userZIO)
+```
+
+---
+
 ## `replace` — discard success value, substitute a constant
 
 ```swift
