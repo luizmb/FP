@@ -30,10 +30,12 @@ import Testing
         #expect(!ran, "task must not run before subscription")
         var cancellables = Set<AnyCancellable>()
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            publisher.sink(
-                receiveCompletion: { _ in continuation.resume() },
-                receiveValue: { _ in }
-            ).store(in: &cancellables)
+            publisher
+                .sink(
+                    receiveCompletion: { _ in continuation.resume() },
+                    receiveValue: { _ in }
+                )
+                .store(in: &cancellables)
         }
         #expect(ran)
     }

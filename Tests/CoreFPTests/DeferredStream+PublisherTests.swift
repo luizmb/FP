@@ -38,10 +38,12 @@ import Testing
         #expect(!factoryRan, "factory must not run before subscription")
         var cancellables = Set<AnyCancellable>()
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            publisher.sink(
-                receiveCompletion: { _ in continuation.resume() },
-                receiveValue: { _ in }
-            ).store(in: &cancellables)
+            publisher
+                .sink(
+                    receiveCompletion: { _ in continuation.resume() },
+                    receiveValue: { _ in }
+                )
+                .store(in: &cancellables)
         }
         #expect(factoryRan)
     }
@@ -61,10 +63,12 @@ import Testing
         }
         var cancellables = Set<AnyCancellable>()
         let pub = stream.toPublisher()
-        pub.sink(
-            receiveCompletion: { _ in },
-            receiveValue: { emitted = $0 }
-        ).store(in: &cancellables)
+        pub
+            .sink(
+                receiveCompletion: { _ in },
+                receiveValue: { emitted = $0 }
+            )
+            .store(in: &cancellables)
 
         try? await Task.sleep(nanoseconds: 5_000_000)
         cancellables.removeAll()   // cancel subscription

@@ -2,8 +2,8 @@ import CoreFP
 import DataStructure
 import Testing
 
-fileprivate enum E: Error, Equatable { case fail }
-fileprivate typealias K<I, A> = ZIOKleisli<I, Int, A, E>
+private enum E: Error, Equatable { case fail }
+private typealias K<I, A> = ZIOKleisli<I, Int, A, E>
 
 @Suite struct ZIOKleisliTests {
     // MARK: - Construction
@@ -111,7 +111,7 @@ fileprivate typealias K<I, A> = ZIOKleisli<I, Int, A, E>
         let k1 = K<Int, String> { input in .pure("\(input)") }
         let k2 = ZIOKleisli<String, Int, Int, E> { s in .pure(s.count) }
         let composed = k1.andThen(k2)
-        let result = await composed.run(1234).provide(0).run()
+        let result = await composed.run(1_234).provide(0).run()
         #expect(result == .success(4))  // "\(1234)".count == 4
     }
 
@@ -119,7 +119,7 @@ fileprivate typealias K<I, A> = ZIOKleisli<I, Int, A, E>
         let k1 = K<Int, String> { input in .pure("\(input)") }
         let k2 = ZIOKleisli<String, Int, Int, E> { s in .pure(s.count) }
         let composed = k2.compose(k1)
-        let result = await composed.run(1234).provide(0).run()
+        let result = await composed.run(1_234).provide(0).run()
         #expect(result == .success(4))
     }
 

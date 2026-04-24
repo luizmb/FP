@@ -4,8 +4,8 @@ import DataStructure
 import DataStructureOperators
 import Testing
 
-fileprivate enum E: Error, Equatable { case fail }
-fileprivate typealias K<I, A> = ZIOKleisli<I, Int, A, E>
+private enum E: Error, Equatable { case fail }
+private typealias K<I, A> = ZIOKleisli<I, Int, A, E>
 
 @Suite struct ZIOKleisliOperatorsTests {
     // MARK: - Functor operators
@@ -82,9 +82,9 @@ fileprivate typealias K<I, A> = ZIOKleisli<I, Int, A, E>
     }
 
     @Test func kleisliCompositionChain() async {
-        let k1 = K<Int, String>    { n in .pure("\(n)") }
-        let k2 = ZIOKleisli<String, Int, Int, E>  { s in .pure(s.count) }
-        let k3 = ZIOKleisli<Int, Int, Bool, E>    { n in .pure(n > 1) }
+        let k1 = K<Int, String> { n in .pure("\(n)") }
+        let k2 = ZIOKleisli<String, Int, Int, E> { s in .pure(s.count) }
+        let k3 = ZIOKleisli<Int, Int, Bool, E> { n in .pure(n > 1) }
         let composed = k1 >=> k2 >=> k3
         let result = await composed.run(99).provide(0).run()
         #expect(result == .success(true))  // "\(99)".count == 2 > 1

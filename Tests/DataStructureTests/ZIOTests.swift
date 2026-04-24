@@ -2,8 +2,8 @@ import CoreFP
 import DataStructure
 import Testing
 
-fileprivate enum E: Error, Equatable { case fail }
-fileprivate typealias SUT<A> = ZIO<Int, A, E>
+private enum E: Error, Equatable { case fail }
+private typealias SUT<A> = ZIO<Int, A, E>
 
 @Suite struct ZIOTests {
     // MARK: - Construction

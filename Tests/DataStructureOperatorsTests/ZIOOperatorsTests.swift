@@ -4,8 +4,8 @@ import DataStructure
 import DataStructureOperators
 import Testing
 
-fileprivate enum E: Error, Equatable { case fail }
-fileprivate typealias SUT<A> = ZIO<Int, A, E>
+private enum E: Error, Equatable { case fail }
+private typealias SUT<A> = ZIO<Int, A, E>
 
 @Suite struct ZIOOperatorsTests {
     // MARK: - Functor operators
