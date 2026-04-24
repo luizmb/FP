@@ -242,6 +242,50 @@ let fetchAll: DeferredTask<[User]> = DeferredTask { await api.getAllUsers() }
 
 ---
 
+## Combine bridges _(macOS 12+ / iOS 15+ / Apple platforms only)_
+
+Convert between `DeferredTask` and Combine's `AnyPublisher`. Both directions preserve the deferred/lazy contract — no work starts until a subscriber attaches (publisher direction) or `.run()` is called (task direction).
+
+### `DeferredTask` → `AnyPublisher`
+
+Emit the single task result as a publisher element, then complete.
+
+```swift
+let task = DeferredTask<Int> { 42 }
+
+let publisher: AnyPublisher<Int, Never> = task.toPublisher()
+
+// Lazy: no task runs until a subscriber attaches
+publisher.sink(
+    receiveCompletion: { _ in },
+    receiveValue: { print($0) }   // prints 42
+).store(in: &cancellables)
+
+// Each subscriber gets its own independent execution
+publisher.sink(...)   // separate task run
+publisher.sink(...)   // another separate task run
+```
+
+Cancelling the subscription cancels the underlying `Task`.
+
+### `AnyPublisher` → `DeferredTask`
+
+Collect publisher emissions into a `DeferredTask`. The publisher is not subscribed until `.run()` is called.
+
+```swift
+let publisher: AnyPublisher<Int, Never> = somePublisher()
+
+// First emitted value only (nil if publisher completes empty)
+let firstTask: DeferredTask<Int?> = publisher.toDeferredTask()
+let first = await firstTask.run()   // Int?
+
+// All emitted values collected into an array
+let allTask: DeferredTask<[Int]> = publisher.toDeferredTaskArray()
+let all = await allTask.run()   // [Int]
+```
+
+---
+
 ## Module
 
 ```swift

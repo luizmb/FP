@@ -1250,7 +1250,7 @@ optional.fold(onNone: "", onSome: id)
 
 **`const`** — ignore arguments, return a fixed value
 
-`const` produces a function that ignores all its arguments and returns a single value. It works for any number of ignored arguments thanks to parameter packs — no overloads needed:
+`const` produces a function that ignores all its arguments and returns a single value. Overloads cover zero to three ignored arguments individually; four or more use a variadic tail:
 
 ```swift
 // Single-argument: replaces { _ in 42 }
@@ -1489,6 +1489,8 @@ Each type in this library has a dedicated reference page with comprehensive exam
 | [Stateful](docs/types/Stateful.md) | State threading monad — wraps `(inout S) -> A` |
 | [Writer](docs/types/Writer.md) | Append-as-you-go monad — produces a value alongside an accumulated log |
 | [NonEmpty](docs/types/NonEmpty.md) | Statically guaranteed non-empty sequence — Semigroup (no Monoid), full FAM + Foldable + Traversable |
+| [ZIO](docs/types/ZIO.md) | Three-layer monad stack (`Reader` + `Result` + `DeferredTask`) — `Env → DeferredTask<Result<Success, Failure>>` |
+| [ZIOKleisli](docs/types/ZIOKleisli.md) | First-class Kleisli arrow in the ZIO monad — `(Input) → ZIO<Env, Success, Failure>` |
 
 ---
 

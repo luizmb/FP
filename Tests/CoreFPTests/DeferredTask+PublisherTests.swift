@@ -41,18 +41,21 @@ import Testing
     @Test func toPublisherEachSubscriberGetsOwnExecution() async {
         nonisolated(unsafe) var executionCount = 0
         let task = DeferredTask<Int> { executionCount += 1; return executionCount }
+        let pub = task.toPublisher()
         var cancellables = Set<AnyCancellable>()
         nonisolated(unsafe) var received: [Int] = []
-        nonisolated(unsafe) var completions = 0
 
+        // Run subscriptions sequentially to avoid a data race on executionCount.
+        // The goal is to verify each subscription triggers an independent task run.
         await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
-            let pub = task.toPublisher()
-            func onComplete() { completions += 1; if completions == 2 { continuation.resume() } }
-            pub.sink(receiveCompletion: { _ in onComplete() }, receiveValue: { received.append($0) }).store(in: &cancellables)
-            pub.sink(receiveCompletion: { _ in onComplete() }, receiveValue: { received.append($0) }).store(in: &cancellables)
+            pub.sink(receiveCompletion: { _ in continuation.resume() }, receiveValue: { received.append($0) }).store(in: &cancellables)
         }
 
-        #expect(received.sorted() == [1, 2])
+        await withCheckedContinuation { (continuation: CheckedContinuation<Void, Never>) in
+            pub.sink(receiveCompletion: { _ in continuation.resume() }, receiveValue: { received.append($0) }).store(in: &cancellables)
+        }
+
+        #expect(received == [1, 2])
     }
 
     // MARK: - Publisher -> DeferredTask

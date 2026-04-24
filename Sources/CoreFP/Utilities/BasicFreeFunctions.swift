@@ -9,18 +9,25 @@ public extension Of {
     static func absurd(_: Never) -> T { }
 }
 
-public func ignore<each T>(_: repeat each T) { }
+// Removed due to crashing compiler bug in Swift 6.2
+// public func ignore<each T>(_: repeat each T) { }
+// Temporary workaround is to offer n-ary overloads of `ignore` up to 3 parameters, which should cover most use cases.
+public func ignore() {}
+public func ignore<T>(_: T) {}
+public func ignore<T, U>(_: T, _: U) {}
+public func ignore<T, U, V>(_: T, _: U, _: V) {}
+public func ignore<T, U, V, W, each X>(_: T, _: U, _: V, _: W, _: repeat each X) {}
 
 public extension Of {
-    static func ignore() -> (T) -> Void { CoreFP.ignore }
+    static func ignore() -> (T) -> Void { { _ in } }
 }
 
 public extension Of2 {
-    static func ignore() -> (T, U) -> Void { CoreFP.ignore }
+    static func ignore() -> (T, U) -> Void { { _, _ in } }
 }
 
 public extension Of3 {
-    static func ignore() -> (T, U, V) -> Void { CoreFP.ignore }
+    static func ignore() -> (T, U, V) -> Void { { _, _, _ in } }
 }
 
 /// Ignores the data provided and returns a constant value.
@@ -43,36 +50,75 @@ public extension Of3 {
 ///
 /// Sibling to the function `func ignore<Ignore>(_ ignoredValue: Ignore) -> Void { }`
 /// that would ignore the input but doesn't return any value back to the closure.
-public func const<each Ignore, Return>(
-    _ returnValue: Return
-) -> (repeat each Ignore) -> Return {
-    { (_: repeat each Ignore) in returnValue }
+// Removed due to crashing compiler bug in Swift 6.2
+// public func const<each Ignore, Return>(
+//     _ returnValue: Return
+// ) -> (repeat each Ignore) -> Return {
+//     { (_: repeat each Ignore) in returnValue }
+// }
+// Temporary workaround is to offer n-ary overloads of `const` up to 3 parameters, which should cover most use cases.
+public func const<Return>(_ returnValue: Return) -> () -> Return {
+    { returnValue }
 }
 
-/// Sendable variant of `const` for contexts requiring `@Sendable` closures
+public func const<Return: Sendable>(_ returnValue: Return) -> @Sendable () -> Return {
+    { returnValue }
+}
+
+public func const<Ignore, Return>(_ returnValue: Return) -> (Ignore) -> Return {
+    { _ in returnValue }
+}
+
+/// Sendable variant for contexts requiring `@Sendable` closures
 /// (e.g. AsyncSequence.map). When `Return` is `Sendable`, this overload is
 /// preferred by the compiler in `@Sendable`-requiring positions.
-public func const<Ignore, Return: Sendable>(
-    _ returnValue: Return
-) -> @Sendable (Ignore) -> Return {
+public func const<Ignore, Return: Sendable>(_ returnValue: Return) -> @Sendable (Ignore) -> Return {
     { _ in returnValue }
+}
+
+public func const<I1, I2, Return>(_ returnValue: Return) -> (I1, I2) -> Return {
+    { _, _ in returnValue }
+}
+
+public func const<I1, I2, Return: Sendable>(_ returnValue: Return) -> @Sendable (I1, I2) -> Return {
+    { _, _ in returnValue }
+}
+
+public func const<I1, I2, I3, Return>(_ returnValue: Return) -> (I1, I2, I3) -> Return {
+    { _, _, _ in returnValue }
+}
+
+public func const<I1, I2, I3, Return: Sendable>(_ returnValue: Return) -> @Sendable (I1, I2, I3) -> Return {
+    { _, _, _ in returnValue }
+}
+
+public func const<I1, I2, I3, I4, each I, Return>(
+    _ returnValue: Return
+) -> (I1, I2, I3, I4, repeat each I) -> Return {
+    { (_: I1, _: I2, _: I3, _: I4, _: repeat each I) in returnValue }
+}
+
+public func const<I1, I2, I3, I4, each I, Return: Sendable>(
+    _ returnValue: Return
+) -> @Sendable (I1, I2, I3, I4, repeat each I) -> Return {
+    { (_: I1, _: I2, _: I3, _: I4, _: repeat each I) in returnValue }
 }
 
 public extension Of {
     static func const<Return>(_ returnValue: Return) -> (T) -> Return {
-        CoreFP.const(returnValue)
+        { _ in returnValue }
     }
 }
 
 public extension Of2 {
     static func const(_ returnValue: U) -> (T) -> U {
-        CoreFP.const(returnValue)
+        { _ in returnValue }
     }
 }
 
 public extension Of3 {
     static func const(_ returnValue: V) -> (T, U) -> V {
-        CoreFP.const(returnValue)
+        { _, _ in returnValue }
     }
 }
 
@@ -238,8 +284,8 @@ public func withArg<Arg1, Arg2, Picked, Return>(
     curryT(compose(compose, untuple))(pickArgument)
 }
 
-/// It returns a function that calls `fatalError`, regardless of the parameters provided.
-/// All the input parameters will be ignored.
+/// Returns a function that calls `fatalError`, regardless of the parameters provided.
+/// All input parameters are ignored.
 ///
 /// Example:
 /// ```
@@ -248,13 +294,38 @@ public func withArg<Arg1, Arg2, Picked, Return>(
 /// ) -> Mock
 /// ```
 ///
-/// **Be careful with this function in a production code, it will crash the app if not overriden.**
-public func fail<T, each U>(
+/// **Be careful with this function in production code — it will crash the app if not overridden.**
+// Removed due to crashing compiler bug in Swift 6.2
+// public func fail<T, each U>(
+//     _ message: String,
+//     file: StaticString = #file,
+//     line: UInt = #line
+// ) -> (repeat each U) -> T {
+//     { (_: repeat each U) -> T in
+//         fatalError(message, file: file, line: line)
+//     }
+// }
+// Temporary workaround is to offer n-ary overloads of `fail` up to 3 parameters, which should cover most use cases.
+public func fail<T>(_ message: String, file: StaticString = #file, line: UInt = #line) -> () -> T {
+    { fatalError(message, file: file, line: line) }
+}
+
+public func fail<T, U>(_ message: String, file: StaticString = #file, line: UInt = #line) -> (U) -> T {
+    { _ in fatalError(message, file: file, line: line) }
+}
+
+public func fail<T, U, V>(_ message: String, file: StaticString = #file, line: UInt = #line) -> (U, V) -> T {
+    { _, _ in fatalError(message, file: file, line: line) }
+}
+
+public func fail<T, U, V, W>(_ message: String, file: StaticString = #file, line: UInt = #line) -> (U, V, W) -> T {
+    { _, _, _ in fatalError(message, file: file, line: line) }
+}
+
+public func fail<T, U, V, W, X, each Y>(
     _ message: String,
     file: StaticString = #file,
     line: UInt = #line
-) -> (repeat each U) -> T {
-    { (_: repeat each U) -> T in
-        fatalError(message, file: file, line: line)
-    }
+) -> (U, V, W, X, repeat each Y) -> T {
+    { (_: U, _: V, _: W, _: X, _: repeat each Y) in fatalError(message, file: file, line: line) }
 }

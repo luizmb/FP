@@ -140,6 +140,23 @@ appBase(AppConfig(config: Config(multiplier: 3)))  // 30
 
 ---
 
+## `pure` — constant reader
+
+`pure` lifts a value into a `Reader` that ignores the environment and always returns the same value.
+
+```swift
+let always42 = Reader<Config, Int>.pure(42)
+always42(Config(multiplier: 1))   // 42
+always42(Config(multiplier: 99))  // 42
+
+// Useful as a default or seed in applicative pipelines:
+let seed = Reader<Config, Int>.pure(0)
+let result = Reader.liftA2({ a, b in a + b })(base, seed)(Config(multiplier: 3))
+// same as base(Config(multiplier: 3)) + 0
+```
+
+---
+
 ## ReaderT — Reader with inner effects
 
 When your environment-dependent computation also has an inner effect (Optional, Result, Array, etc.), use the transformer variants. All operators work through both layers.
