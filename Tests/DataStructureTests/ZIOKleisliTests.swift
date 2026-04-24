@@ -62,6 +62,59 @@ private typealias K<I, A> = ZIOKleisli<I, Int, A, E>
         #expect(result == .failure(.other))
     }
 
+    @Test func contramap() async {
+        // ZIOKleisli expects Int input, we provide String, transform via contramap
+        let k = ZIOKleisli<String, Int, Int, E> { input in .pure(input.count) }
+        let transformed = k.contramap { (input: Int) in String(repeating: "a", count: input) }
+        let result = await transformed.run(3).provide(0).run()  // "aaa" has length 3
+        #expect(result == .success(3))
+    }
+
+    @Test func contramapCurried() async {
+        let k = ZIOKleisli<String, Int, Int, E> { input in .pure(input.count) }
+        let lifted = ZIOKleisli<String, Int, Int, E>.contramap { (input: Int) in String(repeating: "b", count: input) }
+        let result = await lifted(k).run(4).provide(0).run()  // "bbbb" has length 4
+        #expect(result == .success(4))
+    }
+
+    @Test func contramapEnvironment() async {
+        // ZIOKleisli expects Int env, we provide String env
+        let k = ZIOKleisli<Int, Int, Int, E> { input in ZIO { env in .pure(.success(input + env)) } }
+        let transformed: ZIOKleisli<Int, String, Int, E> = k.contramapEnvironment { (env: String) -> Int in env.count }
+        let result = await transformed.run(5).provide("xx").run()  // input 5 + env "xx" (count 2) = 7
+        #expect(result == .success(7))
+    }
+
+    @Test func contramapEnvironmentCurried() async {
+        let k = ZIOKleisli<Int, Int, Int, E> { input in ZIO { env in .pure(.success(input + env)) } }
+        let lifted: (ZIOKleisli<Int, Int, Int, E>) -> ZIOKleisli<Int, String, Int, E> = ZIOKleisli<Int, Int, Int, E>.contramapEnvironment { (env: String) -> Int in env.count }
+        let result = await lifted(k).run(3).provide("yyy").run()  // 3 + 3 = 6
+        #expect(result == .success(6))
+    }
+
+    @Test func dimap() async {
+        // Transform input (Int -> String), env (String -> Int), and output (Int -> String)
+        let k = ZIOKleisli<String, Int, Int, E> { input in ZIO { env in .pure(.success(input.count + env)) } }
+        let transformed: ZIOKleisli<Int, String, String, E> = k.dimap(
+            { (input: Int) -> String in String(repeating: "i", count: input) },  // contramap input
+            { (env: String) -> Int in env.count },                                // contramap env
+            { (n: Int) -> String in "result:\(n)" }                               // map output
+        )
+        let result = await transformed.run(2).provide("env").run()  // "ii" (2) + "env" (3) = 5 -> "result:5"
+        #expect(result == .success("result:5"))
+    }
+
+    @Test func dimapCurried() async {
+        let k = ZIOKleisli<String, Int, Int, E> { input in ZIO { env in .pure(.success(input.count + env)) } }
+        let lifted: (ZIOKleisli<String, Int, Int, E>) -> ZIOKleisli<Int, String, Int, E> = ZIOKleisli<String, Int, Int, E>.dimap(
+            { (input: Int) -> String in String(repeating: "x", count: input) },
+            { (env: String) -> Int in env.count },
+            { (n: Int) -> Int in n * 2 }
+        )
+        let result = await lifted(k).run(1).provide("ab").run()  // "x" (1) + "ab" (2) = 3 * 2 = 6
+        #expect(result == .success(6))
+    }
+
     // MARK: - Monad (Input fixed)
 
     @Test func pure() async {
