@@ -71,8 +71,8 @@ private typealias SUT<A> = ZIO<Int, A, E>
         // Transform env from Int to String, and output from String to Int
         let zio = ZIO<String, String, E> { env in .pure(.success("env:\(env)")) }
         let transformed = zio.dimap(
-            { (env: Int) in String(repeating: "x", count: env) },  // contramap env
-            { (s: String) in s.count }                              // map output
+            { (env: Int) in String(repeating: "x", count: env) }, // contramap env
+            { (s: String) in s.count } // map output
         )
         let result = await transformed.provide(3).run()  // "xxx" -> "env:xxx" -> 7
         #expect(result == .success(7))

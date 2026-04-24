@@ -87,7 +87,9 @@ private typealias K<I, A> = ZIOKleisli<I, Int, A, E>
 
     @Test func contramapEnvironmentCurried() async {
         let k = ZIOKleisli<Int, Int, Int, E> { input in ZIO { env in .pure(.success(input + env)) } }
-        let lifted: (ZIOKleisli<Int, Int, Int, E>) -> ZIOKleisli<Int, String, Int, E> = ZIOKleisli<Int, Int, Int, E>.contramapEnvironment { (env: String) -> Int in env.count }
+        let lifted: (ZIOKleisli<Int, Int, Int, E>) -> ZIOKleisli<Int, String, Int, E> =
+            ZIOKleisli<Int, Int, Int, E>
+                .contramapEnvironment { (env: String) -> Int in env.count }
         let result = await lifted(k).run(3).provide("yyy").run()  // 3 + 3 = 6
         #expect(result == .success(6))
     }
@@ -96,9 +98,9 @@ private typealias K<I, A> = ZIOKleisli<I, Int, A, E>
         // Transform input (Int -> String), env (String -> Int), and output (Int -> String)
         let k = ZIOKleisli<String, Int, Int, E> { input in ZIO { env in .pure(.success(input.count + env)) } }
         let transformed: ZIOKleisli<Int, String, String, E> = k.dimap(
-            { (input: Int) -> String in String(repeating: "i", count: input) },  // contramap input
-            { (env: String) -> Int in env.count },                                // contramap env
-            { (n: Int) -> String in "result:\(n)" }                               // map output
+            { (input: Int) -> String in String(repeating: "i", count: input) }, // contramap input
+            { (env: String) -> Int in env.count }, // contramap env
+            { (n: Int) -> String in "result:\(n)" } // map output
         )
         let result = await transformed.run(2).provide("env").run()  // "ii" (2) + "env" (3) = 5 -> "result:5"
         #expect(result == .success("result:5"))
