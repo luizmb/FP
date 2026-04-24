@@ -172,7 +172,29 @@ let result = await myTask.run()
 let task: Task<A, Never> = myTask.eraseToTask()
 let result = await task.value
 task.cancel()
+
+// eraseToThrowingTask() — convert DeferredTask<Result<S, E>> to a throwing Task
+// Bridges the Result-typed deferred world into Swift's async/throws world
+let throwingTask: Task<String, any Error> =
+    DeferredTask<Result<String, APIError>> { ... }.eraseToThrowingTask()
+let value = try await throwingTask.value   // throws if the result was .failure
 ```
+
+---
+
+## `catching` — construct from a throwing async closure
+
+Wraps a `throws`-typed async closure into a `DeferredTask<Result<S, E>>`, bridging Swift's typed-throws world into the `Result`-based deferred world.
+
+```swift
+let safeTask: DeferredTask<Result<String, APIError>> = .catching {
+    try await api.getUser(id: 42)  // async throws(APIError) -> String
+}
+
+let result = await safeTask.run()   // Result<String, APIError>
+```
+
+This is the counterpart to `eraseToThrowingTask`: `catching` converts *into* `DeferredTask<Result<…>>`, while `eraseToThrowingTask` converts *out of* it.
 
 ---
 
