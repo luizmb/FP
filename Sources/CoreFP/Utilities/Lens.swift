@@ -12,6 +12,13 @@ public struct Lens<S, A>: @unchecked Sendable {
     }
 }
 
+extension Lens where S == A {
+    /// The identity `Lens`: get returns the whole unchanged, set replaces it entirely.
+    public static var id: Lens<S, S> {
+        Lens(get: { $0 }, set: { _, a in a })
+    }
+}
+
 /// Lifts a `WritableKeyPath` into a `Lens`. The getter and setter are derived automatically.
 public func lens<S, A>(_ keyPath: WritableKeyPath<S, A>) -> Lens<S, A> {
     Lens(

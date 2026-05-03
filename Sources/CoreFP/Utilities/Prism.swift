@@ -10,6 +10,18 @@ public struct Prism<S, A>: @unchecked Sendable {
     public func over(_ transform: @escaping (A) -> A) -> (S) -> S {
         { s in preview(s).map { review(transform($0)) } ?? s }
     }
+
+    /// Replaces the focused value if the receiver matches this case; no-op otherwise.
+    public func set(_ s: S, _ a: A) -> S {
+        preview(s).map { _ in review(a) } ?? s
+    }
+}
+
+extension Prism where S == A {
+    /// The identity `Prism`: preview always succeeds, review is the identity function.
+    public static var id: Prism<S, S> {
+        Prism(preview: { .some($0) }, review: { $0 })
+    }
 }
 
 /// Builds a `Prism` from an optional-returning `KeyPath` (the preview) and a `review` function.

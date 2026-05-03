@@ -45,6 +45,15 @@ public struct Iso<S, A>: @unchecked Sendable {
     }
 }
 
+extension Iso where S == A {
+    /// The identity `Iso`: both directions are the identity function.
+    /// This is the strongest identity optic; use `.asLens`, `.asPrism`, or `.asAffineTraversal`
+    /// to obtain weaker forms.
+    public static var id: Iso<S, S> {
+        Iso(get: { $0 }, reverseGet: { $0 })
+    }
+}
+
 /// Builds an `Iso` from explicit forward and reverse functions.
 ///
 /// ```swift

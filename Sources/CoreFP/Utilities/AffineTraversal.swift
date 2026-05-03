@@ -14,3 +14,29 @@ public struct AffineTraversal<S, A>: @unchecked Sendable {
         { s in preview(s).map { set(s, transform($0)) } ?? s }
     }
 }
+
+/// Lifts a `WritableKeyPath` to an optional property into an `AffineTraversal`.
+/// Preview reads the optional; set writes the non-nil focus back as `.some`.
+///
+/// This is the bridge between optional writable subscripts and optics:
+/// ```swift
+/// affineTraversal(\[Int][safe: 2])  // AffineTraversal<[Int], Int> — same as ix(2)
+/// ```
+public func affineTraversal<S, A>(_ keyPath: WritableKeyPath<S, A?>) -> AffineTraversal<S, A> {
+    AffineTraversal(
+        preview: { $0[keyPath: keyPath] },
+        set: { s, a in
+            var copy = s
+            copy[keyPath: keyPath] = a
+            return copy
+        }
+    )
+}
+
+extension AffineTraversal where S == A {
+    /// The identity `AffineTraversal`: preview always succeeds and set replaces the whole.
+    /// Equivalent to composing `Lens.id` with `Prism.id`.
+    public static var id: AffineTraversal<S, S> {
+        AffineTraversal(preview: { .some($0) }, set: { _, a in a })
+    }
+}
