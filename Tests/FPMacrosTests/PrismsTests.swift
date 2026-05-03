@@ -1,6 +1,6 @@
-import FPMacros
 import CoreFP
 import CoreFPOperators
+import FPMacros
 import Testing
 
 // MARK: - Fixtures
@@ -21,7 +21,7 @@ private enum Box {
 
 // MARK: - Nesting works
 
-private struct Reducer {
+private enum Reducer {
     @Lenses(init: .internal)
     struct State {
         let name: String
@@ -154,13 +154,13 @@ struct PrismsCompositionTests {
 
     @Test func prism_composed_with_lens_preview() {
         let optic = Response.prism.ok >>> Config.lens.host
-        #expect(optic.preview(.ok(Config(host: "localhost", port: 8080))) == "localhost")
+        #expect(optic.preview(.ok(Config(host: "localhost", port: 8_080))) == "localhost")
         #expect(optic.preview(.error("oops")) == nil)
     }
 
     @Test func prism_composed_with_lens_over() {
         let optic = Response.prism.ok >>> Config.lens.port
-        let updated = optic.over({ $0 + 1 })(.ok(Config(host: "localhost", port: 8080)))
-        #expect(updated.ok?.port == 8081)
+        let updated = optic.over({ $0 + 1 })(.ok(Config(host: "localhost", port: 8_080)))
+        #expect(updated.ok?.port == 8_081)
     }
 }

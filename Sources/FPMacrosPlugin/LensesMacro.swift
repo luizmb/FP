@@ -1,6 +1,6 @@
+import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros
-import SwiftDiagnostics
 
 // MARK: - Property model
 
@@ -112,9 +112,9 @@ private func inferLiteralType(from expr: ExprSyntax) -> String? {
 
 private func makeInit(access: String, params: [StoredProperty]) -> DeclSyntax {
     let keyword = access.isEmpty ? "" : "\(access) "
-    let paramList = params.map { p in
-        p.defaultValue.map { "\(p.name): \(p.type) = \($0)" } ?? "\(p.name): \(p.type)"
-    }.joined(separator: ", ")
+    let paramList = params
+        .map { p in p.defaultValue.map { "\(p.name): \(p.type) = \($0)" } ?? "\(p.name): \(p.type)" }
+        .joined(separator: ", ")
     let body = params.map { "self.\($0.name) = \($0.name)" }.joined(separator: "; ")
 
     return DeclSyntax(stringLiteral: "\(keyword)init(\(paramList)) { \(body) }")
@@ -128,16 +128,18 @@ private func makeLensEnum(
 ) -> DeclSyntax {
     let keyword = access.isEmpty ? "" : "\(access) "
 
-    let decls = lensProps.map { prop -> String in
-        if prop.isLet {
-            let args = initParams.map { p in
-                p.name == prop.name ? "\(p.name): a" : "\(p.name): s.\(p.name)"
-            }.joined(separator: ", ")
-            return "\(keyword)static let \(prop.name) = CoreFP.lens(\\\(structName).\(prop.name)) { s, a in \(structName)(\(args)) }"
-        } else {
-            return "\(keyword)static let \(prop.name) = CoreFP.lens(\\\(structName).\(prop.name))"
+    let decls = lensProps
+        .map { prop -> String in
+            if prop.isLet {
+                let args = initParams
+                    .map { p in p.name == prop.name ? "\(p.name): a" : "\(p.name): s.\(p.name)" }
+                    .joined(separator: ", ")
+                return "\(keyword)static let \(prop.name) = CoreFP.lens(\\\(structName).\(prop.name)) { s, a in \(structName)(\(args)) }"
+            } else {
+                return "\(keyword)static let \(prop.name) = CoreFP.lens(\\\(structName).\(prop.name))"
+            }
         }
-    }.joined(separator: "; ")
+        .joined(separator: "; ")
 
     return DeclSyntax(stringLiteral: "\(keyword)enum lens { \(decls) }")
 }

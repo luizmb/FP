@@ -1,6 +1,6 @@
+import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros
-import SwiftDiagnostics
 
 // MARK: - Case model
 
@@ -41,9 +41,10 @@ struct CaseInfo {
         case 1:
             return "\(enumName).\(name)"
         default:
-            let args = params.enumerated().map { i, p in
-                "\(p.label.map { "\($0): " } ?? "")t.\(i)"
-            }.joined(separator: ", ")
+            let args = params
+                .enumerated()
+                .map { i, p in "\(p.label.map { "\($0): " } ?? "")t.\(i)" }
+                .joined(separator: ", ")
             return "{ (t: \(focusType)) in \(enumName).\(name)(\(args)) }"
         }
     }
@@ -91,9 +92,14 @@ private func collectCases(from enumDecl: EnumDeclSyntax) -> [CaseInfo] {
 // MARK: - Code generation
 
 private func makePrismEnum(enumName: String, cases: [CaseInfo]) -> DeclSyntax {
-    let decls = cases.map { info in
-        "static let \(info.name): CoreFP.Prism<\(enumName), \(info.focusType)> = CoreFP.prism(preview: { \(info.previewBody(enumName: enumName)) }, review: \(info.reviewExpr(enumName: enumName)))"
-    }.joined(separator: "; ")
+    let decls = cases
+        .map { info in
+            let typeAnnotation = "CoreFP.Prism<\(enumName), \(info.focusType)>"
+            let preview = "{ \(info.previewBody(enumName: enumName)) }"
+            let review = info.reviewExpr(enumName: enumName)
+            return "static let \(info.name): \(typeAnnotation) = CoreFP.prism(preview: \(preview), review: \(review))"
+        }
+        .joined(separator: "; ")
 
     return DeclSyntax(stringLiteral: "enum prism { \(decls) }")
 }

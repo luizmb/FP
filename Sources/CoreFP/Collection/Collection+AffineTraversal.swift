@@ -49,7 +49,7 @@ extension Dictionary {
     /// [String: Int].ix(key: "z").preview(["a": 1, "b": 2])   // nil
     /// [String: Int].ix(key: "a").set(["a": 1, "b": 2], 99)   // ["a": 99, "b": 2]
     /// ```
-    public static func ix(key: Key) -> AffineTraversal<Dictionary<Key, Value>, Value> {
+    public static func ix(key: Key) -> AffineTraversal<[Key: Value], Value> {
         AffineTraversal(
             preview: { $0[key] },
             set: { dict, value in

@@ -1,6 +1,6 @@
-import FPMacros
 import CoreFP
 import CoreFPOperators
+import FPMacros
 import Testing
 
 // MARK: - Fixtures
@@ -24,20 +24,20 @@ private struct Point {
 @Suite("@Lenses — generated init")
 struct LensesInitTests {
     @Test func required_params_only_excludes_let_constants() {
-        let c = Config(host: "localhost", port: 8080)
+        let c = Config(host: "localhost", port: 8_080)
         #expect(c.host == "localhost")
-        #expect(c.port == 8080)
+        #expect(c.port == 8_080)
         #expect(c.version == 3)
         #expect(c.timeout == 30)
     }
 
     @Test func var_default_is_carried_through() {
-        let c = Config(host: "localhost", port: 8080)
+        let c = Config(host: "localhost", port: 8_080)
         #expect(c.timeout == 30)
     }
 
     @Test func var_default_can_be_overridden() {
-        let c = Config(host: "localhost", port: 8080, timeout: 60)
+        let c = Config(host: "localhost", port: 8_080, timeout: 60)
         #expect(c.timeout == 60)
     }
 
@@ -52,7 +52,7 @@ struct LensesInitTests {
 
 @Suite("@Lenses — reconstruction lens (let)")
 struct LensesLetTests {
-    private let config = Config(host: "localhost", port: 8080)
+    private let config = Config(host: "localhost", port: 8_080)
 
     @Test func set_changes_focused_property() {
         let updated = Config.lens.host.set(config, "example.com")
@@ -92,15 +92,15 @@ struct LensesLetTests {
 
 @Suite("@Lenses — WritableKeyPath lens (var)")
 struct LensesVarTests {
-    private let config = Config(host: "localhost", port: 8080)
+    private let config = Config(host: "localhost", port: 8_080)
 
     @Test func set_changes_focused_property() {
-        let updated = Config.lens.port.set(config, 9090)
-        #expect(updated.port == 9090)
+        let updated = Config.lens.port.set(config, 9_090)
+        #expect(updated.port == 9_090)
     }
 
     @Test func set_preserves_other_properties() {
-        let updated = Config.lens.port.set(config, 9090)
+        let updated = Config.lens.port.set(config, 9_090)
         #expect(updated.host == config.host)
         #expect(updated.timeout == config.timeout)
         #expect(updated.version == 3)
@@ -115,7 +115,7 @@ struct LensesVarTests {
 
     @Test func over_transforms_focused_property() {
         let updated = Config.lens.port.over({ $0 + 1 })(config)
-        #expect(updated.port == 8081)
+        #expect(updated.port == 8_081)
     }
 
     @Test func law_get_set() {
@@ -125,12 +125,12 @@ struct LensesVarTests {
 
     @Test func law_set_get() {
         let l = Config.lens.port
-        #expect(l.get(l.set(config, 9090)) == 9090)
+        #expect(l.get(l.set(config, 9_090)) == 9_090)
     }
 
     @Test func law_set_set() {
         let l = Config.lens.port
-        #expect(l.set(l.set(config, 1000), 9090).port == l.set(config, 9090).port)
+        #expect(l.set(l.set(config, 1_000), 9_090).port == l.set(config, 9_090).port)
     }
 }
 
@@ -146,7 +146,7 @@ struct LensesCompositionTests {
 
     @Test func compose_two_let_lenses() {
         let serverHostLens = Server.lens.config >>> Config.lens.host
-        let server = Server(config: Config(host: "localhost", port: 8080), name: "main")
+        let server = Server(config: Config(host: "localhost", port: 8_080), name: "main")
         let updated = serverHostLens.set(server, "example.com")
         #expect(updated.config.host == "example.com")
         #expect(updated.name == "main")
@@ -154,9 +154,9 @@ struct LensesCompositionTests {
 
     @Test func compose_let_and_var_lenses() {
         let serverPortLens = Server.lens.config >>> Config.lens.port
-        let server = Server(config: Config(host: "localhost", port: 8080), name: "main")
-        let updated = serverPortLens.set(server, 9090)
-        #expect(updated.config.port == 9090)
+        let server = Server(config: Config(host: "localhost", port: 8_080), name: "main")
+        let updated = serverPortLens.set(server, 9_090)
+        #expect(updated.config.port == 9_090)
         #expect(updated.config.host == "localhost")
     }
 }
