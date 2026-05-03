@@ -37,8 +37,11 @@ The library draws from Haskell and Scala Cats conventions and is designed to be 
   - [Functional Getter / Setter for Enums (Prism)](#functional-getter--setter-for-enums-prism)
     - [Prism operators](#prism-operators-optional-requires-corefpoperators)
   - [Assembling Optics (AffineTraversal)](#assembling-optics-affinetraversal)
+  - [Identity Optic (.id)](#identity-optic-id)
+  - [Safe Collection Access ([safe:] and ix)](#safe-collection-access-safe-and-ix)
   - [Bidirectional Conversions (Iso)](#bidirectional-conversions-iso)
     - [Iso operators](#iso-operators-optional-requires-corefpoperators)
+  - [Deriving Optics with Macros (@Lenses and @Prisms)](#deriving-optics-with-macros-lenses-and-prisms)
   - [Composing Transformations (Endo)](#composing-transformations-endo)
   - [SumType2 — Shared Interface for Two-Case Types](#sumtype2--shared-interface-for-two-case-types)
   - [Utilities](#utilities)
@@ -86,6 +89,10 @@ dependencies: [
 
 ### Modules
 
+#### `FPMacros` — optic derivation via Swift macros _(optional)_
+
+Adds `@Lenses` and `@Prisms` macros that generate `Lens` and `Prism` optics directly from type declarations. Requires Swift 6.2+.
+
 #### `CoreFP` — the foundation
 
 The minimum you need. Adds several functional operations to Swift's built-in types — `Optional`, `Result`, `Array`, Combine's `Publisher`, and Swift Concurrency's `AsyncSequence` and more.
@@ -114,6 +121,7 @@ Provides the same operator sugar as `CoreFPOperators`, but for the types in `Dat
 | The above plus symbolic operators | `CoreFP` + `CoreFPOperators` |
 | Built-in types + additional data structures | `CoreFP` + `DataStructure` |
 | Everything, with operator syntax | `FP` |
+| Macro-derived `Lens` and `Prism` optics | `FPMacros` |
 
 The `FP` umbrella product re-exports all four modules, so a single line covers everything:
 
@@ -843,6 +851,17 @@ userCityLens.set(user, "London")    // User(address: Address(city: "London"), na
 
 Lenses also compose with Prisms — see [Assembling Optics (AffineTraversal)](#assembling-optics-affinetraversal) for the full story.
 
+**Identity lens**
+
+`Lens<A, A>.id` is the lens where the whole and the part are the same — get returns the value unchanged, set replaces it entirely:
+
+```swift
+Lens<Int, Int>.id.get(42)       // 42
+Lens<Int, Int>.id.set(0, 42)    // 42
+```
+
+It serves as the neutral element for lens composition: `anyLens >>> Lens<A, A>.id == anyLens`.
+
 #### Lens operators _(optional, requires CoreFPOperators)_
 
 `^` lifts a `WritableKeyPath` into a `Lens` directly:
@@ -925,6 +944,24 @@ extension Shape {
 }
 
 let circlePrism: Prism<Shape, Double> = prism(\.circleRadius, review: Shape.circle)
+```
+
+**`set`**
+
+`set` replaces the focused associated value if the prism matches the current case; it is a no-op otherwise:
+
+```swift
+circlePrism.set(.circle(3.14), 5.0)       // Shape.circle(5.0)
+circlePrism.set(.rectangle(1, 2), 5.0)    // Shape.rectangle(1, 2) — unchanged
+```
+
+**Identity prism**
+
+`Prism<A, A>.id` is the prism where preview always succeeds and review is the identity:
+
+```swift
+Prism<Int, Int>.id.preview(42)   // Optional(42)
+Prism<Int, Int>.id.review(42)    // 42
 ```
 
 Prisms compose with other prisms and with lenses — see [Assembling Optics (AffineTraversal)](#assembling-optics-affinetraversal) for the full story.
@@ -1046,6 +1083,120 @@ if let cityBinding = $app[optic: loggedInPrism >>> ^\User.address >>> ^\Address.
 
 See [Binding](docs/types/Binding.md) for the full bridge API.
 
+**`affineTraversal` from a `WritableKeyPath` to an optional**
+
+When a stored property is itself optional, a `WritableKeyPath<S, A?>` already captures both get and set — lift it directly into an `AffineTraversal`:
+
+```swift
+struct Profile { var nickname: String? }
+
+let nicknameFocus = affineTraversal(\Profile.nickname)  // AffineTraversal<Profile, String>
+nicknameFocus.preview(Profile(nickname: "ace"))          // Optional("ace")
+nicknameFocus.preview(Profile(nickname: nil))            // nil
+nicknameFocus.set(Profile(nickname: nil), "ace")         // Profile(nickname: Optional("ace"))
+```
+
+For concrete collection types this is the subscript form of `ix`:
+
+```swift
+affineTraversal(\[Int][safe: 2])   // identical to [Int].ix(2)
+```
+
+---
+
+### Identity Optic (`.id`)
+
+Every optic type has a static `.id` property constrained to `S == A` — the optic where the whole and the part are the same type. These are the neutral elements for composition.
+
+```swift
+Lens<Int, Int>.id.get(42)              // 42
+Lens<Int, Int>.id.set(0, 42)           // 42
+
+Prism<Int, Int>.id.preview(42)         // Optional(42)
+Prism<Int, Int>.id.review(42)          // 42
+
+AffineTraversal<Int, Int>.id.preview(42)  // Optional(42)
+AffineTraversal<Int, Int>.id.set(0, 42)   // 42
+
+Iso<Int, Int>.id.get(42)              // 42
+Iso<Int, Int>.id.reverseGet(42)       // 42
+Iso<Int, Int>.id.asLens               // equivalent to Lens<Int, Int>.id
+```
+
+`Iso<A, A>.id` is the strongest — it downcasts to all weaker forms via `.asLens`, `.asPrism`, `.asAffineTraversal`.
+
+---
+
+### Safe Collection Access (`[safe:]` and `ix`)
+
+#### `[safe:]` — bounds-safe subscript
+
+Collections gain a `[safe:]` subscript that returns `Element?` instead of crashing on out-of-bounds access. For `MutableCollection` the setter is available and is a no-op when the index is out of bounds or the new value is `nil`:
+
+```swift
+let xs = [10, 20, 30]
+xs[safe: 1]          // Optional(20)
+xs[safe: 9]          // nil
+
+var ys = [10, 20, 30]
+ys[safe: 1] = 99     // [10, 99, 30]
+ys[safe: 9] = 99     // no-op — out of bounds
+ys[safe: 1] = nil    // no-op — nil is ignored
+```
+
+#### `ix` — collection `AffineTraversal`
+
+`ix` lifts safe element access into an `AffineTraversal`, making it composable with the rest of the optics pipeline. It is a static method on the collection type so the compiler always knows which collection is being addressed.
+
+**By integer index** — any `MutableCollection`:
+
+```swift
+[Int].ix(1).preview([10, 20, 30])           // Optional(20)
+[Int].ix(9).preview([10, 20, 30])           // nil
+[Int].ix(1).set([10, 20, 30], 99)           // [10, 99, 30]
+[Int].ix(0).over({ $0 * 2 })([10, 20, 30]) // [20, 20, 30]
+```
+
+**By `Identifiable` ID** — `MutableCollection where Element: Identifiable`:
+
+```swift
+struct Item: Identifiable { let id: Int; var name: String }
+let items = [Item(id: 1, name: "A"), Item(id: 2, name: "B")]
+
+[Item].ix(id: 2).preview(items)?.name                              // "B"
+[Item].ix(id: 2).set(items, Item(id: 2, name: "Z")).map(\.name)   // ["A", "Z"]
+[Item].ix(id: 99).set(items, Item(id: 99, name: "X"))             // items — no-op
+```
+
+**By dictionary key** — `Dictionary`:
+
+```swift
+let dict = ["a": 1, "b": 2]
+[String: Int].ix(key: "b").preview(dict)          // Optional(2)
+[String: Int].ix(key: "z").preview(dict)          // nil
+[String: Int].ix(key: "b").set(dict, 99)          // ["a": 1, "b": 99]
+[String: Int].ix(key: "z").set(dict, 99)          // dict — no-op (key absent)
+```
+
+**Composing `ix` with other optics**
+
+Because `ix` returns an `AffineTraversal` it slots into any `>>>` pipeline:
+
+```swift
+struct Team { var members: [Item] }
+
+// AffineTraversal<Team, String>
+let memberNameFocus = lens(\.members) >>> [Item].ix(id: 2) >>> lens(\.name)
+
+let team = Team(members: items)
+memberNameFocus.preview(team)           // Optional("B")
+memberNameFocus.set(team, "Updated")    // updates the member whose id == 2
+```
+
+**`[safe:]` and `ix` are two faces of the same concept**
+
+For concrete collection types, `[Int].ix(2)` is equivalent to `affineTraversal(\[Int][safe: 2])`. Use `[safe:]` for direct element access; use `ix` when you need an optic you can compose.
+
 ---
 
 ### Bidirectional Conversions (Iso)
@@ -1066,7 +1217,7 @@ metersToFeet.reverse           // Iso<Double, Double> with get/reverseGet swappe
 metersToFeet.over { $0 + 10 }(1.0)  // convert to feet, add 10, convert back
 ```
 
-Every `Iso` is also a valid `Lens`, `Prism`, and `AffineTraversal` — use `.asLens`, `.asPrism`, or `.asAffineTraversal` to downcast when needed.
+Every `Iso` is also a valid `Lens`, `Prism`, and `AffineTraversal` — use `.asLens`, `.asPrism`, or `.asAffineTraversal` to downcast when needed. The identity iso `Iso<A, A>.id` is the strongest neutral element — see [Identity Optic](#identity-optic-id).
 
 **Iso as Monoid** — endomorphism isos (`Iso<A, A>`) form a `Monoid` under composition. Use `mconcat` to chain a sequence of lossless transforms into one:
 
@@ -1494,6 +1645,184 @@ Each type in this library has a dedicated reference page with comprehensive exam
 
 ---
 
+---
+
+### Deriving Optics with Macros (`@Lenses` and `@Prisms`)
+
+Import `FPMacros` to generate `Lens` and `Prism` optics automatically from type declarations. Both macros use `@attached(member)` — they add code directly into the type body — so they work at any nesting level, including types nested inside other types.
+
+```swift
+import FPMacros
+```
+
+#### `@Lenses` — struct lenses
+
+`@Lenses(init:)` generates a memberwise initializer and an `enum lens` namespace containing a `Lens` for each relevant stored property.
+
+**Property rules:**
+
+| Property | In generated `init`? | Gets a `Lens`? | Lens kind |
+|---|---|---|---|
+| `let name: T` | yes — required | yes | reconstruction (calls `init` with the changed field) |
+| `let version = 1` | no | no | immutable constant |
+| `var port: Int` | yes — required | yes | `WritableKeyPath` |
+| `var timeout = 30` | yes — default `= 30` | yes | `WritableKeyPath` |
+
+```swift
+@Lenses(init: .public)
+struct Config {
+    let host: String
+    let version = 3       // constant — no lens, excluded from init
+    var port: Int
+    var timeout = 30
+}
+```
+
+**Expanded code:**
+
+```swift
+struct Config {
+    let host: String
+    let version = 3
+    var port: Int
+    var timeout = 30
+
+    public init(host: String, port: Int, timeout: Int = 30) {
+        self.host = host
+        self.port = port
+        self.timeout = timeout
+    }
+
+    enum lens {
+        // let — reconstruction: builds a new Config via init, substituting the focused field
+        static let host: Lens<Config, String> =
+            CoreFP.lens(\Config.host) { s, a in Config(host: a, port: s.port, timeout: s.timeout) }
+
+        // var — WritableKeyPath: in-place mutation via keypath
+        static let port:    Lens<Config, Int> = CoreFP.lens(\Config.port)
+        static let timeout: Lens<Config, Int> = CoreFP.lens(\Config.timeout)
+    }
+}
+```
+
+**Usage:**
+
+```swift
+let config = Config(host: "localhost", port: 8080)
+
+Config.lens.host.set(config, "example.com")
+// Config(host: "example.com", port: 8080, timeout: 30, version: 3)
+
+Config.lens.port.over({ $0 + 1 })(config)
+// Config(host: "localhost", port: 8081, timeout: 30, version: 3)
+
+// Lenses compose as normal:
+let teamConfigHost = lens(\.teamConfig) >>> Config.lens.host
+```
+
+#### `@Prisms` — enum prisms
+
+`@Prisms` generates an `enum prism` namespace with a typed `Prism` for each case, plus a computed optional property per case for convenient extraction.
+
+```swift
+@Prisms
+enum Shape {
+    case circle(Double)
+    case rectangle(Double, Double)
+    case empty
+}
+```
+
+**Expanded code:**
+
+```swift
+enum Shape {
+    case circle(Double)
+    case rectangle(Double, Double)
+    case empty
+
+    enum prism {
+        static let circle: Prism<Shape, Double> = CoreFP.prism(
+            preview: { (_ s: Shape) in guard case .circle(let a) = s else { return nil }; return a },
+            review: Shape.circle
+        )
+        static let rectangle: Prism<Shape, (Double, Double)> = CoreFP.prism(
+            preview: { (_ s: Shape) in guard case .rectangle(let v0, let v1) = s else { return nil }; return (v0, v1) },
+            review: { (t: (Double, Double)) in Shape.rectangle(t.0, t.1) }
+        )
+        static let empty: Prism<Shape, Void> = CoreFP.prism(
+            preview: { (_ s: Shape) in guard case .empty = s else { return nil }; return () },
+            review: { (_: Void) in Shape.empty }
+        )
+    }
+
+    var circle:    Double?           { Self.prism.circle.preview(self) }
+    var rectangle: (Double, Double)? { Self.prism.rectangle.preview(self) }
+    var empty:     Void?             { Self.prism.empty.preview(self) }
+}
+```
+
+**Usage:**
+
+```swift
+let s = Shape.circle(3.14)
+
+s.circle                                    // Optional(3.14) — computed property shorthand
+s.rectangle                                 // nil
+Shape.prism.circle.preview(s)               // Optional(3.14) — explicit optic
+Shape.prism.circle.set(s, 5.0)             // Shape.circle(5.0)
+Shape.prism.circle.over({ $0 * 2 })(s)    // Shape.circle(6.28)
+Shape.prism.circle.preview(.rectangle(1, 2)) // nil — wrong case
+```
+
+#### Nesting — the primary motivation
+
+Both macros use `@attached(member)` so they compose naturally with nested types — which is the typical pattern in unidirectional architectures where a `Reducer` owns its `State` and `Action`:
+
+```swift
+struct Reducer {
+    @Lenses(init: .internal)
+    struct State {
+        let userName: String
+        var score: Int
+        var isActive = false
+    }
+
+    @Prisms
+    enum Action {
+        case updateName(String)
+        case incrementScore(Int)
+        case reset
+    }
+}
+
+// State lenses — functional updates, no mutation:
+let state = Reducer.State(userName: "Alice", score: 0)
+Reducer.State.lens.userName.set(state, "Bob")       // State(userName: "Bob", score: 0, isActive: false)
+Reducer.State.lens.score.over({ $0 + 10 })(state)  // State(userName: "Alice", score: 10, isActive: false)
+
+// Action prisms — safe extraction and inspection:
+let action = Reducer.Action.updateName("Bob")
+action.updateName                                    // Optional("Bob")
+action.incrementScore                                // nil
+Reducer.Action.prism.updateName.preview(action)      // Optional("Bob")
+
+// Composition — prisms and lenses compose freely via >>>:
+// AffineTraversal<Action, String> — focuses on the name inside .updateName
+let nameFocus = Reducer.Action.prism.updateName >>> Reducer.State.lens.userName
+```
+
+#### Type annotation note
+
+Properties with literal defaults (`0`, `3.14`, `"hello"`, `true`) have their types inferred automatically. For any other default, add an explicit type annotation:
+
+```swift
+var timeout: Duration = .seconds(30)    // explicit annotation required
+var retryPolicy: RetryPolicy = .exponential  // explicit annotation required
+```
+
+---
+
 ## Contributing
 
 Contributions are welcome. The architecture has a few firm rules to keep the library consistent:
@@ -1514,7 +1843,7 @@ To contribute:
 
 The library verifies functional programming laws (Functor, Applicative, Monad laws) and all operator behaviours across all types and their transformer combinations.
 
-Test targets: `CoreFPTests`, `CoreFPOperatorsTests`, `DataStructureTests`, `DataStructureOperatorsTests`.
+Test targets: `CoreFPTests`, `CoreFPOperatorsTests`, `DataStructureTests`, `DataStructureOperatorsTests`, `FPMacrosTests`.
 
 ```bash
 # Run all tests
