@@ -43,6 +43,7 @@ The library draws from Haskell and Scala Cats conventions and is designed to be 
     - [Iso operators](#iso-operators-optional-requires-corefpoperators)
   - [Deriving Optics with Macros (@Lenses and @Prisms)](#deriving-optics-with-macros-lenses-and-prisms)
   - [Composing Transformations (Endo)](#composing-transformations-endo)
+  - [Cost-Free Mutations (EndoMut)](#cost-free-mutations-endomut)
   - [SumType2 — Shared Interface for Two-Case Types](#sumtype2--shared-interface-for-two-case-types)
   - [Utilities](#utilities)
   - [Operator Reference](#operator-reference)
@@ -1298,6 +1299,88 @@ Both are endomorphisms and both form a `Monoid` under composition, but they diff
 | Use when | trimming, clamping, normalizing | rotating, scaling, unit conversion |
 
 You can always extract an `Endo` from an `Iso<A, A>` via `.get`, but not vice versa — invertibility requires both directions up front.
+
+---
+
+### Cost-Free Mutations (EndoMut)
+
+`EndoMut<A>` is the in-place companion to `Endo<A>`. It wraps `(inout A) -> Void` instead of `(A) -> A`. The algebra is identical — `EndoMut` is still a `Monoid` under sequential application — but for Swift value types with Copy-on-Write (CoW) internals, the performance characteristics differ fundamentally.
+
+#### Why `Endo<A>` is expensive on large Swift values
+
+Swift's CoW types — `Array`, `Dictionary`, `Set`, `String` — store their contents in a heap buffer tracked by a reference count. Mutation is in-place only when the reference count of that buffer is exactly **1**. The moment it reaches 2, Swift copies the entire buffer before mutating.
+
+When you call a pure `(A) -> A` function:
+
+```swift
+let newState = reducer(action)(state)
+//                             ^^^^^
+// At this point `state` in the caller still holds a reference to every
+// CoW buffer. The function argument holds a second reference.
+// Reference count = 2  →  any mutation inside copies the whole buffer.
+```
+
+This means that for every reducer call on a state containing a 100 000-element array, touching even a single element triggers an O(n) heap copy — even if nothing else in the state changes.
+
+#### Why `EndoMut` avoids those copies
+
+`EndoMut` passes the value by exclusive reference:
+
+```swift
+reducer(action)(&state)
+//              ^^^^^^
+// Swift's Law of Exclusivity (SE-0176) statically guarantees no other
+// code holds an alias to `state` for the duration of this call.
+// Reference count = 1  →  CoW mutates the buffer in place.
+```
+
+The exclusivity guarantee is enforced by the compiler, not convention. You cannot hold another reference to the same value while an `inout` borrow is active — the compiler rejects the code at compile time. This makes `EndoMut` semantically pure: there is no shared mutable state, and the transformation is referentially transparent at the call site.
+
+#### Usage
+
+```swift
+var items = Array(0..<10_000)
+
+let clamp = EndoMut<[Int]> { xs in for i in xs.indices { xs[i] = min(xs[i], 100) } }
+let sort  = EndoMut<[Int]> { $0.sort() }
+
+let normalise: EndoMut<[Int]> = mconcat([clamp, sort])
+normalise.runEndoMut(&items)   // clamps first, then sorts — no copies
+normalise(&items)              // callAsFunction also works
+```
+
+`EndoMut.combine(f, g)` applies `f` first, then `g` — `g` sees every mutation `f` made. The `<>` operator and `mconcat` follow from the `Semigroup`/`Monoid` conformances:
+
+```swift
+(clamp <> sort)(&items)                    // same as mconcat([clamp, sort])
+```
+
+#### Bridging between `Endo` and `EndoMut`
+
+The two types are isomorphic as monoids. Converting `Endo → EndoMut` is free (no extra copy). Converting `EndoMut → Endo` always makes one copy — that copy is precisely what pure-function semantics require.
+
+```swift
+// Endo → EndoMut (free — no extra copy)
+let mutating: EndoMut<Int> = Endo<Int> { $0 + 1 }.toEndoMut()
+
+// EndoMut → Endo (one copy of the value)
+let pure: Endo<Int> = EndoMut<Int> { $0 += 1 }.toEndo()
+
+// Round-trips preserve semantics
+let original = EndoMut<Int> { $0 *= 2 }
+let roundTripped = original.toEndo().toEndoMut()
+// original and roundTripped produce the same result for any input
+```
+
+**`Endo` vs `EndoMut`**
+
+| | `Endo<A>` | `EndoMut<A>` |
+|---|---|---|
+| Function type | `(A) -> A` | `(inout A) -> Void` |
+| CoW containers | copied on mutation | mutated in place |
+| Composable | yes — `Monoid` | yes — same `Monoid` |
+| Bridgeable | `.toEndoMut()` (free) | `.toEndo()` (one copy) |
+| Use when | values are small / opaque | `Array`, `Dictionary`, large structs |
 
 ---
 
