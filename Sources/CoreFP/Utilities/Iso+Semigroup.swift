@@ -25,7 +25,5 @@ extension Iso: Semigroup where S == A {
 }
 
 extension Iso: Monoid where S == A {
-    public static var identity: Iso<A, A> {
-        Iso(get: { $0 }, reverseGet: { $0 })
-    }
+    public static var identity: Iso<A, A> { .id }
 }

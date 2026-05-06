@@ -19,6 +19,8 @@ public struct Iso<S, A>: @unchecked Sendable {
         self.reverseGet = reverseGet
     }
 
+    public func callAsFunction(_ whole: S) -> A { get(whole) }
+
     /// The inverse iso — swaps `get` and `reverseGet`.
     public var reverse: Iso<A, S> {
         Iso<A, S>(get: reverseGet, reverseGet: get)
