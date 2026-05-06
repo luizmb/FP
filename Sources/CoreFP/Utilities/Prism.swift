@@ -7,6 +7,8 @@ public struct Prism<S, A>: @unchecked Sendable {
         self.review = review
     }
 
+    public func callAsFunction(_ whole: S) -> A? { preview(whole) }
+
     public func over(_ transform: @escaping (A) -> A) -> (S) -> S {
         { s in preview(s).map { review(transform($0)) } ?? s }
     }

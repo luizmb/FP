@@ -7,6 +7,8 @@ public struct Lens<S, A>: @unchecked Sendable {
         self.set = set
     }
 
+    public func callAsFunction(_ whole: S) -> A { get(whole) }
+
     public func over(_ transform: @escaping (A) -> A) -> (S) -> S {
         { s in set(s, transform(get(s))) }
     }

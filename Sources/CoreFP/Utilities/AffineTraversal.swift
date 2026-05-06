@@ -10,6 +10,8 @@ public struct AffineTraversal<S, A>: @unchecked Sendable {
         self.set = set
     }
 
+    public func callAsFunction(_ whole: S) -> A? { preview(whole) }
+
     public func over(_ transform: @escaping (A) -> A) -> (S) -> S {
         { s in preview(s).map { set(s, transform($0)) } ?? s }
     }
