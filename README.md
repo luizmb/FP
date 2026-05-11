@@ -2038,9 +2038,11 @@ action.updateName                                    // Optional("Bob")
 action.incrementScore                                // nil
 Reducer.Action.prism.updateName.preview(action)      // Optional("Bob")
 
-// Composition — prisms and lenses compose freely via >>>:
-// AffineTraversal<Action, String> — focuses on the name inside .updateName
-let nameFocus = Reducer.Action.prism.updateName >>> Reducer.State.lens.userName
+// The generated optics are regular Lens / Prism values — compose and lift them
+// exactly as shown in earlier sections. For example, if another struct wraps
+// Reducer.State, its lens composes with the generated ones:
+//   lens(\AppState.game) >>> Reducer.State.lens.score  // Lens<AppState, Int>
+//   lens(\AppState.game).compose(Reducer.State.lens.score)  // same, no operators
 ```
 
 #### Type annotation note
@@ -2080,11 +2082,11 @@ Test targets: `CoreFPTests`, `CoreFPOperatorsTests`, `DataStructureTests`, `Data
 # Run all tests
 swift test
 
-# Run a single test target
-swift test --target CoreFPTests
-
 # Run a specific test by name (Swift Testing uses / as separator)
 swift test --filter "DeferredTaskTests/flatMap"
+
+# Run all tests whose name contains a word (matches across targets)
+swift test --filter "CoreFP"
 ```
 
 ## Platform Support
