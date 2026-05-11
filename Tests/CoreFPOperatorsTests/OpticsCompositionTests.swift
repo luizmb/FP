@@ -200,6 +200,55 @@ struct PrismPrismCompositionTests {
     }
 }
 
+// MARK: - lift through compositions
+
+@Suite("lift through composed optics")
+struct LiftCompositionTests {
+    private struct World {
+        var shape: Shape
+    }
+
+    private var shapeLens: Lens<World, Shape> { lens(\World.shape) }
+
+    @Test func lensLens_lift_mutatesNestedField() {
+        var person = alice
+        (addressLens >>> streetLens).lift(EndoMut { $0 = $0.uppercased() })(&person)
+        #expect(person.address.street == "1ST AVE")
+        #expect(person.age == 30)
+    }
+
+    @Test func lensPrism_lift_hit_mutatesFocus() {
+        var world = World(shape: .circle(3.0))
+        (shapeLens >>> circlePrism).lift(EndoMut { $0 *= 2 })(&world)
+        guard case .circle(let r) = world.shape else { Issue.record("Expected .circle"); return }
+        #expect(r == 6.0)
+    }
+
+    @Test func lensPrism_lift_miss_isNoOp() {
+        var world = World(shape: .rectangle(1.0, 2.0))
+        (shapeLens >>> circlePrism).lift(EndoMut { $0 *= 2 })(&world)
+        guard case .rectangle(let w, let h) = world.shape else { Issue.record("Expected .rectangle"); return }
+        #expect(w == 1.0)
+        #expect(h == 2.0)
+    }
+
+    @Test func lensAffineTraversal_lift_mutatesCollectionElement() {
+        struct AppState { var items: [Int] }
+        let itemsLens = lens(\AppState.items)
+        var state = AppState(items: [10, 20, 30])
+        (itemsLens >>> [Int].ix(1)).lift(EndoMut { $0 += 5 })(&state)
+        #expect(state.items == [10, 25, 30])
+    }
+
+    @Test func lensAffineTraversal_lift_outOfBounds_isNoOp() {
+        struct AppState { var items: [Int] }
+        let itemsLens = lens(\AppState.items)
+        var state = AppState(items: [10, 20, 30])
+        (itemsLens >>> [Int].ix(9)).lift(EndoMut { $0 += 5 })(&state)
+        #expect(state.items == [10, 20, 30])
+    }
+}
+
 // MARK: - Three-level chain: Lens >>> Lens >>> Prism
 
 @Suite("Lens >>> Lens >>> Prism (three levels)")

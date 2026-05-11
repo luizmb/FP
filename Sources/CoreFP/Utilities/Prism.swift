@@ -1,10 +1,23 @@
 public struct Prism<S, A>: @unchecked Sendable {
     public let preview: (S) -> A?
     public let review: (A) -> S
+    public let tryModifyMut: (inout S, (inout A) -> Void) -> Void
 
     public init(preview: @escaping (S) -> A?, review: @escaping (A) -> S) {
         self.preview = preview
         self.review = review
+        self.tryModifyMut = { s, f in
+            guard var part = preview(s) else { return }
+            f(&part)
+            s = review(part)
+        }
+    }
+
+    public init(preview: @escaping (S) -> A?, review: @escaping (A) -> S,
+                tryModifyMut: @escaping (inout S, (inout A) -> Void) -> Void) {
+        self.preview = preview
+        self.review = review
+        self.tryModifyMut = tryModifyMut
     }
 
     public func callAsFunction(_ whole: S) -> A? { preview(whole) }
@@ -17,12 +30,15 @@ public struct Prism<S, A>: @unchecked Sendable {
     public func set(_ s: S, _ a: A) -> S {
         preview(s).map { _ in review(a) } ?? s
     }
+
+    public func lift(_ f: EndoMut<A>) -> EndoMut<S> {
+        EndoMut { s in tryModifyMut(&s) { a in f(&a) } }
+    }
 }
 
 extension Prism where S == A {
-    /// The identity `Prism`: preview always succeeds, review is the identity function.
     public static var id: Prism<S, S> {
-        Prism(preview: { .some($0) }, review: { $0 })
+        Prism(preview: { .some($0) }, review: { $0 }, tryModifyMut: { s, f in f(&s) })
     }
 }
 
