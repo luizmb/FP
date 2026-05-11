@@ -72,6 +72,78 @@ struct IxIndexTests {
     }
 }
 
+// MARK: - ix by custom Hashable identifier
+
+@Suite("ix by custom Hashable identifier")
+struct IxCustomIdentifierTests {
+    private struct Project: Equatable {
+        let slug: String
+        var title: String
+    }
+
+    private let projects = [
+        Project(slug: "auth", title: "Auth"),
+        Project(slug: "profile", title: "Profile"),
+        Project(slug: "feed", title: "Feed")
+    ]
+
+    @Test func preview_hit() {
+        #expect([Project].ix(id: "profile", by: \.slug).preview(projects)?.title == "Profile")
+    }
+
+    @Test func preview_miss() {
+        #expect([Project].ix(id: "missing", by: \.slug).preview(projects) == nil)
+    }
+
+    @Test func set_hit() {
+        let updated = [Project].ix(id: "feed", by: \.slug).set(projects, Project(slug: "feed", title: "News"))
+        #expect(updated.map(\.title) == ["Auth", "Profile", "News"])
+    }
+
+    @Test func set_miss_is_noop() {
+        let updated = [Project].ix(id: "gone", by: \.slug).set(projects, Project(slug: "gone", title: "X"))
+        #expect(updated == projects)
+    }
+
+    @Test func over_hit() {
+        let updated = [Project].ix(id: "auth", by: \.slug).over({ Project(slug: $0.slug, title: $0.title.uppercased()) })(projects)
+        #expect(updated.map(\.title) == ["AUTH", "Profile", "Feed"])
+    }
+
+    @Test func over_miss() {
+        let updated = [Project].ix(id: "gone", by: \.slug).over({ Project(slug: $0.slug, title: $0.title.uppercased()) })(projects)
+        #expect(updated == projects)
+    }
+
+    @Test("preview-set: setting a known id returns the new element on preview")
+    func law_previewSet() {
+        let optic = [Project].ix(id: "auth", by: \.slug)
+        let new = Project(slug: "auth", title: "Security")
+        #expect(optic.preview(optic.set(projects, new)) == new)
+    }
+
+    @Test("set-set: last set wins")
+    func law_setSet() {
+        let optic = [Project].ix(id: "profile", by: \.slug)
+        let result = optic.set(optic.set(projects, Project(slug: "profile", title: "X")), Project(slug: "profile", title: "Y"))
+        #expect(result == optic.set(projects, Project(slug: "profile", title: "Y")))
+    }
+
+    // MARK: lift
+
+    @Test func lift_knownId_mutatesElementInPlace() {
+        var items = projects
+        [Project].ix(id: "feed", by: \.slug).lift(EndoMut { $0 = Project(slug: $0.slug, title: $0.title.lowercased()) })(&items)
+        #expect(items.map(\.title) == ["Auth", "Profile", "feed"])
+    }
+
+    @Test func lift_unknownId_isNoOp() {
+        var items = projects
+        [Project].ix(id: "gone", by: \.slug).lift(EndoMut { $0 = Project(slug: $0.slug, title: "Z") })(&items)
+        #expect(items == projects)
+    }
+}
+
 // MARK: - ix by Identifiable ID
 
 @Suite("ix by Identifiable ID")
