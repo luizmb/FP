@@ -13,8 +13,11 @@ public struct Lens<S, A>: @unchecked Sendable {
         }
     }
 
-    public init(get: @escaping (S) -> A, set: @escaping (S, A) -> S,
-                modifyMut: @escaping (inout S, (inout A) -> Void) -> Void) {
+    public init(
+        get: @escaping (S) -> A,
+        set: @escaping (S, A) -> S,
+        modifyMut: @escaping (inout S, (inout A) -> Void) -> Void
+    ) {
         self.get = get
         self.set = set
         self.modifyMut = modifyMut

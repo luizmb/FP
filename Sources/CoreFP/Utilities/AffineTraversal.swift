@@ -16,8 +16,11 @@ public struct AffineTraversal<S, A>: @unchecked Sendable {
         }
     }
 
-    public init(preview: @escaping (S) -> A?, set: @escaping (S, A) -> S,
-                tryModifyMut: @escaping (inout S, (inout A) -> Void) -> Void) {
+    public init(
+        preview: @escaping (S) -> A?,
+        set: @escaping (S, A) -> S,
+        tryModifyMut: @escaping (inout S, (inout A) -> Void) -> Void
+    ) {
         self.preview = preview
         self.set = set
         self.tryModifyMut = tryModifyMut

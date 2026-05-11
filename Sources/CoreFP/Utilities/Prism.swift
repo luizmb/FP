@@ -13,8 +13,11 @@ public struct Prism<S, A>: @unchecked Sendable {
         }
     }
 
-    public init(preview: @escaping (S) -> A?, review: @escaping (A) -> S,
-                tryModifyMut: @escaping (inout S, (inout A) -> Void) -> Void) {
+    public init(
+        preview: @escaping (S) -> A?,
+        review: @escaping (A) -> S,
+        tryModifyMut: @escaping (inout S, (inout A) -> Void) -> Void
+    ) {
         self.preview = preview
         self.review = review
         self.tryModifyMut = tryModifyMut

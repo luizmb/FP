@@ -9,7 +9,7 @@ private struct Address {
 }
 
 private struct AppState {
-    var count: Int
+    var value: Int
     var address: Address
     var items: [Int]
 }
@@ -28,11 +28,11 @@ private enum Route {
 
 @Suite("Lens.zoom")
 struct LensZoomTests {
-    private let countLens = lens(\AppState.count)
+    private let countLens = lens(\AppState.value)
     private let addressLens = lens(\AppState.address)
     private let streetLens = lens(\Address.street)
 
-    private let initial = AppState(count: 0, address: Address(street: "1st Ave"), items: [1, 2, 3])
+    private let initial = AppState(value: 0, address: Address(street: "1st Ave"), items: [1, 2, 3])
 
     @Test func zoom_extractsResultAndMutatesSubState() {
         let counter = Stateful<Int, String> { n in
@@ -42,14 +42,14 @@ struct LensZoomTests {
         }
         let (result, final) = countLens.zoom(counter).runStateful(initial)
         #expect(result == "0")
-        #expect(final.count == 1)
+        #expect(final.value == 1)
         #expect(final.address.street == "1st Ave")
     }
 
     @Test func zoom_voidResult_mutatesSubState() {
         let increment = Stateful<Int, Void> { $0 += 10 }
         let (_, final) = countLens.zoom(increment).runStateful(initial)
-        #expect(final.count == 10)
+        #expect(final.value == 10)
         #expect(final.items == [1, 2, 3])
     }
 
@@ -57,7 +57,7 @@ struct LensZoomTests {
         let streetUpper = Stateful<String, Void> { $0 = $0.uppercased() }
         let (_, final) = addressLens.compose(streetLens).zoom(streetUpper).runStateful(initial)
         #expect(final.address.street == "1ST AVE")
-        #expect(final.count == 0)
+        #expect(final.value == 0)
     }
 }
 
@@ -91,7 +91,7 @@ struct PrismZoomTests {
 
 @Suite("AffineTraversal.zoom")
 struct AffineTraversalZoomTests {
-    private let initial = AppState(count: 0, address: Address(street: "1st"), items: [10, 20, 30])
+    private let initial = AppState(value: 0, address: Address(street: "1st"), items: [10, 20, 30])
 
     @Test func zoom_hit_extractsResultAndMutatesElement() {
         let pop = Stateful<Int, Int> { n in
