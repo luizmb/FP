@@ -26,6 +26,37 @@ extension MutableCollection {
     }
 }
 
+extension MutableCollection {
+    /// Returns an `AffineTraversal` focusing on the first element whose field at `identifier`
+    /// equals `id`. Use this when the element type is not `Identifiable` but has a stable
+    /// `Hashable` field that uniquely identifies each element.
+    ///
+    /// `tryModifyMut` locates the element by linear search and then mutates it directly via
+    /// `inout collection[idx]` — the collection buffer is never CoW-copied.
+    ///
+    /// ```swift
+    /// struct Project { let slug: String; var title: String }
+    /// [Project].ix(id: "auth", by: \.slug).preview(projects)?.title   // "Auth Module"
+    /// ```
+    public static func ix<ID: Hashable>(id: ID, by identifier: KeyPath<Element, ID>) -> AffineTraversal<Self, Element> {
+        AffineTraversal(
+            preview: { $0.first(where: { $0[keyPath: identifier] == id }) },
+            set: { collection, element in
+                guard let idx = collection.firstIndex(where: { $0[keyPath: identifier] == id })
+                else { return collection }
+                var copy = collection
+                copy[idx] = element
+                return copy
+            },
+            tryModifyMut: { collection, f in
+                guard let idx = collection.firstIndex(where: { $0[keyPath: identifier] == id })
+                else { return }
+                f(&collection[idx])
+            }
+        )
+    }
+}
+
 extension MutableCollection where Element: Identifiable {
     /// Returns an `AffineTraversal` focusing on the first element whose `id` matches.
     /// Preview returns `nil` when no element with that `id` exists; set is a no-op in that case.
