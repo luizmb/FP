@@ -47,6 +47,9 @@ public struct AffineTraversal<S, A>: @unchecked Sendable {
 
     /// Standard 2-closure init. `tryModifyMut` is synthesised from
     /// `preview`+`set`: copies `A` once, keeps `S` as `inout`.
+    ///
+    /// Prefer `init(preview:setMut:)` when the write-back can be expressed as
+    /// `(inout S, A) -> Void` — that avoids passing `S` by value to `set`.
     public init(preview: @escaping (S) -> A?, set: @escaping (S, A) -> S) {
         self.preview = preview
         self.set = set
@@ -54,6 +57,33 @@ public struct AffineTraversal<S, A>: @unchecked Sendable {
             guard var part = preview(s) else { return }
             f(&part)
             s = set(s, part)
+        }
+    }
+
+    /// Inout-setter init. `set` is synthesised from `setMut` (with a focus-absent
+    /// guard); `tryModifyMut` keeps `S` as `inout` throughout — no CoW copy on
+    /// `S` during write-back.
+    ///
+    /// `setMut` is only called when `preview` returns a non-`nil` value; it is
+    /// the caller's responsibility to ensure the mutation is valid in that case.
+    ///
+    /// ```swift
+    /// // Focus on a `let` optional property, reconstructing S on write:
+    /// let userTraversal = AffineTraversal<AppState, User>(
+    ///     preview: { $0.currentUser },
+    ///     setMut: { state, user in state = AppState(currentUser: user, other: state.other) }
+    /// )
+    /// ```
+    public init(preview: @escaping (S) -> A?, setMut: @escaping (inout S, A) -> Void) {
+        self.preview = preview
+        self.set = { s, a in
+            guard preview(s) != nil else { return s }
+            var c = s; setMut(&c, a); return c
+        }
+        self.tryModifyMut = { s, f in
+            guard var part = preview(s) else { return }
+            f(&part)
+            setMut(&s, part)
         }
     }
 
