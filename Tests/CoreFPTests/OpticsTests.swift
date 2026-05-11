@@ -92,6 +92,23 @@ struct LensTests {
         let twice = ageLens.set(person, 99)
         #expect(once.age == twice.age)
     }
+
+    // MARK: lift
+
+    @Test func lift_writableKeyPath_mutatesTargetField() {
+        var person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
+        lens(\Person.age).lift(EndoMut { $0 += 1 })(&person)
+        #expect(person.age == 31)
+        #expect(person.name == "Alice")
+    }
+
+    @Test func lift_computedSetter_mutatesTargetField() {
+        let nameLens = lens(\.name) { (p: Person, n) in Person(age: p.age, name: n, address: p.address) }
+        var person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
+        nameLens.lift(EndoMut { $0 = $0.uppercased() })(&person)
+        #expect(person.name == "ALICE")
+        #expect(person.age == 30)
+    }
 }
 
 // MARK: - Prisms
@@ -135,6 +152,23 @@ struct PrismTests {
         #expect(w == 2.0)
         #expect(h == 4.0)
     }
+
+    // MARK: lift
+
+    @Test func lift_hit_mutatesFocusedValue() {
+        var shape = Shape.circle(3.0)
+        circlePrism.lift(EndoMut { $0 *= 2 })(&shape)
+        guard case .circle(let r) = shape else { Issue.record("Expected .circle"); return }
+        #expect(r == 6.0)
+    }
+
+    @Test func lift_miss_isNoOp() {
+        var shape = Shape.rectangle(1.0, 2.0)
+        circlePrism.lift(EndoMut { $0 *= 2 })(&shape)
+        guard case .rectangle(let w, let h) = shape else { Issue.record("Expected .rectangle"); return }
+        #expect(w == 1.0)
+        #expect(h == 2.0)
+    }
 }
 
 // MARK: - AffineTraversal
@@ -166,5 +200,65 @@ struct AffineTraversalTests {
         let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
         let updated = streetAT.over({ $0.uppercased() })(person)
         #expect(updated.address.street == "1ST AVE")
+    }
+
+    // MARK: lift
+
+    @Test func lift_hit_mutatesFocusedValue() {
+        var person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
+        streetAT.lift(EndoMut { $0 = $0.uppercased() })(&person)
+        #expect(person.address.street == "1ST AVE")
+        #expect(person.name == "Alice")
+    }
+}
+
+// MARK: - compose (no operators)
+
+@Suite("compose (named function, no operators)")
+struct ComposeTests {
+    private let addressLens = lens(\Person.address)
+    private let streetLens  = lens(\Address.street)
+    private let circlePrism = prism(\Shape.circleRadius, review: Shape.circle)
+
+    @Test func lensComposeLens_get() {
+        let personStreet = addressLens.compose(streetLens)
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
+        #expect(personStreet.get(person) == "1st Ave")
+    }
+
+    @Test func lensComposeLens_set() {
+        let personStreet = addressLens.compose(streetLens)
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
+        #expect(personStreet.set(person, "2nd Ave").address.street == "2nd Ave")
+    }
+
+    @Test func lensComposeLens_lift() {
+        let personStreet = addressLens.compose(streetLens)
+        var person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
+        personStreet.lift(EndoMut { $0 = $0.uppercased() })(&person)
+        #expect(person.address.street == "1ST AVE")
+        #expect(person.age == 30)
+    }
+
+    @Test func lensComposePrism_preview_hit() {
+        struct World { var shape: Shape }
+        let shapeLens = lens(\World.shape)
+        let circleInWorld = shapeLens.compose(circlePrism)
+        #expect(circleInWorld.preview(World(shape: .circle(3.0))) == 3.0)
+    }
+
+    @Test func lensComposePrism_preview_miss() {
+        struct World { var shape: Shape }
+        let shapeLens = lens(\World.shape)
+        let circleInWorld = shapeLens.compose(circlePrism)
+        #expect(circleInWorld.preview(World(shape: .rectangle(1.0, 2.0))) == nil)
+    }
+
+    @Test func lensComposeAffineTraversal_lift_mutatesElement() {
+        struct AppState { var items: [Int] }
+        let itemsLens = lens(\AppState.items)
+        var state = AppState(items: [10, 20, 30])
+        itemsLens.compose([Int].ix(1)).lift(EndoMut { $0 += 5 })(&state)
+        #expect(state.items == [10, 25, 30])
     }
 }

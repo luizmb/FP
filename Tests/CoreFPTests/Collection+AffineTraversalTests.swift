@@ -56,6 +56,20 @@ struct IxIndexTests {
         let optic = [Int].ix(2)
         #expect(optic.set(optic.set(xs, 42), 99) == optic.set(xs, 99))
     }
+
+    // MARK: lift
+
+    @Test func lift_inBounds_mutatesElementInPlace() {
+        var arr = [10, 20, 30]
+        [Int].ix(1).lift(EndoMut { $0 += 5 })(&arr)
+        #expect(arr == [10, 25, 30])
+    }
+
+    @Test func lift_outOfBounds_isNoOp() {
+        var arr = [10, 20, 30]
+        [Int].ix(9).lift(EndoMut { $0 += 5 })(&arr)
+        #expect(arr == [10, 20, 30])
+    }
 }
 
 // MARK: - ix by Identifiable ID
@@ -103,6 +117,20 @@ struct IxIDTests {
         #expect(optic.set(optic.set(items, Item(id: 2, name: "X")), Item(id: 2, name: "Y"))
             == optic.set(items, Item(id: 2, name: "Y")))
     }
+
+    // MARK: lift
+
+    @Test func lift_knownId_mutatesElementInPlace() {
+        var items = [Item(id: 1, name: "A"), Item(id: 2, name: "B"), Item(id: 3, name: "C")]
+        [Item].ix(id: 2).lift(EndoMut { $0 = Item(id: $0.id, name: $0.name.lowercased()) })(&items)
+        #expect(items.map(\.name) == ["A", "b", "C"])
+    }
+
+    @Test func lift_unknownId_isNoOp() {
+        var items = [Item(id: 1, name: "A"), Item(id: 2, name: "B")]
+        [Item].ix(id: 99).lift(EndoMut { $0 = Item(id: $0.id, name: "Z") })(&items)
+        #expect(items.map(\.name) == ["A", "B"])
+    }
 }
 
 // MARK: - ix by Dictionary key
@@ -145,6 +173,21 @@ struct IxDictionaryTests {
     func law_setSet() {
         let optic = [String: Int].ix(key: "b")
         #expect(optic.set(optic.set(dict, 42), 99) == optic.set(dict, 99))
+    }
+
+    // MARK: lift
+
+    @Test func lift_presentKey_mutatesValueInPlace() {
+        var d = ["a": 1, "b": 2, "c": 3]
+        [String: Int].ix(key: "b").lift(EndoMut { $0 *= 10 })(&d)
+        #expect(d["b"] == 20)
+        #expect(d["a"] == 1)
+    }
+
+    @Test func lift_absentKey_isNoOp() {
+        var d = ["a": 1, "b": 2]
+        [String: Int].ix(key: "z").lift(EndoMut { $0 *= 10 })(&d)
+        #expect(d == ["a": 1, "b": 2])
     }
 }
 

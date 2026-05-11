@@ -14,6 +14,10 @@ extension MutableCollection {
                 var copy = collection
                 copy[safe: index] = element
                 return copy
+            },
+            tryModifyMut: { collection, f in
+                guard collection.indices.contains(index) else { return }
+                f(&collection[index])
             }
         )
     }
@@ -35,6 +39,10 @@ extension MutableCollection where Element: Identifiable {
                 var copy = collection
                 copy[idx] = element
                 return copy
+            },
+            tryModifyMut: { collection, f in
+                guard let idx = collection.firstIndex(where: { $0.id == id }) else { return }
+                f(&collection[idx])
             }
         )
     }
@@ -57,6 +65,11 @@ extension Dictionary {
                 var copy = dict
                 copy[key] = value
                 return copy
+            },
+            tryModifyMut: { dict, f in
+                guard var value = dict[key] else { return }
+                f(&value)
+                dict[key] = value
             }
         )
     }
