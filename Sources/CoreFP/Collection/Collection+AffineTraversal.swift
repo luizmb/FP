@@ -2,6 +2,9 @@ extension MutableCollection {
     /// Returns an `AffineTraversal` focusing on the element at `index`.
     /// Preview returns `nil` when `index` is out of bounds; set is a no-op in that case.
     ///
+    /// `tryModifyMut` accesses the element directly via `inout collection[index]`,
+    /// which is zero-copy — the collection buffer is never CoW-copied.
+    ///
     /// ```swift
     /// [Int].ix(1).preview([10, 20, 30])        // Optional(20)
     /// [Int].ix(9).preview([10, 20, 30])        // nil
@@ -27,6 +30,9 @@ extension MutableCollection where Element: Identifiable {
     /// Returns an `AffineTraversal` focusing on the first element whose `id` matches.
     /// Preview returns `nil` when no element with that `id` exists; set is a no-op in that case.
     ///
+    /// `tryModifyMut` accesses the element directly via `inout collection[idx]` after
+    /// a linear search — the collection buffer is never CoW-copied.
+    ///
     /// ```swift
     /// [Item].ix(id: 2).preview(items)?.name   // "B"
     /// [Item].ix(id: 99).preview(items)        // nil
@@ -51,6 +57,10 @@ extension MutableCollection where Element: Identifiable {
 extension Dictionary {
     /// Returns an `AffineTraversal` focusing on the value for `key`.
     /// Preview returns `nil` when the key is absent; set is a no-op in that case.
+    ///
+    /// `tryModifyMut` copies `Value` once (extracted from the optional subscript),
+    /// then writes it back into `inout` dictionary. The dictionary buffer is never
+    /// CoW-copied because the dictionary is passed by exclusive `inout` reference.
     ///
     /// ```swift
     /// [String: Int].ix(key: "a").preview(["a": 1, "b": 2])   // Optional(1)
