@@ -31,19 +31,44 @@ public struct Iso<S, A>: @unchecked Sendable {
         { s in reverseGet(transform(get(s))) }
     }
 
-    /// View this iso as a `Lens`. The setter ignores the original `S` and uses `reverseGet`.
+    /// Lifts an `EndoMut<A>` into an `EndoMut<S>` through this iso.
+    ///
+    /// Converts `S → A`, applies the mutation to `inout A`, then replaces `S`
+    /// with `reverseGet(a)` — all via `inout S`, so no CoW copy occurs on `S`.
+    public func lift(_ f: EndoMut<A>) -> EndoMut<S> {
+        EndoMut { s in
+            var part = get(s)
+            f(&part)
+            s = reverseGet(part)
+        }
+    }
+
+    /// View this iso as a `Lens`.
+    ///
+    /// Uses `init(get:setMut:)` so that `modifyMut` keeps `S` as `inout`
+    /// throughout — no CoW copy on `S` during write-back.
     public var asLens: Lens<S, A> {
-        Lens(get: get, set: { _, a in reverseGet(a) })
+        Lens(get: get, setMut: { s, a in s = reverseGet(a) })
     }
 
     /// View this iso as a `Prism`. Preview always succeeds; review uses `reverseGet`.
+    ///
+    /// Supplies an explicit `tryModifyMut` that skips the always-succeeding
+    /// `guard` in the synthesised form and keeps `S` as `inout`.
     public var asPrism: Prism<S, A> {
-        Prism(preview: { .some(get($0)) }, review: reverseGet)
+        Prism(
+            preview: { .some(get($0)) },
+            review: reverseGet,
+            tryModifyMut: { s, f in var part = get(s); f(&part); s = reverseGet(part) }
+        )
     }
 
     /// View this iso as an `AffineTraversal`.
+    ///
+    /// Uses `init(preview:setMut:)` so that `tryModifyMut` keeps `S` as `inout`
+    /// throughout — no CoW copy on `S` during write-back.
     public var asAffineTraversal: AffineTraversal<S, A> {
-        AffineTraversal(preview: { .some(get($0)) }, set: { _, a in reverseGet(a) })
+        AffineTraversal(preview: { .some(get($0)) }, setMut: { s, a in s = reverseGet(a) })
     }
 }
 

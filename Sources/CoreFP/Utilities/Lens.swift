@@ -59,6 +59,9 @@ public struct Lens<S, A>: @unchecked Sendable {
 
     /// Standard 2-closure init. `modifyMut` is synthesised from `get`+`set`:
     /// copies `A` once, but keeps `S` as `inout` to avoid CoW on the whole.
+    ///
+    /// Prefer `init(get:setMut:)` when the write-back can be expressed as
+    /// `(inout S, A) -> Void` — that avoids passing `S` by value to `set`.
     public init(get: @escaping (S) -> A, set: @escaping (S, A) -> S) {
         self.get = get
         self.set = set
@@ -66,6 +69,28 @@ public struct Lens<S, A>: @unchecked Sendable {
             var part = get(s)
             f(&part)
             s = set(s, part)
+        }
+    }
+
+    /// Inout-setter init. `set` is synthesised from `setMut`; `modifyMut` keeps
+    /// `S` as `inout` throughout — no CoW copy on `S` during write-back.
+    ///
+    /// Use this when the write-back naturally mutates `S` in place rather than
+    /// constructing a brand-new value:
+    ///
+    /// ```swift
+    /// // `let` property — must reconstruct, but keep S as inout:
+    /// let nameLens = lens(\.name, setMut: { p, n in
+    ///     p = Person(age: p.age, name: n, address: p.address)
+    /// })
+    /// ```
+    public init(get: @escaping (S) -> A, setMut: @escaping (inout S, A) -> Void) {
+        self.get = get
+        self.set = { s, a in var c = s; setMut(&c, a); return c }
+        self.modifyMut = { s, f in
+            var part = get(s)
+            f(&part)
+            setMut(&s, part)
         }
     }
 
@@ -136,4 +161,19 @@ public func lens<S, A>(_ keyPath: WritableKeyPath<S, A>) -> Lens<S, A> {
 /// ```
 public func lens<S, A>(_ keyPath: KeyPath<S, A>, set: @escaping (S, A) -> S) -> Lens<S, A> {
     Lens(get: { $0[keyPath: keyPath] }, set: set)
+}
+
+/// Lifts a `KeyPath` into a `Lens` using an inout setter.
+///
+/// Prefer this over `lens(_:set:)` when the write-back can be expressed as a
+/// direct mutation of `S` — `modifyMut` never passes `S` by value, so no
+/// CoW copy occurs on `S` during write-back.
+///
+/// ```swift
+/// let nameLens = lens(\.name, setMut: { p, n in
+///     p = Person(age: p.age, name: n, address: p.address)
+/// })
+/// ```
+public func lens<S, A>(_ keyPath: KeyPath<S, A>, setMut: @escaping (inout S, A) -> Void) -> Lens<S, A> {
+    Lens(get: { $0[keyPath: keyPath] }, setMut: setMut)
 }

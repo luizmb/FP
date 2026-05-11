@@ -109,6 +109,54 @@ struct LensTests {
         #expect(person.name == "ALICE")
         #expect(person.age == 30)
     }
+
+    // MARK: init(get:setMut:) / lens(_:setMut:)
+
+    @Test func setMut_get() {
+        let nameLens = lens(\.name, setMut: { (p: inout Person, n) in
+            p = Person(age: p.age, name: n, address: p.address)
+        })
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
+        #expect(nameLens.get(person) == "Alice")
+    }
+
+    @Test func setMut_set() {
+        let nameLens = lens(\.name, setMut: { (p: inout Person, n) in
+            p = Person(age: p.age, name: n, address: p.address)
+        })
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
+        let updated = nameLens.set(person, "Bob")
+        #expect(updated.name == "Bob")
+        #expect(updated.age == 30)
+    }
+
+    @Test func setMut_lift() {
+        let nameLens = lens(\.name, setMut: { (p: inout Person, n) in
+            p = Person(age: p.age, name: n, address: p.address)
+        })
+        var person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
+        nameLens.lift(EndoMut { $0 = $0.uppercased() })(&person)
+        #expect(person.name == "ALICE")
+        #expect(person.age == 30)
+    }
+
+    @Test("set-get law holds for setMut-backed lens")
+    func setMut_law_setGet() {
+        let nameLens = lens(\.name, setMut: { (p: inout Person, n) in
+            p = Person(age: p.age, name: n, address: p.address)
+        })
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
+        #expect(nameLens.get(nameLens.set(person, "Bob")) == "Bob")
+    }
+
+    @Test("get-set law holds for setMut-backed lens")
+    func setMut_law_getSet() {
+        let nameLens = lens(\.name, setMut: { (p: inout Person, n) in
+            p = Person(age: p.age, name: n, address: p.address)
+        })
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
+        #expect(nameLens.set(person, nameLens.get(person)).name == person.name)
+    }
 }
 
 // MARK: - Prisms
@@ -209,6 +257,97 @@ struct AffineTraversalTests {
         streetAT.lift(EndoMut { $0 = $0.uppercased() })(&person)
         #expect(person.address.street == "1ST AVE")
         #expect(person.name == "Alice")
+    }
+
+    // MARK: init(preview:setMut:)
+
+    @Test func setMut_preview_hit() {
+        let at = AffineTraversal<Person, String>(
+            preview: { $0.address.street },
+            setMut: { p, s in p = Person(age: p.age, name: p.name, address: Address(street: s)) }
+        )
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
+        #expect(at.preview(person) == "1st Ave")
+    }
+
+    @Test func setMut_set_hit() {
+        let at = AffineTraversal<Person, String>(
+            preview: { $0.address.street },
+            setMut: { p, s in p = Person(age: p.age, name: p.name, address: Address(street: s)) }
+        )
+        let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
+        let updated = at.set(person, "2nd Ave")
+        #expect(updated.address.street == "2nd Ave")
+        #expect(updated.name == "Alice")
+    }
+
+    @Test func setMut_lift_hit() {
+        let at = AffineTraversal<Person, String>(
+            preview: { $0.address.street },
+            setMut: { p, s in p = Person(age: p.age, name: p.name, address: Address(street: s)) }
+        )
+        var person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
+        at.lift(EndoMut { $0 = $0.uppercased() })(&person)
+        #expect(person.address.street == "1ST AVE")
+        #expect(person.name == "Alice")
+    }
+
+    @Test func setMut_lift_miss_is_noOp() {
+        // preview returns nil → setMut is never called
+        let at = AffineTraversal<Person, String>(
+            preview: { _ in nil },
+            setMut: { _, _ in Issue.record("setMut must not be called when focus is absent") }
+        )
+        var person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
+        at.lift(EndoMut { $0 = $0.uppercased() })(&person)
+        #expect(person.address.street == "1st Ave")
+    }
+}
+
+// MARK: - Iso lift and downcast inout paths
+
+@Suite("Iso lift and downcast")
+struct IsoLiftTests {
+    private let doubleIso = iso(get: { (n: Int) in Double(n) }, reverseGet: { Int($0) })
+
+    @Test func lift_applies_mutation_and_converts_back() {
+        var value = 3
+        doubleIso.lift(EndoMut { $0 *= 2.5 })(&value)
+        #expect(value == 7)   // Int(3 * 2.5) = Int(7.5) = 7
+    }
+
+    @Test func asLens_get() {
+        #expect(doubleIso.asLens.get(4) == 4.0)
+    }
+
+    @Test func asLens_set() {
+        #expect(doubleIso.asLens.set(0, 3.9) == 3)
+    }
+
+    @Test func asLens_lift() {
+        var value = 3
+        doubleIso.asLens.lift(EndoMut { $0 *= 2.5 })(&value)
+        #expect(value == 7)
+    }
+
+    @Test func asPrism_preview_always_succeeds() {
+        #expect(doubleIso.asPrism.preview(5) == 5.0)
+    }
+
+    @Test func asPrism_lift() {
+        var value = 3
+        doubleIso.asPrism.lift(EndoMut { $0 *= 2.5 })(&value)
+        #expect(value == 7)
+    }
+
+    @Test func asAffineTraversal_preview_always_succeeds() {
+        #expect(doubleIso.asAffineTraversal.preview(5) == 5.0)
+    }
+
+    @Test func asAffineTraversal_lift() {
+        var value = 3
+        doubleIso.asAffineTraversal.lift(EndoMut { $0 *= 2.5 })(&value)
+        #expect(value == 7)
     }
 }
 
