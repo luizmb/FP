@@ -852,6 +852,32 @@ userCityLens.set(user, "London")    // User(address: Address(city: "London"), na
 
 Lenses also compose with Prisms — see [Assembling Optics (AffineTraversal)](#assembling-optics-affinetraversal) for the full story.
 
+**`compose` — operator-free composition** _(CoreFP only, no operators needed)_
+
+If you import only `CoreFP` and not `CoreFPOperators`, use the `compose` method instead of `>>>`:
+
+```swift
+let userCityLens = addressLens.compose(cityLens)  // Lens<User, String>
+```
+
+All nine `>>>` / `<<<` overloads in `CoreFPOperators` delegate to `compose`, so the two forms are identical at runtime.
+
+**`lift` — in-place mutation with `EndoMut`**
+
+`over` returns a new `S` — it always copies. When `S` contains a large CoW buffer (an `Array`, `Dictionary`, etc.), even touching one element triggers an O(n) heap copy.
+
+`lift` converts an `EndoMut<A>` (an in-place mutation of the focused value) into an `EndoMut<S>` (an in-place mutation of the whole) without copying `S`:
+
+```swift
+let ageReducer = EndoMut<Int> { $0 += 1 }
+let personReducer: EndoMut<Person> = lens(\Person.age).lift(ageReducer)
+
+var person = Person(name: "Alice", age: 30)
+personReducer(&person)   // person.age is now 31 — zero copies of Person
+```
+
+For `WritableKeyPath`-backed lenses (those created with `lens(\.property)`), the entire operation is zero-copy — Swift's modify coroutine provides direct `inout` access to the field. For manually constructed lenses the focused value is copied once; `S` itself is never CoW-copied. See [Lifting `EndoMut` through optics](#lifting-endomut-through-optics) for the full story.
+
 **Identity lens**
 
 `Lens<A, A>.id` is the lens where the whole and the part are the same — get returns the value unchanged, set replaces it entirely:
@@ -964,6 +990,23 @@ circlePrism.set(.rectangle(1, 2), 5.0)    // Shape.rectangle(1, 2) — unchanged
 Prism<Int, Int>.id.preview(42)   // Optional(42)
 Prism<Int, Int>.id.review(42)    // 42
 ```
+
+**`lift` — in-place mutation with `EndoMut`**
+
+Like `Lens.lift`, `Prism.lift` converts an `EndoMut<A>` into an `EndoMut<S>`. When the prism doesn't match the current case, the resulting `EndoMut` is a no-op and `S` is left unchanged:
+
+```swift
+let doubleRadius = EndoMut<Double> { $0 *= 2 }
+let shapeReducer: EndoMut<Shape> = circlePrism.lift(doubleRadius)
+
+var shape = Shape.circle(5.0)
+shapeReducer(&shape)   // Shape.circle(10.0)
+
+var rect = Shape.rectangle(3, 4)
+shapeReducer(&rect)    // Shape.rectangle(3, 4) — no-op, no copies
+```
+
+Because Swift has no `inout` access to enum case values, the associated value is always copied once. The outer `Shape` (or whatever `S` is) is kept `inout` and is never CoW-copied.
 
 Prisms compose with other prisms and with lenses — see [Assembling Optics (AffineTraversal)](#assembling-optics-affinetraversal) for the full story.
 
@@ -1103,6 +1146,20 @@ For concrete collection types this is the subscript form of `ix`:
 affineTraversal(\[Int][safe: 2])   // identical to [Int].ix(2)
 ```
 
+**`lift` — in-place mutation with `EndoMut`**
+
+`AffineTraversal.lift` works the same way as `Lens.lift` and `Prism.lift`. When the focus is absent the resulting `EndoMut` is a no-op:
+
+```swift
+let scaleRadius = EndoMut<Double> { $0 *= 2 }
+let canvasReducer: EndoMut<Canvas> = circleRadiusTraversal.lift(scaleRadius)
+
+var canvas = Canvas(shape: .circle(5.0))
+canvasReducer(&canvas)   // Canvas(shape: .circle(10.0))
+```
+
+The copy cost depends on which optic sits at each link of the chain. See [Lifting `EndoMut` through optics](#lifting-endomut-through-optics) for the full breakdown.
+
 ---
 
 ### Identity Optic (`.id`)
@@ -1193,6 +1250,23 @@ let team = Team(members: items)
 memberNameFocus.preview(team)           // Optional("B")
 memberNameFocus.set(team, "Updated")    // updates the member whose id == 2
 ```
+
+**Zero-copy element mutation with `lift`**
+
+`ix.lift` mutates the element at the focused index in place without CoW-copying the collection:
+
+```swift
+// Array: inout subscript — zero copies of the collection buffer
+let itemReducer = EndoMut<Item> { $0.name = $0.name.uppercased() }
+let teamReducer: EndoMut<Team> =
+    lens(\.members)
+        .compose([Item].ix(id: 2))
+        .lift(itemReducer)
+
+teamReducer(&team)   // only the one Item is mutated; the [Item] buffer is not copied
+```
+
+`ix` on `MutableCollection` passes `inout collection[index]` directly to the closure — Swift's subscript modify coroutine makes this genuinely zero-copy. `ix` on `Dictionary` copies the `Value` once (because the dictionary subscript returns `Value?`, not `inout Value`), but the dictionary buffer itself is not copied.
 
 **`[safe:]` and `ix` are two faces of the same concept**
 
@@ -1381,6 +1455,80 @@ let roundTripped = original.toEndo().toEndoMut()
 | Composable | yes — `Monoid` | yes — same `Monoid` |
 | Bridgeable | `.toEndoMut()` (free) | `.toEndo()` (one copy) |
 | Use when | values are small / opaque | `Array`, `Dictionary`, large structs |
+
+#### Lifting `EndoMut` through optics
+
+Every optic (`Lens`, `Prism`, `AffineTraversal`) has a `lift` method that zooms an `EndoMut<A>` out to an `EndoMut<S>` through the optic's focus. This is the idiomatic way to write reducers over large states without triggering CoW copies.
+
+```swift
+// A reducer over a sub-state
+let itemReducer = EndoMut<Item> { item in item.views += 1 }
+
+// Lift it to the full AppState using a composed optic chain
+let appReducer: EndoMut<AppState> =
+    lens(\AppState.feed)
+        .compose([Item].ix(id: selectedId))
+        .lift(itemReducer)
+
+appReducer(&appState)
+// ✓ AppState is not copied
+// ✓ [Item] buffer is not copied (direct inout subscript)
+// ✓ Only the one Item is mutated in place
+```
+
+**Copy cost at each link**
+
+The cost of a composed chain is the sum of its links:
+
+| Optic | `lift` copy cost |
+|---|---|
+| `lens(\.varProp)` — `WritableKeyPath` | zero-copy (Swift modify coroutine) |
+| `lens(\.letProp) { … }` — computed setter | copies focused value `A` once |
+| `ix` on `MutableCollection` | zero-copy (direct inout subscript) |
+| `ix` on `Dictionary` | copies `Value` once; dictionary buffer not copied |
+| `Prism` (enum case) | copies associated value once; outer `S` not copied |
+| Composition chain | propagates per link — outer `S` is always `inout` |
+
+The outer `S` is **always** kept as `inout` throughout the chain — only the focused sub-value at each link is ever extracted and written back.
+
+**`compose` without operators**
+
+If you import only `CoreFP` (no `CoreFPOperators`), use `compose` in place of `>>>`:
+
+```swift
+let appReducer: EndoMut<AppState> =
+    lens(\AppState.feed)
+        .compose([Item].ix(id: selectedId))
+        .lift(itemReducer)
+// identical to the >>> form above
+```
+
+**`Stateful<S, Void>` ↔ `EndoMut<S>`**
+
+`Stateful<S, Void>` and `EndoMut<S>` wrap the same closure type `(inout S) -> Void`. Convert freely between them at zero cost:
+
+```swift
+let endoMut = EndoMut<AppState> { $0.counter += 1 }
+let stateful: Stateful<AppState, Void> = endoMut.toStateful()  // free
+let backToEndo: EndoMut<AppState> = stateful.toEndoMut()       // free
+```
+
+**Zooming `Stateful` computations through optics**
+
+When a computation needs to *return a value* in addition to mutating state, use `zoom` instead of `lift`. `zoom` lifts a `Stateful<A, Result>` to a `Stateful<S, Result>` through the optic's focus. For `Prism` and `AffineTraversal`, the result is `Result?` — `nil` when the focus is absent:
+
+```swift
+let pop = Stateful<[Item], Item?> { items in
+    guard !items.isEmpty else { return nil }
+    return items.removeLast()
+}
+
+// Zoom into the feed array inside AppState
+let appPop: Stateful<AppState, Item?> = lens(\AppState.feed).zoom(pop)
+let (removedItem, newState) = appPop.runStateful(appState)
+```
+
+The outer `S` is always `inout`; only the focused `Part` is extracted and written back.
 
 ---
 
