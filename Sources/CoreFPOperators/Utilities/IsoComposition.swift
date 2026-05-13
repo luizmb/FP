@@ -4,8 +4,8 @@ import CoreFP
 
 public func >>> <S, A, B>(lhs: Iso<S, A>, rhs: Iso<A, B>) -> Iso<S, B> {
     Iso(
-        get: { b in rhs.get(lhs.get(b)) },
-        reverseGet: { b in lhs.reverseGet(rhs.reverseGet(b)) }
+        get: { @Sendable b in rhs.get(lhs.get(b)) },
+        reverseGet: { @Sendable b in lhs.reverseGet(rhs.reverseGet(b)) }
     )
 }
 

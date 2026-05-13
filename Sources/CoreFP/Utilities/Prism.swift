@@ -25,20 +25,14 @@
 //
 // `compose` is the named-function backing for the `>>>` operator.
 
-public struct Prism<S, A>: @unchecked Sendable {
-    public let preview: (S) -> A?
-    public let review: (A) -> S
-
-    /// Applies `f` to the focused value if present, then reconstructs `S`
-    /// via `review`. No-op when the focus is absent.
-    ///
-    /// Copies the enum case value (`A`) once. The outer `S` is `inout`
-    /// throughout — no CoW copy occurs on `S` itself.
-    public let tryModifyMut: (inout S, (inout A) -> Void) -> Void
+public struct Prism<S, A>: Sendable {
+    public let preview: @Sendable (S) -> A?
+    public let review: @Sendable (A) -> S
+    public let tryModifyMut: @Sendable (inout S, (inout A) -> Void) -> Void
 
     /// Standard 2-closure init. `tryModifyMut` is synthesised from
     /// `preview`+`review`: copies `A` once, keeps `S` as `inout`.
-    public init(preview: @escaping (S) -> A?, review: @escaping (A) -> S) {
+    public init(preview: @escaping @Sendable (S) -> A?, review: @escaping @Sendable (A) -> S) {
         self.preview = preview
         self.review = review
         self.tryModifyMut = { s, f in
@@ -50,9 +44,9 @@ public struct Prism<S, A>: @unchecked Sendable {
 
     /// Full init for callers that can supply an explicit `tryModifyMut`.
     public init(
-        preview: @escaping (S) -> A?,
-        review: @escaping (A) -> S,
-        tryModifyMut: @escaping (inout S, (inout A) -> Void) -> Void
+        preview: @escaping @Sendable (S) -> A?,
+        review: @escaping @Sendable (A) -> S,
+        tryModifyMut: @escaping @Sendable (inout S, (inout A) -> Void) -> Void
     ) {
         self.preview = preview
         self.review = review
@@ -63,7 +57,7 @@ public struct Prism<S, A>: @unchecked Sendable {
 
     /// Applies a pure transform if the focus is present; returns a new `S`.
     /// Prefer `lift(_:)` when working with `EndoMut` and large CoW states.
-    public func over(_ transform: @escaping (A) -> A) -> (S) -> S {
+    public func over(_ transform: @escaping @Sendable (A) -> A) -> @Sendable (S) -> S {
         { s in preview(s).map { review(transform($0)) } ?? s }
     }
 
@@ -85,18 +79,12 @@ extension Prism where S == A {
     }
 }
 
-/// Builds a `Prism` from an optional-returning `KeyPath` (the preview) and a `review` function.
-///
-/// ```swift
-/// enum Shape { case circle(Double), rectangle(Double, Double) }
-///
-/// let circlePrism: Prism<Shape, Double> = prism(\.circleRadius, review: Shape.circle)
-/// ```
-public func prism<S, A>(_ keyPath: KeyPath<S, A?>, review: @escaping (A) -> S) -> Prism<S, A> {
-    Prism(preview: { $0[keyPath: keyPath] }, review: review)
+/// Builds a `Prism` from an optional-returning `KeyPath` and a `review` function.
+public func prism<S: Sendable, A: Sendable>(_ keyPath: KeyPath<S, A?>, review: @escaping @Sendable (A) -> S) -> Prism<S, A> {
+    Prism(preview: { @Sendable s in s[keyPath: keyPath] }, review: review)
 }
 
 /// Builds a `Prism` from explicit `preview` and `review` functions.
-public func prism<S, A>(preview: @escaping (S) -> A?, review: @escaping (A) -> S) -> Prism<S, A> {
+public func prism<S, A>(preview: @escaping @Sendable (S) -> A?, review: @escaping @Sendable (A) -> S) -> Prism<S, A> {
     Prism(preview: preview, review: review)
 }

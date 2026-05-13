@@ -1,4 +1,4 @@
-extension MutableCollection {
+extension MutableCollection where Index: Sendable {
     /// Returns an `AffineTraversal` focusing on the element at `index`.
     /// Preview returns `nil` when `index` is out of bounds; set is a no-op in that case.
     ///
@@ -12,13 +12,13 @@ extension MutableCollection {
     /// ```
     public static func ix(_ index: Index) -> AffineTraversal<Self, Element> {
         AffineTraversal(
-            preview: { $0[safe: index] },
-            set: { collection, element in
+            preview: { @Sendable in $0[safe: index] },
+            set: { @Sendable collection, element in
                 var copy = collection
                 copy[safe: index] = element
                 return copy
             },
-            tryModifyMut: { collection, f in
+            tryModifyMut: { @Sendable collection, f in
                 guard collection.indices.contains(index) else { return }
                 f(&collection[index])
             }
@@ -26,7 +26,7 @@ extension MutableCollection {
     }
 }
 
-extension MutableCollection {
+extension MutableCollection where Index: Sendable, Element: Sendable {
     /// Returns an `AffineTraversal` focusing on the first element whose field at `identifier`
     /// equals `id`. Use this when the element type is not `Identifiable` but has a stable
     /// `Hashable` field that uniquely identifies each element.
@@ -38,17 +38,17 @@ extension MutableCollection {
     /// struct Project { let slug: String; var title: String }
     /// [Project].ix(id: "auth", by: \.slug).preview(projects)?.title   // "Auth Module"
     /// ```
-    public static func ix<ID: Hashable>(id: ID, by identifier: KeyPath<Element, ID>) -> AffineTraversal<Self, Element> {
+    public static func ix<ID: Hashable & Sendable>(id: ID, by identifier: KeyPath<Element, ID>) -> AffineTraversal<Self, Element> {
         AffineTraversal(
-            preview: { $0.first(where: { $0[keyPath: identifier] == id }) },
-            set: { collection, element in
+            preview: { @Sendable in $0.first(where: { $0[keyPath: identifier] == id }) },
+            set: { @Sendable collection, element in
                 guard let idx = collection.firstIndex(where: { $0[keyPath: identifier] == id })
                 else { return collection }
                 var copy = collection
                 copy[idx] = element
                 return copy
             },
-            tryModifyMut: { collection, f in
+            tryModifyMut: { @Sendable collection, f in
                 guard let idx = collection.firstIndex(where: { $0[keyPath: identifier] == id })
                 else { return }
                 f(&collection[idx])
@@ -57,7 +57,7 @@ extension MutableCollection {
     }
 }
 
-extension MutableCollection where Element: Identifiable {
+extension MutableCollection where Element: Identifiable, Element.ID: Sendable, Index: Sendable {
     /// Returns an `AffineTraversal` focusing on the first element whose `id` matches.
     /// Preview returns `nil` when no element with that `id` exists; set is a no-op in that case.
     ///
@@ -70,14 +70,14 @@ extension MutableCollection where Element: Identifiable {
     /// ```
     public static func ix(id: Element.ID) -> AffineTraversal<Self, Element> {
         AffineTraversal(
-            preview: { $0.first(where: { $0.id == id }) },
-            set: { collection, element in
+            preview: { @Sendable in $0.first(where: { $0.id == id }) },
+            set: { @Sendable collection, element in
                 guard let idx = collection.firstIndex(where: { $0.id == id }) else { return collection }
                 var copy = collection
                 copy[idx] = element
                 return copy
             },
-            tryModifyMut: { collection, f in
+            tryModifyMut: { @Sendable collection, f in
                 guard let idx = collection.firstIndex(where: { $0.id == id }) else { return }
                 f(&collection[idx])
             }
@@ -85,7 +85,7 @@ extension MutableCollection where Element: Identifiable {
     }
 }
 
-extension Dictionary {
+extension Dictionary where Key: Sendable {
     /// Returns an `AffineTraversal` focusing on the value for `key`.
     /// Preview returns `nil` when the key is absent; set is a no-op in that case.
     ///
@@ -100,14 +100,14 @@ extension Dictionary {
     /// ```
     public static func ix(key: Key) -> AffineTraversal<[Key: Value], Value> {
         AffineTraversal(
-            preview: { $0[key] },
-            set: { dict, value in
+            preview: { @Sendable in $0[key] },
+            set: { @Sendable dict, value in
                 guard dict[key] != nil else { return dict }
                 var copy = dict
                 copy[key] = value
                 return copy
             },
-            tryModifyMut: { dict, f in
+            tryModifyMut: { @Sendable dict, f in
                 guard var value = dict[key] else { return }
                 f(&value)
                 dict[key] = value
