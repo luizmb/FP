@@ -10,11 +10,11 @@
 ///
 /// Every `Iso` is also a valid `Lens`, `Prism`, and `AffineTraversal`, and can be
 /// composed freely with all of them via `>>>` / `<<<`.
-public struct Iso<S, A>: @unchecked Sendable {
-    public let get: (S) -> A
-    public let reverseGet: (A) -> S
+public struct Iso<S, A>: Sendable {
+    public let get: @Sendable (S) -> A
+    public let reverseGet: @Sendable (A) -> S
 
-    public init(get: @escaping (S) -> A, reverseGet: @escaping (A) -> S) {
+    public init(get: @escaping @Sendable (S) -> A, reverseGet: @escaping @Sendable (A) -> S) {
         self.get = get
         self.reverseGet = reverseGet
     }
@@ -27,7 +27,7 @@ public struct Iso<S, A>: @unchecked Sendable {
     }
 
     /// Apply a transform through the iso: convert to `A`, transform, convert back.
-    public func over(_ transform: @escaping (A) -> A) -> (S) -> S {
+    public func over(_ transform: @escaping @Sendable (A) -> A) -> @Sendable (S) -> S {
         { s in reverseGet(transform(get(s))) }
     }
 
@@ -89,6 +89,6 @@ extension Iso where S == A {
 /// addOne.reverseGet(6)     // 5
 /// addOne.reverse.get(6)    // 5
 /// ```
-public func iso<S, A>(get: @escaping (S) -> A, reverseGet: @escaping (A) -> S) -> Iso<S, A> {
+public func iso<S, A>(get: @escaping @Sendable (S) -> A, reverseGet: @escaping @Sendable (A) -> S) -> Iso<S, A> {
     Iso(get: get, reverseGet: reverseGet)
 }

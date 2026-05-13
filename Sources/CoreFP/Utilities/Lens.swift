@@ -46,23 +46,23 @@
 // import only `CoreFP` can call `lens1.compose(lens2)` instead. All `>>>` and
 // `<<<` overloads in `CoreFPOperators` delegate to `compose`.
 
-public struct Lens<S, A>: @unchecked Sendable {
-    public let get: (S) -> A
-    public let set: (S, A) -> S
+public struct Lens<S, A>: Sendable {
+    public let get: @Sendable (S) -> A
+    public let set: @Sendable (S, A) -> S
 
     /// Focuses on `A` inside `inout S` without copying `S`.
     ///
     /// For `lens(_ keyPath: WritableKeyPath)`-backed lenses this is zero-copy
     /// end to end (Swift modify coroutine). For manually constructed lenses it
     /// copies `A` once via `get`+`set`; `S` itself is never CoW-copied.
-    public let modifyMut: (inout S, (inout A) -> Void) -> Void
+    public let modifyMut: @Sendable (inout S, (inout A) -> Void) -> Void
 
     /// Standard 2-closure init. `modifyMut` is synthesised from `get`+`set`:
     /// copies `A` once, but keeps `S` as `inout` to avoid CoW on the whole.
     ///
     /// Prefer `init(get:setMut:)` when the write-back can be expressed as
     /// `(inout S, A) -> Void` — that avoids passing `S` by value to `set`.
-    public init(get: @escaping (S) -> A, set: @escaping (S, A) -> S) {
+    public init(get: @escaping @Sendable (S) -> A, set: @escaping @Sendable (S, A) -> S) {
         self.get = get
         self.set = set
         self.modifyMut = { s, f in
@@ -84,7 +84,7 @@ public struct Lens<S, A>: @unchecked Sendable {
     ///     p = Person(age: p.age, name: n, address: p.address)
     /// })
     /// ```
-    public init(get: @escaping (S) -> A, setMut: @escaping (inout S, A) -> Void) {
+    public init(get: @escaping @Sendable (S) -> A, setMut: @escaping @Sendable (inout S, A) -> Void) {
         self.get = get
         self.set = { s, a in var c = s; setMut(&c, a); return c }
         self.modifyMut = { s, f in
@@ -97,9 +97,9 @@ public struct Lens<S, A>: @unchecked Sendable {
     /// Full init for callers that can supply a more efficient `modifyMut`
     /// (e.g. `lens(_ keyPath: WritableKeyPath)` and optic composition).
     public init(
-        get: @escaping (S) -> A,
-        set: @escaping (S, A) -> S,
-        modifyMut: @escaping (inout S, (inout A) -> Void) -> Void
+        get: @escaping @Sendable (S) -> A,
+        set: @escaping @Sendable (S, A) -> S,
+        modifyMut: @escaping @Sendable (inout S, (inout A) -> Void) -> Void
     ) {
         self.get = get
         self.set = set
@@ -110,7 +110,7 @@ public struct Lens<S, A>: @unchecked Sendable {
 
     /// Applies a pure transform; returns a new `S`. Costs one copy of `S`.
     /// Prefer `lift(_:)` when working with `EndoMut` and large CoW values.
-    public func over(_ transform: @escaping (A) -> A) -> (S) -> S {
+    public func over(_ transform: @escaping @Sendable (A) -> A) -> @Sendable (S) -> S {
         { s in set(s, transform(get(s))) }
     }
 
@@ -142,11 +142,11 @@ extension Lens where S == A {
 /// Uses Swift's modify coroutine for `modifyMut`, giving zero-copy in-place
 /// mutation via `lift(_:)`. The `@Lenses` macro generates this form for all
 /// `var` properties automatically.
-public func lens<S, A>(_ keyPath: WritableKeyPath<S, A>) -> Lens<S, A> {
+public func lens<S: Sendable, A: Sendable>(_ keyPath: WritableKeyPath<S, A>) -> Lens<S, A> {
     Lens(
-        get: { $0[keyPath: keyPath] },
-        set: { s, a in var c = s; c[keyPath: keyPath] = a; return c },
-        modifyMut: { s, f in f(&s[keyPath: keyPath]) }
+        get: { @Sendable s in s[keyPath: keyPath] },
+        set: { @Sendable s, a in var c = s; c[keyPath: keyPath] = a; return c },
+        modifyMut: { @Sendable s, f in f(&s[keyPath: keyPath]) }
     )
 }
 
@@ -159,8 +159,8 @@ public func lens<S, A>(_ keyPath: WritableKeyPath<S, A>) -> Lens<S, A> {
 /// ```swift
 /// let nameLens: Lens<Person, String> = lens(\.name) { Person(name: $1, age: $0.age) }
 /// ```
-public func lens<S, A>(_ keyPath: KeyPath<S, A>, set: @escaping (S, A) -> S) -> Lens<S, A> {
-    Lens(get: { $0[keyPath: keyPath] }, set: set)
+public func lens<S: Sendable, A: Sendable>(_ keyPath: KeyPath<S, A>, set: @escaping @Sendable (S, A) -> S) -> Lens<S, A> {
+    Lens(get: { @Sendable s in s[keyPath: keyPath] }, set: set)
 }
 
 /// Lifts a `KeyPath` into a `Lens` using an inout setter.
@@ -174,6 +174,6 @@ public func lens<S, A>(_ keyPath: KeyPath<S, A>, set: @escaping (S, A) -> S) -> 
 ///     p = Person(age: p.age, name: n, address: p.address)
 /// })
 /// ```
-public func lens<S, A>(_ keyPath: KeyPath<S, A>, setMut: @escaping (inout S, A) -> Void) -> Lens<S, A> {
-    Lens(get: { $0[keyPath: keyPath] }, setMut: setMut)
+public func lens<S: Sendable, A: Sendable>(_ keyPath: KeyPath<S, A>, setMut: @escaping @Sendable (inout S, A) -> Void) -> Lens<S, A> {
+    Lens(get: { @Sendable s in s[keyPath: keyPath] }, setMut: setMut)
 }

@@ -36,21 +36,21 @@
 /// An optic that focuses on zero or one value inside `S`. It is the result of composing a
 /// `Lens` with a `Prism` (in either order), and combines the "always-present whole" guarantee
 /// of a lens with the "maybe-present focus" of a prism.
-public struct AffineTraversal<S, A>: @unchecked Sendable {
-    public let preview: (S) -> A?
-    public let set: (S, A) -> S
+public struct AffineTraversal<S, A>: Sendable {
+    public let preview: @Sendable (S) -> A?
+    public let set: @Sendable (S, A) -> S
 
     /// Applies `f` to the focused value if present. No-op when the focus is
     /// absent. `S` is kept `inout` throughout; copy cost depends on the
     /// specific optic — see the file-level comment.
-    public let tryModifyMut: (inout S, (inout A) -> Void) -> Void
+    public let tryModifyMut: @Sendable (inout S, (inout A) -> Void) -> Void
 
     /// Standard 2-closure init. `tryModifyMut` is synthesised from
     /// `preview`+`set`: copies `A` once, keeps `S` as `inout`.
     ///
     /// Prefer `init(preview:setMut:)` when the write-back can be expressed as
     /// `(inout S, A) -> Void` — that avoids passing `S` by value to `set`.
-    public init(preview: @escaping (S) -> A?, set: @escaping (S, A) -> S) {
+    public init(preview: @escaping @Sendable (S) -> A?, set: @escaping @Sendable (S, A) -> S) {
         self.preview = preview
         self.set = set
         self.tryModifyMut = { s, f in
@@ -58,6 +58,18 @@ public struct AffineTraversal<S, A>: @unchecked Sendable {
             f(&part)
             s = set(s, part)
         }
+    }
+
+    /// Full init for callers that can supply a more efficient `tryModifyMut`
+    /// (e.g. `ix` and `affineTraversal(_ keyPath: WritableKeyPath)`).
+    public init(
+        preview: @escaping @Sendable (S) -> A?,
+        set: @escaping @Sendable (S, A) -> S,
+        tryModifyMut: @escaping @Sendable (inout S, (inout A) -> Void) -> Void
+    ) {
+        self.preview = preview
+        self.set = set
+        self.tryModifyMut = tryModifyMut
     }
 
     /// Inout-setter init. `set` is synthesised from `setMut` (with a focus-absent
@@ -74,7 +86,7 @@ public struct AffineTraversal<S, A>: @unchecked Sendable {
     ///     setMut: { state, user in state = AppState(currentUser: user, other: state.other) }
     /// )
     /// ```
-    public init(preview: @escaping (S) -> A?, setMut: @escaping (inout S, A) -> Void) {
+    public init(preview: @escaping @Sendable (S) -> A?, setMut: @escaping @Sendable (inout S, A) -> Void) {
         self.preview = preview
         self.set = { s, a in
             guard preview(s) != nil else { return s }
@@ -87,23 +99,11 @@ public struct AffineTraversal<S, A>: @unchecked Sendable {
         }
     }
 
-    /// Full init for callers that can supply a more efficient `tryModifyMut`
-    /// (e.g. `ix` and `affineTraversal(_ keyPath: WritableKeyPath)`).
-    public init(
-        preview: @escaping (S) -> A?,
-        set: @escaping (S, A) -> S,
-        tryModifyMut: @escaping (inout S, (inout A) -> Void) -> Void
-    ) {
-        self.preview = preview
-        self.set = set
-        self.tryModifyMut = tryModifyMut
-    }
-
     public func callAsFunction(_ whole: S) -> A? { preview(whole) }
 
     /// Applies a pure transform if the focus is present; returns a new `S`.
     /// Prefer `lift(_:)` when working with `EndoMut` and large CoW states.
-    public func over(_ transform: @escaping (A) -> A) -> (S) -> S {
+    public func over(_ transform: @escaping @Sendable (A) -> A) -> @Sendable (S) -> S {
         { s in preview(s).map { set(s, transform($0)) } ?? s }
     }
 
@@ -129,11 +129,11 @@ extension AffineTraversal where S == A {
 /// ```swift
 /// affineTraversal(\[Int][safe: 2])  // AffineTraversal<[Int], Int> — same as ix(2)
 /// ```
-public func affineTraversal<S, A>(_ keyPath: WritableKeyPath<S, A?>) -> AffineTraversal<S, A> {
+public func affineTraversal<S: Sendable, A: Sendable>(_ keyPath: WritableKeyPath<S, A?>) -> AffineTraversal<S, A> {
     AffineTraversal(
-        preview: { $0[keyPath: keyPath] },
-        set: { s, a in var c = s; c[keyPath: keyPath] = a; return c },
-        tryModifyMut: { s, f in
+        preview: { @Sendable s in s[keyPath: keyPath] },
+        set: { @Sendable s, a in var c = s; c[keyPath: keyPath] = a; return c },
+        tryModifyMut: { @Sendable s, f in
             guard var value = s[keyPath: keyPath] else { return }
             f(&value)
             s[keyPath: keyPath] = value
