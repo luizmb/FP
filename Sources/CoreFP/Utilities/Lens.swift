@@ -74,6 +74,16 @@ public struct Lens<S, A>: Sendable {
 
     /// Inout-setter init. `set` is synthesised from `setMut`; `modifyMut` keeps
     /// `S` as `inout` throughout — no CoW copy on `S` during write-back.
+    ///
+    /// Use this when the write-back naturally mutates `S` in place rather than
+    /// constructing a brand-new value:
+    ///
+    /// ```swift
+    /// // `let` property — must reconstruct, but keep S as inout:
+    /// let nameLens = lens(\.name, setMut: { p, n in
+    ///     p = Person(age: p.age, name: n, address: p.address)
+    /// })
+    /// ```
     public init(get: @escaping @Sendable (S) -> A, setMut: @escaping @Sendable (inout S, A) -> Void) {
         self.get = get
         self.set = { s, a in var c = s; setMut(&c, a); return c }
@@ -105,6 +115,17 @@ public struct Lens<S, A>: Sendable {
     }
 
     /// Lifts an `EndoMut<A>` into an `EndoMut<S>` focused through this lens.
+    ///
+    /// When this lens is backed by a `WritableKeyPath`, the resulting
+    /// `EndoMut<S>` mutates `S` in place with no CoW copies. Compose lenses
+    /// before lifting to keep the zero-copy guarantee across the whole chain:
+    ///
+    /// ```swift
+    /// let reducer: EndoMut<AppState> =
+    ///     lens(\AppState.items)
+    ///         .compose([Item].ix(id: someId))
+    ///         .lift(itemReducer)
+    /// ```
     public func lift(_ f: EndoMut<A>) -> EndoMut<S> {
         EndoMut { s in modifyMut(&s) { a in f(&a) } }
     }
@@ -119,7 +140,8 @@ extension Lens where S == A {
 /// Lifts a `WritableKeyPath` into a `Lens`.
 ///
 /// Uses Swift's modify coroutine for `modifyMut`, giving zero-copy in-place
-/// mutation via `lift(_:)`.
+/// mutation via `lift(_:)`. The `@Lenses` macro generates this form for all
+/// `var` properties automatically.
 public func lens<S: Sendable, A: Sendable>(_ keyPath: WritableKeyPath<S, A>) -> Lens<S, A> {
     Lens(
         get: { @Sendable s in s[keyPath: keyPath] },
@@ -129,11 +151,29 @@ public func lens<S: Sendable, A: Sendable>(_ keyPath: WritableKeyPath<S, A>) -> 
 }
 
 /// Lifts a `KeyPath` into a `Lens` using a manually provided setter.
+///
+/// Use this for `let` properties or computed values where `WritableKeyPath`
+/// is unavailable. `modifyMut` is synthesised from `get`+`set` — it copies
+/// `A` once but keeps `S` as `inout`, so no CoW occurs on `S` itself.
+///
+/// ```swift
+/// let nameLens: Lens<Person, String> = lens(\.name) { Person(name: $1, age: $0.age) }
+/// ```
 public func lens<S: Sendable, A: Sendable>(_ keyPath: KeyPath<S, A>, set: @escaping @Sendable (S, A) -> S) -> Lens<S, A> {
     Lens(get: { @Sendable s in s[keyPath: keyPath] }, set: set)
 }
 
 /// Lifts a `KeyPath` into a `Lens` using an inout setter.
+///
+/// Prefer this over `lens(_:set:)` when the write-back can be expressed as a
+/// direct mutation of `S` — `modifyMut` never passes `S` by value, so no
+/// CoW copy occurs on `S` during write-back.
+///
+/// ```swift
+/// let nameLens = lens(\.name, setMut: { p, n in
+///     p = Person(age: p.age, name: n, address: p.address)
+/// })
+/// ```
 public func lens<S: Sendable, A: Sendable>(_ keyPath: KeyPath<S, A>, setMut: @escaping @Sendable (inout S, A) -> Void) -> Lens<S, A> {
     Lens(get: { @Sendable s in s[keyPath: keyPath] }, setMut: setMut)
 }

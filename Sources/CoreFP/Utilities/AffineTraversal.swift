@@ -10,6 +10,21 @@
 // `tryModifyMut` applies a mutation to the focused `A` in place, keeping
 // `S` as `inout` throughout. When absent, it is a no-op.
 //
+// The copy cost depends on how the optic was constructed:
+//
+//   - `affineTraversal(_ keyPath: WritableKeyPath<S, A?>)`: copies `A` once
+//     (extracted from the optional), then writes back into `inout S`. No CoW
+//     on `S`.
+//
+//   - `[T].ix(index)` / `[T].ix(id:)`: accesses the element directly via
+//     `inout collection[index]` — zero-copy for the collection buffer.
+//
+//   - `[K:V].ix(key:)`: copies `Value` once (extracted from the optional
+//     subscript); no CoW on the dictionary buffer.
+//
+//   - 2-closure init (manual construction): `tryModifyMut` is synthesised
+//     from `preview`+`set`. Copies `A` once; `S` is kept `inout`.
+//
 // ## lift and compose
 //
 // `lift` turns an `EndoMut<A>` into an `EndoMut<S>`. When the focus is absent
@@ -18,13 +33,23 @@
 // `compose` is the named-function backing for the `>>>` operator, available
 // without importing `CoreFPOperators`.
 
+/// An optic that focuses on zero or one value inside `S`. It is the result of composing a
+/// `Lens` with a `Prism` (in either order), and combines the "always-present whole" guarantee
+/// of a lens with the "maybe-present focus" of a prism.
 public struct AffineTraversal<S, A>: Sendable {
     public let preview: @Sendable (S) -> A?
     public let set: @Sendable (S, A) -> S
+
+    /// Applies `f` to the focused value if present. No-op when the focus is
+    /// absent. `S` is kept `inout` throughout; copy cost depends on the
+    /// specific optic — see the file-level comment.
     public let tryModifyMut: @Sendable (inout S, (inout A) -> Void) -> Void
 
     /// Standard 2-closure init. `tryModifyMut` is synthesised from
     /// `preview`+`set`: copies `A` once, keeps `S` as `inout`.
+    ///
+    /// Prefer `init(preview:setMut:)` when the write-back can be expressed as
+    /// `(inout S, A) -> Void` — that avoids passing `S` by value to `set`.
     public init(preview: @escaping @Sendable (S) -> A?, set: @escaping @Sendable (S, A) -> S) {
         self.preview = preview
         self.set = set
@@ -35,7 +60,8 @@ public struct AffineTraversal<S, A>: Sendable {
         }
     }
 
-    /// Full init for callers that can supply a more efficient `tryModifyMut`.
+    /// Full init for callers that can supply a more efficient `tryModifyMut`
+    /// (e.g. `ix` and `affineTraversal(_ keyPath: WritableKeyPath)`).
     public init(
         preview: @escaping @Sendable (S) -> A?,
         set: @escaping @Sendable (S, A) -> S,
@@ -46,7 +72,20 @@ public struct AffineTraversal<S, A>: Sendable {
         self.tryModifyMut = tryModifyMut
     }
 
-    /// Inout-setter init. `tryModifyMut` keeps `S` as `inout` — no CoW on `S`.
+    /// Inout-setter init. `set` is synthesised from `setMut` (with a focus-absent
+    /// guard); `tryModifyMut` keeps `S` as `inout` throughout — no CoW copy on
+    /// `S` during write-back.
+    ///
+    /// `setMut` is only called when `preview` returns a non-`nil` value; it is
+    /// the caller's responsibility to ensure the mutation is valid in that case.
+    ///
+    /// ```swift
+    /// // Focus on a `let` optional property, reconstructing S on write:
+    /// let userTraversal = AffineTraversal<AppState, User>(
+    ///     preview: { $0.currentUser },
+    ///     setMut: { state, user in state = AppState(currentUser: user, other: state.other) }
+    /// )
+    /// ```
     public init(preview: @escaping @Sendable (S) -> A?, setMut: @escaping @Sendable (inout S, A) -> Void) {
         self.preview = preview
         self.set = { s, a in
@@ -62,10 +101,14 @@ public struct AffineTraversal<S, A>: Sendable {
 
     public func callAsFunction(_ whole: S) -> A? { preview(whole) }
 
+    /// Applies a pure transform if the focus is present; returns a new `S`.
+    /// Prefer `lift(_:)` when working with `EndoMut` and large CoW states.
     public func over(_ transform: @escaping @Sendable (A) -> A) -> @Sendable (S) -> S {
         { s in preview(s).map { set(s, transform($0)) } ?? s }
     }
 
+    /// Lifts an `EndoMut<A>` into an `EndoMut<S>` focused through this traversal.
+    /// When the focus is absent the resulting `EndoMut` is a no-op.
     public func lift(_ f: EndoMut<A>) -> EndoMut<S> {
         EndoMut { s in tryModifyMut(&s) { a in f(&a) } }
     }
@@ -78,6 +121,14 @@ extension AffineTraversal where S == A {
 }
 
 /// Lifts a `WritableKeyPath` to an optional property into an `AffineTraversal`.
+/// Preview reads the optional; set writes the non-nil focus back as `.some`.
+///
+/// `tryModifyMut` copies `A` once (extracted from the optional) then writes
+/// back into `inout S` — no CoW on `S`.
+///
+/// ```swift
+/// affineTraversal(\[Int][safe: 2])  // AffineTraversal<[Int], Int> — same as ix(2)
+/// ```
 public func affineTraversal<S: Sendable, A: Sendable>(_ keyPath: WritableKeyPath<S, A?>) -> AffineTraversal<S, A> {
     AffineTraversal(
         preview: { @Sendable s in s[keyPath: keyPath] },

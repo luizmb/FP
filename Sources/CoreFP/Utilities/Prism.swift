@@ -28,6 +28,12 @@
 public struct Prism<S, A>: Sendable {
     public let preview: @Sendable (S) -> A?
     public let review: @Sendable (A) -> S
+
+    /// Applies `f` to the focused value if present, then reconstructs `S`
+    /// via `review`. No-op when the focus is absent.
+    ///
+    /// Copies the enum case value (`A`) once. The outer `S` is `inout`
+    /// throughout — no CoW copy occurs on `S` itself.
     public let tryModifyMut: @Sendable (inout S, (inout A) -> Void) -> Void
 
     /// Standard 2-closure init. `tryModifyMut` is synthesised from
@@ -79,7 +85,13 @@ extension Prism where S == A {
     }
 }
 
-/// Builds a `Prism` from an optional-returning `KeyPath` and a `review` function.
+/// Builds a `Prism` from an optional-returning `KeyPath` (the preview) and a `review` function.
+///
+/// ```swift
+/// enum Shape { case circle(Double), rectangle(Double, Double) }
+///
+/// let circlePrism: Prism<Shape, Double> = prism(\.circleRadius, review: Shape.circle)
+/// ```
 public func prism<S: Sendable, A: Sendable>(_ keyPath: KeyPath<S, A?>, review: @escaping @Sendable (A) -> S) -> Prism<S, A> {
     Prism(preview: { @Sendable s in s[keyPath: keyPath] }, review: review)
 }
