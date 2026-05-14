@@ -1,7 +1,24 @@
 import CoreFP
 
-// join :: Monad m => m (m a) -> m a
-// Top-level free function versions of the static join/void methods.
+// MARK: - join / void free functions for DataStructure types
+//
+// These free functions mirror the join/void free functions in CoreFP/Utilities/JoinVoid.swift
+// but target the DataStructure monad types: Either, Reader, Stateful, Writer.
+//
+// join :: Monad m => m (m a) -> m a     (flattens one layer of nesting)
+// void :: Functor f => f a -> f ()      (discards values, keeps structure)
+//
+// Available overloads:
+//   join(Either<L, Either<L, A>>)           -> Either<L, A>
+//   join(Reader<Env, Reader<Env, A>>)       -> Reader<Env, A>
+//   join(Stateful<S, Stateful<S, A>>)       -> Stateful<S, A>
+//   join(Writer<W, Writer<W, A>>)           -> Writer<W, A>
+//
+//   void(Either<L, A>)                      -> Either<L, Void>
+//   void(Reader<Env, A>)                    -> Reader<Env, Void>
+//   void(Stateful<S, A>)                    -> Stateful<S, Void>
+//   void(Writer<W, A>)                      -> Writer<W, Void>
+//   void(Validation<E, A>)                  -> Validation<E, Void>  (Functor only — no Monad)
 
 // MARK: - Either
 
