@@ -33,9 +33,68 @@
 // `compose` is the named-function backing for the `>>>` operator, available
 // without importing `CoreFPOperators`.
 
-/// An optic that focuses on zero or one value inside `S`. It is the result of composing a
-/// `Lens` with a `Prism` (in either order), and combines the "always-present whole" guarantee
-/// of a lens with the "maybe-present focus" of a prism.
+/// An optic that focuses on zero or one value of type `A` inside a whole `S`.
+///
+/// `AffineTraversal<S, A>` is the result of composing a ``Lens`` with a ``Prism`` (in
+/// either order). It combines the "always-present whole" guarantee of a lens with the
+/// "maybe-present focus" of a prism.
+///
+/// ## Core primitives
+///
+/// | Property | Type | Purpose |
+/// |----------|------|---------|
+/// | `preview` | `(S) -> A?` | Extract the focused value if present |
+/// | `set` | `(S, A) -> S` | Return a new `S` with the focus replaced (no-op if absent) |
+/// | `tryModifyMut` | `(inout S, (inout A) -> Void) -> Void` | In-place mutation; no-op if focus absent |
+///
+/// ## Creating affine traversals
+///
+/// The most common source is composing a ``Lens`` with a ``Prism``:
+///
+/// ```swift
+/// // Via composition (requires CoreFPOperators for >>>):
+/// let activeItemTraversal: AffineTraversal<AppState, Item> =
+///     ^\AppState.route >>> routeDetailPrism
+///
+/// // From a WritableKeyPath to an optional property:
+/// let currentUserTraversal: AffineTraversal<AppState, User> =
+///     affineTraversal(\AppState.currentUser)
+/// ```
+///
+/// Collection subscripts (`ix`) also produce affine traversals:
+///
+/// ```swift
+/// [Int].ix(2)                                    // AffineTraversal<[Int], Int>
+/// [Item].ix(id: someId)                          // AffineTraversal<[Item], Item>
+/// [String: Int].ix(key: "count")                 // AffineTraversal<[String: Int], Int>
+/// ```
+///
+/// ## Using affine traversals
+///
+/// ```swift
+/// let traversal: AffineTraversal<[Int], Int> = [Int].ix(1)
+/// traversal.preview([10, 20, 30])                // Optional(20)
+/// traversal.preview([10])                        // nil (out of bounds)
+/// traversal.set([10, 20, 30], 99)               // [10, 99, 30]
+/// traversal.over { $0 * 2 }([10, 20, 30])       // [10, 40, 30]
+/// ```
+///
+/// ## Composition
+///
+/// Affine traversals compose with lenses, prisms, and other affine traversals to
+/// yield affine traversals. Use ``compose(_:)-affinetraversal-lens`` directly or the
+/// `>>>` operator from `CoreFPOperators`.
+///
+/// ## CoW cost
+///
+/// The copy cost depends on the backing optic:
+/// - `ix` on `MutableCollection` → zero-copy (direct `inout` access)
+/// - `ix` on `Dictionary` → copies `Value` once
+/// - `WritableKeyPath` to optional → copies `A` once
+/// - Manual construction → copies `A` once via `preview`+`set`
+///
+/// - Note: For the identity affine traversal (where `S == A`), use ``AffineTraversal/id``.
+/// - SeeAlso: ``Lens``, ``Prism``, ``Iso``, ``EndoMut``
 public struct AffineTraversal<S, A>: Sendable {
     public let preview: @Sendable (S) -> A?
     public let set: @Sendable (S, A) -> S

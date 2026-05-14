@@ -46,6 +46,76 @@
 // import only `CoreFP` can call `lens1.compose(lens2)` instead. All `>>>` and
 // `<<<` overloads in `CoreFPOperators` delegate to `compose`.
 
+/// An optic that focuses on exactly one value of type `A` inside a whole `S`.
+///
+/// A `Lens<S, A>` is the foundational optic for product types (structs, tuples). It
+/// guarantees the focused value always exists — unlike ``Prism`` or ``AffineTraversal``,
+/// which model optional focuses.
+///
+/// ## Core primitives
+///
+/// | Property | Type | Purpose |
+/// |----------|------|---------|
+/// | `get` | `(S) -> A` | Extract the focused value |
+/// | `set` | `(S, A) -> S` | Return a new `S` with the focus replaced |
+/// | `modifyMut` | `(inout S, (inout A) -> Void) -> Void` | In-place mutation, avoids CoW copies |
+///
+/// ## Creating lenses
+///
+/// The preferred way is via the free-function ``lens(_:)-swift.func`` with a `WritableKeyPath`,
+/// which gives zero-copy `modifyMut` through Swift's modify coroutine:
+///
+/// ```swift
+/// let ageLens: Lens<Person, Int> = lens(\.age)
+/// // Or using the ^ prefix operator (requires CoreFPOperators):
+/// let ageLens: Lens<Person, Int> = ^\Person.age
+/// ```
+///
+/// For `let` properties or computed values, supply an explicit setter:
+///
+/// ```swift
+/// let nameLens: Lens<Person, String> = lens(\.name) { person, name in
+///     Person(name: name, age: person.age)
+/// }
+/// ```
+///
+/// ## Using lenses
+///
+/// ```swift
+/// let person = Person(name: "Alice", age: 30)
+/// ageLens.get(person)                        // 30
+/// ageLens.set(person, 31)                    // Person(name: "Alice", age: 31)
+/// ageLens.over { $0 + 1 }(person)           // Person(name: "Alice", age: 31)
+/// ```
+///
+/// ## Composition
+///
+/// Lenses compose left-to-right with ``compose(_:)-lens`` (or the `>>>` operator from
+/// `CoreFPOperators`). Composing two lenses yields a lens; composing a lens with a prism
+/// or affine traversal yields an ``AffineTraversal``:
+///
+/// ```swift
+/// // Named function (no import needed):
+/// let streetLens = lens(\AppState.address).compose(lens(\Address.street))
+///
+/// // Operator form (requires CoreFPOperators):
+/// let streetLens = ^\AppState.address >>> ^\Address.street
+/// ```
+///
+/// ## Zero-copy mutation with EndoMut
+///
+/// Use ``lift(_:)`` to convert an ``EndoMut``<A> into an ``EndoMut``<S>. When the lens is
+/// `WritableKeyPath`-backed, the entire chain is zero-copy:
+///
+/// ```swift
+/// let incrementAge = EndoMut<Int> { $0 += 1 }
+/// let personReducer: EndoMut<Person> = lens(\Person.age).lift(incrementAge)
+/// personReducer(&person)   // mutates person.age in place, no CoW copies
+/// ```
+///
+/// - Note: For the identity lens (where `S == A`), use ``Lens/id``.
+/// - SeeAlso: ``Prism``, ``AffineTraversal``, ``Iso``, ``EndoMut``
+
 public struct Lens<S, A>: Sendable {
     public let get: @Sendable (S) -> A
     public let set: @Sendable (S, A) -> S

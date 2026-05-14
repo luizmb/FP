@@ -1,4 +1,28 @@
 extension Result {
+    /// Namespace for `Result` ``Semigroup`` and ``Monoid`` instances.
+    ///
+    /// Because `Result` can express multiple reasonable combining strategies,
+    /// the instances are provided as named newtypes rather than direct conformances.
+    ///
+    /// | Type | Win | Combining failures | Combining successes | Identity |
+    /// |------|-----|-------------------|---------------------|---------|
+    /// | `Optimistic` | `.success` | left wins | via `Success: Semigroup` | — (Semigroup only) |
+    /// | `OptimisticCombining` | `.success` | via `Failure: Semigroup` | via `Success: Semigroup` | `.failure(Failure.identity)` |
+    /// | `Pessimistic` | `.failure` | via `Failure: Semigroup` | left wins | — (Semigroup only) |
+    /// | `PessimisticCombining` | `.failure` | via `Failure: Semigroup` | via `Success: Semigroup` | `.success(Success.identity)` |
+    ///
+    /// ## Usage
+    ///
+    /// ```swift
+    /// // Optimistic: success beats failure, combine successes
+    /// let combined = Result<[Int], Error>.Monoids.Optimistic.combine(
+    ///     .init(.success([1, 2])),
+    ///     .init(.success([3, 4]))
+    /// )
+    /// combined.rawValue   // .success([1, 2, 3, 4])
+    /// ```
+    ///
+    /// - SeeAlso: ``Semigroup``, ``Monoid``
     public enum Monoids {
         /// Semigroup: success wins over failure; combines two successes;
         /// picks the left for two failures (Failure need not be Semigroup).

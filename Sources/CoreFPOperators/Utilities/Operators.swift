@@ -1,218 +1,313 @@
-infix operator ++: AppendToList                     // Haskell Concat/Append
-infix operator <>: ConcatPrecedence                 // Haskel sconcat
+/// Append / list concatenation. (`++` in Haskell)
+///
+/// Appends the right-hand sequence to the left-hand sequence.
+///
+/// **Precedence:** `AppendToList` (right-associative, between `AdditionPrecedence` and `RangeFormationPrecedence`).
+///
+/// ```swift
+/// [1, 2] ++ [3, 4]    // [1, 2, 3, 4]
+/// ```
+infix operator ++: AppendToList
 
-infix operator <*>: FunctorOps                      // Haskell Applicative Functor Apply
-infix operator *>: FunctorOps                       // Haskell Applicative Functor Chain Discarding lhs
-infix operator <*: FunctorOps                       // Haskell Applicative Functor Chain Discarding rhs
-infix operator <|>: AlternativePrecedence           // Haskell Or/Alternative
-infix operator >=>: KleisliCompositionRight         // Haskell Kleisli composition (infixr 1)
-infix operator <=<: KleisliCompositionRight         // Haskell reverse Kleisli composition (infixr 1)
-infix operator >>-: MonadBindLeft                   // Haskell Bind (infixl 1) — avoids conflict with Swift's >>= bitwise operator
-infix operator -<<: KleisliCompositionRight         // Haskell flipped Bind (infixr 1)
-infix operator ->>: MonadBindLeft                   // Comonad extend / coflatMap (infixl 1) — dual of >>-  (w ->> f = extend f w)
-infix operator <<-: KleisliCompositionRight         // Flipped comonad extend  (infixr 1) — dual of -<<  (f <<- w = extend f w)
+/// Semigroup concatenation. (`<>` in Haskell)
+///
+/// Combines two ``Semigroup`` values using ``Semigroup/combine(_:_:)``.
+///
+/// **Named equivalent:** ``Semigroup/combine(_:_:)``
+///
+/// **Precedence:** `ConcatPrecedence` (right-associative, between `MultiplicationPrecedence` and `AdditionPrecedence`).
+///
+/// ```swift
+/// [1, 2] <> [3, 4]              // [1, 2, 3, 4]
+/// "hello" <> " world"           // "hello world"
+/// Endo { $0 + 1 } <> Endo { $0 * 2 }  // +1 then *2
+/// ```
+infix operator <>: ConcatPrecedence
 
+/// Applicative apply. (`<*>` in Haskell)
+///
+/// Applies a wrapped function to a wrapped value. The specific behaviour depends on the functor:
+/// - `Optional`: both must be non-nil.
+/// - `Array`: Cartesian product — every function applied to every value.
+/// - `Result`/`Either`: short-circuits on the first error.
+/// - ``Validation``: accumulates errors via ``Semigroup``.
+///
+/// **Named equivalent:** `apply` (varies per type).
+///
+/// **Precedence:** `FunctorOps` (left-associative, below `NilCoalescingPrecedence`).
+///
+/// ```swift
+/// Optional.some({ $0 + 1 }) <*> Optional.some(5)   // Optional(6)
+/// [(+1), (*2)] <*> [10, 20]                         // [11, 21, 20, 40]
+/// ```
+infix operator <*>: FunctorOps
+
+/// Applicative sequence-right — run both, discard the left result. (`*>` in Haskell)
+///
+/// Runs both effects; the right-hand value is returned. Errors from the left still propagate.
+///
+/// **Precedence:** `FunctorOps`.
+///
+/// ```swift
+/// Optional.some(()) *> Optional.some(42)   // Optional(42)
+/// Optional.none *> Optional.some(42)       // nil
+/// ```
+infix operator *>: FunctorOps
+
+/// Applicative sequence-left — run both, discard the right result. (`<*` in Haskell)
+///
+/// Runs both effects; the left-hand value is returned. Errors from the right still propagate.
+///
+/// **Precedence:** `FunctorOps`.
+///
+/// ```swift
+/// Optional.some(42) <* Optional.some(())   // Optional(42)
+/// Optional.some(42) <* Optional.none       // nil
+/// ```
+infix operator <*: FunctorOps
+
+/// Alternative / fallback selection. (`<|>` in Haskell)
+///
+/// Returns the left-hand value if it represents a "success", otherwise falls back to the right.
+/// The exact meaning of "success" depends on the type:
+/// - `Optional`: returns left if non-nil, otherwise evaluates and returns right.
+/// - `Array`: concatenation (both arrays are kept).
+/// - `Either`/`Result`: left-biased — returns left `.right` if present.
+///
+/// **Precedence:** `AlternativePrecedence` (left-associative, below `NilCoalescingPrecedence`).
+///
+/// ```swift
+/// Optional.some(1) <|> Optional.some(2)   // Optional(1)
+/// Optional.none <|> Optional.some(2)       // Optional(2)
+/// [1, 2] <|> [3, 4]                        // [1, 2, 3, 4]
+/// ```
+infix operator <|>: AlternativePrecedence
+
+/// Kleisli composition (left-to-right). (`>=>` in Haskell)
+///
+/// Composes two Kleisli arrows `(A) -> M<B>` and `(B) -> M<C>` into `(A) -> M<C>`.
+/// The resulting function applies the first arrow, then feeds its result to the second.
+///
+/// **Named equivalent:** `kleisli` (varies per type).
+///
+/// **Precedence:** `KleisliCompositionRight` (right-associative, priority 1).
+///
+/// ```swift
+/// let getProfile: (UserID) -> DeferredTask<Profile> = getUser >=> enrichProfile
+///
+/// // Optional:
+/// let firstNonZeroDigit: (String) -> Int? = Int.init >=> { $0 > 0 ? $0 : nil }
+/// ```
+infix operator >=>: KleisliCompositionRight
+
+/// Reverse Kleisli composition (right-to-left). (`<=<` in Haskell)
+///
+/// Like `>=>` but with arguments flipped: `g <=< f == f >=> g`.
+///
+/// **Precedence:** `KleisliCompositionRight` (right-associative, priority 1).
+///
+/// ```swift
+/// let getProfile: (UserID) -> DeferredTask<Profile> = enrichProfile <=< getUser
+/// ```
+infix operator <=<: KleisliCompositionRight
+
+/// Monadic bind (left-to-right). (`>>=` in Haskell, renamed to avoid conflict with Swift's `>>=` bitwise operator)
+///
+/// Sequences a monadic value with a function that returns another monadic value.
+///
+/// **Named equivalent:** `flatMap` (varies per type).
+///
+/// **Precedence:** `MonadBindLeft` (left-associative, priority 1).
+///
+/// ```swift
+/// Optional.some(5) >>- { $0 > 0 ? .some($0 * 2) : .none }   // Optional(10)
+/// [1, 2, 3] >>- { [$0, -$0] }                                // [1, -1, 2, -2, 3, -3]
+/// ```
+infix operator >>-: MonadBindLeft
+
+/// Flipped monadic bind (right-to-left). (`=<<` in Haskell)
+///
+/// Like `>>-` but with arguments flipped: `f -<< m == m >>- f`.
+///
+/// **Precedence:** `KleisliCompositionRight` (right-associative, priority 1).
+///
+/// ```swift
+/// { $0 > 0 ? .some($0 * 2) : .none } -<< Optional.some(5)   // Optional(10)
+/// ```
+infix operator -<<: KleisliCompositionRight
+
+/// Comonad extend / coflatMap (left-to-right). (dual of `>>=`)
+///
+/// `w ->> f` is equivalent to `w.extend(f)`. The function receives the whole comonadic
+/// context `W<A>` and produces a `B`; the result is `W<B>`.
+///
+/// **Named equivalent:** `extend` / `coflatMap` (varies per type).
+///
+/// **Precedence:** `MonadBindLeft` (left-associative, priority 1).
+///
+/// ```swift
+/// writer ->> { w in w.value + w.log.count }
+/// ```
+infix operator ->>: MonadBindLeft
+
+/// Flipped comonad extend (right-to-left). (dual of `-<<`)
+///
+/// `f <<- w` is equivalent to `w.extend(f)`. Like `(->>)` but with arguments flipped.
+///
+/// **Precedence:** `KleisliCompositionRight` (right-associative, priority 1).
+///
+/// ```swift
+/// { w in w.value + w.log.count } <<- writer
+/// ```
+infix operator <<-: KleisliCompositionRight
+
+/// Flipped pattern-matching / range membership. (symbolic)
+///
+/// `value ≅ range` checks whether `value` is contained in `range`.
+/// This is the flipped version of the `~=` pattern-matching operator.
+///
+/// **Precedence:** `ComparisonPrecedence`.
+///
+/// ```swift
+/// statusCode ≅ 200...299        // true if in range
+/// temperature ≅ 20.0...25.0    // true if in range
+/// ```
 infix operator ≅: ComparisonPrecedence
+
+/// Symmetric range operator — `center ± delta` produces a `ClosedRange`.
+///
+/// **Precedence:** `RangeFormationPrecedence`.
+///
+/// ```swift
+/// 5.0 ± 0.5    // 4.5...5.5
+/// 20 ± 3       // 17...23
+/// ```
 infix operator ±: RangeFormationPrecedence
+
+/// ASCII alias for `±`. (`center +/- delta` → `ClosedRange`)
+///
+/// **Precedence:** `RangeFormationPrecedence`.
 infix operator +/-: RangeFormationPrecedence
 
-/// Haskell pipe/dot . - infixr 9
-/// `(>>>) :: (a -> b) -> (b -> c) -> a -> c`
+/// Left-to-right function and optic composition.
 ///
-/// Left to right function composition.
-/// ```haskell
-/// (f . g) x = g (f x)
-/// f . id = f = id . f
-/// ```
+/// `f >>> g` applies `f` first, then `g`. Also overloaded for optic composition
+/// (``Lens``, ``Prism``, ``AffineTraversal``, ``Iso``) in `CoreFPOperators/Utilities/`.
 ///
-/// Examples:
-/// ```haskell
-/// >>> map (length >>> (*2)) [[], [0, 1, 2], [0]]
-/// [0,6,2]
-/// >>> id (>>>) foldr [(+1), (*3), (^3)] 2
-/// 25
+/// **Named equivalent (functions):** ``compose(_:_:)``
+///
+/// **Precedence:** `FunctionCompositionForward` (right-associative, highest custom precedence).
+///
+/// ```swift
+/// let pipeline: (String) -> Bool = { $0.trimmingCharacters(in: .whitespaces) } >>> { !$0.isEmpty }
+///
+/// // Optic composition:
+/// let streetLens = ^\AppState.address >>> ^\Address.street   // Lens<AppState, String>
 /// ```
-/// https://hackage.haskell.org/package/base-4.20.0.1/docs/Control-Category.html#v:-62--62--62-
 infix operator >>>: FunctionCompositionForward
 
-/// Haskell pipe/dot . - infixr 9
-/// `(.) :: (b -> c) -> (a -> b) -> a -> c`
+/// Right-to-left function and optic composition.
 ///
-/// Right to left function composition.
-/// ```haskell
-/// (f . g) x = f (g x)
-/// f . id = f = id . f
-/// ```
+/// `g <<< f` is equivalent to `f >>> g`. Also overloaded for optic composition.
 ///
-/// Examples:
-/// ```haskell
-/// >>> map ((*2) . length) [[], [0, 1, 2], [0]]
-/// [0,6,2]
-/// >>> foldr (.) id [(+1), (*3), (^3)] 2
-/// 25
-/// >>> let (...) = (.).(.) in ((*2)...(+)) 5 10
-/// 30
+/// **Precedence:** `FunctionCompositionBackwards` (right-associative).
+///
+/// ```swift
+/// let pipeline = validate <<< parse <<< fetch  // reads right-to-left
 /// ```
-/// https://hackage.haskell.org/package/base-4.20.0.1/docs/Control-Category.html#v:-60--60--60-
 infix operator <<<: FunctionCompositionBackwards
 
-/// Haskell $ (parentheses replacement) - infixr 0
-/// `($) :: (a -> b) -> a -> b`
+/// Function application with lowest right-associative precedence. (`$` in Haskell)
 ///
-/// ($) is the function application operator.
-/// Applying ($) to a function f and an argument x gives the same result as applying f to x directly. The definition is akin to this:
-/// ```haskell
-/// ($) :: (a -> b) -> a -> b
-/// ($) f x = f x
-/// ```
-/// On the face of it, this may appear pointless! But it's actually one of the most useful and important operators in Haskell.
-/// The order of operations is very different between ($) and normal function application. Normal function application has
-/// precedence 10 - higher than any operator - and associates to the left. So these two definitions are equivalent:
-/// ```haskell
-/// expr = min 5 1 + 5
-/// expr = ((min 5) 1) + 5
-/// ```
-/// ($) has precedence 0 (the lowest) and associates to the right, so these are equivalent:
-/// ```haskell
-/// expr = min 5 $ 1 + 5
-/// expr = (min 5) (1 + 5)
-/// ```
+/// `f £ x` applies `f` to `x`. Its extremely low precedence means all other operators
+/// on the right-hand side are evaluated first, eliminating deep parentheses nesting.
 ///
-/// Examples:
-/// ```haskell
-/// -- From:
-/// -- | Sum numbers in a string: strSum "100  5 -7" == 98
-/// strSum :: String -> Int
-/// strSum s = sum (mapMaybe readMaybe (words s))
-/// -- To:
-/// -- | Sum numbers in a string: strSum "100  5 -7" == 98
-/// strSum :: String -> Int
-/// strSum s = sum $ mapMaybe readMaybe $ words s
+/// **Named equivalent:** ``apply(_:_:)``
+///
+/// **Precedence:** `LowPrecedenceFunctionCallRight` (right-associative, lower than ternary).
+///
+/// ```swift
+/// f £ g £ x           // f(g(x))
+/// not £ isValid £ input  // not(isValid(input))
 /// ```
-/// https://hackage.haskell.org/package/base-4.20.0.1/docs/Prelude.html#v:-36-
 infix operator £: LowPrecedenceFunctionCallRight
 
-/// Haskell $ (parentheses replacement) - infixr 0
-/// `($) :: (a -> b) -> a -> b`
+/// ASCII alternative to `£` — function application with lowest right-associative precedence.
 ///
-/// ($) is the function application operator.
-/// Applying ($) to a function f and an argument x gives the same result as applying f to x directly. The definition is akin to this:
-/// ```haskell
-/// ($) :: (a -> b) -> a -> b
-/// ($) f x = f x
-/// ```
-/// On the face of it, this may appear pointless! But it's actually one of the most useful and important operators in Haskell.
-/// The order of operations is very different between ($) and normal function application. Normal function application has
-/// precedence 10 - higher than any operator - and associates to the left. So these two definitions are equivalent:
-/// ```haskell
-/// expr = min 5 1 + 5
-/// expr = ((min 5) 1) + 5
-/// ```
-/// ($) has precedence 0 (the lowest) and associates to the right, so these are equivalent:
-/// ```haskell
-/// expr = min 5 $ 1 + 5
-/// expr = (min 5) (1 + 5)
-/// ```
+/// `f <| x` is identical to `f £ x`. Use whichever is more readable in context.
 ///
-/// Examples:
-/// ```haskell
-/// -- From:
-/// -- | Sum numbers in a string: strSum "100  5 -7" == 98
-/// strSum :: String -> Int
-/// strSum s = sum (mapMaybe readMaybe (words s))
-/// -- To:
-/// -- | Sum numbers in a string: strSum "100  5 -7" == 98
-/// strSum :: String -> Int
-/// strSum s = sum $ mapMaybe readMaybe $ words s
-/// ```
-/// https://hackage.haskell.org/package/base-4.20.0.1/docs/Prelude.html#v:-36-
+/// **Named equivalent:** ``call(_:_:)``
+///
+/// **Precedence:** `LowPrecedenceFunctionCallRight` (right-associative).
 infix operator <|: LowPrecedenceFunctionCallRight
 
-/// Flipped version of Haskell $, or <| - infixl 0
-/// `($) :: a -> (a -> b) -> b`
+/// Pipeline / flipped function application. (`&` in Swift stdlib, `|>` in F# / Elixir)
 ///
-/// Low precedence, all the other operations will run first, contrary to regular function application
-/// https://hackage.haskell.org/package/base-4.20.0.1/docs/Prelude.html#v:-36-
+/// `x |> f` applies `f` to `x`. Reads left-to-right as a pipeline.
+///
+/// **Named equivalent:** ``apply(_:_:)``
+///
+/// **Precedence:** `LowPrecedenceFunctionCallLeft` (left-associative, one step above assignment).
+///
+/// ```swift
+/// userId |> fetchUser |> parseUser |> validateUser
+/// ```
 infix operator |>: LowPrecedenceFunctionCallLeft
 
-/// Haskell <$> (fmap) - infixl 4
-/// `(<$>) :: Functor f => (a -> b) -> f a -> f b`
+/// Functor map — applies a function inside a functor. (`<$>` in Haskell)
 ///
-/// An infix synonym for fmap.
-/// The name of this operator is an allusion to $. Note the similarities between their types:
-/// ```haskell
-/// ($)   ::              (a -> b) ->   a ->   b
-/// (<$>) :: Functor f => (a -> b) -> f a -> f b
-/// ```
+/// `f <£> fa` is `fmap(f, fa)`. The `£` (pound) character is used instead of `$`
+/// to avoid conflict with Swift's string interpolation syntax.
 ///
-/// Examples:
-/// ```haskell
-/// >>> show <$> Nothing
-/// Nothing
-/// >>> show <$> Just 3
-/// Just "3"
-/// >>> show <$> Left 17
-/// Left 17
-/// >>> show <$> Right 17
-/// Right "17"
-/// >>> (*2) <$> [1,2,3]
-/// [2,4,6]
-/// >>> even <$> (2,2)
-/// (2,True)
+/// **Named equivalent:** `fmap` / `map` (varies per type).
+///
+/// **Precedence:** `FunctorOps` (left-associative, below `NilCoalescingPrecedence`).
+///
+/// ```swift
+/// { $0 + 1 } <£> Optional.some(5)    // Optional(6)
+/// { $0 * 2 } <£> [1, 2, 3]          // [2, 4, 6]
+/// String.init <£> Either<Error, Int>.right(42)  // Either.right("42")
 /// ```
-/// https://hackage.haskell.org/package/base-4.20.0.1/docs/Data-Functor.html#v:-60--36--62-
 infix operator <£>: FunctorOps
 
-/// Haskell flipped version of <$ - infixl 4
-/// `($>) :: Functor f => f a -> b -> f b`
+/// Flipped functor replace — `fa £> b` replaces every element of `fa` with `b`. (`$>` in Haskell)
 ///
-/// Examples:
-/// ```haskell
-/// >>> Nothing $> "foo"
-/// Nothing
-/// >>> Just 90210 $> "foo"
-/// Just "foo"
-/// >>> Left 8675309 $> "foo"
-/// Left 8675309
-/// >>> Right 8675309 $> "foo"
-/// Right "foo"
-/// >>> [1,2,3] $> "foo"
-/// ["foo","foo","foo"]
-/// >>> (1,2) $> "foo"
-/// (1,"foo")
+/// Equivalent to `fa.map(const(b))`.
+///
+/// **Precedence:** `FunctorOps`.
+///
+/// ```swift
+/// Optional.some(42) £> "replaced"    // Optional("replaced")
+/// [1, 2, 3] £> "x"                   // ["x", "x", "x"]
 /// ```
-/// https://hackage.haskell.org/package/base-4.20.0.1/docs/Data-Functor.html#v:-36--62-
 infix operator £>: FunctorOps
 
-/// Haskell <$ (map-replace-by) - infixl 4
-/// `(<$) :: a -> f b -> f a`
+/// Functor replace-by — `b <£ fa` replaces every element of `fa` with `b`. (`<$` in Haskell)
 ///
-/// Replace all locations in the input with the same value. The default definition is fmap . const, but this may be overridden with a
-/// more efficient version.
+/// Equivalent to `fa.map(const(b))` with arguments flipped.
 ///
-/// Examples:
-/// ```haskell
-/// >>> 'a' <$ Just 2
-/// Just 'a'
-/// >>> 'a' <$ Nothing
-/// Nothing
+/// **Precedence:** `FunctorOps`.
+///
+/// ```swift
+/// "replaced" <£ Optional.some(42)    // Optional("replaced")
+/// "x" <£ [1, 2, 3]                   // ["x", "x", "x"]
 /// ```
-/// https://hackage.haskell.org/package/base-4.20.0.1/docs/Data-Functor.html#v:-60--36-
 infix operator <£: FunctorOps
 
-/// Haskell flipped version of <$> - infixl 1
-/// `(<&>) = flip fmap`
+/// Flipped functor map — value on the left, function on the right. (`<&>` in Haskell)
 ///
-/// Examples:
-/// ```haskell
-/// >>> Just 2 <&> (+1)
-/// Just 3
-/// >>> [1,2,3] <&> (+1)
-/// [2,3,4]
-/// >>> Right 3 <&> (+1)
-/// Right 4
+/// `fa <&> f` is `fmap(f, fa)` with arguments flipped. More readable in pipeline chains.
+///
+/// **Named equivalent:** `map` / `fmap` (varies per type).
+///
+/// **Precedence:** `MonadBindLeft` (left-associative, priority 1 — same as `>>-`).
+///
+/// ```swift
+/// Optional.some(5) <&> { $0 + 1 }   // Optional(6)
+/// [1, 2, 3] <&> { $0 * 2 }          // [2, 4, 6]
+/// // In a pipeline:
+/// userId |> fetchUser <&> \.name
 /// ```
-/// https://hackage.haskell.org/package/base-4.20.0.1/docs/Data-Functor.html#v:-60--38--62-
 infix operator <&>: MonadBindLeft
 
 /// Transformer-specific fmap: `(<£^>) :: (a -> b) -> f (g a) -> f (g b)`
@@ -234,7 +329,20 @@ infix operator <&^>: MonadBindLeft
 // in NumericOperators.swift. For BinaryFloatingPoint types (where XOR doesn't exist) the power
 // semantics are unambiguous.
 
-/// Lift operator
-/// - keypaths to functions
-/// - closure to Func structs
+/// Lift prefix operator — promotes a `WritableKeyPath` or `KeyPath` into a ``Lens``.
+///
+/// Applied as a prefix to a key path, `^` returns a ``Lens`` focused on that property.
+///
+/// - For `WritableKeyPath`: produces a ``Lens`` with zero-copy `modifyMut`.
+/// - For `KeyPath` (read-only): produces a partial builder — call the result with a setter
+///   closure to complete the lens.
+///
+/// **Named equivalent:** ``lens(_:)-swift.func``
+///
+/// ```swift
+/// let ageLens: Lens<Person, Int> = ^\Person.age         // WritableKeyPath
+/// let nameLens = (^\Person.name) { Person(name: $1, age: $0.age) }  // KeyPath + setter
+/// ```
+///
+/// - Note: Defined in `CoreFPOperators/Utilities/KeyPath.swift`.
 prefix operator ^

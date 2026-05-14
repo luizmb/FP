@@ -1,6 +1,34 @@
 // https://rosettacode.org/wiki/Operator_precedence
 // https://developer.apple.com/documentation/swift/operator-declarations
 
+// MARK: - Precedence group hierarchy
+//
+// This file defines all custom precedence groups used across CoreFPOperators,
+// DataStructureOperators, and their dependents.
+//
+// Precedence (highest to lowest), with Swift stdlib groups for reference:
+//
+//  9   FunctionCompositionForward  (>>>, right-assoc)
+//  9   FunctionCompositionBackwards (<<<, right-assoc)
+//  8.5 BitwiseShiftPrecedence       (>> — stdlib)
+//  7   MultiplicationPrecedence     (* / — stdlib)
+//  6   ConcatPrecedence             (<>, right-assoc)
+//  6   AdditionPrecedence           (+ - — stdlib)
+//  5   AppendToList                 (++, right-assoc)
+//  4.8 RangeFormationPrecedence     (... ..< — stdlib)
+//  4.5 CastingPrecedence            (as? — stdlib)
+//  4.2 NilCoalescingPrecedence      (?? — stdlib)
+//  4   ComparisonPrecedence         (== <= — stdlib) / FunctorOps (<£> £> <£ <*> *> <*)
+//  3   AlternativePrecedence        (<|>)
+//  3   LogicalConjunctionPrecedence (&& — stdlib)
+//  2   LogicalDisjunctionPrecedence (|| — stdlib)
+//  1   KleisliCompositionRight      (>=> <=< -<< <<-, right-assoc)
+//  1   MonadBindLeft                (>>- <&> ->>, left-assoc)
+//  0.5 TernaryPrecedence            (?:)
+//  0   LowPrecedenceFunctionCallRight (£ <|, right-assoc)
+//  0   LowPrecedenceFunctionCallLeft  (|>, left-assoc)
+//  -1  AssignmentPrecedence         (= — stdlib)
+
 // 9: Function composition >>> <<<
 // Note: In Haskell, both . and >>> are right-associative (infixr)
 precedencegroup FunctionCompositionForward {

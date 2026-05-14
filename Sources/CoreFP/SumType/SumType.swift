@@ -1,3 +1,35 @@
+/// A two-case sum type (coproduct) that can be eliminated via pattern matching.
+///
+/// `SumType2` is the abstract interface shared by ``Either``, `Optional` (implicitly),
+/// `Result`, and `Validation`. It provides a uniform `match` eliminator that covers both
+/// cases without requiring `switch` statements.
+///
+/// ## Conforming types
+///
+/// | Type | Left case | Right case |
+/// |------|-----------|------------|
+/// | `Either<A, B>` | `.left(A)` | `.right(B)` |
+/// | `Result<S, E>` | `.failure(E)` | `.success(S)` |
+/// | `Validation<E, A>` | `.failure(E)` | `.success(A)` |
+/// | `Optional<A>` | `.none` | `.some(A)` |
+///
+/// ## Convenience accessors
+///
+/// The default extension provides:
+/// - `a`: returns the left value if present, `nil` otherwise.
+/// - `b`: returns the right value if present, `nil` otherwise.
+/// - `isA`: `true` when in the left case.
+/// - `isB`: `true` when in the right case.
+///
+/// ```swift
+/// let e: Either<String, Int> = .right(42)
+/// e.a       // nil
+/// e.b       // Optional(42)
+/// e.isA     // false
+/// e.isB     // true
+/// ```
+///
+/// - SeeAlso: ``Either``, ``Validation``
 public protocol SumType2<A, B> {
     associatedtype A
     associatedtype B
@@ -5,6 +37,15 @@ public protocol SumType2<A, B> {
     static func left(_ a: A) -> Self
     static func right(_ b: B) -> Self
 
+    /// Eliminates the sum type by applying one of two functions.
+    ///
+    /// This is the canonical way to consume a `SumType2` value without pattern matching.
+    ///
+    /// ```swift
+    /// let value: Either<String, Int> = .right(42)
+    /// let result = value.match(caseLeft: { "error: \($0)" }, caseRight: { "value: \($0)" })
+    /// // "value: 42"
+    /// ```
     func match<C>(caseLeft: (A) -> C, caseRight: (B) -> C) -> C
 }
 

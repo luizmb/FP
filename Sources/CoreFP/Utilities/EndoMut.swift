@@ -30,6 +30,54 @@
 // normalise(&items)              // callAsFunction also works
 // ```
 
+/// A wrapper around an in-place endomorphism `(inout A) -> Void` that forms a ``Monoid``
+/// under sequential application.
+///
+/// `EndoMut<A>` is the zero-copy companion to ``Endo``. For Swift value types with
+/// Copy-on-Write (CoW) internals (`Array`, `Dictionary`, `Set`, `String`), passing a
+/// value *by value* to a function raises the buffer refcount to at least 2, triggering
+/// an O(n) heap copy on the first mutation inside the function. `EndoMut` avoids this
+/// by taking the value as `inout` — Swift's Law of Exclusivity guarantees no alias exists
+/// during the call, so CoW mutates in place.
+///
+/// ## Monoid instance
+///
+/// Like ``Endo``, `EndoMut` is a ``Monoid``:
+/// - ``EndoMut/identity``: the do-nothing closure (`{ _ in }`).
+/// - ``Semigroup/combine(_:_:)``: sequential application — `lhs` runs first, then `rhs`.
+///
+/// ## Example: combining reducers for a large CoW state
+///
+/// ```swift
+/// var items = Array(0..<10_000)
+///
+/// let clamp = EndoMut<[Int]> { xs in
+///     for i in xs.indices { xs[i] = min(xs[i], 100) }
+/// }
+/// let sort = EndoMut<[Int]> { $0.sort() }
+///
+/// // Combine without copying:
+/// let normalize: EndoMut<[Int]> = mconcat([clamp, sort])
+/// normalize(&items)   // clamps then sorts — zero CoW copies
+/// ```
+///
+/// ## Interoperability with Endo
+///
+/// ```swift
+/// let mutating = EndoMut<String> { $0 = $0.uppercased() }
+/// let pure = mutating.toEndo()         // Endo<String> — copies once
+///
+/// let pure2 = Endo<String> { $0.uppercased() }
+/// let mutating2 = pure2.toEndoMut()   // free, no allocation
+/// ```
+///
+/// ## Integration with optics
+///
+/// ``Lens/lift(_:)``, ``Prism/lift(_:)``, and ``AffineTraversal/lift(_:)`` all accept
+/// `EndoMut` and produce an `EndoMut` for the outer type, preserving the zero-copy
+/// guarantee when the lens is `WritableKeyPath`-backed.
+///
+/// - SeeAlso: ``Endo``, ``Lens/lift(_:)``, ``mconcat(_:)``
 public struct EndoMut<A> {
     public let runEndoMut: (inout A) -> Void
 

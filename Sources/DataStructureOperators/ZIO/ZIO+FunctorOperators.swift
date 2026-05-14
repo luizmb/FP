@@ -34,8 +34,16 @@ public func <£ <Env: Sendable, A: Sendable, B: Sendable, E: Error & Sendable>(
     zio £> value
 }
 
-// contramapEnvironment: (r2 -> r) -> ZIO<r, a, e> -> ZIO<r2, a, e>
-// Uses >>> for composition: first transform env, then run ZIO
+// contramapEnvironment: (GlobalEnv -> Env) -> ZIO<Env, a, e> -> ZIO<GlobalEnv, a, e>
+//
+// The `>>>` operator is reused here in its contravariant sense:
+//   `envNarrow >>> zio` reads as "first narrow the environment, then run zio".
+// This is the ZIO equivalent of Reader's contramapEnvironment — it widens a ZIO
+// that requires a specific environment into one that accepts a broader environment.
+//
+// Example:
+//   let narrow: ZIO<UserService, User, DBError> = ...
+//   let wide: ZIO<AppEnv, User, DBError> = \.userService >>> narrow
 public func >>> <GlobalEnv: Sendable, Env: Sendable, A: Sendable, E: Error & Sendable>(
     _ contramapEnv: @escaping @Sendable (GlobalEnv) -> Env,
     _ zio: ZIO<Env, A, E>

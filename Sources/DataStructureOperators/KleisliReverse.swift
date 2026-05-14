@@ -2,8 +2,22 @@ import CoreFP
 import CoreFPOperators
 import DataStructure
 
+// MARK: - Reverse Kleisli composition (<=<) for DataStructure types
+//
+// This file provides <=< overloads for all DataStructure monad types:
+// Either, Reader, Stateful, Writer.
+//
+// Each overload delegates to the corresponding >=> overload.
+// g <=< f  ==  f >=> g
+//
+// The overloads cover:
+//   - Base monad: (A -> M<B>) <=< (X -> M<A>) = (X -> M<B>)
+//   - Transformer combinations: M1<M2<_>>-returning Kleisli arrows
+
 // MARK: - Either
 
+/// Reverse Kleisli composition for `Either`.
+/// `g <=< f` is equivalent to `f >=> g`.
 public func <=< <A, B0, B, B1>(
     _ fn2: @escaping (B) -> Either<A, B1>,
     _ fn1: @escaping (B0) -> Either<A, B>

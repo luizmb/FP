@@ -20,6 +20,16 @@
 //
 // The outer `S` is always `inout` and is never CoW-copied regardless of
 // what appears inside the chain.
+//
+// ## Composition type table
+//
+// | LHS \ RHS        | Lens<A,B>          | Prism<A,B>              | AffineTraversal<A,B>    |
+// |------------------|--------------------|-------------------------|-------------------------|
+// | Lens<S,A>        | Lens<S,B>          | AffineTraversal<S,B>    | AffineTraversal<S,B>    |
+// | Prism<S,A>       | AffineTraversal<S,B>| Prism<S,B>             | AffineTraversal<S,B>    |
+// | AffineTraversal<S,A> | AffineTraversal<S,B>| AffineTraversal<S,B> | AffineTraversal<S,B> |
+//
+// See also IsoComposition.swift in CoreFPOperators for Iso >>> Iso/Lens/Prism/AT combinations.
 
 // MARK: - Lens compositions
 
