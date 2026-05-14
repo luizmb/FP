@@ -1,10 +1,15 @@
-// Bridges between AsyncThrowingStream and Result.
+// MARK: - AsyncThrowingStream <-> Result bridges
 //
 // A throwing async stream is structurally equivalent to a non-throwing stream
 // of Result values — errors are just failures, elements are successes.
 //
-// toResultStream   — materialise: turns throws into .failure, elements into .success
-// toThrowingStream — dematerialise: turns .failure into throws, .success into elements
+// This is the "materialise/dematerialise" pattern:
+//   toResultStream   — materialise: turns throws into .failure, elements into .success
+//   toThrowingStream — dematerialise: turns .failure into throws, .success into elements
+//
+// Use cases:
+//   - Buffer error streams for retry/recovery logic (materialise first)
+//   - Feed a non-throwing Result stream into APIs that expect throwing streams
 //
 // Note: AsyncThrowingStream's continuation initialiser requires Failure == any Error,
 // so toThrowingStream returns AsyncThrowingStream<Success, any Error>. The actual thrown
