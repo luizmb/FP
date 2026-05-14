@@ -2,20 +2,68 @@
 
 /// A sequence guaranteed to contain at least one element.
 ///
-/// `NonEmpty<A>` is a `Semigroup` — two non-empty sequences always combine into a
-/// non-empty sequence. It deliberately has **no `Monoid`** instance because there is
-/// no empty value to serve as the identity element. Use `sconcat` (not `mconcat`)
-/// when folding a collection of them.
+/// `NonEmpty<A>` encodes the invariant "this collection is never empty" at the type level,
+/// eliminating the need for `guard !array.isEmpty` checks and optional returns.
+///
+/// It stores its elements as `head: A` (the guaranteed first element) plus `tail: [A]`
+/// (any remaining elements, possibly empty). This structure is efficient and clearly
+/// communicates the non-empty contract.
+///
+/// ## Semigroup, not Monoid
+///
+/// `NonEmpty<A>` is a ``Semigroup`` — two non-empty sequences always combine into a
+/// non-empty sequence via element concatenation. It deliberately has **no ``Monoid``**
+/// instance because there is no empty value to serve as the identity element.
+///
+/// Use ``sconcat(_:_:)`` (not ``mconcat(_:)``) when folding a collection of `NonEmpty` values:
 ///
 /// ```swift
-/// let digits  = NonEmpty(head: 1, tail: [2, 3])
-/// let letters = NonEmpty(head: "a", tail: ["b"])
-///
-/// digits.head   // 1
-/// digits.last   // 3
-/// digits.count  // 3
-/// digits.toArray  // [1, 2, 3]
+/// let all: NonEmpty<Int> = sconcat(first, rest)
 /// ```
+///
+/// ## Creating NonEmpty
+///
+/// ```swift
+/// // Direct init:
+/// let digits = NonEmpty(head: 1, tail: [2, 3])
+///
+/// // Free functions:
+/// let single = nonEmpty(head: 42)               // NonEmpty(head: 42, tail: [])
+/// let fromArray: NonEmpty<Int>? = nonEmpty([1, 2, 3])  // nil if empty
+/// ```
+///
+/// ## Accessing elements
+///
+/// ```swift
+/// digits.head     // 1
+/// digits.tail     // [2, 3]
+/// digits.toArray  // [1, 2, 3]  (from NonEmpty+Primitives)
+/// digits.last     // 3          (from NonEmpty+Primitives)
+/// digits.count    // 3          (from NonEmpty+Primitives)
+/// ```
+///
+/// ## Functor / Monad
+///
+/// `NonEmpty` is a `Functor` and `Monad` (the monad is a "non-empty list monad"):
+///
+/// ```swift
+/// let doubled: NonEmpty<Int> = digits.map { $0 * 2 }
+///
+/// // flatMap (Kleisli arrow for the non-empty list monad):
+/// let expanded: NonEmpty<Int> = digits.flatMap { n in NonEmpty(head: n, tail: [-n]) }
+/// ```
+///
+/// ## Use as error accumulator
+///
+/// `NonEmpty<[E]>` or `NonEmpty<E>` is an ideal error type for ``Validation``
+/// because it enforces that at least one error is present in the `failure` case:
+///
+/// ```swift
+/// typealias Errors = NonEmpty<[String]>
+/// let result: Validation<Errors, User> = validateForm(input)
+/// ```
+///
+/// - SeeAlso: ``Validation``, ``Semigroup``, ``sconcat(_:_:)``
 public struct NonEmpty<A> {
     public let head: A
     public let tail: [A]
