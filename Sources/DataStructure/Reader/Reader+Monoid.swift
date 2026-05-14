@@ -3,15 +3,15 @@ import CoreFP
 // MARK: - Reader: Semigroup / Monoid
 //
 // A `Reader<Environment, Output>` whose `Output` is a `Semigroup` or `Monoid` is itself
-// a `Semigroup` or `Monoid` under pointwise combination:
+// a `Semigroup` or `Monoid` under pointwise combination — a standard result from
+// functional programming (analogous to `(r -> a)` being a Monoid when `a` is a Monoid
+// in Haskell):
 //
 //   combine(r1, r2) = Reader { env in combine(r1.run(env), r2.run(env)) }
-//   identity        = Reader { _ in Output.identity }
-//
-// This is the standard "reader monad over a monoid" result from functional programming.
+//   identity        = pure(.identity)       -- constant reader returning Output.identity
 
 extension Reader: Semigroup where Output: Semigroup {
-    /// Combines two readers by running both on the same environment and combining
+    /// Combines two `Reader`s by running both on the same environment and merging
     /// their outputs with `Output.combine`.
     ///
     /// ```swift
@@ -21,39 +21,17 @@ extension Reader: Semigroup where Output: Semigroup {
     /// )
     /// combined.runReader(3) // ["item 0", "item 1", "item 2", "footer"]
     /// ```
-    ///
-    /// - Parameters:
-    ///   - lhs: The first reader.
-    ///   - rhs: The second reader.
-    /// - Returns: A reader that combines both outputs for every environment.
     public static func combine(_ lhs: Self, _ rhs: Self) -> Self {
         Reader { env in .combine(lhs.runReader(env), rhs.runReader(env)) }
     }
 }
 
 extension Reader: Monoid where Output: Monoid {
-    /// A reader that ignores its environment and returns `Output.identity`.
+    /// The identity `Reader`: lifts `Output.identity` into the Reader context via
+    /// ``pure(_:)``, producing the same value for every environment.
     ///
     /// ```swift
-    /// // In a middleware returning Reader<Environment, Effect<Action>>:
-    /// guard case .fetchData = action else { return .identity }
-    /// // or, with the expressive alias:
-    /// guard case .fetchData = action else { return .doNothing }
+    /// Reader<MyEnv, [String]>.identity.runReader(env) // []
     /// ```
-    ///
-    /// - Note: When `Output` is `Effect<Action>`, `identity` is equivalent to
-    ///   `Reader { _ in Effect.empty }` — produce no side-effects for any environment.
-    public static var identity: Self { Reader { _ in .identity } }
-}
-
-extension Reader where Output: Monoid {
-    /// Expressive alias for ``identity`` — produces no output for every environment.
-    ///
-    /// Reads more naturally than `identity` at call sites where the intent is
-    /// "ignore this action":
-    ///
-    /// ```swift
-    /// guard case .fetchData(let query) = action else { return .doNothing }
-    /// ```
-    public static var doNothing: Self { .identity }
+    public static var identity: Self { .pure(.identity) }
 }
