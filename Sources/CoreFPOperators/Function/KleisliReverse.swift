@@ -1,7 +1,26 @@
 import CoreFP
 
+// MARK: - Reverse Kleisli composition (<=<) for standard monads
+//
+// <=< is the right-to-left version of >=>:
+//   g <=< f  ==  f >=> g
+//
+// All overloads delegate to the corresponding >=> overload, which means
+// the semantics (and copy cost) are identical. The overloads here cover
+// the same set of monads as the >=> operator in the adjacent >=> files.
+
 // MARK: - Optional
 
+/// Reverse Kleisli composition for `Optional`.
+///
+/// `g <=< f` is `f >=> g`. Reads right-to-left: `g` is applied after `f`.
+///
+/// ```swift
+/// let safeDiv: (Int) -> Int? = { $0 != 0 ? 100 / $0 : nil }
+/// let toNonNegative: (Int) -> Int? = { $0 >= 0 ? $0 : nil }
+/// let safeDivNonNeg = safeDiv <=< toNonNegative
+/// // equivalent to: toNonNegative >=> safeDiv
+/// ```
 public func <=< <A0, A, A1>(
     _ fn2: @escaping (A) -> A1?,
     _ fn1: @escaping (A0) -> A?

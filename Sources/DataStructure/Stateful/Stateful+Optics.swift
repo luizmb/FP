@@ -24,6 +24,13 @@ import CoreFP
 // When the optic's focus is absent the computation is not run, `Whole` is left
 // unchanged, and the result is `nil`.
 
+// ## zoom vs lift
+//
+// | Method | Returns | Use when |
+// |--------|---------|----------|
+// | `lens.lift(endoMut)` | `EndoMut<Whole>` | No return value needed, maximum efficiency |
+// | `lens.zoom(stateful)` | `Stateful<Whole, Result>` | The stateful computation returns a value |
+
 extension Lens {
     /// Lifts a `Stateful<A, Result>` to `Stateful<S, Result>` through this lens.
     ///
