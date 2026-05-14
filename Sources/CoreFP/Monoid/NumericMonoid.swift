@@ -1,6 +1,35 @@
-/// Namespace for numeric Monoid instances.
+/// Namespace for numeric ``Monoid`` instances.
+///
+/// `NumericMonoid<T>` provides four named newtypes for the common monoid structures
+/// on numeric types. All four are `RawRepresentable` with `rawValue: T` and support
+/// both integer and float literals for easy construction.
+///
+/// | Type | Operation | Identity | Constraint |
+/// |------|-----------|---------|------------|
+/// | `NumericMonoid<T>.Sum` | `+` | `0` | `Numeric` |
+/// | `NumericMonoid<T>.Product` | `*` | `1` | `Numeric` |
+/// | `NumericMonoid<T>.Min` | `min(_:_:)` | `T.max` | `Numeric & HasMax` |
+/// | `NumericMonoid<T>.Max` | `max(_:_:)` | `T.min` | `Numeric & HasMin` |
+///
+/// All standard integer and floating-point types have a `Monoids` type alias:
+/// `Int.Monoids`, `Double.Monoids`, `Float.Monoids`, etc.
+///
+/// ## Example
+///
+/// ```swift
+/// // Sum a sequence of integers:
+/// let total = mconcat([1, 2, 3, 4, 5].map(Int.Monoids.Sum.init))
+/// total.rawValue   // 15
+///
+/// // Using <> (requires CoreFPOperators):
+/// let product: Int.Monoids.Product = 2 <> 3 <> 4
+/// product.rawValue  // 24
+/// ```
+///
 /// Requires `ExpressibleByIntegerLiteral` (satisfied by all standard numeric types)
 /// so that both 0 and 1 can be expressed as literals for identity elements.
+///
+/// - SeeAlso: ``Monoid``, ``mconcat(_:)``, ``SIMDMonoid``
 public enum NumericMonoid<T: Numeric & ExpressibleByIntegerLiteral> {
     /// Monoid under addition, with identity 0.
     public struct Sum: Monoid, RawRepresentable {

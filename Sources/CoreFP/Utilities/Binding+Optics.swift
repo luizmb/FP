@@ -1,6 +1,34 @@
 #if canImport(SwiftUI)
 import SwiftUI
 
+/// SwiftUI `Binding` extensions for optics integration.
+///
+/// These subscripts allow any SwiftUI `Binding<Value>` to be projected through
+/// an optic — a ``Lens``, ``Iso``, ``Prism``, or ``AffineTraversal`` — producing
+/// a new binding focused on a sub-value.
+///
+/// ## Overview
+///
+/// | Optic | Result type | Notes |
+/// |-------|-------------|-------|
+/// | `Lens<Value, A>` | `Binding<A>` | Always valid — focus always present |
+/// | `Iso<Value, A>` | `Binding<A>` | Always valid — bijection |
+/// | `Prism<Value, A>` | `Binding<A>?` | `nil` when the case is inactive |
+/// | `AffineTraversal<Value, A>` | `Binding<A>?` | `nil` when the focus is absent |
+///
+/// ## Usage
+///
+/// ```swift
+/// // Lens:
+/// TextField("Name", text: $user[optic: nameLens])
+///
+/// // Prism (gate a view on the active enum case):
+/// if let settingsBinding = $sheet[optic: settingsPrism] {
+///     SettingsView(settings: settingsBinding)
+/// }
+/// ```
+///
+/// - SeeAlso: ``Lens``, ``Iso``, ``Prism``, ``AffineTraversal``
 public extension Binding {
     /// Access a sub-value through a `Lens`. Always returns a valid binding.
     ///
