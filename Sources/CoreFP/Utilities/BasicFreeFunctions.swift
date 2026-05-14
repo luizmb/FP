@@ -1,10 +1,43 @@
 // swiftlint:disable file_length
 import Foundation
 
+/// A phantom type namespace for free functions with a single type parameter.
+///
+/// `Of<T>` is an uninhabited enum used purely as a namespace. It has static methods that
+/// mirror the top-level free functions but are scoped to a specific type `T`, enabling
+/// point-free use without type inference ambiguities.
+///
+/// ```swift
+/// [1, 2, nil, 3].compactMap(Of<Int>.id)   // disambiguates id for Int
+/// ```
 public enum Of<T> {}
+
+/// A phantom type namespace for free functions with two type parameters.
+///
+/// Like ``Of``, but with two type parameters `T` and `U`. Methods return functions of type
+/// `(T) -> U`.
 public enum Of2<T, U> {}
+
+/// A phantom type namespace for free functions with three type parameters.
+///
+/// Like ``Of``, but with three type parameters `T`, `U`, and `V`. Methods return functions
+/// of type `(T, U) -> V`.
 public enum Of3<T, U, V> {}
 
+/// Converts a `Never` value into any type — the type-theoretic absurdity function.
+///
+/// Because `Never` is uninhabited, this function can never actually be called at runtime.
+/// It is used to eliminate impossible cases in exhaustive pattern matching or generic code
+/// where a `Never`-typed value proves an unreachable branch.
+///
+/// ```swift
+/// func handle<A>(_ result: Result<A, Never>) -> A {
+///     switch result {
+///     case .success(let value): return value
+///     case .failure(let e): return absurd(e)  // provably unreachable
+///     }
+/// }
+/// ```
 public func absurd<T>(_: Never) -> T { }
 public extension Of {
     static func absurd(_: Never) -> T { }
