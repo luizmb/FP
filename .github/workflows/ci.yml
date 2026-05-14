@@ -36,10 +36,7 @@ jobs:
       - name: Install Mint
         run: brew install mint
 
-      - name: Install Periphery
-        run: brew install peripheryapp/periphery/periphery
-
-      - name: Install SwiftLint
+      - name: Install SwiftLint and Periphery
         run: mint bootstrap
 
       - name: Lint
@@ -52,7 +49,7 @@ jobs:
         run: swift test 2>&1
 
       - name: Periphery
-        run: periphery scan
+        run: mint run periphery scan
 
   test-linux:
     name: Build & Test (Linux)
