@@ -55,6 +55,31 @@ extension MutableCollection where Index: Sendable, Element: Sendable {
             }
         )
     }
+
+    /// Returns an `AffineTraversal` focusing on the first element whose identifier closure
+    /// returns a value equal to `id`. Prefer `ix(id:by:)` with a `KeyPath` when your type
+    /// supports it; use this overload when the identifier is a computed property or requires
+    /// a closure (e.g. SwiftRex lift rules that prohibit plain `KeyPath`).
+    public static func ix<ID: Hashable & Sendable>(
+        id: ID,
+        by identifier: @escaping @Sendable (Element) -> ID
+    ) -> AffineTraversal<Self, Element> {
+        AffineTraversal(
+            preview: { @Sendable in $0.first(where: { identifier($0) == id }) },
+            set: { @Sendable collection, element in
+                guard let idx = collection.firstIndex(where: { identifier($0) == id })
+                else { return collection }
+                var copy = collection
+                copy[idx] = element
+                return copy
+            },
+            tryModifyMut: { @Sendable collection, f in
+                guard let idx = collection.firstIndex(where: { identifier($0) == id })
+                else { return }
+                f(&collection[idx])
+            }
+        )
+    }
 }
 
 extension MutableCollection where Element: Identifiable, Element.ID: Sendable, Index: Sendable {
