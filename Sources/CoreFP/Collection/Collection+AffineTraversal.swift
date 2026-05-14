@@ -60,7 +60,10 @@ extension MutableCollection where Index: Sendable, Element: Sendable {
     /// returns a value equal to `id`. Prefer `ix(id:by:)` with a `KeyPath` when your type
     /// supports it; use this overload when the identifier is a computed property or requires
     /// a closure (e.g. SwiftRex lift rules that prohibit plain `KeyPath`).
-    public static func ix<ID: Hashable & Sendable>(id: ID, by identifier: @escaping @Sendable (Element) -> ID) -> AffineTraversal<Self, Element> {
+    public static func ix<ID: Hashable & Sendable>(
+        id: ID,
+        by identifier: @escaping @Sendable (Element) -> ID
+    ) -> AffineTraversal<Self, Element> {
         AffineTraversal(
             preview: { @Sendable in $0.first(where: { identifier($0) == id }) },
             set: { @Sendable collection, element in
