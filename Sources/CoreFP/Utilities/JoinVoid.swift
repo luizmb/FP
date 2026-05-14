@@ -19,10 +19,13 @@
 
 // MARK: - Array
 
+/// Flattens a nested array into a single flat array.
+/// - SeeAlso: ``Array/join(_:)``
 public func join<A>(_ nested: [[A]]) -> [A] {
     Array.join(nested)
 }
 
+/// Discards all values in an array, keeping the structure.
 public func void<A>(_ fa: [A]) -> [Void] {
     fa.void()
 }
