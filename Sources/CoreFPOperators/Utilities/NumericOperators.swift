@@ -35,13 +35,17 @@ public func ≅ <T: Comparable>(_ value: T, _ range: PartialRangeUpTo<T>) -> Boo
 /// Symmetric range operator — `center ± delta` → `ClosedRange`.
 /// Delta is always treated as an absolute value.
 ///
+/// `T` is constrained to `Strideable`, so this works for numeric types and also
+/// for `Date` (delta is then a `TimeInterval`) and any other strideable type.
+///
 /// ```swift
-/// 5.0 ± 0.5    // 4.5...5.5
-/// 2 ± 5        // -3...7
-/// 20 ± 3       // 17...23
-/// 10 ± (-3)    // 7...13 (negative delta becomes positive)
+/// 5.0 ± 0.5             // 4.5...5.5
+/// 2 ± 5                 // -3...7
+/// 20 ± 3                // 17...23
+/// 10 ± (-3)             // 7...13 (negative delta becomes positive)
+/// Date.now ± 60.0       // .now-60s ... .now+60s
 /// ```
-public func ± <T: SignedNumeric>(_ center: T, _ delta: T) -> ClosedRange<T> {
+public func ± <T: Strideable>(_ center: T, _ delta: T.Stride) -> ClosedRange<T> {
     symmetricRange(center, delta: delta)
 }
 
@@ -51,7 +55,7 @@ public func ± <T: SignedNumeric>(_ center: T, _ delta: T) -> ClosedRange<T> {
 /// 5.0 +/- 0.5   // 4.5...5.5
 /// 2 +/- 5       // -3...7
 /// ```
-public func +/- <T: SignedNumeric>(_ center: T, _ delta: T) -> ClosedRange<T> {
+public func +/- <T: Strideable>(_ center: T, _ delta: T.Stride) -> ClosedRange<T> {
     symmetricRange(center, delta: delta)
 }
 

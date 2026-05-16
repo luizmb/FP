@@ -3,14 +3,20 @@
 /// Builds a `ClosedRange` centred on `center` extending `delta` in both directions.
 /// The delta is always treated as an absolute value, so negative deltas work correctly.
 ///
+/// `T` is constrained to `Strideable`, so the same call works for numeric types
+/// (`Int`, `Double`, `Float`, …) as well as for `Date` and any other strideable
+/// custom type. `delta` is typed as `T.Stride`, so for `Date` you pass a
+/// `TimeInterval`.
+///
 /// ```swift
-/// symmetricRange(5, delta: 2)      // 3...7
-/// symmetricRange(5.0, delta: 0.5)  // 4.5...5.5
-/// symmetricRange(10, delta: -3)    // 7...13  (negative delta treated as positive)
+/// symmetricRange(5, delta: 2)            // 3...7
+/// symmetricRange(5.0, delta: 0.5)        // 4.5...5.5
+/// symmetricRange(10, delta: -3)          // 7...13  (negative delta treated as positive)
+/// symmetricRange(Date.now, delta: 60.0)  // .now-60s ... .now+60s
 /// ```
-public func symmetricRange<T: SignedNumeric>(_ center: T, delta: T) -> ClosedRange<T> {
+public func symmetricRange<T: Strideable>(_ center: T, delta: T.Stride) -> ClosedRange<T> {
     let d = abs(delta)
-    return (center - d)...(center + d)
+    return center.advanced(by: -d) ... center.advanced(by: d)
 }
 
 // MARK: - Range Match (flipped)

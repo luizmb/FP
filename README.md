@@ -1803,6 +1803,45 @@ let prod = base.mutate { $0.host = "prod.example.com" }
 
 ---
 
+**`clamped(to:)` / `within(_:)`** — `Comparable` range helpers
+
+`clamped(to:)` constrains a value to a closed range, returning the nearest endpoint when it falls outside. `within(_:)` is a value-first phrasing of `range.contains(value)`:
+
+```swift
+5.clamped(to: 0...10)       // 5
+(-3).clamped(to: 0...10)    // 0
+42.clamped(to: 0...10)      // 10
+3.5.clamped(to: 0.0...1.0)  // 1.0
+
+42.within(40...50)          // true
+42.within(40...42)          // true
+42.within(30...41)          // false
+
+// Combines with `±` (requires `Strideable`, see operator reference):
+41.within(42 ± 2)           // true — 41 falls inside 40...44
+```
+
+---
+
+**`Array.cartesian`** — n-ary Cartesian product
+
+`cartesian` pairs every element of the input arrays into typed tuples. Unlike `zip`, which stops at the shortest array and only matches positions, `cartesian` produces every `n × m × …` combination:
+
+```swift
+Array.cartesian([1, 3, 5], ["a", "b"])
+// [(1, "a"), (1, "b"), (3, "a"), (3, "b"), (5, "a"), (5, "b")]
+
+Array.cartesian([1, 2], ["a"], [true, false])
+// [(1, "a", true), (1, "a", false), (2, "a", true), (2, "a", false)]
+
+// Any empty input collapses the result to []:
+Array.cartesian([], [1], [1])    // []
+```
+
+Overloads exist for 2-, 3-, and 4-arity inputs. Functionally equivalent to applying `liftA2`-style tuple construction over the list applicative, but the dedicated overload preserves the tuple shape without going through a closure.
+
+---
+
 **`ignore` / `absurd`** — structural helpers
 
 ```swift
@@ -1839,7 +1878,7 @@ All operators require `CoreFPOperators` (for built-in types) or `DataStructureOp
 | `++` | — | Concatenation | `String`, `Array` |
 | `^` _(prefix)_ | — | Lift `WritableKeyPath` → `Lens`; `KeyPath` → partial `Lens` builder | `WritableKeyPath`, `KeyPath` |
 | `^` _(infix)_ | — | Numeric power — `base ^ exp` | `SignedNumeric` |
-| `±` / `+/-` | — | Symmetric range — `center ± delta` → `ClosedRange` | `SignedNumeric` |
+| `±` / `+/-` | — | Symmetric range — `center ± delta` → `ClosedRange` | `Strideable` (`Int`, `Double`, `Float`, `Date`, …) |
 | `≅` | — | Flipped range match — `value ≅ range` (equivalent to `range ~= value`) | `Comparable` |
 
 ---

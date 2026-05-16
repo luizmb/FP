@@ -1,4 +1,5 @@
 @testable import CoreFP
+import Foundation
 import Testing
 
 @Suite struct NumericOperationsTests {
@@ -30,6 +31,15 @@ import Testing
         #expect(range.contains(10))
         #expect(!range.contains(9))
         #expect(!range.contains(11))
+    }
+
+    @Test func symmetricRangeDate() {
+        // Strideable allows the same call shape for Date (Stride = TimeInterval).
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let range = symmetricRange(now, delta: 60.0)
+        #expect(range.lowerBound == Date(timeIntervalSince1970: 999_940))
+        #expect(range.upperBound == Date(timeIntervalSince1970: 1_000_060))
+        #expect(range.contains(now))
     }
 
     // MARK: - rangeMatch
