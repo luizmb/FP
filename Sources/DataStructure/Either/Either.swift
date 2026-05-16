@@ -84,7 +84,7 @@ extension Either: Error where A: Error, B: Error {}
 extension Either: CustomStringConvertible where A: CustomStringConvertible, B: CustomStringConvertible {
     public var description: String {
         match(
-            caseLeft:  { ".left(\($0.description))" },
+            caseLeft: { ".left(\($0.description))" },
             caseRight: { ".right(\($0.description))" }
         )
     }

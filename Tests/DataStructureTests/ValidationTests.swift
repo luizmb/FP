@@ -514,7 +514,8 @@ import Testing
 }
 
 extension ValidationTests.AccumulatedError: Semigroup {
-    static func combine(_ lhs: ValidationTests.AccumulatedError, _ rhs: ValidationTests.AccumulatedError) -> ValidationTests.AccumulatedError {
-        ValidationTests.AccumulatedError(parts: lhs.parts + rhs.parts)
+    typealias E = ValidationTests.AccumulatedError
+    static func combine(_ lhs: E, _ rhs: E) -> E {
+        E(parts: lhs.parts + rhs.parts)
     }
 }

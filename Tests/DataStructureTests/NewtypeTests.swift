@@ -7,7 +7,7 @@ import Testing
 
 private enum UserTag {}
 private enum OrderTag {}
-private typealias UserID  = Newtype<UserTag,  Int>
+private typealias UserID = Newtype<UserTag, Int>
 private typealias OrderID = Newtype<OrderTag, Int>
 
 private enum NameTag {}
@@ -44,9 +44,9 @@ private typealias WrappedError = Newtype<WrappedErrorTag, BoxedError>
     // MARK: - Phantom Tag distinguishes types
 
     @Test func differentTagsProduceDifferentTypes() {
-        let u: UserID = UserID(1)
-        let o: OrderID = OrderID(1)
-        // The compiler treats UserID and OrderID as unrelated.
+        let u = UserID(1)
+        let o = OrderID(1)
+        // The compiler treats UserID and OrderID as unrelated types.
         // We compare rawValues to verify they carry the same payload.
         #expect(u.rawValue == o.rawValue)
     }
@@ -65,8 +65,10 @@ private typealias WrappedError = Newtype<WrappedErrorTag, BoxedError>
     // MARK: - Equatable / Hashable / Comparable
 
     @Test func equatable() {
-        #expect(UserID(1) == UserID(1))
-        #expect(UserID(1) != UserID(2))
+        let a = UserID(1)
+        let b = UserID(1)
+        #expect(a == b)
+        #expect(a != UserID(2))
     }
 
     @Test func hashable() {
