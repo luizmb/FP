@@ -79,6 +79,16 @@ extension Either: Hashable where A: Hashable, B: Hashable {}
 extension Either: Decodable where A: Decodable, B: Decodable {}
 extension Either: Encodable where A: Encodable, B: Encodable {}
 extension Either: Sendable where A: Sendable, B: Sendable {}
+extension Either: Error where A: Error, B: Error {}
+
+extension Either: CustomStringConvertible where A: CustomStringConvertible, B: CustomStringConvertible {
+    public var description: String {
+        match(
+            caseLeft:  { ".left(\($0.description))" },
+            caseRight: { ".right(\($0.description))" }
+        )
+    }
+}
 
 @available(macOS 10.15, iOS 13.0, watchOS 6.0, tvOS 13.0, *)
 extension Either: Identifiable where A: Identifiable, B: Identifiable, A.ID == B.ID {

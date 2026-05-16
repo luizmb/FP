@@ -88,3 +88,11 @@ public struct Writer<W: Monoid, A> {
 extension Writer: Equatable where W: Equatable, A: Equatable {}
 extension Writer: Hashable where W: Hashable, A: Hashable {}
 extension Writer: Sendable where W: Sendable, A: Sendable {}
+extension Writer: Decodable where W: Decodable, A: Decodable {}
+extension Writer: Encodable where W: Encodable, A: Encodable {}
+
+extension Writer: CustomStringConvertible where W: CustomStringConvertible, A: CustomStringConvertible {
+    public var description: String {
+        "Writer(value: \(value.description), log: \(log.description))"
+    }
+}

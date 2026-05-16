@@ -45,13 +45,13 @@ import Testing
 
     @Test func bind() {
         let s = Stateful<Int, Either<String, Int>>.pure(.right(5))
-        let result = s >>- { n in Stateful<Int, Either<String, String>>.pure(.right("\(n)")) }
+        let result = s >>- { (n: Int) in Stateful<Int, Either<String, String>>.pure(.right("\(n)")) }
         #expect(result.eval(0) == .right("5"))
     }
 
     @Test func bindLeft() {
         let s = Stateful<Int, Either<String, Int>>.pure(.left("err"))
-        let result = s >>- { n in Stateful<Int, Either<String, String>>.pure(.right("\(n)")) }
+        let result = s >>- { (n: Int) in Stateful<Int, Either<String, String>>.pure(.right("\(n)")) }
         #expect(result.eval(0) == .left("err"))
     }
 

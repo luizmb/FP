@@ -1,5 +1,6 @@
 import CoreFP
 @testable import DataStructure
+import Foundation
 import Testing
 
 // MARK: - Fixtures
@@ -446,5 +447,43 @@ private enum TestError: Error, Equatable { case bad(String) }
         let opt: NonEmpty<Int>? = NonEmpty(head: 1)
         let result = opt.flatMapT { _ -> NonEmpty<Int>? in nil }
         #expect(result == nil)
+    }
+
+    // MARK: - Conditional conformances
+
+    @Test func codable_roundTrip() throws {
+        let ne = NonEmpty(head: 1, tail: [2, 3])
+        let data = try JSONEncoder().encode(ne)
+        let decoded = try JSONDecoder().decode(NonEmpty<Int>.self, from: data)
+        #expect(decoded == ne)
+    }
+
+    @Test func codable_singleElement() throws {
+        let ne = NonEmpty(head: "only")
+        let data = try JSONEncoder().encode(ne)
+        let decoded = try JSONDecoder().decode(NonEmpty<String>.self, from: data)
+        #expect(decoded == ne)
+    }
+
+    @Test func rawRepresentable_rawValue() {
+        let ne = NonEmpty(head: 1, tail: [2, 3])
+        #expect(ne.rawValue == [1, 2, 3])
+    }
+
+    @Test func rawRepresentable_initFromNonEmptyArray() {
+        let ne = NonEmpty<Int>(rawValue: [1, 2, 3])
+        #expect(ne?.head == 1)
+        #expect(ne?.tail == [2, 3])
+    }
+
+    @Test func rawRepresentable_initFromEmptyArrayIsNil() {
+        let ne = NonEmpty<Int>(rawValue: [])
+        #expect(ne == nil)
+    }
+
+    @Test func rawRepresentable_roundTrip() {
+        let original = NonEmpty(head: 1, tail: [2, 3])
+        let roundTripped = NonEmpty<Int>(rawValue: original.rawValue)
+        #expect(roundTripped == original)
     }
 }

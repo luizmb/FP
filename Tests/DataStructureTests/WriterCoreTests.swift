@@ -1,4 +1,5 @@
 import DataStructure
+import Foundation
 import Testing
 
 @Suite struct WriterCoreTests {
@@ -236,5 +237,19 @@ import Testing
         let writer = Writer<[String], Int>(99, ["log"])
         let voided = DataStructure.void(writer)
         #expect(voided.log == ["log"])
+    }
+
+    // MARK: - Conditional conformances
+
+    @Test func codable_roundTrip() throws {
+        let w = Writer<[String], Int>(42, ["step1", "step2"])
+        let data = try JSONEncoder().encode(w)
+        let decoded = try JSONDecoder().decode(Writer<[String], Int>.self, from: data)
+        #expect(decoded == w)
+    }
+
+    @Test func description() {
+        let w = Writer<String, Int>(42, "log")
+        #expect(w.description == "Writer(value: 42, log: log)")
     }
 }

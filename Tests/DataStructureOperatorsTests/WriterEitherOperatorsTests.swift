@@ -26,7 +26,7 @@ import Testing
 
     @Test func writerFlatMapT() {
         let w = Writer<[String], Either<String, Int>>(.right(5), ["outer"])
-        let result = w >>- { n in
+        let result = w >>- { (n: Int) in
             Writer<[String], Either<String, String>>(.right("\(n)"), ["inner"])
         }
         #expect(result.value == .right("5"))

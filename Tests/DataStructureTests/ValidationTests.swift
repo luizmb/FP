@@ -1,4 +1,6 @@
+import CoreFP
 import DataStructure
+import Foundation
 import Testing
 
 @Suite struct ValidationTests {
@@ -454,5 +456,65 @@ import Testing
     @Test func toListFailure() {
         let v: Validation<String, Int> = .failure("err")
         #expect(v.toList == [])
+    }
+
+    // MARK: - Conditional conformances
+
+    @Test func errorConformance_throwSuccess() {
+        let v: Validation<AccumulatedError, AccumulatedError> = .success(AccumulatedError(parts: ["ok"]))
+        do {
+            throw v
+        } catch let caught as Validation<AccumulatedError, AccumulatedError> {
+            #expect(caught == .success(AccumulatedError(parts: ["ok"])))
+        } catch {
+            Issue.record("Expected Validation to be caught")
+        }
+    }
+
+    @Test func errorConformance_throwFailure() {
+        let v: Validation<AccumulatedError, AccumulatedError> = .failure(AccumulatedError(parts: ["bad"]))
+        do {
+            throw v
+        } catch let caught as Validation<AccumulatedError, AccumulatedError> {
+            #expect(caught == .failure(AccumulatedError(parts: ["bad"])))
+        } catch {
+            Issue.record("Expected Validation to be caught")
+        }
+    }
+
+    @Test func codable_roundTripSuccess() throws {
+        let v: Validation<String, Int> = .success(42)
+        let data = try JSONEncoder().encode(v)
+        let decoded = try JSONDecoder().decode(Validation<String, Int>.self, from: data)
+        #expect(decoded == v)
+    }
+
+    @Test func codable_roundTripFailure() throws {
+        let v: Validation<String, Int> = .failure("nope")
+        let data = try JSONEncoder().encode(v)
+        let decoded = try JSONDecoder().decode(Validation<String, Int>.self, from: data)
+        #expect(decoded == v)
+    }
+
+    @Test func description_success() {
+        let v: Validation<String, Int> = .success(42)
+        #expect(v.description == ".success(42)")
+    }
+
+    @Test func description_failure() {
+        let v: Validation<String, Int> = .failure("nope")
+        #expect(v.description == ".failure(nope)")
+    }
+
+    // MARK: - Helpers
+
+    struct AccumulatedError: Error, Equatable {
+        let parts: [String]
+    }
+}
+
+extension ValidationTests.AccumulatedError: Semigroup {
+    static func combine(_ lhs: ValidationTests.AccumulatedError, _ rhs: ValidationTests.AccumulatedError) -> ValidationTests.AccumulatedError {
+        ValidationTests.AccumulatedError(parts: lhs.parts + rhs.parts)
     }
 }

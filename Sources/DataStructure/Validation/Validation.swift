@@ -87,3 +87,15 @@ extension Validation: Comparable where E: Comparable, A: Comparable {
 }
 extension Validation: Hashable where E: Hashable, A: Hashable {}
 extension Validation: Sendable where E: Sendable, A: Sendable {}
+extension Validation: Decodable where E: Decodable, A: Decodable {}
+extension Validation: Encodable where E: Encodable, A: Encodable {}
+extension Validation: Error where E: Error, A: Error {}
+
+extension Validation: CustomStringConvertible where E: CustomStringConvertible, A: CustomStringConvertible {
+    public var description: String {
+        match(
+            caseFailure: { ".failure(\($0.description))" },
+            caseSuccess: { ".success(\($0.description))" }
+        )
+    }
+}

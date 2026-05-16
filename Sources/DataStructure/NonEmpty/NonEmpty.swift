@@ -93,6 +93,8 @@ public func nonEmpty<A>(_ array: [A]) -> NonEmpty<A>? {
 extension NonEmpty: Equatable where A: Equatable {}
 extension NonEmpty: Hashable where A: Hashable {}
 extension NonEmpty: Sendable where A: Sendable {}
+extension NonEmpty: Encodable where A: Encodable {}
+extension NonEmpty: Decodable where A: Decodable {}
 
 extension NonEmpty: Comparable where A: Comparable {
     public static func < (lhs: NonEmpty<A>, rhs: NonEmpty<A>) -> Bool {
@@ -103,5 +105,14 @@ extension NonEmpty: Comparable where A: Comparable {
 extension NonEmpty: CustomStringConvertible {
     public var description: String {
         "NonEmpty(\(toArray))"
+    }
+}
+
+extension NonEmpty: RawRepresentable {
+    public var rawValue: [A] { toArray }
+
+    public init?(rawValue: [A]) {
+        guard let head = rawValue.first else { return nil }
+        self.init(head: head, tail: Array(rawValue.dropFirst()))
     }
 }

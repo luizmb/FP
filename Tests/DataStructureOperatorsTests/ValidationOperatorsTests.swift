@@ -90,7 +90,7 @@ import Testing
 
     @Test func writerTValidationBindOperator() {
         let w = Writer<[String], Validation<[Int], Int>>(.success(5), ["start"])
-        let result = w >>- { n in Writer<[String], Validation<[Int], String>>(.success("got \(n)"), ["end"]) }
+        let result = w >>- { (n: Int) in Writer<[String], Validation<[Int], String>>(.success("got \(n)"), ["end"]) }
         #expect(result.value == .success("got 5"))
         #expect(result.log == ["start", "end"])
     }
@@ -107,7 +107,7 @@ import Testing
 
     @Test func statefulTValidationBindOperator() {
         let s = Stateful<Int, Validation<[String], Int>> { s in s += 1; return .success(s) }
-        let result = s >>- { n in Stateful<Int, Validation<[String], String>> { _ in .success("n=\(n)") } }
+        let result = s >>- { (n: Int) in Stateful<Int, Validation<[String], String>> { _ in .success("n=\(n)") } }
         var state = 0
         #expect(result.run(&state) == .success("n=1"))
     }
@@ -123,7 +123,7 @@ import Testing
 
     @Test func readerTValidationBindOperator() {
         let r = Reader<String, Validation<[Int], Int>> { env in .success(env.count) }
-        let result = r >>- { n in Reader<String, Validation<[Int], String>> { _ in .success("n=\(n)") } }
+        let result = r >>- { (n: Int) in Reader<String, Validation<[Int], String>> { _ in .success("n=\(n)") } }
         #expect(result("hello") == .success("n=5"))
     }
 }

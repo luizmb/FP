@@ -1,5 +1,6 @@
 import CoreFP
 import DataStructure
+import Foundation
 import Testing
 
 @Suite struct EitherCoreTests {
@@ -240,6 +241,45 @@ import Testing
     @Test func voidLeft() {
         let either: Either<String, Int> = .left("err")
         if case .right = DataStructure.void(either) { Issue.record("Expected .left") }
+    }
+
+    // MARK: - Conditional conformances
+
+    enum LeftError: Error, Equatable { case boom }
+    enum RightError: Error, Equatable { case kaput }
+
+    @Test func errorConformance_throwLeft() {
+        let either: Either<LeftError, RightError> = .left(.boom)
+        #expect(throws: Either<LeftError, RightError>.self) {
+            throw either
+        }
+    }
+
+    @Test func errorConformance_throwRight() {
+        let either: Either<LeftError, RightError> = .right(.kaput)
+        #expect(throws: Either<LeftError, RightError>.self) {
+            throw either
+        }
+    }
+
+    @Test func errorConformance_catchPreservesPayload() {
+        do {
+            throw Either<LeftError, RightError>.left(.boom)
+        } catch let e as Either<LeftError, RightError> {
+            #expect(e == .left(.boom))
+        } catch {
+            Issue.record("Expected Either to be caught")
+        }
+    }
+
+    @Test func description_left() {
+        let either: Either<String, Int> = .left("oops")
+        #expect(either.description == ".left(oops)")
+    }
+
+    @Test func description_right() {
+        let either: Either<String, Int> = .right(42)
+        #expect(either.description == ".right(42)")
     }
 
     // MARK: - Helper
