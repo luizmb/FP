@@ -36,6 +36,7 @@ jobs:
             --target CoreFPOperators \
             --target DataStructure \
             --target DataStructureOperators \
+            --enable-experimental-combined-documentation \
             --output-path .docs \
             --transform-for-static-hosting \
             --hosting-base-path FP
