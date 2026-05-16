@@ -85,6 +85,59 @@ import Testing
         let result = await publisher.toDeferredTaskArray().run()
         #expect(result == [])
     }
+
+    // MARK: - Failable Publisher -> DeferredTask<Result<Output, any Error>>
+
+    private struct TestError: Error, Equatable { let code: Int }
+
+    @Test func failableToDeferredTaskReturnsFirstValueAsSuccess() async {
+        let publisher: AnyPublisher<Int, TestError> = [10, 20, 30].publisher
+            .setFailureType(to: TestError.self)
+            .eraseToAnyPublisher()
+        let result = await publisher.toDeferredTask().run()
+        if case .success(let value) = result {
+            #expect(value == 10)
+        } else {
+            Issue.record("Expected .success but got \(result)")
+        }
+    }
+
+    @Test func failableToDeferredTaskSurfacesPublisherFailure() async {
+        let publisher: AnyPublisher<Int, TestError> = Fail(error: TestError(code: 42))
+            .eraseToAnyPublisher()
+        let result = await publisher.toDeferredTask().run()
+        if case .failure(let error) = result, let typed = error as? TestError {
+            #expect(typed == TestError(code: 42))
+        } else {
+            Issue.record("Expected .failure(TestError(42)) but got \(result)")
+        }
+    }
+
+    @Test func failableToDeferredTaskReturnsEmptyPublisherErrorOnEmptyCompletion() async {
+        let publisher: AnyPublisher<Int, TestError> = Empty(completeImmediately: true)
+            .eraseToAnyPublisher()
+        let result = await publisher.toDeferredTask().run()
+        if case .failure(let error) = result {
+            #expect(error is EmptyPublisherError)
+        } else {
+            Issue.record("Expected .failure(EmptyPublisherError) but got \(result)")
+        }
+    }
+
+    @Test func failableToDeferredTaskReturnsValueWhenItPrecedesAFailure() async {
+        // The publisher emits a value, *then* fails. The bridge must return on the
+        // first value and never observe the trailing failure.
+        let publisher: AnyPublisher<Int, TestError> = Just(7)
+            .setFailureType(to: TestError.self)
+            .append(Fail<Int, TestError>(error: TestError(code: 99)))
+            .eraseToAnyPublisher()
+        let result = await publisher.toDeferredTask().run()
+        if case .success(let value) = result {
+            #expect(value == 7)
+        } else {
+            Issue.record("Expected .success(7) but got \(result)")
+        }
+    }
 }
 
 #endif
