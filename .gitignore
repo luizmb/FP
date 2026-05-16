@@ -32,6 +32,7 @@ playground.xcworkspace
 .index-build/
 .build/
 .swiftpm/
+.docs/
 .claude/settings.local.json
 
 # CocoaPods
