@@ -1,5 +1,6 @@
 @testable import CoreFP
 @testable import CoreFPOperators
+import Foundation
 import Testing
 
 @Suite struct NumericOperatorsTests {
@@ -37,6 +38,22 @@ import Testing
         #expect(range.contains(10))
         #expect(!range.contains(9))
         #expect(!range.contains(11))
+    }
+
+    @Test func plusMinusDate() {
+        // Strideable broadening lets `±` work on Date (Stride = TimeInterval).
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let range = now ± 60.0
+        #expect(range.lowerBound == Date(timeIntervalSince1970: 999_940))
+        #expect(range.upperBound == Date(timeIntervalSince1970: 1_000_060))
+        #expect(range.contains(now))
+    }
+
+    @Test func plusMinusDateAsciiAlias() {
+        let now = Date(timeIntervalSince1970: 1_000_000)
+        let range = now +/- 30.0
+        #expect(range.lowerBound == Date(timeIntervalSince1970: 999_970))
+        #expect(range.upperBound == Date(timeIntervalSince1970: 1_000_030))
     }
 
     // MARK: - Pattern Matching Tests
