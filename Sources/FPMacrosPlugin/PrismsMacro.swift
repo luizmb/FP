@@ -69,6 +69,7 @@ public struct PrismsMacro: MemberMacro {
 
         return [makePrismEnum(enumName: enumName, cases: cases)]
             + cases.map { makeComputedProperty(info: $0) }
+            + [makeCasesEnum(enumName: enumName, cases: cases), makeIsFunc(cases: cases)]
     }
 }
 
@@ -106,6 +107,34 @@ private func makePrismEnum(enumName: String, cases: [CaseInfo]) -> DeclSyntax {
 
 private func makeComputedProperty(info: CaseInfo) -> DeclSyntax {
     DeclSyntax(stringLiteral: "var \(info.name): \(info.focusType)? { Self.prism.\(info.name).preview(self) }")
+}
+
+private func makeCasesEnum(enumName: String, cases: [CaseInfo]) -> DeclSyntax {
+    guard !cases.isEmpty else {
+        return DeclSyntax(stringLiteral: """
+            enum cases: CaseIterable { \
+            func matches(_ value: \(enumName)) -> Bool { false } \
+            }
+            """)
+    }
+    let caseDeclarations = "case " + cases.map(\.name).joined(separator: ", ")
+    let matchClauses = cases
+        .map { info in "case (.\(info.name), .\(info.name)): return true" }
+        .joined(separator: "; ")
+    let defaultClause = cases.count == 1 ? "" : "; default: return false"
+    return DeclSyntax(stringLiteral: """
+        enum cases: CaseIterable { \
+        \(caseDeclarations); \
+        func matches(_ value: \(enumName)) -> Bool { switch (self, value) { \(matchClauses)\(defaultClause) } } \
+        }
+        """)
+}
+
+private func makeIsFunc(cases: [CaseInfo]) -> DeclSyntax {
+    if cases.isEmpty {
+        return DeclSyntax(stringLiteral: "func `is`(_ c: cases) -> Bool { false }")
+    }
+    return DeclSyntax(stringLiteral: "func `is`(_ c: cases) -> Bool { c.matches(self) }")
 }
 
 // MARK: - Diagnostics
