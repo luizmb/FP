@@ -1863,14 +1863,14 @@ All operators require `CoreFPOperators` (for built-in types) or `DataStructureOp
 
 | Operator | Flipped | Description | Types |
 |----------|---------|-------------|-------|
-| `<£>` | `<&>` | Functor map — fn left / container left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` |
+| `<£>` | `<&>` | Functor map — fn left / container left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Loading`, `Reader`, `Stateful`, `Validation`, `Writer` |
 | `<£^>` | `<&^>` | Transformer map (nested containers) — transformer-only, no base-type overloads | `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` transformer variants |
-| `£>` | `<£` | Replace contents with a constant — container left / value left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` |
+| `£>` | `<£` | Replace contents with a constant — container left / value left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Loading`, `Reader`, `Stateful`, `Validation`, `Writer` |
 | `<*>` | — | Applicative apply — wrapped function on left, wrapped value on right | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` |
 | `*>` | `<*` | Sequence two effects — keep right / keep left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` |
-| `>>-` | `-<<` | Monadic bind — container left / fn left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Writer` |
+| `>>-` | `-<<` | Monadic bind — container left / fn left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Loading`, `Reader`, `Stateful`, `Writer` |
 | `->>` | `<<-` | Comonad extend — container left / fn left | `Writer` |
-| `>=>` | `<=<` | Kleisli composition — left-to-right / right-to-left | `Optional`, `Array`, `Result`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Writer` |
+| `>=>` | `<=<` | Kleisli composition — left-to-right / right-to-left | `Optional`, `Array`, `Result`, `DeferredTask`, `DeferredStream`, `Either`, `Loading`, `Reader`, `Stateful`, `Writer` |
 | `>>>` | `<<<` | Function / optics composition — left-to-right / right-to-left | Functions, `Iso`, `Lens`, `Prism`, `AffineTraversal` |
 | `£` / `<\|` | `\|>` | Function application — fn left / value left | Any function |
 | `<\|>` | — | Alternative / choice | `Optional`, `Array`, `Result`, `Publisher`, `DeferredTask<A?>`, `DeferredTask<Result<A,E>>`, `DeferredStream` |
@@ -1905,6 +1905,7 @@ Each type in this library has a dedicated reference page with comprehensive exam
 | Type | Description |
 |------|-------------|
 | [Either](docs/types/Either.md) | Unconstrained sum type — both sides are equal citizens, no `Error` requirement |
+| [Loading](docs/types/Loading.md) | Four-state async lifecycle — `idle` / `loading` / `loaded` / `failed`, with `previous` carried through for stale-data UIs |
 | [Validation](docs/types/Validation.md) | Accumulating applicative — errors collect instead of short-circuiting |
 | [Reader](docs/types/Reader.md) | Dependency injection monad — wraps `(Environment) -> Output` |
 | [Stateful](docs/types/Stateful.md) | State threading monad — wraps `(inout S) -> A` |
