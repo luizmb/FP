@@ -219,3 +219,73 @@ struct PrismsCasesEnumTests {
         #expect(Reducer.Action.increment.is(.reset) == false)
     }
 }
+
+// MARK: - PrismsOptions — granular emission
+
+@Prisms(.prisms)
+private enum OnlyPrisms {
+    case red(Int)
+    case green(String)
+}
+
+@Prisms([.prisms, .properties])
+private enum PrismsAndProps {
+    case wrapped(Int)
+    case empty
+}
+
+@Prisms(.cases)
+private enum OnlyCases {
+    case alpha
+    case beta(Int)
+    case gamma(String, Bool)
+}
+
+// Internal-access fixture used to verify HasCases conformance can be adopted manually.
+// Private/fileprivate hosts can't conform to CaseMatchable (Swift access rules around
+// typealias/method visibility vs underlying type visibility), so this fixture is
+// deliberately internal.
+@Prisms(.cases)
+enum PublicableEnum {
+    case foo
+    case bar(Int)
+}
+
+extension PublicableEnum: CoreFP.HasCases {
+    typealias Cases = cases
+}
+
+@Suite("@Prisms — options slicing")
+struct PrismsOptionsTests {
+    @Test func prisms_only_emits_namespace() {
+        // .prism namespace exists and works
+        #expect(OnlyPrisms.prism.red.preview(.red(7)) == 7)
+        #expect(OnlyPrisms.prism.green.preview(.green("hi")) == "hi")
+    }
+
+    @Test func properties_alone_promotes_prisms() {
+        // [.prisms, .properties] gives both — verify .properties depends on .prisms
+        #expect(PrismsAndProps.prism.wrapped.preview(.wrapped(3)) == 3)
+        #expect(PrismsAndProps.wrapped(3).wrapped == 3)
+        #expect(PrismsAndProps.empty.empty != nil)
+    }
+
+    @Test func cases_only_emits_cases_enum_and_is() {
+        #expect(OnlyCases.cases.allCases == [.alpha, .beta, .gamma])
+        #expect(OnlyCases.alpha.is(.alpha) == true)
+        #expect(OnlyCases.beta(1).is(.beta) == true)
+        #expect(OnlyCases.gamma("x", true).is(.gamma) == true)
+        #expect(OnlyCases.alpha.is(.beta) == false)
+    }
+
+    @Test func hasCases_protocol_can_be_adopted_manually() {
+        // The macro doesn't auto-add HasCases conformance (Swift extension-macro role
+        // can't reach private nested types). Users can opt in manually.
+        func firstIsHit<T: CoreFP.HasCases>(_ v: T) -> Bool {
+            v.is(T.Cases.allCases.first.unsafelyUnwrapped)
+        }
+        #expect(firstIsHit(PublicableEnum.foo) == true)
+        #expect(firstIsHit(PublicableEnum.bar(1)) == false)
+    }
+}
+
