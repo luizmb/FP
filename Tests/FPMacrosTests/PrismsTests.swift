@@ -7,14 +7,14 @@ import Testing
 // @attached(member) works at any nesting level
 
 @Prisms
-private enum Shape {
+fileprivate enum Shape {
     case circle(Double)
     case rectangle(Double, Double)
     case empty
 }
 
 @Prisms
-private enum Box {
+fileprivate enum Box {
     case wrapped(String)
     case labeled(x: Int, y: Int)
 }
@@ -141,13 +141,13 @@ struct PrismsLawTests {
 @Suite("@Prisms — composition with other optics")
 struct PrismsCompositionTests {
     @Lenses(init: .internal)
-    private struct Config {
+    fileprivate struct Config {
         let host: String
         var port: Int
     }
 
     @Prisms
-    private enum Response {
+    fileprivate enum Response {
         case ok(Config)
         case error(String)
     }
@@ -223,28 +223,27 @@ struct PrismsCasesEnumTests {
 // MARK: - PrismsOptions — granular emission
 
 @Prisms(.prisms)
-private enum OnlyPrisms {
+fileprivate enum OnlyPrisms {
     case red(Int)
     case green(String)
 }
 
 @Prisms([.prisms, .properties])
-private enum PrismsAndProps {
+fileprivate enum PrismsAndProps {
     case wrapped(Int)
     case empty
 }
 
 @Prisms(.cases)
-private enum OnlyCases {
+fileprivate enum OnlyCases {
     case alpha
     case beta(Int)
     case gamma(String, Bool)
 }
 
-// Internal-access fixture used to verify HasCases conformance can be adopted manually.
-// Private/fileprivate hosts can't conform to CaseMatchable (Swift access rules around
-// typealias/method visibility vs underlying type visibility), so this fixture is
-// deliberately internal.
+// Internal-access fixture used to verify HasCases conformance can be adopted manually
+// (the macro doesn't add it automatically because `@attached(extension)` can't reach
+// nested fileprivate hosts at file scope).
 @Prisms(.cases)
 enum PublicableEnum {
     case foo
@@ -253,6 +252,24 @@ enum PublicableEnum {
 
 extension PublicableEnum: CoreFP.HasCases {
     typealias Cases = cases
+}
+
+// Fixture with @dynamicMemberLookup — the macro detects the attribute and emits a single
+// subscript instead of one computed property per case.
+@dynamicMemberLookup
+@Prisms
+fileprivate enum Pixel {
+    case rgb(red: Int, green: Int, blue: Int)
+    case gray(Int)
+    case transparent
+}
+
+// Generic fixture — verifies `static var prism` fallback works.
+@dynamicMemberLookup
+@Prisms
+fileprivate enum Wrapped<A> {
+    case some(A)
+    case none
 }
 
 @Suite("@Prisms — options slicing")
@@ -278,6 +295,13 @@ struct PrismsOptionsTests {
         #expect(OnlyCases.alpha.is(.beta) == false)
     }
 
+    @Test func prism_namespace_is_struct_value_keypath_accessible() {
+        // The new struct-based shape lets you write a KeyPath into Prisms — impossible
+        // with the old `enum prism` namespace.
+        let kp: KeyPath<Pixel.Prisms, CoreFP.Prism<Pixel, Int>> = \.gray
+        #expect(Pixel.prism[keyPath: kp].preview(.gray(7)) == 7)
+    }
+
     @Test func hasCases_protocol_can_be_adopted_manually() {
         // The macro doesn't auto-add HasCases conformance (Swift extension-macro role
         // can't reach private nested types). Users can opt in manually.
@@ -286,5 +310,41 @@ struct PrismsOptionsTests {
         }
         #expect(firstIsHit(PublicableEnum.foo) == true)
         #expect(firstIsHit(PublicableEnum.bar(1)) == false)
+    }
+}
+
+// MARK: - Dynamic member lookup
+
+@Suite("@Prisms — @dynamicMemberLookup integration")
+struct PrismsDynamicMemberTests {
+    @Test func subscript_resolves_single_argument_case() {
+        let p = Pixel.gray(7)
+        let value: Int? = p.gray
+        #expect(value == 7)
+    }
+
+    @Test func subscript_resolves_multi_argument_case_as_tuple() {
+        let p = Pixel.rgb(red: 1, green: 2, blue: 3)
+        let rgb: (Int, Int, Int)? = p.rgb
+        #expect(rgb?.0 == 1)
+        #expect(rgb?.1 == 2)
+        #expect(rgb?.2 == 3)
+    }
+
+    @Test func subscript_returns_nil_for_other_case() {
+        let p = Pixel.transparent
+        #expect(p.gray == nil)
+        #expect(p.rgb == nil)
+        #expect(p.transparent != nil)
+    }
+
+    @Test func generic_host_uses_static_var_and_subscript() {
+        // Loading is a generic enum that uses the same struct-based shape via a computed
+        // `static var prism` (since `static let` is forbidden in generic contexts).
+        let some: Wrapped<String> = .some("hi")
+        #expect(some.some == "hi")
+        let none: Wrapped<String> = .none
+        #expect(none.some == nil)
+        #expect(none.none != nil)
     }
 }

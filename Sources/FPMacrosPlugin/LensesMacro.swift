@@ -22,22 +22,6 @@ enum AccessLevel: Int, Comparable {
     /// implicit default and should be omitted to avoid noise.
     var prefix: String { self == .internal ? "" : "\(keyword) " }
 
-    /// Prefix for inner members (static lets inside a namespace enum, conformance methods)
-    /// of a nested namespace inside a host of this access level.
-    ///
-    /// For `private` / `fileprivate` hosts, omit the prefix — Swift caps the effective
-    /// access via containment, and an explicit `private` would be stricter (scoped to the
-    /// inner type) while `fileprivate` over-exposes types-referencing-host. Internal-
-    /// default + containment-capping is the unique level that compiles cleanly.
-    ///
-    /// For `internal` and above, mirror the host's prefix so external module access works.
-    var memberPrefix: String {
-        switch self {
-        case .private, .fileprivate: ""
-        default:                     prefix
-        }
-    }
-
     static func < (lhs: AccessLevel, rhs: AccessLevel) -> Bool { lhs.rawValue < rhs.rawValue }
 }
 
@@ -132,8 +116,18 @@ public struct LensesMacro: MemberMacro {
             return []
         }
 
-        let structName = structDecl.name.trimmed.text
         let structAccess = declaredAccessLevel(from: structDecl.modifiers)
+
+        // Reject `private` hosts. `private` is the only declared access where Swift's
+        // type-reference rules block the struct namespace from being constructed and read
+        // outside the host's body. `fileprivate` is functionally equivalent at file scope.
+        guard structAccess != .private else {
+            context.diagnose(Diagnostic(node: node, message: LensesDiagnostic.privateHostUnsupported))
+            return []
+        }
+
+        let structName = structDecl.name.trimmed.text
+        let isGeneric = structDecl.genericParameterClause != nil
         let initAccess = parseInitAccess(from: node)
         let flags = parseEmit(from: node)
         let properties = collectProperties(from: structDecl, context: context)
@@ -170,10 +164,14 @@ public struct LensesMacro: MemberMacro {
         }
 
         if flags.emitLenses {
-            members.append(makeLensNamespace(
+            members.append(makeLensesStruct(
                 structName: structName,
                 access: structAccess,
                 lensProps: lensProps
+            ))
+            members.append(makeStaticLens(
+                access: structAccess,
+                isGeneric: isGeneric
             ))
             members.append(makeWithFunc(
                 structName: structName,
@@ -268,14 +266,9 @@ private func inferLiteralType(from expr: ExprSyntax) -> String? {
 private func makeInit(access: AccessLevel, structAccess: AccessLevel, params: [StoredProperty]) -> DeclSyntax {
     // Init parameters reference the struct's properties (and thus the struct itself); the
     // init can't be declared more visible than the struct. Cap requested access to the
-    // struct's access level. Also use `memberPrefix` semantics for private/fileprivate
-    // hosts so siblings inside the same scope can call the init.
+    // struct's access level.
     let effective = min(access, structAccess)
-    let prefix: String
-    switch effective {
-    case .private, .fileprivate: prefix = ""
-    default:                     prefix = effective.prefix
-    }
+    let prefix = effective.prefix
     let paramList = params
         .map { p in p.defaultValue.map { "\(p.name): \(p.type) = \($0)" } ?? "\(p.name): \(p.type)" }
         .joined(separator: ", ")
@@ -284,33 +277,39 @@ private func makeInit(access: AccessLevel, structAccess: AccessLevel, params: [S
     return DeclSyntax(stringLiteral: "\(prefix)init(\(paramList)) { \(body) }")
 }
 
-/// Emit the lens namespace as an `enum` with `static let` members.
-///
-/// We use `enum` (a namespace, no instances) instead of a `struct` value because Swift
-/// forbids properties whose type references a less-accessible type — so a `static let
-/// lens: Lenses` would fail when the host is `private`. `static let` inside an `enum`
-/// namespace bypasses property-access rules and works at every access level.
-///
-/// We deliberately omit the explicit type annotation on each `static let` — letting
-/// Swift infer the type avoids access-level checks against the declared annotation
-/// that would otherwise reject internal-default static lets whose inferred type
-/// references a private host.
-private func makeLensNamespace(
+/// The `Lenses` struct holds one `Lens` per stored property as a stored field with a
+/// default value. Using default values lets `Lenses()` work as a no-arg init regardless
+/// of the host's access level (Swift synthesises `init()` for structs whose stored
+/// properties all have defaults). The host's access propagates to the struct and its
+/// fields so external callers can read `Host.lens.propertyName` at the appropriate level.
+private func makeLensesStruct(
     structName: String,
     access: AccessLevel,
     lensProps: [StoredProperty]
 ) -> DeclSyntax {
-    let prefix = access.memberPrefix
-    let decls = lensProps
+    let prefix = access.prefix
+    let fields = lensProps
         .map { prop -> String in
-            if prop.isLet {
-                return "\(prefix)static let \(prop.name) = CoreFP.lens(\\\(structName).\(prop.name)) { s, a in s.with(\(prop.name): a) }"
-            } else {
-                return "\(prefix)static let \(prop.name) = CoreFP.lens(\\\(structName).\(prop.name))"
-            }
+            let typeAnn = "CoreFP.Lens<\(structName), \(prop.type)>"
+            let body = prop.isLet
+                ? "CoreFP.lens(\\\(structName).\(prop.name)) { s, a in s.with(\(prop.name): a) }"
+                : "CoreFP.lens(\\\(structName).\(prop.name))"
+            return "\(prefix)let \(prop.name): \(typeAnn) = \(body)"
         }
         .joined(separator: "; ")
-    return DeclSyntax(stringLiteral: "\(prefix)enum lens { \(decls) }")
+    return DeclSyntax(stringLiteral: "\(prefix)struct Lenses: Sendable { \(fields) }")
+}
+
+/// For non-generic hosts emit `static let lens = Lenses()` — a one-time allocation,
+/// cached for the program's lifetime. For generic hosts Swift forbids `static let` in a
+/// generic context, so we fall back to a computed `static var lens: Lenses { Lenses() }`
+/// which allocates per access. Same call-site syntax in both cases.
+private func makeStaticLens(access: AccessLevel, isGeneric: Bool) -> DeclSyntax {
+    let prefix = access.prefix
+    if isGeneric {
+        return DeclSyntax(stringLiteral: "\(prefix)static var lens: Lenses { Lenses() }")
+    }
+    return DeclSyntax(stringLiteral: "\(prefix)static let lens = Lenses()")
 }
 
 private func makeWithFunc(
@@ -319,7 +318,7 @@ private func makeWithFunc(
     initParams: [StoredProperty],
     withProps: [StoredProperty]
 ) -> DeclSyntax {
-    let prefix = access.memberPrefix
+    let prefix = access.prefix
     let params = withProps
         .map { p in "\(p.name): \(p.type)? = nil" }
         .joined(separator: ", ")
@@ -341,6 +340,7 @@ private func makeWithFunc(
 
 private enum LensesDiagnostic: DiagnosticMessage {
     case notAStruct
+    case privateHostUnsupported
     case cannotInferType(name: String)
     case skippedProperty(name: String, propertyAccess: String, structAccess: String)
 
@@ -348,6 +348,10 @@ private enum LensesDiagnostic: DiagnosticMessage {
         switch self {
         case .notAStruct:
             "@Lenses can only be applied to structs"
+        case .privateHostUnsupported:
+            "@Lenses cannot be applied to `private` structs. Change the declaration to `fileprivate`, "
+                + "`internal`, or higher. (`private` is the only access level whose type-scope semantics "
+                + "block the generated namespace; `fileprivate` is functionally identical at file scope.)"
         case let .cannotInferType(name):
             "Cannot infer type of '\(name)' — add an explicit type annotation (e.g., var \(name): SomeType = ...)"
         case let .skippedProperty(name, propAccess, structAccess):
@@ -360,8 +364,9 @@ private enum LensesDiagnostic: DiagnosticMessage {
 
     var severity: DiagnosticSeverity {
         switch self {
-        case .notAStruct, .cannotInferType: .warning
-        case .skippedProperty:              .note
+        case .notAStruct, .privateHostUnsupported: .error
+        case .cannotInferType:                     .warning
+        case .skippedProperty:                     .note
         }
     }
 }

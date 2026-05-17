@@ -1,0 +1,5 @@
+disabled_rules:
+  # @Prisms and @Lenses macros reject `private` hosts (Swift's type-scope semantics break
+  # the generated namespace). Test fixtures must therefore use `fileprivate`, which is the
+  # closest functionally-equivalent level at file scope.
+  - private_over_fileprivate

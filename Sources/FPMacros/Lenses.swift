@@ -5,8 +5,10 @@
 ///
 /// By default (`@Lenses` or `@Lenses(.all)`) the macro emits:
 /// - `init(...)` — a memberwise initializer.
-/// - `Foo.lens.property` — a `Lens<Foo, Property>` per stored property, in a nested
-///   `enum lens` namespace.
+/// - `Foo.Lenses` — a `Sendable` struct holding one `Lens<Foo, Property>` per stored
+///   property as a stored field with a default value.
+/// - `Foo.lens` — a `static let` (or `static var` for generic structs) returning the
+///   `Lenses` instance. Access via `Foo.lens.property`.
 /// - `foo.with(property: ...)` — a copy-with-overrides helper that calls the init once,
 ///   collapsing the O(N²) reconstruction-closure footprint of the previous codegen to O(N).
 ///
@@ -18,12 +20,17 @@
 /// - `var name: T = v`  → init parameter with default `v` + `WritableKeyPath`-based `Lens`
 /// - Computed / lazy    → skipped
 ///
-/// ## Visibility
+/// ## Access levels
 ///
-/// The `lens` namespace and `with(...)` helper mirror the host struct's declared
-/// visibility. Properties whose declared visibility is *lower* than the struct's are
-/// silently skipped from both — Swift's access rules forbid exposing them via a more
-/// visible API.
+/// `@Lenses` cannot be applied to `private` structs — it raises a compile-time error.
+/// `private`'s type-scope semantics break the generated `Lenses` struct (its stored
+/// `Lens<Host, X>` fields can't be referenced from outside the host). Use `fileprivate`
+/// instead (functionally identical at file scope).
+///
+/// All other access levels work uniformly. The `Lenses` struct, `static lens`, and
+/// `with(...)` helper mirror the host's declared visibility. Properties whose declared
+/// visibility is *lower* than the struct's are skipped from both with a diagnostic note
+/// — Swift's access rules forbid exposing them via a more visible API.
 ///
 /// The init's visibility is configurable via `init access:` because an init can legally
 /// assign lower-visibility properties (a `public init` may write `internal var port`).

@@ -11,6 +11,8 @@ struct PrismsEmitFlags {
 
     static var all: PrismsEmitFlags { PrismsEmitFlags(prisms: true, properties: true, cases: true) }
 
+    /// `.properties` requires `.prisms` (the per-case accessor or DML subscript reads
+    /// from `Self.prism`), so we auto-promote silently.
     var emitsPrismStruct: Bool { prisms || properties }
 }
 
@@ -28,13 +30,11 @@ private func parseOptions(from node: AttributeSyntax) -> PrismsEmitFlags {
         return .all
     }
 
-    let flags = PrismsEmitFlags(
+    return PrismsEmitFlags(
         prisms: names.contains("prisms"),
         properties: names.contains("properties"),
         cases: names.contains("cases")
     )
-
-    return flags
 }
 
 private func collectOptionNames(from expr: ExprSyntax) -> Set<String> {
@@ -114,19 +114,42 @@ public struct PrismsMacro: MemberMacro {
             return []
         }
 
-        let enumName = enumDecl.name.trimmed.text
         let access = accessKeyword(from: enumDecl.modifiers)
+
+        // Reject `private` hosts. `private` is the only declared access where Swift's
+        // type-reference rules block both the struct namespace and the dynamic-member
+        // subscript. `fileprivate` is functionally equivalent at file scope and works
+        // everywhere we need.
+        guard access != "private" else {
+            context.diagnose(Diagnostic(node: node, message: PrismsDiagnostic.privateHostUnsupported))
+            return []
+        }
+
+        let enumName = enumDecl.name.trimmed.text
+        let isGeneric = enumDecl.genericParameterClause != nil
+        let hasDynamicMemberLookup = hasDynamicMemberLookupAttribute(on: enumDecl)
         let cases = collectCases(from: enumDecl)
         let flags = parseOptions(from: node)
 
         var members: [DeclSyntax] = []
 
         if flags.emitsPrismStruct {
-            members.append(makePrismNamespace(enumName: enumName, access: access, cases: cases))
+            members.append(makePrismsStruct(enumName: enumName, access: access, cases: cases))
+            members.append(makeStaticPrism(enumName: enumName, access: access, isGeneric: isGeneric))
         }
 
         if flags.properties {
-            members.append(contentsOf: cases.map { makeComputedProperty(info: $0, access: access) })
+            if hasDynamicMemberLookup {
+                members.append(makeDynamicSubscript(enumName: enumName, access: access))
+            } else {
+                if !cases.isEmpty {
+                    context.diagnose(Diagnostic(
+                        node: node,
+                        message: PrismsDiagnostic.missingDynamicMemberLookup
+                    ))
+                }
+                members.append(contentsOf: cases.map { makeComputedProperty(info: $0, access: access) })
+            }
         }
 
         if flags.cases {
@@ -172,57 +195,70 @@ private func accessPrefix(_ access: String) -> String {
     access.isEmpty ? "" : "\(access) "
 }
 
-/// Access prefix for inner members (fields, methods, typealiases) of a nested namespace.
-///
-/// For `private` / `fileprivate` enclosing types, omit the prefix — Swift caps the
-/// effective access via containment, and an explicit `private` would be stricter (scoped
-/// to the inner type) while `fileprivate` over-exposes types-referencing-host.
-/// Internal-default + containment-capping is the unique level that compiles cleanly.
-///
-/// For `internal` (no modifier) or higher, mirror the host's prefix so external module
-/// callers can access the generated members.
-private func memberPrefix(for hostAccess: String) -> String {
-    switch hostAccess {
-    case "private", "fileprivate": ""
-    default: accessPrefix(hostAccess)
+private func hasDynamicMemberLookupAttribute(on enumDecl: EnumDeclSyntax) -> Bool {
+    enumDecl.attributes.contains { attr in
+        guard case let .attribute(attribute) = attr else { return false }
+        return attribute.attributeName.trimmedDescription == "dynamicMemberLookup"
     }
 }
 
 // MARK: - Code generation
 
-/// Emit the prism namespace as an `enum` with `static let` members.
-///
-/// We use `enum` (a namespace, no instances) instead of a `struct` value because Swift
-/// forbids properties whose type references a less-accessible type — so a `static let
-/// prism: Prisms` would fail when the host is `private`. `static let` inside an `enum`
-/// namespace bypasses property-access rules and works at every access level.
-///
-/// We deliberately omit the explicit type annotation on each `static let` — letting
-/// Swift infer the type avoids access-level checks against the declared annotation
-/// that would otherwise reject internal-default static lets whose inferred type
-/// references a private host.
-private func makePrismNamespace(enumName: String, access: String, cases: [CaseInfo]) -> DeclSyntax {
-    let prefix = memberPrefix(for: access)
-    let decls = cases
+/// The `Prisms` struct holds one `Prism` per case as a stored property with a default
+/// value. Using default values lets `Prisms()` work as a no-arg init regardless of the
+/// host's access level (Swift synthesises `init()` for structs whose stored properties
+/// all have defaults). The host's access propagates to the struct and its fields so
+/// external callers can read `Host.prism.caseName` at the appropriate level.
+private func makePrismsStruct(enumName: String, access: String, cases: [CaseInfo]) -> DeclSyntax {
+    let prefix = accessPrefix(access)
+    let fields = cases
         .map { info in
             let preview = "{ \(info.previewBody(enumName: enumName)) }"
             let review = info.reviewExpr(enumName: enumName)
             let typeAnn = "CoreFP.Prism<\(enumName), \(info.focusType)>"
-            return "\(prefix)static let \(info.name) = CoreFP.prism(preview: \(preview), review: \(review)) as \(typeAnn)"
+            return "\(prefix)let \(info.name): \(typeAnn) = CoreFP.prism(preview: \(preview), review: \(review))"
         }
         .joined(separator: "; ")
-    return DeclSyntax(stringLiteral: "\(prefix)enum prism { \(decls) }")
+    return DeclSyntax(stringLiteral: "\(prefix)struct Prisms: Sendable { \(fields) }")
+}
+
+/// For non-generic hosts emit `static let prism = Prisms()` — a one-time allocation,
+/// cached for the program's lifetime. For generic hosts Swift forbids `static let` in a
+/// generic context, so we fall back to a computed `static var prism: Prisms { Prisms() }`
+/// which allocates per access. Same call-site syntax in both cases.
+private func makeStaticPrism(enumName: String, access: String, isGeneric: Bool) -> DeclSyntax {
+    let prefix = accessPrefix(access)
+    if isGeneric {
+        return DeclSyntax(stringLiteral: "\(prefix)static var prism: Prisms { Prisms() }")
+    }
+    return DeclSyntax(stringLiteral: "\(prefix)static let prism = Prisms()")
+}
+
+/// The dynamic-member subscript lights up when the user adds `@dynamicMemberLookup` to
+/// the host enum. Each `\\Prisms.caseName` keypath has type `KeyPath<Prisms, Prism<Self, PrismFocus>>`
+/// for the concrete focus type of that case, so Swift binds `PrismFocus` correctly per
+/// call site.
+///
+/// We use the unusual name `PrismFocus` rather than a one-letter name so the generic
+/// parameter never shadows a host enum's own generic parameter.
+private func makeDynamicSubscript(enumName: String, access: String) -> DeclSyntax {
+    let prefix = accessPrefix(access)
+    let body = "Self.prism[keyPath: keyPath].preview(self)"
+    let kpType = "KeyPath<Prisms, CoreFP.Prism<\(enumName), PrismFocus>>"
+    return DeclSyntax(stringLiteral:
+        "\(prefix)subscript<PrismFocus>(dynamicMember keyPath: \(kpType)) -> PrismFocus? { \(body) }"
+    )
 }
 
 private func makeComputedProperty(info: CaseInfo, access: String) -> DeclSyntax {
-    let prefix = memberPrefix(for: access)
+    let prefix = accessPrefix(access)
     return DeclSyntax(stringLiteral:
         "\(prefix)var \(info.name): \(info.focusType)? { Self.prism.\(info.name).preview(self) }"
     )
 }
 
 private func makeIsFunc(access: String, hasCases: Bool) -> DeclSyntax {
-    let prefix = memberPrefix(for: access)
+    let prefix = accessPrefix(access)
     if !hasCases {
         return DeclSyntax(stringLiteral: "\(prefix)func `is`(_ c: cases) -> Bool { false }")
     }
@@ -230,20 +266,12 @@ private func makeIsFunc(access: String, hasCases: Bool) -> DeclSyntax {
 }
 
 private func makeCasesEnum(enumName: String, access: String, cases: [CaseInfo]) -> DeclSyntax {
-    let prefix = memberPrefix(for: access)
-    // For private/fileprivate hosts, conform to plain `CaseIterable` only — Swift's
-    // access rules forbid declaring a `typealias Subject = Host` (or a `matches` method
-    // taking `Host`) at a high enough level to satisfy `CaseMatchable` when `Host` is
-    // private. Public/internal hosts get the full `CaseMatchable` conformance, which
-    // enables the polymorphic `HasCases` extension.
-    let conformsToMatchable = !(access == "private" || access == "fileprivate")
-    let protocolConformance = conformsToMatchable ? "CoreFP.CaseMatchable" : "CaseIterable"
-    let typealiasDecl = conformsToMatchable ? "\(prefix)typealias Subject = \(enumName); " : ""
+    let prefix = accessPrefix(access)
 
     guard !cases.isEmpty else {
         return DeclSyntax(stringLiteral: """
-            \(prefix)enum cases: \(protocolConformance) { \
-            \(typealiasDecl)\
+            \(prefix)enum cases: CoreFP.CaseMatchable { \
+            \(prefix)typealias Subject = \(enumName) \
             \(prefix)func matches(_ value: \(enumName)) -> Bool { false } \
             }
             """)
@@ -254,8 +282,8 @@ private func makeCasesEnum(enumName: String, access: String, cases: [CaseInfo]) 
         .joined(separator: "; ")
     let defaultClause = cases.count == 1 ? "" : "; default: return false"
     return DeclSyntax(stringLiteral: """
-        \(prefix)enum cases: \(protocolConformance) { \
-        \(typealiasDecl)\
+        \(prefix)enum cases: CoreFP.CaseMatchable { \
+        \(prefix)typealias Subject = \(enumName); \
         \(caseDeclarations); \
         \(prefix)func matches(_ value: \(enumName)) -> Bool { switch (self, value) { \(matchClauses)\(defaultClause) } } \
         }
@@ -266,13 +294,29 @@ private func makeCasesEnum(enumName: String, access: String, cases: [CaseInfo]) 
 
 private enum PrismsDiagnostic: DiagnosticMessage {
     case notAnEnum
+    case privateHostUnsupported
+    case missingDynamicMemberLookup
 
     var message: String {
         switch self {
-        case .notAnEnum: "@Prisms can only be applied to enums"
+        case .notAnEnum:
+            "@Prisms can only be applied to enums"
+        case .privateHostUnsupported:
+            "@Prisms cannot be applied to `private` enums. Change the declaration to `fileprivate`, "
+                + "`internal`, or higher. (`private` is the only access level whose type-scope semantics "
+                + "block the generated namespace; `fileprivate` is functionally identical at file scope.)"
+        case .missingDynamicMemberLookup:
+            "@Prisms is emitting one computed property per case. To collapse them into a single "
+                + "subscript, add `@dynamicMemberLookup` to this enum's declaration."
         }
     }
 
     var diagnosticID: MessageID { .init(domain: "FPMacrosPlugin", id: "\(self)") }
-    var severity: DiagnosticSeverity { .error }
+
+    var severity: DiagnosticSeverity {
+        switch self {
+        case .notAnEnum, .privateHostUnsupported: .error
+        case .missingDynamicMemberLookup:         .warning
+        }
+    }
 }

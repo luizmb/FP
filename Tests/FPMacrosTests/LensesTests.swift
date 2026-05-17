@@ -6,7 +6,7 @@ import Testing
 // MARK: - Fixtures
 
 @Lenses(init: .internal)
-private struct Config {
+fileprivate struct Config {
     let host: String
     let version = 3       // constant — excluded from init and lens
     var port: Int
@@ -14,7 +14,7 @@ private struct Config {
 }
 
 @Lenses(init: .internal)
-private struct Point {
+fileprivate struct Point {
     let x: Double
     let y: Double
 }
@@ -139,7 +139,7 @@ struct LensesVarTests {
 @Suite("@Lenses — composition")
 struct LensesCompositionTests {
     @Lenses(init: .internal)
-    private struct Server {
+    fileprivate struct Server {
         let config: Config
         var name: String
     }
@@ -192,13 +192,13 @@ struct LensesWithTests {
 // MARK: - LensesEmit — granular emission
 
 @Lenses(.initOnly)
-private struct InitOnlyStruct {
+fileprivate struct InitOnlyStruct {
     let name: String
     var count: Int
 }
 
 @Lenses(.lensesOnly)
-private struct LensesOnlyStruct {
+fileprivate struct LensesOnlyStruct {
     var x: Int
     var y: Int
     // No explicit init — Swift synthesizes the memberwise init since `.lensesOnly`
@@ -231,7 +231,7 @@ struct LensesEmitTests {
 // MARK: - Init conflict detection
 
 @Lenses(init: .internal)
-private struct UserHasMatchingInit {
+fileprivate struct UserHasMatchingInit {
     let name: String
     var count: Int
 
