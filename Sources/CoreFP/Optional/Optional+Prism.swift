@@ -28,7 +28,7 @@ public extension Optional {
     var some: Wrapped? { a }
     var none: Void? { if case .none = self { () } else { nil } }
 
-    enum cases: CoreFP.CaseMatchable { // swiftlint:disable:this type_name
+    enum Cases: CoreFP.CaseMatchable {
         public typealias Subject = Wrapped?
         case some, none
 
@@ -41,9 +41,7 @@ public extension Optional {
         }
     }
 
-    func `is`(_ c: cases) -> Bool { c.matches(self) }
+    func `is`(_ c: Cases) -> Bool { c.matches(self) }
 }
 
-extension Optional: CoreFP.HasCases {
-    public typealias Cases = cases
-}
+extension Optional: CoreFP.HasCases {}

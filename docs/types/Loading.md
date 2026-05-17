@@ -205,12 +205,12 @@ inFlight.loading                 // Optional(Optional(7))  — double optional
 inFlight.loading ?? nil          // Optional(7)
 ```
 
-### `cases` enum, `is(_:)`, and `HasCases`
+### `Cases` enum, `is(_:)`, and `HasCases`
 
-A nested `cases: CoreFP.CaseMatchable` enum lets you list every case once and check membership without unpacking payloads. `Loading` conforms to `CoreFP.HasCases`, so `is(_:)` is available both as a direct method and via the polymorphic protocol extension.
+A nested `Cases: CoreFP.CaseMatchable` enum lets you list every case once and check membership without unpacking payloads. `Loading` conforms to `CoreFP.HasCases`, so `is(_:)` is available both as a direct method and via the polymorphic protocol extension.
 
 ```swift
-Loading<Int, E>.cases.allCases   // [.idle, .loading, .loaded, .failed]
+Loading<Int, E>.Cases.allCases   // [.idle, .loading, .loaded, .failed]
 
 let state: Loading<Int, E> = .loading(previous: 5)
 state.is(.loading)               // true

@@ -260,9 +260,9 @@ private func makeComputedProperty(info: CaseInfo, access: String) -> DeclSyntax 
 private func makeIsFunc(access: String, hasCases: Bool) -> DeclSyntax {
     let prefix = accessPrefix(access)
     if !hasCases {
-        return DeclSyntax(stringLiteral: "\(prefix)func `is`(_ c: cases) -> Bool { false }")
+        return DeclSyntax(stringLiteral: "\(prefix)func `is`(_ c: Cases) -> Bool { false }")
     }
-    return DeclSyntax(stringLiteral: "\(prefix)func `is`(_ c: cases) -> Bool { c.matches(self) }")
+    return DeclSyntax(stringLiteral: "\(prefix)func `is`(_ c: Cases) -> Bool { c.matches(self) }")
 }
 
 private func makeCasesEnum(enumName: String, access: String, cases: [CaseInfo]) -> DeclSyntax {
@@ -270,7 +270,7 @@ private func makeCasesEnum(enumName: String, access: String, cases: [CaseInfo]) 
 
     guard !cases.isEmpty else {
         return DeclSyntax(stringLiteral: """
-            \(prefix)enum cases: CoreFP.CaseMatchable { \
+            \(prefix)enum Cases: CoreFP.CaseMatchable { \
             \(prefix)typealias Subject = \(enumName) \
             \(prefix)func matches(_ value: \(enumName)) -> Bool { false } \
             }
@@ -282,7 +282,7 @@ private func makeCasesEnum(enumName: String, access: String, cases: [CaseInfo]) 
         .joined(separator: "; ")
     let defaultClause = cases.count == 1 ? "" : "; default: return false"
     return DeclSyntax(stringLiteral: """
-        \(prefix)enum cases: CoreFP.CaseMatchable { \
+        \(prefix)enum Cases: CoreFP.CaseMatchable { \
         \(prefix)typealias Subject = \(enumName); \
         \(caseDeclarations); \
         \(prefix)func matches(_ value: \(enumName)) -> Bool { switch (self, value) { \(matchClauses)\(defaultClause) } } \

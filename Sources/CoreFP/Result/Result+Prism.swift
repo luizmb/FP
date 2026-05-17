@@ -27,7 +27,7 @@ public extension Result {
     var success: Success? { a }
     var failure: Failure? { b }
 
-    enum cases: CoreFP.CaseMatchable { // swiftlint:disable:this type_name
+    enum Cases: CoreFP.CaseMatchable {
         public typealias Subject = Result
         case success, failure
 
@@ -40,9 +40,7 @@ public extension Result {
         }
     }
 
-    func `is`(_ c: cases) -> Bool { c.matches(self) }
+    func `is`(_ c: Cases) -> Bool { c.matches(self) }
 }
 
-extension Result: CoreFP.HasCases {
-    public typealias Cases = cases
-}
+extension Result: CoreFP.HasCases {}

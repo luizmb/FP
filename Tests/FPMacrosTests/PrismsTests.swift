@@ -171,27 +171,27 @@ struct PrismsCompositionTests {
 struct PrismsCasesEnumTests {
     @Test func cases_isCaseIterable() {
         // Generated enum conforms to CaseIterable so we can list every case once.
-        #expect(Shape.cases.allCases == [.circle, .rectangle, .empty])
+        #expect(Shape.Cases.allCases == [.circle, .rectangle, .empty])
     }
 
     @Test func cases_matches_diagonal_isTrue() {
-        #expect(Shape.cases.circle.matches(.circle(3.14)) == true)
-        #expect(Shape.cases.rectangle.matches(.rectangle(1, 2)) == true)
-        #expect(Shape.cases.empty.matches(.empty) == true)
+        #expect(Shape.Cases.circle.matches(.circle(3.14)) == true)
+        #expect(Shape.Cases.rectangle.matches(.rectangle(1, 2)) == true)
+        #expect(Shape.Cases.empty.matches(.empty) == true)
     }
 
     @Test func cases_matches_offDiagonal_isFalse() {
-        #expect(Shape.cases.circle.matches(.rectangle(1, 2)) == false)
-        #expect(Shape.cases.rectangle.matches(.empty) == false)
-        #expect(Shape.cases.empty.matches(.circle(0)) == false)
+        #expect(Shape.Cases.circle.matches(.rectangle(1, 2)) == false)
+        #expect(Shape.Cases.rectangle.matches(.empty) == false)
+        #expect(Shape.Cases.empty.matches(.circle(0)) == false)
     }
 
     @Test func cases_matches_ignoresAssociatedPayload() {
         // Different payloads on the same case still report a match.
-        #expect(Shape.cases.circle.matches(.circle(0)) == true)
-        #expect(Shape.cases.circle.matches(.circle(99.99)) == true)
-        #expect(Shape.cases.rectangle.matches(.rectangle(0, 0)) == true)
-        #expect(Shape.cases.rectangle.matches(.rectangle(100, 200)) == true)
+        #expect(Shape.Cases.circle.matches(.circle(0)) == true)
+        #expect(Shape.Cases.circle.matches(.circle(99.99)) == true)
+        #expect(Shape.Cases.rectangle.matches(.rectangle(0, 0)) == true)
+        #expect(Shape.Cases.rectangle.matches(.rectangle(100, 200)) == true)
     }
 
     @Test func is_returnsTrue_whenCasesAlign() {
@@ -213,7 +213,7 @@ struct PrismsCasesEnumTests {
     }
 
     @Test func cases_worksForNestedEnum() {
-        #expect(Reducer.Action.cases.allCases == [.increment, .setName, .reset])
+        #expect(Reducer.Action.Cases.allCases == [.increment, .setName, .reset])
         #expect(Reducer.Action.increment.is(.increment) == true)
         #expect(Reducer.Action.setName("hi").is(.setName) == true)
         #expect(Reducer.Action.increment.is(.reset) == false)
@@ -250,9 +250,9 @@ enum PublicableEnum {
     case bar(Int)
 }
 
-extension PublicableEnum: CoreFP.HasCases {
-    typealias Cases = cases
-}
+// The nested `Cases` enum's name matches the protocol's `associatedtype Cases`, so
+// Swift infers the conformance without an explicit typealias.
+extension PublicableEnum: CoreFP.HasCases {}
 
 // Fixture with @dynamicMemberLookup — the macro detects the attribute and emits a single
 // subscript instead of one computed property per case.
@@ -288,7 +288,7 @@ struct PrismsOptionsTests {
     }
 
     @Test func cases_only_emits_cases_enum_and_is() {
-        #expect(OnlyCases.cases.allCases == [.alpha, .beta, .gamma])
+        #expect(OnlyCases.Cases.allCases == [.alpha, .beta, .gamma])
         #expect(OnlyCases.alpha.is(.alpha) == true)
         #expect(OnlyCases.beta(1).is(.beta) == true)
         #expect(OnlyCases.gamma("x", true).is(.gamma) == true)

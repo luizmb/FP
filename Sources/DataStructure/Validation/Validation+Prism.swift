@@ -30,7 +30,7 @@ public extension Validation {
         Self.prism[keyPath: keyPath].preview(self)
     }
 
-    enum cases: CoreFP.CaseMatchable { // swiftlint:disable:this type_name
+    enum Cases: CoreFP.CaseMatchable {
         public typealias Subject = Validation
         case failure, success
 
@@ -43,9 +43,7 @@ public extension Validation {
         }
     }
 
-    func `is`(_ c: cases) -> Bool { c.matches(self) }
+    func `is`(_ c: Cases) -> Bool { c.matches(self) }
 }
 
-extension Validation: CoreFP.HasCases {
-    public typealias Cases = cases
-}
+extension Validation: CoreFP.HasCases {}

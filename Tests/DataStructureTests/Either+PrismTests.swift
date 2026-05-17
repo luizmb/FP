@@ -39,7 +39,7 @@ struct EitherPrismTests {
     }
 
     @Test func cases_isCaseIterable() {
-        #expect(Either<String, Int>.cases.allCases == [.left, .right])
+        #expect(Either<String, Int>.Cases.allCases == [.left, .right])
     }
 
     @Test func is_returnsTrue_whenAligned() {

@@ -11,8 +11,8 @@
 ///   computed property per case. If you add `@dynamicMemberLookup` to the enum's
 ///   declaration, the macro collapses to a **single** subscript that handles every case
 ///   via key paths — same call site, lower code footprint.
-/// - `MyEnum.cases` — a nested `CaseMatchable`/`CaseIterable` enum that mirrors the
-///   case *names* (no associated payloads).
+/// - `MyEnum.Cases` — a nested `CaseMatchable` (which inherits `CaseIterable`) enum
+///   that mirrors the case *names* (no associated payloads).
 /// - `myEnum.is(.caseName)` — a per-enum predicate, delegating to `cases.matches`.
 ///
 /// The `HasCases` protocol in `CoreFP` lets file-level types opt into a polymorphic
@@ -29,9 +29,9 @@
 /// Use `PrismsOptions` to opt out of pieces you don't need:
 ///
 /// ```swift
-/// @Prisms(.cases)                        // only the `cases` enum + is(_:)
+/// @Prisms(.cases)                        // only the `Cases` enum + is(_:)
 /// @Prisms(.prisms)                       // only the `Prisms` struct + `static prism`
-/// @Prisms([.prisms, .properties])        // optics + accessors, no cases / is
+/// @Prisms([.prisms, .properties])        // optics + accessors, no Cases / is
 /// ```
 ///
 /// `.properties` requires `.prisms` — silently auto-promoted if missing.
@@ -81,7 +81,7 @@
 /// Shape.prism.circle.over({ $0 * 2 })(s) // Shape.circle(6.28)
 ///
 /// s.is(.circle)                          // true
-/// Shape.cases.allCases                   // [.circle, .rectangle, .empty]
+/// Shape.Cases.allCases                   // [.circle, .rectangle, .empty]
 /// ```
 @attached(member, names: arbitrary)
 public macro Prisms(_ options: PrismsOptions = .all) =
@@ -98,8 +98,8 @@ public struct PrismsOptions: OptionSet, Sendable {
     /// `subscript(dynamicMember:)` if `@dynamicMemberLookup` is on the host.
     /// Requires `.prisms` — silently auto-promoted if missing.
     public static let properties = PrismsOptions(rawValue: 1 << 1)
-    /// Emit the `MyEnum.cases` enum (conforming to `CaseMatchable` / `CaseIterable`)
-    /// and a `myEnum.is(_:)` predicate.
+    /// Emit the `MyEnum.Cases` enum (conforming to `CaseMatchable`, which inherits
+    /// `CaseIterable`) and a `myEnum.is(_:)` predicate.
     public static let cases = PrismsOptions(rawValue: 1 << 2)
     public static let all: PrismsOptions = [.prisms, .properties, .cases]
 }

@@ -31,7 +31,7 @@ public extension Either {
         Self.prism[keyPath: keyPath].preview(self)
     }
 
-    enum cases: CoreFP.CaseMatchable { // swiftlint:disable:this type_name
+    enum Cases: CoreFP.CaseMatchable {
         public typealias Subject = Either
         case left, right
 
@@ -44,9 +44,7 @@ public extension Either {
         }
     }
 
-    func `is`(_ c: cases) -> Bool { c.matches(self) }
+    func `is`(_ c: Cases) -> Bool { c.matches(self) }
 }
 
-extension Either: CoreFP.HasCases {
-    public typealias Cases = cases
-}
+extension Either: CoreFP.HasCases {}

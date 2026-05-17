@@ -2001,6 +2001,26 @@ config.with(host: "example.com", port: 9090)
 let teamConfigHost = lens(\.teamConfig) >>> Config.lens.host
 ```
 
+**Optional properties and `with(...)`**
+
+For properties whose type is `T?`, `with(...)` uses a double-Optional parameter under the hood so the common ergonomic call sites all behave intuitively:
+
+```swift
+@Lenses(init: .public)
+public struct Server {
+    public let port: Int?
+    public let name: String
+}
+
+let s = Server(port: 8080, name: "main")
+s.with()                // Server(port: 8080,  name: "main")   — keep
+s.with(port: nil)       // Server(port: nil,   name: "main")   — clear
+s.with(port: 9090)      // Server(port: 9090,  name: "main")   — set
+s.with(name: "primary") // Server(port: 8080,  name: "primary") — non-Optional still works
+```
+
+The trick: the parameter type is `Int?? = .some(nil)`. The default `.some(nil)` means "no change"; a bare `nil` literal at the call site binds to outer-`.none`, meaning "clear"; any value `v` wraps to `.some(.some(v))`, meaning "set". Non-Optional properties use the simpler `T? = nil` + `??` form.
+
 **Slicing the output**
 
 Use `LensesEmit` to opt out of pieces you don't need:
@@ -2023,7 +2043,7 @@ Properties whose declared visibility is *lower* than the struct's are excluded f
 
 1. A `Prisms` struct + `static let prism` accessor holding a typed `Prism` for each case.
 2. Per-case accessors (`shape.circle`, `shape.rectangle`, …) — either as one computed property per case, or as a single `subscript(dynamicMember:)` if the enum is also annotated with `@dynamicMemberLookup`.
-3. A nested `enum cases: CaseMatchable & CaseIterable` whose cases mirror the case *names* of the original enum (no associated values), plus a `func is(_:) -> Bool` predicate.
+3. A nested `enum Cases: CaseMatchable` (which inherits `CaseIterable`) whose cases mirror the case *names* of the original enum (no associated values), plus a `func is(_:) -> Bool` predicate.
 
 ```swift
 @dynamicMemberLookup   // opt-in — collapses N computed properties into one subscript
@@ -2066,12 +2086,12 @@ public enum Shape {
         Self.prism[keyPath: keyPath].preview(self)
     }
 
-    public enum cases: CoreFP.CaseMatchable {
+    public enum Cases: CoreFP.CaseMatchable {
         public typealias Subject = Shape
         case circle, rectangle, empty
         public func matches(_ value: Shape) -> Bool { /* switch */ }
     }
-    public func `is`(_ c: cases) -> Bool { c.matches(self) }
+    public func `is`(_ c: Cases) -> Bool { c.matches(self) }
 }
 ```
 
@@ -2093,7 +2113,7 @@ Shape.prism.circle.over({ $0 * 2 })(s)    // Shape.circle(6.28)
 // Case-name queries — no need to construct dummy payloads:
 s.is(.circle)                               // true
 s.is(.rectangle)                            // false
-Shape.cases.allCases                        // [.circle, .rectangle, .empty]
+Shape.Cases.allCases                        // [.circle, .rectangle, .empty]
 ```
 
 **Slicing the output**
@@ -2101,19 +2121,19 @@ Shape.cases.allCases                        // [.circle, .rectangle, .empty]
 Use `PrismsOptions` to opt out of pieces you don't need:
 
 ```swift
-@Prisms(.cases)                       // only the `cases` enum + is(_:)
+@Prisms(.cases)                       // only the `Cases` enum + is(_:)
 @Prisms(.prisms)                      // only the `Prisms` struct + `static prism`
-@Prisms([.prisms, .properties])       // optics + accessors, no cases / is
+@Prisms([.prisms, .properties])       // optics + accessors, no Cases / is
 ```
 
 `.properties` requires `.prisms` — auto-promoted silently if you forget.
 
 **Polymorphic `HasCases`**
 
-The `CoreFP.HasCases` protocol lets generic code write `value.is(.someCase)` against any type whose `cases` enum is a `CaseMatchable`. `@Prisms` doesn't automatically add the conformance (Swift's extension-macro role can't reach into nested types), but you can opt in for any file-level or non-private-nested type:
+The `CoreFP.HasCases` protocol lets generic code write `value.is(.someCase)` against any type whose nested `Cases` enum is a `CaseMatchable`. `@Prisms` doesn't automatically add the conformance (Swift's extension-macro role can't reach into nested types), but you can opt in for any file-level or non-private-nested type:
 
 ```swift
-extension MyEnum: HasCases { typealias Cases = cases }
+extension MyEnum: HasCases {}  // typealias inferred from the nested `Cases` enum
 
 func currentIsFirstCase<T: HasCases>(_ value: T) -> Bool {
     value.is(T.Cases.allCases.first!)

@@ -189,6 +189,51 @@ struct LensesWithTests {
     }
 }
 
+// MARK: - with(...) on Optional properties
+
+@Lenses(init: .internal)
+fileprivate struct Server {
+    let port: Int?
+    let name: String
+}
+
+@Suite("@Lenses — with(...) on Optional properties")
+struct LensesWithOptionalTests {
+    @Test func with_no_args_keeps_current_optional_value() {
+        let s = Server(port: 8_080, name: "main")
+        let r = s.with()
+        #expect(r.port == 8_080)
+        #expect(r.name == "main")
+    }
+
+    @Test func with_explicit_nil_clears_optional() {
+        let s = Server(port: 8_080, name: "main")
+        let r = s.with(port: nil)
+        #expect(r.port == nil)
+        #expect(r.name == "main")
+    }
+
+    @Test func with_explicit_value_sets_optional() {
+        let s = Server(port: 8_080, name: "main")
+        let r = s.with(port: 9_090)
+        #expect(r.port == 9_090)
+    }
+
+    @Test func with_keeps_optional_when_only_other_field_changes() {
+        let s = Server(port: 8_080, name: "main")
+        let r = s.with(name: "primary")
+        #expect(r.port == 8_080)
+        #expect(r.name == "primary")
+    }
+
+    @Test func with_combines_optional_clear_and_other_set() {
+        let s = Server(port: 8_080, name: "main")
+        let r = s.with(port: nil, name: "primary")
+        #expect(r.port == nil)
+        #expect(r.name == "primary")
+    }
+}
+
 // MARK: - LensesEmit — granular emission
 
 @Lenses(.initOnly)

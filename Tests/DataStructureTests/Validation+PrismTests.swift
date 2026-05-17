@@ -39,7 +39,7 @@ struct ValidationPrismTests {
     }
 
     @Test func cases_isCaseIterable() {
-        #expect(Validation<String, Int>.cases.allCases == [.failure, .success])
+        #expect(Validation<String, Int>.Cases.allCases == [.failure, .success])
     }
 
     @Test func is_returnsTrue_whenAligned() {

@@ -1,3 +1,4 @@
+import Foundation
 import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros
@@ -312,6 +313,31 @@ private func makeStaticLens(access: AccessLevel, isGeneric: Bool) -> DeclSyntax 
     return DeclSyntax(stringLiteral: "\(prefix)static let lens = Lenses()")
 }
 
+/// Whether the macro should treat the property's type as `Optional`. Detected
+/// syntactically: `T?`, `Optional<T>`, and `Swift.Optional<T>` all qualify.
+private func isOptionalType(_ type: String) -> Bool {
+    let trimmed = type.trimmingCharacters(in: .whitespaces)
+    if trimmed.hasSuffix("?") { return true }
+    if trimmed.hasPrefix("Optional<") { return true }
+    if trimmed.hasPrefix("Swift.Optional<") { return true }
+    return false
+}
+
+/// Generates the `with(...)` helper.
+///
+/// For non-Optional properties the parameter is `T? = nil` and the body uses `??` to
+/// keep the current value when the caller omits the argument.
+///
+/// For Optional properties (`T?`), naive `T? = nil + ??` can't distinguish "caller
+/// passed nil to clear" from "caller didn't pass anything". The helper instead uses a
+/// double-Optional parameter (`T?? = .some(nil)`) with flipped semantics:
+///
+/// - default (omitted)               → parameter is `.some(.none)` → keep current
+/// - `nil` literal at call site      → parameter is `.none`        → set to nil
+/// - any explicit value `v`          → parameter is `.some(.some(v))` → set to v
+///
+/// This makes the common ergonomic cases — `with()`, `with(port: nil)`, `with(port: 7)`
+/// — all do the obvious thing.
 private func makeWithFunc(
     structName: String,
     access: AccessLevel,
@@ -320,19 +346,52 @@ private func makeWithFunc(
 ) -> DeclSyntax {
     let prefix = access.prefix
     let params = withProps
-        .map { p in "\(p.name): \(p.type)? = nil" }
+        .map { p -> String in
+            if isOptionalType(p.type) {
+                return "\(p.name): \(p.type)? = .some(nil)"
+            }
+            return "\(p.name): \(p.type)? = nil"
+        }
         .joined(separator: ", ")
+
     let withNames = Set(withProps.map(\.name))
+
+    // For Optional properties we need a local `let newProp: T?` resolved via switch
+    // (cannot be expressed inline with `??`); for non-Optional we keep the inline
+    // `name ?? self.name`.
+    let optionalProps = withProps.filter { isOptionalType($0.type) }
+    let localBindings = optionalProps
+        .map { p -> String in
+            let local = "__new_\(p.name)"
+            return """
+            let \(local): \(p.type); switch \(p.name) { \
+            case .none: \(local) = nil; \
+            case .some(.none): \(local) = self.\(p.name); \
+            case .some(.some(let v)): \(local) = v \
+            }
+            """
+        }
+        .joined(separator: "; ")
+    let optionalNames = Set(optionalProps.map(\.name))
+
     let callArgs = initParams
         .map { p -> String in
+            if optionalNames.contains(p.name) {
+                return "\(p.name): __new_\(p.name)"
+            }
             if withNames.contains(p.name) {
                 return "\(p.name): \(p.name) ?? self.\(p.name)"
             }
             return "\(p.name): self.\(p.name)"
         }
         .joined(separator: ", ")
+
+    let body = localBindings.isEmpty
+        ? "\(structName)(\(callArgs))"
+        : "\(localBindings); return \(structName)(\(callArgs))"
+
     return DeclSyntax(stringLiteral:
-        "\(prefix)func with(\(params)) -> \(structName) { \(structName)(\(callArgs)) }"
+        "\(prefix)func with(\(params)) -> \(structName) { \(body) }"
     )
 }
 

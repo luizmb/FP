@@ -12,6 +12,19 @@
 /// - `foo.with(property: ...)` — a copy-with-overrides helper that calls the init once,
 ///   collapsing the O(N²) reconstruction-closure footprint of the previous codegen to O(N).
 ///
+/// ## Optional properties and `with(...)`
+///
+/// For properties whose type is `T?`, `with(...)` uses a double-Optional parameter so the
+/// common ergonomic call sites all behave intuitively:
+///
+/// - `foo.with()` — no argument → keep current value.
+/// - `foo.with(port: 7)` — set to 7.
+/// - `foo.with(port: nil)` — *clear* the property (set to nil).
+///
+/// Internally the parameter type is `Int?? = .some(nil)`. `.some(nil)` is the
+/// "no change" sentinel (the default); a bare `nil` literal binds to outer-`.none`,
+/// meaning "clear"; any value `v` wraps to `.some(.some(v))`, meaning "set".
+///
 /// ## Property rules
 ///
 /// - `let name: T`      → required init parameter + reconstruction `Lens`

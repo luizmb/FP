@@ -37,7 +37,7 @@ public extension Loading {
         Self.prism[keyPath: keyPath].preview(self)
     }
 
-    enum cases: CoreFP.CaseMatchable { // swiftlint:disable:this type_name
+    enum Cases: CoreFP.CaseMatchable {
         public typealias Subject = Loading
         case idle, loading, loaded, failed
 
@@ -52,9 +52,7 @@ public extension Loading {
         }
     }
 
-    func `is`(_ c: cases) -> Bool { c.matches(self) }
+    func `is`(_ c: Cases) -> Bool { c.matches(self) }
 }
 
-extension Loading: CoreFP.HasCases {
-    public typealias Cases = cases
-}
+extension Loading: CoreFP.HasCases {}

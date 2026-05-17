@@ -36,7 +36,7 @@ struct ResultPrismTests {
     }
 
     @Test func cases_isCaseIterable() {
-        #expect(Result<Int, MyError>.cases.allCases == [.success, .failure])
+        #expect(Result<Int, MyError>.Cases.allCases == [.success, .failure])
     }
 
     @Test func is_returnsTrue_whenAligned() {

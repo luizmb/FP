@@ -44,8 +44,8 @@ import Foundation
 ///
 /// Each case exposes a `CoreFP.Prism` via the nested `Prisms` struct (`Loading.prism.idle`,
 /// `.loading`, `.loaded`, `.failed`) and per-case accessors via `@dynamicMemberLookup`
-/// (`state.loaded`, `state.failed`, etc.). An `is(_:)` predicate over the
-/// `cases: CaseMatchable` enum is also provided — mirroring what FP's `@Prisms` macro
+/// (`state.loaded`, `state.failed`, etc.). An `is(_:)` predicate over the nested
+/// `Cases: CaseMatchable` enum is also provided — mirroring what FP's `@Prisms` macro
 /// generates for a non-generic enum.
 ///
 /// - SeeAlso: ``map(_:)``, ``zip(_:_:)``, ``flatMap(_:)``, ``catch(_:)``, ``startLoading()``

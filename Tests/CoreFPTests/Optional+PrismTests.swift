@@ -34,7 +34,7 @@ struct OptionalPrismTests {
     }
 
     @Test func cases_isCaseIterable() {
-        #expect(Int?.cases.allCases == [.some, .none])
+        #expect(Int?.Cases.allCases == [.some, .none])
     }
 
     @Test func is_returnsTrue_whenAligned() {
