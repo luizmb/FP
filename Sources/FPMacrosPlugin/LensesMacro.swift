@@ -257,8 +257,8 @@ private func collectProperties(
 
 private func inferLiteralType(from expr: ExprSyntax) -> String? {
     if expr.is(IntegerLiteralExprSyntax.self) { return "Int" }
-    if expr.is(FloatLiteralExprSyntax.self)   { return "Double" }
-    if expr.is(StringLiteralExprSyntax.self)  { return "String" }
+    if expr.is(FloatLiteralExprSyntax.self) { return "Double" }
+    if expr.is(StringLiteralExprSyntax.self) { return "String" }
     if expr.is(BooleanLiteralExprSyntax.self) { return "Bool" }
     return nil
 }
@@ -348,10 +348,11 @@ private enum LensesDiagnostic: DiagnosticMessage {
         switch self {
         case .notAStruct:
             "@Lenses can only be applied to structs"
-        case .cannotInferType(let name):
+        case let .cannotInferType(name):
             "Cannot infer type of '\(name)' — add an explicit type annotation (e.g., var \(name): SomeType = ...)"
-        case .skippedProperty(let name, let propAccess, let structAccess):
-            "Property '\(name)' excluded from lens namespace and with(...) because its visibility (\(propAccess)) is lower than the struct's (\(structAccess))"
+        case let .skippedProperty(name, propAccess, structAccess):
+            "Property '\(name)' excluded from lens namespace and with(...) because "
+                + "its visibility (\(propAccess)) is lower than the struct's (\(structAccess))"
         }
     }
 

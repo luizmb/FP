@@ -68,12 +68,12 @@ public struct PrismsOptions: OptionSet, Sendable {
     public init(rawValue: Int) { self.rawValue = rawValue }
 
     /// Emit the `MyEnum.prism` namespace with one `Prism` per case.
-    public static let prisms     = PrismsOptions(rawValue: 1 << 0)
+    public static let prisms = PrismsOptions(rawValue: 1 << 0)
     /// Emit per-case computed properties (`myEnum.caseName` → `AssociatedValue?`).
     /// Requires `.prisms` — silently auto-promoted if missing.
     public static let properties = PrismsOptions(rawValue: 1 << 1)
     /// Emit the `MyEnum.cases` enum (conforming to `CaseMatchable` / `CaseIterable`)
     /// and a `myEnum.is(_:)` predicate.
-    public static let cases      = PrismsOptions(rawValue: 1 << 2)
+    public static let cases = PrismsOptions(rawValue: 1 << 2)
     public static let all: PrismsOptions = [.prisms, .properties, .cases]
 }

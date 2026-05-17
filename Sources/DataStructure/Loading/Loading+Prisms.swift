@@ -39,10 +39,10 @@ public extension Loading {
         }
     }
 
-    var idle:    Void?                 { Self.prism.idle.preview(self) }
-    var loading: Success??             { Self.prism.loading.preview(self) }
-    var loaded:  Success?              { Self.prism.loaded.preview(self) }
-    var failed:  (Failure, Success?)?  { Self.prism.failed.preview(self) }
+    var idle: Void? { Self.prism.idle.preview(self) }
+    var loading: Success?? { Self.prism.loading.preview(self) }
+    var loaded: Success? { Self.prism.loaded.preview(self) }
+    var failed: (Failure, Success?)? { Self.prism.failed.preview(self) }
 
     enum cases: CoreFP.CaseMatchable { // swiftlint:disable:this type_name
         public typealias Subject = Loading

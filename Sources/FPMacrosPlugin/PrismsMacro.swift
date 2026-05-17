@@ -69,7 +69,7 @@ struct CaseInfo {
     }
 
     private var bindings: String { (0..<params.count).map { "let v\($0)" }.joined(separator: ", ") }
-    private var tuple: String    { (0..<params.count).map { "v\($0)" }.joined(separator: ", ") }
+    private var tuple: String { (0..<params.count).map { "v\($0)" }.joined(separator: ", ") }
     private var reviewArgs: String {
         params
             .enumerated()
@@ -207,7 +207,8 @@ private func makePrismNamespace(enumName: String, access: String, cases: [CaseIn
         .map { info in
             let preview = "{ \(info.previewBody(enumName: enumName)) }"
             let review = info.reviewExpr(enumName: enumName)
-            return "\(prefix)static let \(info.name) = CoreFP.prism(preview: \(preview), review: \(review)) as CoreFP.Prism<\(enumName), \(info.focusType)>"
+            let typeAnn = "CoreFP.Prism<\(enumName), \(info.focusType)>"
+            return "\(prefix)static let \(info.name) = CoreFP.prism(preview: \(preview), review: \(review)) as \(typeAnn)"
         }
         .joined(separator: "; ")
     return DeclSyntax(stringLiteral: "\(prefix)enum prism { \(decls) }")

@@ -201,8 +201,8 @@ private struct InitOnlyStruct {
 private struct LensesOnlyStruct {
     var x: Int
     var y: Int
-
-    init(x: Int, y: Int) { self.x = x; self.y = y }
+    // No explicit init — Swift synthesizes the memberwise init since `.lensesOnly`
+    // tells the macro to skip its own emission.
 }
 
 @Suite("@Lenses — options slicing")

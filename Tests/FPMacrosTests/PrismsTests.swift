@@ -288,4 +288,3 @@ struct PrismsOptionsTests {
         #expect(firstIsHit(PublicableEnum.bar(1)) == false)
     }
 }
-
