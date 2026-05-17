@@ -36,9 +36,9 @@ struct LoadingFunctorOperatorTests {
     }
 
     @Test func replace_container_left_passesFailureThrough() {
-        let result: Loading<String, TestError> = Sut.failed(.network, previous: 3) £> "done"
+        let result: Loading<String, TestError> = Sut.failed(error: .network, previous: 3) £> "done"
         // Failure still carries through with previous mapped via the constant function.
-        #expect(result == .failed(.network, previous: "done"))
+        #expect(result == .failed(error: .network, previous: "done"))
     }
 
     @Test func replace_value_left() {

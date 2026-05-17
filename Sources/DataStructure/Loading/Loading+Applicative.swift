@@ -19,7 +19,7 @@ public extension Loading {
         switch (left, right) {
         case (.failed(let err, _), _),
              (_, .failed(let err, _)):
-            .failed(err, previous: (Left, Right)?.zip(left.loadedOrPrevious, right.loadedOrPrevious))
+            .failed(error: err, previous: (Left, Right)?.zip(left.loadedOrPrevious, right.loadedOrPrevious))
         case (.idle, _), (_, .idle):
             .idle
         case (.loading(let l), _):

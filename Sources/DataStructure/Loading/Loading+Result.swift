@@ -14,7 +14,7 @@ public extension Loading {
     func applying(_ result: Result<Success, Failure>) -> Self {
         switch result {
         case .success(let value):    .loaded(value)
-        case .failure(let error):    .failed(error, previous: loadedOrPrevious)
+        case .failure(let error):    .failed(error: error, previous: loadedOrPrevious)
         }
     }
 
@@ -22,7 +22,7 @@ public extension Loading {
     static func from(_ result: Result<Success, Failure>) -> Self {
         switch result {
         case .success(let value):    .loaded(value)
-        case .failure(let error):    .failed(error, previous: nil)
+        case .failure(let error):    .failed(error: error, previous: nil)
         }
     }
 }

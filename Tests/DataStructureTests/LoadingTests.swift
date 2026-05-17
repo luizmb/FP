@@ -36,12 +36,12 @@ struct LoadingConstructionTests {
     }
 
     @Test func loadedOrPrevious_failedWithPrevious_returnsPrevious() {
-        let sut: Sut = .failed(.network, previous: 7)
+        let sut: Sut = .failed(error: .network, previous: 7)
         #expect(sut.loadedOrPrevious == 7)
     }
 
     @Test func loadedOrPrevious_failedWithoutPrevious_isNil() {
-        let sut: Sut = .failed(.network, previous: nil)
+        let sut: Sut = .failed(error: .network, previous: nil)
         #expect(sut.loadedOrPrevious == nil)
     }
 }
@@ -54,16 +54,16 @@ struct LoadingEqualityTests {
         #expect(Sut.idle == .idle)
         #expect(Sut.loading(previous: 1) == .loading(previous: 1))
         #expect(Sut.loaded(2) == .loaded(2))
-        #expect(Sut.failed(.network, previous: 3) == .failed(.network, previous: 3))
+        #expect(Sut.failed(error: .network, previous: 3) == .failed(error: .network, previous: 3))
     }
 
     @Test func differentPrevious_areNotEqual() {
         #expect(Sut.loading(previous: 1) != .loading(previous: 2))
-        #expect(Sut.failed(.network, previous: 1) != .failed(.network, previous: 2))
+        #expect(Sut.failed(error: .network, previous: 1) != .failed(error: .network, previous: 2))
     }
 
     @Test func differentErrors_areNotEqual() {
-        #expect(Sut.failed(.network, previous: nil) != .failed(.decoding, previous: nil))
+        #expect(Sut.failed(error: .network, previous: nil) != .failed(error: .decoding, previous: nil))
     }
 
     @Test func differentCases_areNotEqual() {
@@ -72,8 +72,8 @@ struct LoadingEqualityTests {
     }
 
     @Test func hashable_equalValuesHaveEqualHashes() {
-        let a: Sut = .failed(.network, previous: 5)
-        let b: Sut = .failed(.network, previous: 5)
+        let a: Sut = .failed(error: .network, previous: 5)
+        let b: Sut = .failed(error: .network, previous: 5)
         var ah = Hasher(); a.hash(into: &ah)
         var bh = Hasher(); b.hash(into: &bh)
         #expect(ah.finalize() == bh.finalize())
@@ -103,7 +103,7 @@ struct LoadingPrismTests {
     }
 
     @Test func preview_failed_returnsErrorAndPrevious() {
-        let hit = Sut.prism.failed.preview(.failed(.network, previous: 3))
+        let hit = Sut.prism.failed.preview(.failed(error: .network, previous: 3))
         #expect(hit?.0 == .network)
         #expect(hit?.1 == 3)
         #expect(Sut.prism.failed.preview(.loaded(0)) == nil)
@@ -113,7 +113,7 @@ struct LoadingPrismTests {
         #expect(Sut.prism.idle.review(()) == .idle)
         #expect(Sut.prism.loading.review(9) == .loading(previous: 9))
         #expect(Sut.prism.loaded.review(11) == .loaded(11))
-        #expect(Sut.prism.failed.review((.network, 5)) == .failed(.network, previous: 5))
+        #expect(Sut.prism.failed.review((.network, 5)) == .failed(error: .network, previous: 5))
     }
 
     @Test func law_previewReview() {
@@ -140,7 +140,7 @@ struct LoadingPrismTests {
         let loading: Sut = .loading(previous: 7)
         #expect(loading.loading == .some(.some(7)))
 
-        let failed: Sut = .failed(.network, previous: 3)
+        let failed: Sut = .failed(error: .network, previous: 3)
         #expect(failed.failed?.0 == .network)
         #expect(failed.failed?.1 == 3)
     }
@@ -159,20 +159,20 @@ struct LoadingCasesTests {
         #expect(s.is(.loading) == true)
         #expect(Sut.idle.is(.idle) == true)
         #expect(Sut.loaded(1).is(.loaded) == true)
-        #expect(Sut.failed(.network, previous: nil).is(.failed) == true)
+        #expect(Sut.failed(error: .network, previous: nil).is(.failed) == true)
     }
 
     @Test func is_returnsFalse_whenCasesDiffer() {
         #expect(Sut.idle.is(.loaded) == false)
         #expect(Sut.loaded(1).is(.failed) == false)
-        #expect(Sut.failed(.network, previous: nil).is(.idle) == false)
+        #expect(Sut.failed(error: .network, previous: nil).is(.idle) == false)
     }
 
     @Test func is_ignoresAssociatedPayload() {
         #expect(Sut.loading(previous: nil).is(.loading) == true)
         #expect(Sut.loading(previous: 42).is(.loading) == true)
-        #expect(Sut.failed(.network, previous: 0).is(.failed) == true)
-        #expect(Sut.failed(.decoding, previous: 99).is(.failed) == true)
+        #expect(Sut.failed(error: .network, previous: 0).is(.failed) == true)
+        #expect(Sut.failed(error: .decoding, previous: 99).is(.failed) == true)
     }
 }
 
@@ -191,7 +191,7 @@ struct LoadingTransitionTests {
     }
 
     @Test func startLoading_fromFailedWithPrevious_carriesPrevious() {
-        let sut: Sut = .failed(.network, previous: 7)
+        let sut: Sut = .failed(error: .network, previous: 7)
         #expect(sut.startLoading() == .loading(previous: 7))
     }
 
@@ -202,12 +202,12 @@ struct LoadingTransitionTests {
 
     @Test func applying_failure_preservesLoadedOrPrevious() {
         let sut: Sut = .loaded(42)
-        #expect(sut.applying(.failure(.network)) == .failed(.network, previous: 42))
+        #expect(sut.applying(.failure(.network)) == .failed(error: .network, previous: 42))
     }
 
     @Test func applying_failure_fromIdle_hasNoPrevious() {
         let sut: Sut = .idle
-        #expect(sut.applying(.failure(.network)) == .failed(.network, previous: nil))
+        #expect(sut.applying(.failure(.network)) == .failed(error: .network, previous: nil))
     }
 
     @Test func from_success_hasNoPrevious() {
@@ -215,7 +215,7 @@ struct LoadingTransitionTests {
     }
 
     @Test func from_failure_hasNoPrevious() {
-        #expect(Sut.from(.failure(.decoding)) == .failed(.decoding, previous: nil))
+        #expect(Sut.from(.failure(.decoding)) == .failed(error: .decoding, previous: nil))
     }
 }
 
@@ -244,8 +244,8 @@ struct LoadingFunctorTests {
     }
 
     @Test func map_failedWithPrevious_mapsPrevious() {
-        let sut: Sut = .failed(.network, previous: 4)
-        #expect(sut.map { $0 * 2 } == .failed(.network, previous: 8))
+        let sut: Sut = .failed(error: .network, previous: 4)
+        #expect(sut.map { $0 * 2 } == .failed(error: .network, previous: 8))
     }
 
     @Test func fmap_curriedForm() {
@@ -258,7 +258,7 @@ struct LoadingFunctorTests {
 
     @Test func functorIdentityLaw() {
         // fmap id == id
-        let values: [Sut] = [.idle, .loading(previous: 1), .loaded(2), .failed(.network, previous: 3)]
+        let values: [Sut] = [.idle, .loading(previous: 1), .loaded(2), .failed(error: .network, previous: 3)]
         for v in values {
             // swiftlint:disable:next array_init
             #expect(v.map { $0 } == v)
@@ -269,7 +269,7 @@ struct LoadingFunctorTests {
         // fmap (f . g) == fmap f . fmap g
         let f: (Int) -> Int = { $0 + 1 }
         let g: (Int) -> Int = { $0 * 2 }
-        let values: [Sut] = [.idle, .loading(previous: 1), .loaded(2), .failed(.network, previous: 3)]
+        let values: [Sut] = [.idle, .loading(previous: 1), .loaded(2), .failed(error: .network, previous: 3)]
         for v in values {
             #expect(v.map { f(g($0)) } == v.map(g).map(f))
         }
@@ -304,7 +304,7 @@ struct LoadingApplicativeTests {
 
     @Test func zip_failedTrumpsIdle() {
         let left: L<Int> = .idle
-        let right: L<String> = .failed(.network, previous: "stale")
+        let right: L<String> = .failed(error: .network, previous: "stale")
         let result = L<(Int, String)>.zip(left, right)
         // Failed always wins; previous pair is nil because left has none.
         guard case .failed(let err, let prev) = result else {
@@ -326,7 +326,7 @@ struct LoadingApplicativeTests {
     }
 
     @Test func zip_failedPairsLoadedOrPreviousBothSides() {
-        let left: L<Int> = .failed(.network, previous: 1)
+        let left: L<Int> = .failed(error: .network, previous: 1)
         let right: L<String> = .loaded("a")
         let result = L<(Int, String)>.zip(left, right)
         guard case .failed(let err, let prev) = result else {
@@ -356,8 +356,8 @@ struct LoadingMonadTests {
 
     @Test func flatMap_loaded_intoFailure() {
         let sut: Sut = .loaded(5)
-        let result: Sut = sut.flatMap { _ in .failed(.network, previous: nil) }
-        #expect(result == .failed(.network, previous: nil))
+        let result: Sut = sut.flatMap { _ in .failed(error: .network, previous: nil) }
+        #expect(result == .failed(error: .network, previous: nil))
     }
 
     @Test func flatMap_loadingPreservesPreviousViaMapping() {
@@ -368,7 +368,7 @@ struct LoadingMonadTests {
     }
 
     @Test func flatMap_failedPreservesError() {
-        let sut: Sut = .failed(.network, previous: 4)
+        let sut: Sut = .failed(error: .network, previous: 4)
         let result = sut.flatMap { Sut.loaded($0 * 2) }
         guard case .failed(let err, let prev) = result else {
             Issue.record("Expected .failed"); return
@@ -419,7 +419,7 @@ struct LoadingMonadTests {
 @Suite("Loading — Catch")
 struct LoadingCatchTests {
     @Test func catch_failed_appliesTransform() {
-        let sut: Sut = .failed(.network, previous: nil)
+        let sut: Sut = .failed(error: .network, previous: nil)
         let recovered = sut.catch { _ in .loaded(99) }
         #expect(recovered == .loaded(99))
     }
@@ -443,8 +443,8 @@ struct LoadingCatchTests {
     }
 
     @Test func catch_canMapErrorToAnotherFailure() {
-        let sut: Sut = .failed(.network, previous: 7)
-        let recovered = sut.catch { _ in .failed(.decoding, previous: nil) }
-        #expect(recovered == .failed(.decoding, previous: nil))
+        let sut: Sut = .failed(error: .network, previous: 7)
+        let recovered = sut.catch { _ in .failed(error: .decoding, previous: nil) }
+        #expect(recovered == .failed(error: .decoding, previous: nil))
     }
 }

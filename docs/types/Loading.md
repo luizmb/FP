@@ -36,7 +36,7 @@ state = state.startLoading()
 // .loading(previous: [movie1, movie2])  — stale data preserved during refresh
 
 state = state.applying(.failure(.timeout))
-// .failed(.timeout, previous: [movie1, movie2])
+// .failed(error: .timeout, previous: [movie1, movie2])
 
 // Or build a fresh Loading from a Result (no prior context).
 let fresh = Loading<[Movie], NetworkError>.from(.success([]))
@@ -52,7 +52,7 @@ Loading<Int, MyError>.idle.loadedOrPrevious                                // ni
 Loading<Int, MyError>.loading(previous: nil).loadedOrPrevious              // nil
 Loading<Int, MyError>.loading(previous: 42).loadedOrPrevious               // 42
 Loading<Int, MyError>.loaded(7).loadedOrPrevious                           // 7
-Loading<Int, MyError>.failed(.network, previous: 3).loadedOrPrevious       // 3
+Loading<Int, MyError>.failed(error: .network, previous: 3).loadedOrPrevious       // 3
 ```
 
 ---
@@ -64,7 +64,7 @@ Transform the `Success` channel. `previous` values in `.loading` and `.failed` a
 ```swift
 { $0 * 2 } <£> Loading<Int, E>.loaded(5)                  // .loaded(10)
 { $0 * 2 } <£> Loading<Int, E>.loading(previous: 3)       // .loading(previous: 6)
-{ $0 * 2 } <£> Loading<Int, E>.failed(.x, previous: 4)    // .failed(.x, previous: 8)
+{ $0 * 2 } <£> Loading<Int, E>.failed(error: .x, previous: 4)    // .failed(error: .x, previous: 8)
 { $0 * 2 } <£> Loading<Int, E>.idle                       // .idle
 
 Loading.loaded(5) <&> { $0 * 2 }                          // .loaded(10)
@@ -82,7 +82,7 @@ Replace the loaded value with a constant.
 
 ```swift
 Loading<Int, E>.loaded(42) £> "done"                      // .loaded("done")
-Loading<Int, E>.failed(.x, previous: 7) £> "done"         // .failed(.x, previous: "done")
+Loading<Int, E>.failed(error: .x, previous: 7) £> "done"         // .failed(error: .x, previous: "done")
 "done" <£ Loading<Int, E>.loaded(42)                      // .loaded("done")
 ```
 
@@ -109,8 +109,8 @@ L<(Int, String)>.zip(.idle, .loaded("a"))
 L<(Int, String)>.zip(.loading(previous: 1), .loaded("a"))
 // .loading(previous: Optional((1, "a")))
 
-L<(Int, String)>.zip(.failed(.network, previous: 1), .loaded("a"))
-// .failed(.network, previous: Optional((1, "a")))
+L<(Int, String)>.zip(.failed(error: .network, previous: 1), .loaded("a"))
+// .failed(error: .network, previous: Optional((1, "a")))
 ```
 
 > `Loading` doesn't expose `<*>` / `pure` because there is no canonical way to wrap a single value as `.idle` / `.loading` / `.failed`. Use ``zip`` when you need applicative-style combination.
@@ -152,15 +152,15 @@ Loading<Int, AuthError>.kleisli(authorize, fetchProfile)(42)
 
 ```swift
 let recovered = Loading<Int, NetworkError>
-    .failed(.timeout, previous: 7)
+    .failed(error: .timeout, previous: 7)
     .catch { _ in .loaded(0) }
 // .loaded(0)
 
 // Map one error into another
 Loading<Int, NetworkError>
-    .failed(.timeout, previous: nil)
-    .catch { _ in .failed(.cancelled, previous: nil) }
-// .failed(.cancelled, previous: nil)
+    .failed(error: .timeout, previous: nil)
+    .catch { _ in .failed(error: .cancelled, previous: nil) }
+// .failed(error: .cancelled, previous: nil)
 
 // Non-failed cases pass through
 Loading<Int, NetworkError>.idle.catch { _ in .loaded(0) }              // .idle
@@ -217,7 +217,7 @@ state.is(.loading)               // true
 state.is(.loaded)                // false
 
 Loading<Int, E>.loaded(0).is(.loaded)   // true
-Loading<Int, E>.failed(.x, previous: nil).is(.failed)  // true
+Loading<Int, E>.failed(error: .x, previous: nil).is(.failed)  // true
 ```
 
 ---
@@ -231,7 +231,7 @@ Loading<Int, E>.loaded(7) == .loaded(7)                       // true
 Loading<Int, E>.loading(previous: 1) != .loading(previous: 2) // true
 
 var hasher = Hasher()
-Loading<Int, E>.failed(.x, previous: 5).hash(into: &hasher)
+Loading<Int, E>.failed(error: .x, previous: 5).hash(into: &hasher)
 ```
 
 ---

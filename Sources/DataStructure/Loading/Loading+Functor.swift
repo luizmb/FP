@@ -9,7 +9,7 @@ public extension Loading {
         case .idle:                    .idle
         case .loading(let prev):       .loading(previous: prev.map(f))
         case .loaded(let value):       .loaded(f(value))
-        case let .failed(err, prev):   .failed(err, previous: prev.map(f))
+        case let .failed(err, prev):   .failed(error: err, previous: prev.map(f))
         }
     }
 

@@ -56,7 +56,7 @@ public enum Loading<Success: Sendable, Failure: Error & Sendable>: Sendable {
     /// The last fetch succeeded.
     case loaded(Success)
     /// The last fetch failed. `previous` holds the last successful value, if any.
-    case failed(Failure, previous: Success?)
+    case failed(error: Failure, previous: Success?)
 }
 
 public extension Loading {

@@ -33,7 +33,7 @@ public extension Loading {
         public static var failed: CoreFP.Prism<Loading, (Failure, Success?)> {
             CoreFP.prism(
                 preview: { (s: Loading) in guard case .failed(let v0, let v1) = s else { return nil }; return (v0, v1) },
-                review: { (t: (Failure, Success?)) in Loading.failed(t.0, previous: t.1) }
+                review: { (t: (Failure, Success?)) in Loading.failed(error: t.0, previous: t.1) }
             )
         }
     }

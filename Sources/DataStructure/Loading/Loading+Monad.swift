@@ -18,7 +18,7 @@ public extension Loading {
         case .loaded(let value):
             f(value)
         case let .failed(err, prev):
-            .failed(err, previous: prev.flatMap { f($0).loadedOrPrevious })
+            .failed(error: err, previous: prev.flatMap { f($0).loadedOrPrevious })
         }
     }
 
