@@ -1992,7 +1992,12 @@ let teamConfigHost = lens(\.teamConfig) >>> Config.lens.host
 
 #### `@Prisms` — enum prisms
 
-`@Prisms` generates an `enum prism` namespace with a typed `Prism` for each case, plus a computed optional property per case for convenient extraction.
+`@Prisms` generates four things for the annotated enum:
+
+1. An `enum prism` namespace with a typed `Prism` for each case.
+2. A computed optional property per case for convenient extraction.
+3. A nested `enum cases: CaseIterable` whose cases mirror the case *names* of the original enum (no associated values). Useful for iteration, lookup tables, or driving UI lists.
+4. A `func is(_:) -> Bool` instance method on the original enum that checks whether the current value's case matches a given `cases` value — regardless of any associated payload.
 
 ```swift
 @Prisms
@@ -2029,6 +2034,19 @@ enum Shape {
     var circle:    Double?           { Self.prism.circle.preview(self) }
     var rectangle: (Double, Double)? { Self.prism.rectangle.preview(self) }
     var empty:     Void?             { Self.prism.empty.preview(self) }
+
+    enum cases: CaseIterable {
+        case circle, rectangle, empty
+        func matches(_ value: Shape) -> Bool {
+            switch (self, value) {
+            case (.circle, .circle):       return true
+            case (.rectangle, .rectangle): return true
+            case (.empty, .empty):         return true
+            default:                       return false
+            }
+        }
+    }
+    func `is`(_ c: cases) -> Bool { c.matches(self) }
 }
 ```
 
@@ -2043,6 +2061,11 @@ Shape.prism.circle.preview(s)               // Optional(3.14) — explicit optic
 Shape.prism.circle.set(s, 5.0)             // Shape.circle(5.0)
 Shape.prism.circle.over({ $0 * 2 })(s)    // Shape.circle(6.28)
 Shape.prism.circle.preview(.rectangle(1, 2)) // nil — wrong case
+
+// Case-name queries — no need to construct dummy payloads:
+s.is(.circle)                               // true
+s.is(.rectangle)                            // false
+Shape.cases.allCases                        // [.circle, .rectangle, .empty]
 ```
 
 #### Nesting — the primary motivation

@@ -164,3 +164,58 @@ struct PrismsCompositionTests {
         #expect(updated.ok?.port == 8_081)
     }
 }
+
+// MARK: - cases enum + is helper
+
+@Suite("@Prisms — cases enum and is(_:)")
+struct PrismsCasesEnumTests {
+    @Test func cases_isCaseIterable() {
+        // Generated enum conforms to CaseIterable so we can list every case once.
+        #expect(Shape.cases.allCases == [.circle, .rectangle, .empty])
+    }
+
+    @Test func cases_matches_diagonal_isTrue() {
+        #expect(Shape.cases.circle.matches(.circle(3.14)) == true)
+        #expect(Shape.cases.rectangle.matches(.rectangle(1, 2)) == true)
+        #expect(Shape.cases.empty.matches(.empty) == true)
+    }
+
+    @Test func cases_matches_offDiagonal_isFalse() {
+        #expect(Shape.cases.circle.matches(.rectangle(1, 2)) == false)
+        #expect(Shape.cases.rectangle.matches(.empty) == false)
+        #expect(Shape.cases.empty.matches(.circle(0)) == false)
+    }
+
+    @Test func cases_matches_ignoresAssociatedPayload() {
+        // Different payloads on the same case still report a match.
+        #expect(Shape.cases.circle.matches(.circle(0)) == true)
+        #expect(Shape.cases.circle.matches(.circle(99.99)) == true)
+        #expect(Shape.cases.rectangle.matches(.rectangle(0, 0)) == true)
+        #expect(Shape.cases.rectangle.matches(.rectangle(100, 200)) == true)
+    }
+
+    @Test func is_returnsTrue_whenCasesAlign() {
+        #expect(Shape.circle(3.14).is(.circle) == true)
+        #expect(Shape.rectangle(1, 2).is(.rectangle) == true)
+        #expect(Shape.empty.is(.empty) == true)
+    }
+
+    @Test func is_returnsFalse_whenCasesDiffer() {
+        #expect(Shape.circle(3.14).is(.rectangle) == false)
+        #expect(Shape.circle(3.14).is(.empty) == false)
+        #expect(Shape.empty.is(.circle) == false)
+    }
+
+    @Test func is_worksForLabeledParameters() {
+        let b = Box.labeled(x: 1, y: 2)
+        #expect(b.is(.labeled) == true)
+        #expect(b.is(.wrapped) == false)
+    }
+
+    @Test func cases_worksForNestedEnum() {
+        #expect(Reducer.Action.cases.allCases == [.increment, .setName, .reset])
+        #expect(Reducer.Action.increment.is(.increment) == true)
+        #expect(Reducer.Action.setName("hi").is(.setName) == true)
+        #expect(Reducer.Action.increment.is(.reset) == false)
+    }
+}
