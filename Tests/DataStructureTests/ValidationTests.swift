@@ -243,16 +243,16 @@ import Testing
         let v: Validation<String, Int> = .success(42)
         #expect(v.success == 42)
         #expect(v.failure == nil)
-        #expect(v.isSuccess)
-        #expect(!v.isFailure)
+        #expect(v.is(.success))
+        #expect(!v.is(.failure))
     }
 
     @Test func prismFailure() {
         let v: Validation<String, Int> = .failure("err")
         #expect(v.failure == "err")
         #expect(v.success == nil)
-        #expect(v.isFailure)
-        #expect(!v.isSuccess)
+        #expect(v.is(.failure))
+        #expect(!v.is(.success))
     }
 
     // MARK: - Either conversion
