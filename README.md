@@ -38,7 +38,7 @@ The library draws from Haskell and Scala Cats conventions and is designed to be 
     - [Prism operators](#prism-operators-optional-requires-corefpoperators)
   - [Assembling Optics (AffineTraversal)](#assembling-optics-affinetraversal)
   - [Identity Optic (.id)](#identity-optic-id)
-  - [Safe Collection Access ([safe:] and ix)](#safe-collection-access-safe-and-ix)
+  - [Safe Collection Access ([safe:], [id:], and ix)](#safe-collection-access-safe-id-and-ix)
   - [Bidirectional Conversions (Iso)](#bidirectional-conversions-iso)
     - [Iso operators](#iso-operators-optional-requires-corefpoperators)
   - [Deriving Optics with Macros (@Lenses and @Prisms)](#deriving-optics-with-macros-lenses-and-prisms)
@@ -1185,7 +1185,7 @@ Iso<Int, Int>.id.asLens               // equivalent to Lens<Int, Int>.id
 
 ---
 
-### Safe Collection Access (`[safe:]` and `ix`)
+### Safe Collection Access (`[safe:]`, `[id:]`, and `ix`)
 
 #### `[safe:]` — bounds-safe subscript
 
@@ -1201,6 +1201,38 @@ ys[safe: 1] = 99     // [10, 99, 30]
 ys[safe: 9] = 99     // no-op — out of bounds
 ys[safe: 1] = nil    // no-op — nil is ignored
 ```
+
+#### `[id:]` — identity-keyed subscript
+
+Collections of `Identifiable` elements gain an `[id:]` subscript that returns the first element whose `id` matches, or `nil`. For `RangeReplaceableCollection` (`Array`, `ArraySlice`, `ContiguousArray`) the setter is available with `Dictionary`-style add/remove semantics:
+
+```swift
+struct User: Identifiable { let id: Int; let name: String }
+let users = [User(id: 1, name: "Alice"), User(id: 2, name: "Bob")]
+users[id: 2]   // Optional(User(id: 2, name: "Bob"))
+users[id: 9]   // nil
+
+var roster = users
+roster[id: 2] = User(id: 2, name: "Robert")  // replace in place
+roster[id: 3] = User(id: 3, name: "Carol")   // append to end (id not found)
+roster[id: 1] = nil                          // remove
+roster[id: 9] = nil                          // no-op (not present)
+roster[id: 2] = User(id: 99, name: "X")      // no-op (id-mismatch guard)
+```
+
+Setter dispatch table:
+
+| `newValue`           | existing match | result            |
+|----------------------|:---:|---------------------------|
+| `nil`                | yes | remove                    |
+| `nil`                | no  | no-op                     |
+| `v` where `v.id ==id`| yes | replace in place          |
+| `v` where `v.id ==id`| no  | append to end             |
+| `v` where `v.id !=id`| —   | no-op (id-mismatch guard) |
+
+The id-mismatch guard protects against accidental swaps — assigning an element whose `id` doesn't match the subscript key is almost always a bug. Lookup is linear (`first(where:)` / `firstIndex(where:)`); for hot paths with large collections, consider keying by a `Dictionary`.
+
+The setter requires `RangeReplaceableCollection` because the add/remove cases must change the collection's count — `MutableCollection` alone can only replace in place. `Array` and its slice variants cover the practical targets.
 
 #### `ix` — collection `AffineTraversal`
 
@@ -1268,9 +1300,9 @@ teamReducer(&team)   // only the one Item is mutated; the [Item] buffer is not c
 
 `ix` on `MutableCollection` passes `inout collection[index]` directly to the closure — Swift's subscript modify coroutine makes this genuinely zero-copy. `ix` on `Dictionary` copies the `Value` once (because the dictionary subscript returns `Value?`, not `inout Value`), but the dictionary buffer itself is not copied.
 
-**`[safe:]` and `ix` are two faces of the same concept**
+**Subscripts vs `ix` — two faces of the same concept**
 
-For concrete collection types, `[Int].ix(2)` is equivalent to `affineTraversal(\[Int][safe: 2])`. Use `[safe:]` for direct element access; use `ix` when you need an optic you can compose.
+For concrete collection types, `[Int].ix(2)` is equivalent to `affineTraversal(\[Int][safe: 2])`, and `[User].ix(id: 2)` mirrors `[User][id: 2]` for the replace-in-place case. Use the subscripts (`[safe:]`, `[id:]`) for direct element access; use `ix` when you need an optic you can compose. `ix(id:)` is limited to replace-in-place semantics — for the add-or-remove behaviour, use the `[id:]` subscript directly.
 
 ---
 
