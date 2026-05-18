@@ -7,14 +7,14 @@ import Testing
 // @attached(member) works at any nesting level
 
 @Prisms
-private enum Shape {
+fileprivate enum Shape {
     case circle(Double)
     case rectangle(Double, Double)
     case empty
 }
 
 @Prisms
-private enum Box {
+fileprivate enum Box {
     case wrapped(String)
     case labeled(x: Int, y: Int)
 }
@@ -141,13 +141,13 @@ struct PrismsLawTests {
 @Suite("@Prisms — composition with other optics")
 struct PrismsCompositionTests {
     @Lenses(init: .internal)
-    private struct Config {
+    fileprivate struct Config {
         let host: String
         var port: Int
     }
 
     @Prisms
-    private enum Response {
+    fileprivate enum Response {
         case ok(Config)
         case error(String)
     }
@@ -171,27 +171,27 @@ struct PrismsCompositionTests {
 struct PrismsCasesEnumTests {
     @Test func cases_isCaseIterable() {
         // Generated enum conforms to CaseIterable so we can list every case once.
-        #expect(Shape.cases.allCases == [.circle, .rectangle, .empty])
+        #expect(Shape.Cases.allCases == [.circle, .rectangle, .empty])
     }
 
     @Test func cases_matches_diagonal_isTrue() {
-        #expect(Shape.cases.circle.matches(.circle(3.14)) == true)
-        #expect(Shape.cases.rectangle.matches(.rectangle(1, 2)) == true)
-        #expect(Shape.cases.empty.matches(.empty) == true)
+        #expect(Shape.Cases.circle.matches(.circle(3.14)) == true)
+        #expect(Shape.Cases.rectangle.matches(.rectangle(1, 2)) == true)
+        #expect(Shape.Cases.empty.matches(.empty) == true)
     }
 
     @Test func cases_matches_offDiagonal_isFalse() {
-        #expect(Shape.cases.circle.matches(.rectangle(1, 2)) == false)
-        #expect(Shape.cases.rectangle.matches(.empty) == false)
-        #expect(Shape.cases.empty.matches(.circle(0)) == false)
+        #expect(Shape.Cases.circle.matches(.rectangle(1, 2)) == false)
+        #expect(Shape.Cases.rectangle.matches(.empty) == false)
+        #expect(Shape.Cases.empty.matches(.circle(0)) == false)
     }
 
     @Test func cases_matches_ignoresAssociatedPayload() {
         // Different payloads on the same case still report a match.
-        #expect(Shape.cases.circle.matches(.circle(0)) == true)
-        #expect(Shape.cases.circle.matches(.circle(99.99)) == true)
-        #expect(Shape.cases.rectangle.matches(.rectangle(0, 0)) == true)
-        #expect(Shape.cases.rectangle.matches(.rectangle(100, 200)) == true)
+        #expect(Shape.Cases.circle.matches(.circle(0)) == true)
+        #expect(Shape.Cases.circle.matches(.circle(99.99)) == true)
+        #expect(Shape.Cases.rectangle.matches(.rectangle(0, 0)) == true)
+        #expect(Shape.Cases.rectangle.matches(.rectangle(100, 200)) == true)
     }
 
     @Test func is_returnsTrue_whenCasesAlign() {
@@ -213,9 +213,138 @@ struct PrismsCasesEnumTests {
     }
 
     @Test func cases_worksForNestedEnum() {
-        #expect(Reducer.Action.cases.allCases == [.increment, .setName, .reset])
+        #expect(Reducer.Action.Cases.allCases == [.increment, .setName, .reset])
         #expect(Reducer.Action.increment.is(.increment) == true)
         #expect(Reducer.Action.setName("hi").is(.setName) == true)
         #expect(Reducer.Action.increment.is(.reset) == false)
+    }
+}
+
+// MARK: - PrismsOptions — granular emission
+
+@Prisms(.prisms)
+fileprivate enum OnlyPrisms {
+    case red(Int)
+    case green(String)
+}
+
+@Prisms([.prisms, .properties])
+fileprivate enum PrismsAndProps {
+    case wrapped(Int)
+    case empty
+}
+
+@Prisms(.cases)
+fileprivate enum OnlyCases {
+    case alpha
+    case beta(Int)
+    case gamma(String, Bool)
+}
+
+// Internal-access fixture used to verify HasCases conformance can be adopted manually
+// (the macro doesn't add it automatically because `@attached(extension)` can't reach
+// nested fileprivate hosts at file scope).
+@Prisms(.cases)
+enum PublicableEnum {
+    case foo
+    case bar(Int)
+}
+
+// The nested `Cases` enum's name matches the protocol's `associatedtype Cases`, so
+// Swift infers the conformance without an explicit typealias.
+extension PublicableEnum: CoreFP.HasCases {}
+
+// Fixture with @dynamicMemberLookup — the macro detects the attribute and emits a single
+// subscript instead of one computed property per case.
+@dynamicMemberLookup
+@Prisms
+fileprivate enum Pixel {
+    case rgb(red: Int, green: Int, blue: Int)
+    case gray(Int)
+    case transparent
+}
+
+// Generic fixture — verifies `static var prism` fallback works.
+@dynamicMemberLookup
+@Prisms
+fileprivate enum Wrapped<A> {
+    case some(A)
+    case none
+}
+
+@Suite("@Prisms — options slicing")
+struct PrismsOptionsTests {
+    @Test func prisms_only_emits_namespace() {
+        // .prism namespace exists and works
+        #expect(OnlyPrisms.prism.red.preview(.red(7)) == 7)
+        #expect(OnlyPrisms.prism.green.preview(.green("hi")) == "hi")
+    }
+
+    @Test func properties_alone_promotes_prisms() {
+        // [.prisms, .properties] gives both — verify .properties depends on .prisms
+        #expect(PrismsAndProps.prism.wrapped.preview(.wrapped(3)) == 3)
+        #expect(PrismsAndProps.wrapped(3).wrapped == 3)
+        #expect(PrismsAndProps.empty.empty != nil)
+    }
+
+    @Test func cases_only_emits_cases_enum_and_is() {
+        #expect(OnlyCases.Cases.allCases == [.alpha, .beta, .gamma])
+        #expect(OnlyCases.alpha.is(.alpha) == true)
+        #expect(OnlyCases.beta(1).is(.beta) == true)
+        #expect(OnlyCases.gamma("x", true).is(.gamma) == true)
+        #expect(OnlyCases.alpha.is(.beta) == false)
+    }
+
+    @Test func prism_namespace_is_struct_value_keypath_accessible() {
+        // The new struct-based shape lets you write a KeyPath into Prisms — impossible
+        // with the old `enum prism` namespace.
+        let kp: KeyPath<Pixel.Prisms, CoreFP.Prism<Pixel, Int>> = \.gray
+        #expect(Pixel.prism[keyPath: kp].preview(.gray(7)) == 7)
+    }
+
+    @Test func hasCases_protocol_can_be_adopted_manually() {
+        // The macro doesn't auto-add HasCases conformance (Swift extension-macro role
+        // can't reach private nested types). Users can opt in manually.
+        func firstIsHit<T: CoreFP.HasCases>(_ v: T) -> Bool {
+            v.is(T.Cases.allCases.first.unsafelyUnwrapped)
+        }
+        #expect(firstIsHit(PublicableEnum.foo) == true)
+        #expect(firstIsHit(PublicableEnum.bar(1)) == false)
+    }
+}
+
+// MARK: - Dynamic member lookup
+
+@Suite("@Prisms — @dynamicMemberLookup integration")
+struct PrismsDynamicMemberTests {
+    @Test func subscript_resolves_single_argument_case() {
+        let p = Pixel.gray(7)
+        let value: Int? = p.gray
+        #expect(value == 7)
+    }
+
+    @Test func subscript_resolves_multi_argument_case_as_tuple() {
+        let p = Pixel.rgb(red: 1, green: 2, blue: 3)
+        let rgb: (Int, Int, Int)? = p.rgb
+        #expect(rgb?.0 == 1)
+        #expect(rgb?.1 == 2)
+        #expect(rgb?.2 == 3)
+    }
+
+    @Test func subscript_returns_nil_for_other_case() {
+        let p = Pixel.transparent
+        #expect(p.gray == nil)
+        #expect(p.rgb == nil)
+        #expect(p.transparent != nil)
+    }
+
+    @Test func generic_host_uses_static_var_and_subscript() {
+        // Loading is a generic enum that uses the same struct-based shape via a computed
+        // `static var prism` (since `static let` is forbidden in generic contexts).
+        let some: Wrapped<String> = .some("hi")
+        #expect(some.some == "hi")
+        let none: Wrapped<String> = .none
+        #expect(none.some == nil)
+        #expect(none.none != nil)
     }
 }

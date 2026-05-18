@@ -1928,53 +1928,60 @@ import FPMacros
 
 #### `@Lenses` — struct lenses
 
-`@Lenses(init:)` generates a memberwise initializer and an `enum lens` namespace containing a `Lens` for each relevant stored property.
+`@Lenses(_:init:)` generates a memberwise initializer, a `Lenses` struct + `static let lens` accessor holding one `Lens` per stored property, and a `with(...)` copy-with-overrides helper.
 
 **Property rules:**
 
 | Property | In generated `init`? | Gets a `Lens`? | Lens kind |
 |---|---|---|---|
-| `let name: T` | yes — required | yes | reconstruction (calls `init` with the changed field) |
+| `let name: T` | yes — required | yes | reconstruction (calls `init` via the generated `with(...)`) |
 | `let version = 1` | no | no | immutable constant |
 | `var port: Int` | yes — required | yes | `WritableKeyPath` |
 | `var timeout = 30` | yes — default `= 30` | yes | `WritableKeyPath` |
 
 ```swift
 @Lenses(init: .public)
-struct Config {
-    let host: String
-    let version = 3       // constant — no lens, excluded from init
-    var port: Int
-    var timeout = 30
+public struct Config {
+    public let host: String
+    public let version = 3       // constant — no lens, excluded from init
+    public var port: Int
+    public var timeout = 30
 }
 ```
 
-**Expanded code:**
+**Expanded code (simplified):**
 
 ```swift
-struct Config {
-    let host: String
-    let version = 3
-    var port: Int
-    var timeout = 30
+public struct Config {
+    public let host: String
+    public let version = 3
+    public var port: Int
+    public var timeout = 30
 
     public init(host: String, port: Int, timeout: Int = 30) {
-        self.host = host
-        self.port = port
-        self.timeout = timeout
+        self.host = host; self.port = port; self.timeout = timeout
     }
 
-    enum lens {
-        // let — reconstruction: builds a new Config via init, substituting the focused field
-        static let host: Lens<Config, String> =
-            CoreFP.lens(\Config.host) { s, a in Config(host: a, port: s.port, timeout: s.timeout) }
+    public struct Lenses: Sendable {
+        public let host:    Lens<Config, String> = CoreFP.lens(\Config.host) { s, a in s.with(host: a) }
+        public let port:    Lens<Config, Int>    = CoreFP.lens(\Config.port)
+        public let timeout: Lens<Config, Int>    = CoreFP.lens(\Config.timeout)
+    }
+    public static let lens = Lenses()
 
-        // var — WritableKeyPath: in-place mutation via keypath
-        static let port:    Lens<Config, Int> = CoreFP.lens(\Config.port)
-        static let timeout: Lens<Config, Int> = CoreFP.lens(\Config.timeout)
+    public func with(host: String? = nil, port: Int? = nil, timeout: Int? = nil) -> Config {
+        Config(
+            host: host ?? self.host,
+            port: port ?? self.port,
+            timeout: timeout ?? self.timeout
+        )
     }
 }
 ```
+
+The `Lens<Config, String>` for `host` (a `let` property) calls `s.with(host: a)` rather than inlining all field references — the `with(...)` helper is the single source of truth for reconstruction, keeping the codegen O(N) in the number of properties instead of O(N²).
+
+For *generic* hosts (e.g. `Container<T>`), Swift forbids `static let` in a generic context. The macro automatically falls back to a computed `static var lens: Lenses { Lenses() }`. Same call-site syntax; allocates per access.
 
 **Usage:**
 
@@ -1987,87 +1994,153 @@ Config.lens.host.set(config, "example.com")
 Config.lens.port.over({ $0 + 1 })(config)
 // Config(host: "localhost", port: 8081, timeout: 30, version: 3)
 
+config.with(host: "example.com", port: 9090)
+// same effect, without needing lenses
+
 // Lenses compose as normal:
 let teamConfigHost = lens(\.teamConfig) >>> Config.lens.host
 ```
 
-#### `@Prisms` — enum prisms
+**Optional properties and `with(...)`**
 
-`@Prisms` generates four things for the annotated enum:
-
-1. An `enum prism` namespace with a typed `Prism` for each case.
-2. A computed optional property per case for convenient extraction.
-3. A nested `enum cases: CaseIterable` whose cases mirror the case *names* of the original enum (no associated values). Useful for iteration, lookup tables, or driving UI lists.
-4. A `func is(_:) -> Bool` instance method on the original enum that checks whether the current value's case matches a given `cases` value — regardless of any associated payload.
+For properties whose type is `T?`, `with(...)` uses a double-Optional parameter under the hood so the common ergonomic call sites all behave intuitively:
 
 ```swift
+@Lenses(init: .public)
+public struct Server {
+    public let port: Int?
+    public let name: String
+}
+
+let s = Server(port: 8080, name: "main")
+s.with()                // Server(port: 8080,  name: "main")   — keep
+s.with(port: nil)       // Server(port: nil,   name: "main")   — clear
+s.with(port: 9090)      // Server(port: 9090,  name: "main")   — set
+s.with(name: "primary") // Server(port: 8080,  name: "primary") — non-Optional still works
+```
+
+The trick: the parameter type is `Int?? = .some(nil)`. The default `.some(nil)` means "no change"; a bare `nil` literal at the call site binds to outer-`.none`, meaning "clear"; any value `v` wraps to `.some(.some(v))`, meaning "set". Non-Optional properties use the simpler `T? = nil` + `??` form.
+
+**Slicing the output**
+
+Use `LensesEmit` to opt out of pieces you don't need:
+
+```swift
+@Lenses(.all)         // default — init + lens + with
+@Lenses(.initOnly)    // only the memberwise init
+@Lenses(.lensesOnly)  // lens + with, no init at all (use when you have a custom init)
+```
+
+If the struct already declares an `init` whose parameter labels match what the macro would generate, the macro skips its own init silently — the user's init wins.
+
+**Visibility skip**
+
+Properties whose declared visibility is *lower* than the struct's are excluded from both the lens namespace and `with(...)`, with a diagnostic note. The init still includes them (it can legally assign lower-visibility properties from inside the struct).
+
+#### `@Prisms` — enum prisms
+
+`@Prisms` generates three things for the annotated enum:
+
+1. A `Prisms` struct + `static let prism` accessor holding a typed `Prism` for each case.
+2. Per-case accessors (`shape.circle`, `shape.rectangle`, …) — either as one computed property per case, or as a single `subscript(dynamicMember:)` if the enum is also annotated with `@dynamicMemberLookup`.
+3. A nested `enum Cases: CaseMatchable` (which inherits `CaseIterable`) whose cases mirror the case *names* of the original enum (no associated values), plus a `func is(_:) -> Bool` predicate.
+
+```swift
+@dynamicMemberLookup   // opt-in — collapses N computed properties into one subscript
 @Prisms
-enum Shape {
+public enum Shape {
     case circle(Double)
     case rectangle(Double, Double)
     case empty
 }
 ```
 
-**Expanded code:**
+**Expanded code (simplified):**
 
 ```swift
-enum Shape {
+public enum Shape {
     case circle(Double)
     case rectangle(Double, Double)
     case empty
 
-    enum prism {
-        static let circle: Prism<Shape, Double> = CoreFP.prism(
-            preview: { (_ s: Shape) in guard case .circle(let a) = s else { return nil }; return a },
+    public struct Prisms: Sendable {
+        public let circle: Prism<Shape, Double> = CoreFP.prism(
+            preview: { s in guard case .circle(let a) = s else { return nil }; return a },
             review: Shape.circle
         )
-        static let rectangle: Prism<Shape, (Double, Double)> = CoreFP.prism(
-            preview: { (_ s: Shape) in guard case .rectangle(let v0, let v1) = s else { return nil }; return (v0, v1) },
+        public let rectangle: Prism<Shape, (Double, Double)> = CoreFP.prism(
+            preview: { s in guard case .rectangle(let v0, let v1) = s else { return nil }; return (v0, v1) },
             review: { (t: (Double, Double)) in Shape.rectangle(t.0, t.1) }
         )
-        static let empty: Prism<Shape, Void> = CoreFP.prism(
-            preview: { (_ s: Shape) in guard case .empty = s else { return nil }; return () },
+        public let empty: Prism<Shape, Void> = CoreFP.prism(
+            preview: { s in guard case .empty = s else { return nil }; return () },
             review: { (_: Void) in Shape.empty }
         )
     }
+    public static let prism = Prisms()
 
-    var circle:    Double?           { Self.prism.circle.preview(self) }
-    var rectangle: (Double, Double)? { Self.prism.rectangle.preview(self) }
-    var empty:     Void?             { Self.prism.empty.preview(self) }
-
-    enum cases: CaseIterable {
-        case circle, rectangle, empty
-        func matches(_ value: Shape) -> Bool {
-            switch (self, value) {
-            case (.circle, .circle):       return true
-            case (.rectangle, .rectangle): return true
-            case (.empty, .empty):         return true
-            default:                       return false
-            }
-        }
+    // With @dynamicMemberLookup on the enum — one subscript replaces N computed properties:
+    public subscript<PrismFocus>(
+        dynamicMember keyPath: KeyPath<Prisms, CoreFP.Prism<Shape, PrismFocus>>
+    ) -> PrismFocus? {
+        Self.prism[keyPath: keyPath].preview(self)
     }
-    func `is`(_ c: cases) -> Bool { c.matches(self) }
+
+    public enum Cases: CoreFP.CaseMatchable {
+        public typealias Subject = Shape
+        case circle, rectangle, empty
+        public func matches(_ value: Shape) -> Bool { /* switch */ }
+    }
+    public func `is`(_ c: Cases) -> Bool { c.matches(self) }
 }
 ```
+
+Without `@dynamicMemberLookup`, the macro emits one `var caseName: AssociatedValue? { Self.prism.caseName.preview(self) }` per case (and a build-time *warning* suggesting the attribute). Same call-site syntax in both modes.
+
+For *generic* enums (e.g. `Loading<Success, Failure>`), Swift forbids `static let` in a generic context. The macro automatically falls back to `static var prism: Prisms { Prisms() }`. Same call-site syntax; allocates per access.
 
 **Usage:**
 
 ```swift
 let s = Shape.circle(3.14)
 
-s.circle                                    // Optional(3.14) — computed property shorthand
+s.circle                                    // Optional(3.14) — via dynamic-member subscript
 s.rectangle                                 // nil
 Shape.prism.circle.preview(s)               // Optional(3.14) — explicit optic
 Shape.prism.circle.set(s, 5.0)             // Shape.circle(5.0)
 Shape.prism.circle.over({ $0 * 2 })(s)    // Shape.circle(6.28)
-Shape.prism.circle.preview(.rectangle(1, 2)) // nil — wrong case
 
 // Case-name queries — no need to construct dummy payloads:
 s.is(.circle)                               // true
 s.is(.rectangle)                            // false
-Shape.cases.allCases                        // [.circle, .rectangle, .empty]
+Shape.Cases.allCases                        // [.circle, .rectangle, .empty]
 ```
+
+**Slicing the output**
+
+Use `PrismsOptions` to opt out of pieces you don't need:
+
+```swift
+@Prisms(.cases)                       // only the `Cases` enum + is(_:)
+@Prisms(.prisms)                      // only the `Prisms` struct + `static prism`
+@Prisms([.prisms, .properties])       // optics + accessors, no Cases / is
+```
+
+`.properties` requires `.prisms` — auto-promoted silently if you forget.
+
+**Polymorphic `HasCases`**
+
+The `CoreFP.HasCases` protocol lets generic code write `value.is(.someCase)` against any type whose nested `Cases` enum is a `CaseMatchable`. `@Prisms` doesn't automatically add the conformance (Swift's extension-macro role can't reach into nested types), but you can opt in for any file-level or non-private-nested type:
+
+```swift
+extension MyEnum: HasCases {}  // typealias inferred from the nested `Cases` enum
+
+func currentIsFirstCase<T: HasCases>(_ value: T) -> Bool {
+    value.is(T.Cases.allCases.first!)
+}
+```
+
+The built-in types `Loading`, `Either`, `Validation`, `Optional`, and `Result` all conform out of the box.
 
 #### Nesting — the primary motivation
 
@@ -2116,6 +2189,24 @@ Properties with literal defaults (`0`, `3.14`, `"hello"`, `true`) have their typ
 var timeout: Duration = .seconds(30)    // explicit annotation required
 var retryPolicy: RetryPolicy = .exponential  // explicit annotation required
 ```
+
+#### Access-level restriction
+
+`@Lenses` and `@Prisms` **cannot** be applied to `private` declarations — the macros refuse with a compile-time error. `private`'s type-scope semantics break the generated namespace (its stored `Lens<Host, X>` / `Prism<Host, X>` fields can't be exposed outside the host's body). Use `fileprivate` instead; it's functionally identical at file scope and works everywhere the macros need to. `fileprivate`, `internal`, `package`, `public`, and `open` all work uniformly, at file level or nested.
+
+#### Built-in prisms
+
+The following library types already ship with `@Prisms`-equivalent surface (hand-written to match what the macro would emit), so you can use them out of the box without applying the macro yourself:
+
+| Type | `Type.prism.…` | DML accessor (`value.…`) | `value.is(.…)` |
+|---|---|---|---|
+| `Either<A, B>` | `.left`, `.right` | ✓ | ✓ |
+| `Validation<E, A>` | `.failure`, `.success` | ✓ | ✓ |
+| `Loading<S, F>` | `.idle`, `.loading`, `.loaded`, `.failed` | ✓ | ✓ |
+| `Optional<Wrapped>` | `.some`, `.none` | (explicit `.some` / `.none` properties — Swift stdlib types can't have `@dynamicMemberLookup` added) | ✓ |
+| `Result<S, F>` | `.success`, `.failure` | (explicit properties — same reason) | ✓ |
+
+All five conform to `HasCases`, so they work with the polymorphic `is(_:)` extension. The legacy `isSuccess` / `isFailure` / `isSome` / `isNone` / `isLeft` / `isRight` boolean accessors have been removed — use `value.is(.success)` (etc.) instead.
 
 ---
 

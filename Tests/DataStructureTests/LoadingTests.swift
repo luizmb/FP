@@ -151,7 +151,7 @@ struct LoadingPrismTests {
 @Suite("Loading — cases enum and is(_:)")
 struct LoadingCasesTests {
     @Test func cases_isCaseIterable() {
-        #expect(Sut.cases.allCases == [.idle, .loading, .loaded, .failed])
+        #expect(Sut.Cases.allCases == [.idle, .loading, .loaded, .failed])
     }
 
     @Test func is_returnsTrue_whenAligned() {

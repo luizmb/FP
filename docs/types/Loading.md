@@ -172,7 +172,7 @@ Loading<Int, NetworkError>.loading(previous: 7).catch { _ in .loaded(0) }
 
 ## Prisms, `cases`, and `is(_:)`
 
-`Loading` ships hand-written equivalents of what FP's `@Prisms` macro generates — the macro itself can't be applied because `Loading` is generic and Swift forbids `static let` stored properties in generic contexts; the surface is identical for callers.
+`Loading` ships hand-written equivalents of what FP's `@Prisms` macro generates. Because `Loading` is generic, Swift forbids `static let` in its scope, so `prism` is a computed `static var` returning a fresh `Prisms()` per access — matching what the macro emits for any generic host. `@dynamicMemberLookup` is on the `Loading` declaration, so per-case access goes through a single keypath-driven subscript rather than per-case computed properties.
 
 ### `Loading.prism.<case>` — `CoreFP.Prism`
 
@@ -189,9 +189,9 @@ Loading.prism.loaded.set(.loaded(1), 99)                     // .loaded(99)
 Loading.prism.loaded.over({ $0 * 2 })(.loaded(5))            // .loaded(10)
 ```
 
-### Computed accessors
+### Per-case accessors via `@dynamicMemberLookup`
 
-Each case has a matching computed property: `.idle`, `.loading`, `.loaded`, `.failed`. They wrap `prism.<case>.preview(self)`, so they return optionals — note that `.loading` is a double-optional because the focus type is `Success?`.
+Each case is reachable as a property of the instance — resolved through one generic subscript on `Loading`. Note that `.loading` is a double-optional because its focus type is `Success?`.
 
 ```swift
 let state: Loading<Int, E> = .loaded(42)
@@ -205,12 +205,12 @@ inFlight.loading                 // Optional(Optional(7))  — double optional
 inFlight.loading ?? nil          // Optional(7)
 ```
 
-### `cases` enum and `is(_:)`
+### `Cases` enum, `is(_:)`, and `HasCases`
 
-A `cases: CaseIterable` enum lets you list every case once and check membership without unpacking payloads.
+A nested `Cases: CoreFP.CaseMatchable` enum lets you list every case once and check membership without unpacking payloads. `Loading` conforms to `CoreFP.HasCases`, so `is(_:)` is available both as a direct method and via the polymorphic protocol extension.
 
 ```swift
-Loading<Int, E>.cases.allCases   // [.idle, .loading, .loaded, .failed]
+Loading<Int, E>.Cases.allCases   // [.idle, .loading, .loaded, .failed]
 
 let state: Loading<Int, E> = .loading(previous: 5)
 state.is(.loading)               // true
@@ -218,6 +218,12 @@ state.is(.loaded)                // false
 
 Loading<Int, E>.loaded(0).is(.loaded)   // true
 Loading<Int, E>.failed(error: .x, previous: nil).is(.failed)  // true
+
+// Polymorphic use via HasCases:
+func currentIsFirstCase<T: HasCases>(_ v: T) -> Bool {
+    v.is(T.Cases.allCases.first!)
+}
+currentIsFirstCase(state)        // true if state matches `cases.allCases[0]` (i.e. .idle)
 ```
 
 ---

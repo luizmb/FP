@@ -6,7 +6,7 @@ import Testing
 // MARK: - Fixtures
 
 @Lenses(init: .internal)
-private struct Config {
+fileprivate struct Config {
     let host: String
     let version = 3       // constant — excluded from init and lens
     var port: Int
@@ -14,7 +14,7 @@ private struct Config {
 }
 
 @Lenses(init: .internal)
-private struct Point {
+fileprivate struct Point {
     let x: Double
     let y: Double
 }
@@ -139,7 +139,7 @@ struct LensesVarTests {
 @Suite("@Lenses — composition")
 struct LensesCompositionTests {
     @Lenses(init: .internal)
-    private struct Server {
+    fileprivate struct Server {
         let config: Config
         var name: String
     }
@@ -158,5 +158,148 @@ struct LensesCompositionTests {
         let updated = serverPortLens.set(server, 9_090)
         #expect(updated.config.port == 9_090)
         #expect(updated.config.host == "localhost")
+    }
+}
+
+// MARK: - with(...) helper
+
+@Suite("@Lenses — with(...) helper")
+struct LensesWithTests {
+    private let config = Config(host: "localhost", port: 8_080)
+
+    @Test func with_no_args_returns_equivalent_value() {
+        let same = config.with()
+        #expect(same.host == config.host)
+        #expect(same.port == config.port)
+        #expect(same.timeout == config.timeout)
+    }
+
+    @Test func with_single_override_keeps_other_fields() {
+        let updated = config.with(host: "example.com")
+        #expect(updated.host == "example.com")
+        #expect(updated.port == config.port)
+        #expect(updated.timeout == config.timeout)
+    }
+
+    @Test func with_multiple_overrides() {
+        let updated = config.with(host: "example.com", port: 9_090, timeout: 120)
+        #expect(updated.host == "example.com")
+        #expect(updated.port == 9_090)
+        #expect(updated.timeout == 120)
+    }
+}
+
+// MARK: - with(...) on Optional properties
+
+@Lenses(init: .internal)
+fileprivate struct Server {
+    let port: Int?
+    let name: String
+}
+
+@Suite("@Lenses — with(...) on Optional properties")
+struct LensesWithOptionalTests {
+    @Test func with_no_args_keeps_current_optional_value() {
+        let s = Server(port: 8_080, name: "main")
+        let r = s.with()
+        #expect(r.port == 8_080)
+        #expect(r.name == "main")
+    }
+
+    @Test func with_explicit_nil_clears_optional() {
+        let s = Server(port: 8_080, name: "main")
+        let r = s.with(port: nil)
+        #expect(r.port == nil)
+        #expect(r.name == "main")
+    }
+
+    @Test func with_explicit_value_sets_optional() {
+        let s = Server(port: 8_080, name: "main")
+        let r = s.with(port: 9_090)
+        #expect(r.port == 9_090)
+    }
+
+    @Test func with_keeps_optional_when_only_other_field_changes() {
+        let s = Server(port: 8_080, name: "main")
+        let r = s.with(name: "primary")
+        #expect(r.port == 8_080)
+        #expect(r.name == "primary")
+    }
+
+    @Test func with_combines_optional_clear_and_other_set() {
+        let s = Server(port: 8_080, name: "main")
+        let r = s.with(port: nil, name: "primary")
+        #expect(r.port == nil)
+        #expect(r.name == "primary")
+    }
+}
+
+// MARK: - LensesEmit — granular emission
+
+@Lenses(.initOnly)
+fileprivate struct InitOnlyStruct {
+    let name: String
+    var count: Int
+}
+
+@Lenses(.lensesOnly)
+fileprivate struct LensesOnlyStruct {
+    var x: Int
+    var y: Int
+    // No explicit init — Swift synthesizes the memberwise init since `.lensesOnly`
+    // tells the macro to skip its own emission.
+}
+
+@Suite("@Lenses — options slicing")
+struct LensesEmitTests {
+    @Test func initOnly_emits_init() {
+        let v = InitOnlyStruct(name: "abc", count: 7)
+        #expect(v.name == "abc")
+        #expect(v.count == 7)
+    }
+
+    @Test func lensesOnly_skips_init_uses_user_init() {
+        let v = LensesOnlyStruct(x: 1, y: 2)
+        let updated = LensesOnlyStruct.lens.x.set(v, 10)
+        #expect(updated.x == 10)
+        #expect(updated.y == 2)
+    }
+
+    @Test func lensesOnly_emits_with() {
+        let v = LensesOnlyStruct(x: 1, y: 2)
+        let updated = v.with(x: 10)
+        #expect(updated.x == 10)
+        #expect(updated.y == 2)
+    }
+}
+
+// MARK: - Init conflict detection
+
+@Lenses(init: .internal)
+fileprivate struct UserHasMatchingInit {
+    let name: String
+    var count: Int
+
+    // User-declared init with same labels — macro should skip its own init
+    init(name: String, count: Int) {
+        self.name = name.uppercased()
+        self.count = count * 2
+    }
+}
+
+@Suite("@Lenses — init conflict detection")
+struct LensesInitConflictTests {
+    @Test func macro_skips_init_when_user_has_matching_one() {
+        // User's init transforms the inputs — proof their init was used, not the macro's
+        let v = UserHasMatchingInit(name: "abc", count: 5)
+        #expect(v.name == "ABC")
+        #expect(v.count == 10)
+    }
+
+    @Test func lens_set_resolves_through_user_init() {
+        let v = UserHasMatchingInit(name: "abc", count: 5)
+        let updated = UserHasMatchingInit.lens.name.set(v, "xyz")
+        // Reconstruction lens calls Self(name:count:) → resolves to user's init
+        #expect(updated.name == "XYZ")
     }
 }

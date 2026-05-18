@@ -57,7 +57,16 @@ import CoreFP
 /// - `NonEmpty<[ValidationError]>` — guaranteed non-empty error list
 /// - `String` — concatenated error message
 ///
+/// ## Prism support
+///
+/// Each case has a corresponding `Prism` via the `Validation.prism` namespace, plus
+/// per-case accessors (`validation.failure`, `validation.success`) via
+/// `@dynamicMemberLookup`. The `Validation.Cases` enum lets you ask
+/// `validation.is(.failure)` / `.is(.success)` for a uniform predicate over the case
+/// names. See `Validation+Prism.swift`.
+///
 /// - SeeAlso: ``Either``, ``NonEmpty``, ``Semigroup``
+@dynamicMemberLookup
 public enum Validation<E: Semigroup, A> {
     /// A failed validation with accumulated error(s).
     case failure(E)

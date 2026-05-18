@@ -56,7 +56,15 @@ import Foundation
 /// `Either` can be converted to and from `Result` via the extensions in `Either+Result.swift`,
 /// and swapped via ``inverted()``.
 ///
+/// ## Prism support
+///
+/// Each case has a corresponding `Prism` via the `Either.prism` namespace, plus
+/// per-case accessors (`either.left`, `either.right`) via `@dynamicMemberLookup`. The
+/// `Either.Cases` enum lets you ask `either.is(.left)` / `.is(.right)` for a uniform
+/// predicate over the case names. See `Either+Prism.swift`.
+///
 /// - SeeAlso: ``Validation``, ``SumType2``, `Result`
+@dynamicMemberLookup
 public enum Either<A, B>: SumType2 {
     /// The left case — by convention, often used for errors or "alternative" values.
     case left(A)
