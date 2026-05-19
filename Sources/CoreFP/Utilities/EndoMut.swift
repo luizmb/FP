@@ -78,10 +78,10 @@
 /// guarantee when the lens is `WritableKeyPath`-backed.
 ///
 /// - SeeAlso: ``Endo``, ``Lens/lift(_:)``, ``mconcat(_:)``
-public struct EndoMut<A> {
-    public let runEndoMut: (inout A) -> Void
+public struct EndoMut<A>: Sendable {
+    public let runEndoMut: @Sendable (inout A) -> Void
 
-    public init(_ fn: @escaping (inout A) -> Void) {
+    public init(_ fn: @escaping @Sendable (inout A) -> Void) {
         runEndoMut = fn
     }
 
@@ -91,6 +91,6 @@ public struct EndoMut<A> {
 }
 
 /// Free-function constructor — mirrors `endo { … }` style.
-public func endoMut<A>(_ fn: @escaping (inout A) -> Void) -> EndoMut<A> {
+public func endoMut<A>(_ fn: @escaping @Sendable (inout A) -> Void) -> EndoMut<A> {
     EndoMut(fn)
 }

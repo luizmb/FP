@@ -51,10 +51,10 @@
 /// - `mconcat([f, g])` is equivalent to `f` then `g`.
 ///
 /// - SeeAlso: ``EndoMut``, ``Iso``, ``mconcat(_:)``, ``sconcat(_:_:)``
-public struct Endo<A>: FunctionWrapper {
-    public let runEndo: (A) -> A
+public struct Endo<A>: Sendable {
+    public let runEndo: @Sendable (A) -> A
 
-    public init(_ fn: @escaping (A) -> A) {
+    public init(_ fn: @escaping @Sendable (A) -> A) {
         runEndo = fn
     }
 
@@ -64,6 +64,6 @@ public struct Endo<A>: FunctionWrapper {
 }
 
 /// Free-function constructor — mirrors `Reader { … }` / `iso(get:reverseGet:)` style.
-public func endo<A>(_ fn: @escaping (A) -> A) -> Endo<A> {
+public func endo<A>(_ fn: @escaping @Sendable (A) -> A) -> Endo<A> {
     Endo(fn)
 }
