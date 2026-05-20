@@ -2,7 +2,7 @@ import CoreFPOperators
 import DataStructure
 
 // (<*>) :: [Stateful<s, (a -> b)>] -> [Stateful<s, a>] -> [Stateful<s, b>]
-public func <*> <S, A, B>(_ fns: [Stateful<S, (A) -> B>], _ vals: [Stateful<S, A>]) -> [Stateful<S, B>] {
+public func <*> <S, A, B>(_ fns: [Stateful<S, @Sendable (A) -> B>], _ vals: [Stateful<S, A>]) -> [Stateful<S, B>] {
     applyArrayStateful(fns, vals)
 }
 

@@ -6,7 +6,7 @@ import DataStructure
 
 // (<*>) :: Either<l,Result<(a->b),e>> -> Either<l,Result<a,e>> -> Either<l,Result<b,e>>
 public func <*> <L, A, B, E: Error>(
-    _ fns: Either<L, Result<(A) -> B, E>>,
+    _ fns: Either<L, Result<@Sendable (A) -> B, E>>,
     _ values: Either<L, Result<A, E>>
 ) -> Either<L, Result<B, E>> {
     applyEitherResult(fns, values)

@@ -5,7 +5,7 @@ import Foundation
 
 /// apply for ArrayTOptional: [(A->B)?] -> [A?] -> [B?]
 /// Cartesian product with Optional apply at each pair
-public func applyArrayOptional<A, B>(_ fns: [((A) -> B)?], _ values: [A?]) -> [B?] {
+public func applyArrayOptional<A, B>(_ fns: [(@Sendable (A) -> B)?], _ values: [A?]) -> [B?] {
     fns.flatMap { f in values.map { a in f.flatMap { fn in a.map(fn) } } }
 }
 

@@ -6,7 +6,7 @@ import Foundation
 /// apply for OptionalTResult: Result<(A->B),E>? -> Result<A,E>? -> Result<B,E>?
 /// If outer is nil → nil; otherwise use Result.apply
 public func applyOptionalResult<A, B, E: Error>(
-    _ fns: Result<(A) -> B, E>?,
+    _ fns: Result<@Sendable (A) -> B, E>?,
     _ values: Result<A, E>?
 ) -> Result<B, E>? {
     fns.flatMap { rf in values.map { ra in Result.apply(rf, ra) } }

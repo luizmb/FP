@@ -4,7 +4,7 @@ import DataStructure
 
 // (<*>) :: Either<l, Validation<e,(a->b)>> -> Either<l, Validation<e,a>> -> Either<l, Validation<e,b>>
 public func <*> <L, E: Semigroup, A, B>(
-    _ fns: Either<L, Validation<E, (A) -> B>>,
+    _ fns: Either<L, Validation<E, @Sendable (A) -> B>>,
     _ values: Either<L, Validation<E, A>>
 ) -> Either<L, Validation<E, B>> {
     applyEitherValidation(fns, values)

@@ -5,7 +5,7 @@ import DataStructure
 
 // (<*>) :: NonEmpty<(A -> B)> -> NonEmpty<A> -> NonEmpty<B>
 public func <*> <A, B>(
-    _ nf: NonEmpty<(A) -> B>,
+    _ nf: NonEmpty<@Sendable (A) -> B>,
     _ na: NonEmpty<A>
 ) -> NonEmpty<B> {
     NonEmpty<B>.apply(nf, na)

@@ -5,7 +5,7 @@ import Foundation
 
 /// apply for ArrayTStateful: [Stateful<S,(A->B)>] -> [Stateful<S,A>] -> [Stateful<S,B>]
 public func applyArrayStateful<S, A, B>(
-    _ fns: [Stateful<S, (A) -> B>],
+    _ fns: [Stateful<S, @Sendable (A) -> B>],
     _ vals: [Stateful<S, A>]
 ) -> [Stateful<S, B>] {
     fns.flatMap { sf in vals.map { sa in Stateful<S, B>.apply(sf, sa) } }

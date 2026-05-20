@@ -5,7 +5,7 @@ import Foundation
 
 /// apply for ReaderTStateful: Reader<Env,Stateful<S,(A->B)>> -> Reader<Env,Stateful<S,A>> -> Reader<Env,Stateful<S,B>>
 public func applyReaderStateful<Env, S, A, B>(
-    _ rf: Reader<Env, Stateful<S, (A) -> B>>,
+    _ rf: Reader<Env, Stateful<S, @Sendable (A) -> B>>,
     _ ra: Reader<Env, Stateful<S, A>>
 ) -> Reader<Env, Stateful<S, B>> {
     Reader { env in Stateful<S, B>.apply(rf(env), ra(env)) }

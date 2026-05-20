@@ -11,7 +11,7 @@ public extension Result {
     }
 
     /// apply :: Result<(a -> b), e> -> Result<a, e> -> Result<b, e>
-    static func apply<A>(_ functions: Result<(A) -> Success, Failure>, _ values: Result<A, Failure>) -> Result<Success, Failure> {
+    static func apply<A>(_ functions: Result<@Sendable (A) -> Success, Failure>, _ values: Result<A, Failure>) -> Result<Success, Failure> {
         functions.flatMap(values.map)
     }
 

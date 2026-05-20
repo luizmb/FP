@@ -5,7 +5,7 @@ import Foundation
 
 /// apply for Stateful<S, Result>
 public func applyStatefulResult<S, A, B, E: Error>(
-    _ sf: Stateful<S, Result<(A) -> B, E>>,
+    _ sf: Stateful<S, Result<@Sendable (A) -> B, E>>,
     _ sa: Stateful<S, Result<A, E>>
 ) -> Stateful<S, Result<B, E>> {
     Stateful<S, Result<B, E>> { s in

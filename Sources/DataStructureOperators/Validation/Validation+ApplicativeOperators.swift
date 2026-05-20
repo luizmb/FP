@@ -3,7 +3,7 @@ import CoreFPOperators
 import DataStructure
 
 // (<*>) :: Validation<e, (a -> b)> -> Validation<e, a> -> Validation<e, b>
-public func <*> <E: Semigroup, A, B>(_ fns: Validation<E, (A) -> B>, _ values: Validation<E, A>) -> Validation<E, B> {
+public func <*> <E: Semigroup, A, B>(_ fns: Validation<E, @Sendable (A) -> B>, _ values: Validation<E, A>) -> Validation<E, B> {
     Validation<E, B>.apply(fns, values)
 }
 

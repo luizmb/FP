@@ -6,7 +6,7 @@ import Foundation
 /// apply for ArrayTResult: [Result<(A->B),E>] -> [Result<A,E>] -> [Result<B,E>]
 /// Cartesian product with Result apply at each pair
 public func applyArrayResult<A, B, E: Error>(
-    _ fns: [Result<(A) -> B, E>],
+    _ fns: [Result<@Sendable (A) -> B, E>],
     _ values: [Result<A, E>]
 ) -> [Result<B, E>] {
     Array.liftA2(Result.apply)(fns, values)

@@ -5,7 +5,7 @@ import Foundation
 
 /// apply for ResultTStateful: Result<Stateful<S,(A->B)>,E> -> Result<Stateful<S,A>,E> -> Result<Stateful<S,B>,E>
 public func applyResultStateful<S, A, B, E: Error>(
-    _ rf: Result<Stateful<S, (A) -> B>, E>,
+    _ rf: Result<Stateful<S, @Sendable (A) -> B>, E>,
     _ ra: Result<Stateful<S, A>, E>
 ) -> Result<Stateful<S, B>, E> {
     rf.flatMap { sf in ra.map { sa in Stateful<S, B>.apply(sf, sa) } }

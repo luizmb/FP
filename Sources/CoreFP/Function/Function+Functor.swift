@@ -8,14 +8,14 @@ import Foundation
 public func fmap<A, B, C>(
     _ transform: @escaping @Sendable (B) -> C,
     _ f: @escaping @Sendable (A) -> B
-) -> (A) -> C {
+) -> @Sendable (A) -> C {
     compose(f, transform)
 }
 
 /// Curried version of fmap for functions
 public func fmap<A, B, C>(
     _ transform: @escaping @Sendable (B) -> C
-) -> (@escaping @Sendable (A) -> B) -> (A) -> C {
+) -> @Sendable (@escaping @Sendable (A) -> B) -> @Sendable (A) -> C {
     { f in
         compose(f, transform)
     }

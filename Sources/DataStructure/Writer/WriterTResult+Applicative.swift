@@ -5,7 +5,7 @@ import Foundation
 
 /// apply for Writer<W, Result>
 public func applyWriterResult<W: Monoid, A, B, E: Error>(
-    _ wf: Writer<W, Result<(A) -> B, E>>,
+    _ wf: Writer<W, Result<@Sendable (A) -> B, E>>,
     _ wa: Writer<W, Result<A, E>>
 ) -> Writer<W, Result<B, E>> {
     Writer<W, Result<B, E>>(

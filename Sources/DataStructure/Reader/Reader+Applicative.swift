@@ -18,7 +18,7 @@ public extension Reader {
     }
 
     /// apply :: Reader<e, (a -> b)> -> Reader<e, a> -> Reader<e, b>
-    static func apply<A>(_ readerF: Reader<Environment, (A) -> Output>, _ readerA: Reader<Environment, A>) -> Reader<Environment, Output> {
+    static func apply<A>(_ readerF: Reader<Environment, @Sendable (A) -> Output>, _ readerA: Reader<Environment, A>) -> Reader<Environment, Output> {
         Reader { env in readerF(env)(readerA(env)) }
     }
 

@@ -2,7 +2,7 @@ import CoreFP
 import Foundation
 
 // (<*>) :: Optional<(a -> b)> -> Optional<a> -> Optional<b>
-public func <*> <A, A0>(_ lhs: ((A0) -> A)?, _ rhs: A0?) -> A? {
+public func <*> <A, A0>(_ lhs: (@Sendable (A0) -> A)?, _ rhs: A0?) -> A? {
     A?.apply(lhs, rhs)
 }
 

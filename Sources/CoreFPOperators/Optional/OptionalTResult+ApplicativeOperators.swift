@@ -4,7 +4,7 @@ import CoreFP
 // Type: Result<A,E>? = Optional<Result<A,E>>
 
 // (<*>) :: Result<(a -> b), e>? -> Result<a, e>? -> Result<b, e>?
-public func <*> <A, B, E: Error>(_ fns: Result<(A) -> B, E>?, _ values: Result<A, E>?) -> Result<B, E>? {
+public func <*> <A, B, E: Error>(_ fns: Result<@Sendable (A) -> B, E>?, _ values: Result<A, E>?) -> Result<B, E>? {
     applyOptionalResult(fns, values)
 }
 

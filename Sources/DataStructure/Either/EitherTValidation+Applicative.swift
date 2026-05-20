@@ -5,7 +5,7 @@ import CoreFP
 // Outer Either short-circuits on left; inner Validation accumulates errors.
 
 public func applyEitherValidation<L, E: Semigroup, A, B>(
-    _ eitherF: Either<L, Validation<E, (A) -> B>>,
+    _ eitherF: Either<L, Validation<E, @Sendable (A) -> B>>,
     _ eitherA: Either<L, Validation<E, A>>
 ) -> Either<L, Validation<E, B>> {
     Either.liftA2(Validation.apply)(eitherF, eitherA)

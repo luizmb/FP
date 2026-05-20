@@ -5,7 +5,7 @@ import Foundation
 
 /// apply for Stateful<S, Optional>
 public func applyStatefulOptional<S, A, B>(
-    _ sf: Stateful<S, ((A) -> B)?>,
+    _ sf: Stateful<S, (@Sendable (A) -> B)?>,
     _ sa: Stateful<S, A?>
 ) -> Stateful<S, B?> {
     Stateful<S, B?> { s in

@@ -4,7 +4,7 @@ import Foundation
 
 /// Apply for ReaderT Reader
 public func applyReaderReader<Env1, Env2, A, B>(
-    _ readerF: Reader<Env1, Reader<Env2, (A) -> B>>,
+    _ readerF: Reader<Env1, Reader<Env2, @Sendable (A) -> B>>,
     _ readerA: Reader<Env1, Reader<Env2, A>>
 ) -> Reader<Env1, Reader<Env2, B>> {
     Reader { env1 in

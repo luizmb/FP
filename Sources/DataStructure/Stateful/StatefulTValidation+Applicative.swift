@@ -5,7 +5,7 @@ import CoreFP
 // Threads state sequentially; accumulates Validation errors across both branches.
 
 public func applyStatefulValidation<S, E: Semigroup, A, B>(
-    _ sf: Stateful<S, Validation<E, (A) -> B>>,
+    _ sf: Stateful<S, Validation<E, @Sendable (A) -> B>>,
     _ sa: Stateful<S, Validation<E, A>>
 ) -> Stateful<S, Validation<E, B>> {
     Stateful<S, Validation<E, B>> { s in

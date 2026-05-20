@@ -6,7 +6,7 @@ import Foundation
 
 /// apply for ReaderTWriter: Reader<Env,Writer<W,(A->B)>> -> Reader<Env,Writer<W,A>> -> Reader<Env,Writer<W,B>>
 public func applyReaderWriter<Env, W: Monoid, A, B>(
-    _ rf: Reader<Env, Writer<W, (A) -> B>>,
+    _ rf: Reader<Env, Writer<W, @Sendable (A) -> B>>,
     _ ra: Reader<Env, Writer<W, A>>
 ) -> Reader<Env, Writer<W, B>> {
     Reader { env in Writer<W, B>.apply(rf(env), ra(env)) }

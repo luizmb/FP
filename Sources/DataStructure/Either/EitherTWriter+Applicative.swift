@@ -6,7 +6,7 @@ import Foundation
 
 /// apply for EitherTWriter: Either<L,Writer<W,(A->B)>> -> Either<L,Writer<W,A>> -> Either<L,Writer<W,B>>
 public func applyEitherWriter<L, W: Monoid, A, B>(
-    _ eithF: Either<L, Writer<W, (A) -> B>>,
+    _ eithF: Either<L, Writer<W, @Sendable (A) -> B>>,
     _ eithA: Either<L, Writer<W, A>>
 ) -> Either<L, Writer<W, B>> {
     Either.liftA2 { wf, wa in Writer<W, B>(wf.value(wa.value), W.combine(wf.log, wa.log)) }(eithF, eithA)

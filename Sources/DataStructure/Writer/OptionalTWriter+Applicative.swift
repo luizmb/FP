@@ -6,7 +6,7 @@ import Foundation
 
 /// apply for OptionalTWriter: Writer<W,(A->B)>? -> Writer<W,A>? -> Writer<W,B>?
 public func applyOptionalWriter<W: Monoid, A, B>(
-    _ wf: Writer<W, (A) -> B>?,
+    _ wf: Writer<W, @Sendable (A) -> B>?,
     _ wa: Writer<W, A>?
 ) -> Writer<W, B>? {
     wf.flatMap { f in wa.map { a in Writer<W, B>(f.value(a.value), W.combine(f.log, a.log)) } }

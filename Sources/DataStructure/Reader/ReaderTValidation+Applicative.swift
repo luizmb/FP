@@ -5,7 +5,7 @@ import CoreFP
 // Runs both readers independently, then accumulates Validation errors.
 
 public func applyReaderValidation<Env, E: Semigroup, A, B>(
-    _ readerF: Reader<Env, Validation<E, (A) -> B>>,
+    _ readerF: Reader<Env, Validation<E, @Sendable (A) -> B>>,
     _ readerA: Reader<Env, Validation<E, A>>
 ) -> Reader<Env, Validation<E, B>> {
     Reader { env in Validation.apply(readerF(env), readerA(env)) }

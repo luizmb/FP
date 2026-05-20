@@ -4,7 +4,7 @@ import DataStructure
 
 // (<*>) :: Result<Writer<w, (a -> b)>, e> -> Result<Writer<w, a>, e> -> Result<Writer<w, b>, e>
 public func <*> <W: Monoid, A, B, E: Error>(
-    _ rf: Result<Writer<W, (A) -> B>, E>,
+    _ rf: Result<Writer<W, @Sendable (A) -> B>, E>,
     _ ra: Result<Writer<W, A>, E>
 ) -> Result<Writer<W, B>, E> {
     applyResultWriter(rf, ra)

@@ -4,7 +4,7 @@ import CoreFP
 // Type: Validation<E, [A]>
 
 public func applyValidationArray<E: Semigroup, A, B>(
-    _ vf: Validation<E, [(A) -> B]>,
+    _ vf: Validation<E, [@Sendable (A) -> B]>,
     _ va: Validation<E, [A]>
 ) -> Validation<E, [B]> {
     Validation.liftA2(Array.apply)(vf, va)

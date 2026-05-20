@@ -4,7 +4,7 @@ import CoreFP
 // Type: Validation<E, Result<A, Err>>
 
 public func applyValidationResult<E: Semigroup, A, B, Err: Error>(
-    _ vf: Validation<E, Result<(A) -> B, Err>>,
+    _ vf: Validation<E, Result<@Sendable (A) -> B, Err>>,
     _ va: Validation<E, Result<A, Err>>
 ) -> Validation<E, Result<B, Err>> {
     Validation.liftA2(Result.apply)(vf, va)

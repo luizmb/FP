@@ -5,7 +5,7 @@ import Foundation
 
 /// apply for EitherTStateful: Either<L,Stateful<S,(A->B)>> -> Either<L,Stateful<S,A>> -> Either<L,Stateful<S,B>>
 public func applyEitherStateful<L, S, A, B>(
-    _ eithF: Either<L, Stateful<S, (A) -> B>>,
+    _ eithF: Either<L, Stateful<S, @Sendable (A) -> B>>,
     _ eithA: Either<L, Stateful<S, A>>
 ) -> Either<L, Stateful<S, B>> {
     Either.liftA2 { sf, sa in Stateful<S, B>.apply(sf, sa) }(eithF, eithA)

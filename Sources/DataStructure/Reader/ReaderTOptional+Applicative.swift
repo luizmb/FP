@@ -6,7 +6,7 @@ import Foundation
 /// Apply for ReaderT Optional
 /// (<*>) :: Reader e (a -> b) -> Reader e a -> Reader e b
 public func applyReaderOptional<Env, A, B>(
-    _ readerF: Reader<Env, ((A) -> B)?>,
+    _ readerF: Reader<Env, (@Sendable (A) -> B)?>,
     _ readerA: Reader<Env, A?>
 ) -> Reader<Env, B?> {
     Reader { env in

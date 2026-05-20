@@ -4,7 +4,7 @@ import DataStructure
 
 // (<*>) :: Validation<e, Result<(a->b), err>> -> Validation<e, Result<a, err>> -> Validation<e, Result<b, err>>
 public func <*> <E: Semigroup, A, B, Err: Error>(
-    _ fns: Validation<E, Result<(A) -> B, Err>>,
+    _ fns: Validation<E, Result<@Sendable (A) -> B, Err>>,
     _ values: Validation<E, Result<A, Err>>
 ) -> Validation<E, Result<B, Err>> {
     applyValidationResult(fns, values)

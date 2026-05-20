@@ -5,7 +5,7 @@ import Foundation
 
 /// apply for Writer<W, Optional>
 public func applyWriterOptional<W: Monoid, A, B>(
-    _ wf: Writer<W, ((A) -> B)?>,
+    _ wf: Writer<W, (@Sendable (A) -> B)?>,
     _ wa: Writer<W, A?>
 ) -> Writer<W, B?> {
     Writer<W, B?>(

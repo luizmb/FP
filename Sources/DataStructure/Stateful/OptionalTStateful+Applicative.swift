@@ -5,7 +5,7 @@ import Foundation
 
 /// apply for OptionalTStateful: Stateful<S,(A->B)>? -> Stateful<S,A>? -> Stateful<S,B>?
 public func applyOptionalStateful<S, A, B>(
-    _ sf: Stateful<S, (A) -> B>?,
+    _ sf: Stateful<S, @Sendable (A) -> B>?,
     _ sa: Stateful<S, A>?
 ) -> Stateful<S, B>? {
     sf.flatMap { f in sa.map { a in Stateful<S, B>.apply(f, a) } }

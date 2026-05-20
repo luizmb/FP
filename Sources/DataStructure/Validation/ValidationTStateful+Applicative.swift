@@ -5,7 +5,7 @@ import CoreFP
 // Outer Validation accumulates errors; success case threads state via Stateful.apply.
 
 public func applyValidationStateful<E: Semigroup, S, A, B>(
-    _ vf: Validation<E, Stateful<S, (A) -> B>>,
+    _ vf: Validation<E, Stateful<S, @Sendable (A) -> B>>,
     _ va: Validation<E, Stateful<S, A>>
 ) -> Validation<E, Stateful<S, B>> {
     Validation.liftA2(Stateful.apply)(vf, va)

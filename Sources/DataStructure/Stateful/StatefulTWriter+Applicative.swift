@@ -6,7 +6,7 @@ import Foundation
 
 /// apply for StatefulTWriter: Stateful<S,Writer<W,(A->B)>> -> Stateful<S,Writer<W,A>> -> Stateful<S,Writer<W,B>>
 public func applyStatefulWriter<S, W: Monoid, A, B>(
-    _ sf: Stateful<S, Writer<W, (A) -> B>>,
+    _ sf: Stateful<S, Writer<W, @Sendable (A) -> B>>,
     _ sa: Stateful<S, Writer<W, A>>
 ) -> Stateful<S, Writer<W, B>> {
     Stateful<S, Writer<W, B>> { s in

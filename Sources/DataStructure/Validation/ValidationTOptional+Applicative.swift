@@ -6,7 +6,7 @@ import CoreFP
 /// apply for Validation<E, (A->B)?> -> Validation<E, A?> -> Validation<E, B?>
 /// Outer Validation accumulates errors; inner Optional applies normally.
 public func applyValidationOptional<E: Semigroup, A, B>(
-    _ vf: Validation<E, ((A) -> B)?>,
+    _ vf: Validation<E, (@Sendable (A) -> B)?>,
     _ va: Validation<E, A?>
 ) -> Validation<E, B?> {
     Validation.liftA2(Optional.apply)(vf, va)

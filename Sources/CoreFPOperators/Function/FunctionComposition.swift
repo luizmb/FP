@@ -27,7 +27,7 @@
 public func >>> <A, B, C>(
     _ f: @escaping @Sendable (A) -> B,
     _ g: @escaping @Sendable (B) -> C
-) -> (A) -> C {
+) -> @Sendable (A) -> C {
     { a in g(f(a)) }
 }
 
@@ -49,7 +49,7 @@ public func >>> <A, B, C>(
 public func <<< <A, B, C>(
     _ g: @escaping @Sendable (B) -> C,
     _ f: @escaping @Sendable (A) -> B
-) -> (A) -> C {
+) -> @Sendable (A) -> C {
     { a in g(f(a)) }
 }
 

@@ -9,7 +9,7 @@ public extension Optional {
     }
 
     /// apply :: Optional<(a -> b)> -> Optional<a> -> Optional<b>
-    static func apply<A>(_ functions: ((A) -> Wrapped)?, _ values: A?) -> Wrapped? {
+    static func apply<A>(_ functions: (@Sendable (A) -> Wrapped)?, _ values: A?) -> Wrapped? {
         functions.flatMap(values.map)
     }
 

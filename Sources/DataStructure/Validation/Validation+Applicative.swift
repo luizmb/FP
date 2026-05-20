@@ -3,7 +3,7 @@ import CoreFP
 public extension Validation {
     /// apply :: Validation<e, (a -> b)> -> Validation<e, a> -> Validation<e, b>
     /// THE key operation — accumulates errors via Semigroup.combine instead of short-circuiting.
-    static func apply<A0>(_ fns: Validation<E, (A0) -> A>, _ values: Validation<E, A0>) -> Validation<E, A> {
+    static func apply<A0>(_ fns: Validation<E, @Sendable (A0) -> A>, _ values: Validation<E, A0>) -> Validation<E, A> {
         switch (fns, values) {
         case let (.success(f), .success(a)): .success(f(a))
         case let (.failure(e), .success):    .failure(e)

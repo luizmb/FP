@@ -6,7 +6,7 @@ import Foundation
 
 /// apply for EitherTArray: Either<L, [(A->B)]> -> Either<L, [A]> -> Either<L, [B]>
 public func applyEitherArray<L, A, B>(
-    _ fns: Either<L, [(A) -> B]>,
+    _ fns: Either<L, [@Sendable (A) -> B]>,
     _ values: Either<L, [A]>
 ) -> Either<L, [B]> {
     Either.liftA2(Array.apply)(fns, values)

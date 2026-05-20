@@ -5,7 +5,7 @@ import CoreFP
 // Outer Validation accumulates errors; success case combines readers via Reader.apply.
 
 public func applyValidationReader<E: Semigroup, Env, A, B>(
-    _ vf: Validation<E, Reader<Env, (A) -> B>>,
+    _ vf: Validation<E, Reader<Env, @Sendable (A) -> B>>,
     _ va: Validation<E, Reader<Env, A>>
 ) -> Validation<E, Reader<Env, B>> {
     Validation.liftA2(Reader.apply)(vf, va)

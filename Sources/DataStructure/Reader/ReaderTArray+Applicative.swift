@@ -5,7 +5,7 @@ import Foundation
 
 /// Apply for ReaderT Array
 public func applyReaderArray<Env, A, B>(
-    _ readerF: Reader<Env, [(A) -> B]>,
+    _ readerF: Reader<Env, [@Sendable (A) -> B]>,
     _ readerA: Reader<Env, [A]>
 ) -> Reader<Env, [B]> {
     Reader { env in

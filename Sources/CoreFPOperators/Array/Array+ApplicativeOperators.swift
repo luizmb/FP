@@ -3,7 +3,7 @@ import CoreFP
 // MARK: - Applicative
 
 // (<*>) :: [a -> b] -> [a] -> [b]
-public func <*> <A, A1>(_ functions: [(A) -> A1], _ values: [A]) -> [A1] {
+public func <*> <A, A1>(_ functions: [@Sendable (A) -> A1], _ values: [A]) -> [A1] {
     Array.apply(functions, values)
 }
 

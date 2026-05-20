@@ -6,7 +6,7 @@ import Foundation
 
 /// apply for ResultTWriter: Result<Writer<W,(A->B)>,E> -> Result<Writer<W,A>,E> -> Result<Writer<W,B>,E>
 public func applyResultWriter<W: Monoid, A, B, E: Error>(
-    _ rf: Result<Writer<W, (A) -> B>, E>,
+    _ rf: Result<Writer<W, @Sendable (A) -> B>, E>,
     _ ra: Result<Writer<W, A>, E>
 ) -> Result<Writer<W, B>, E> {
     rf.flatMap { wf in ra.map { wa in Writer<W, B>(wf.value(wa.value), W.combine(wf.log, wa.log)) } }
