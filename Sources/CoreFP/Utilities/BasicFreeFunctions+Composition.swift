@@ -59,5 +59,5 @@ public func call<A, B>() -> ((A) -> B, A) -> B {
 public func call<A, B, C>(
     then transform: @escaping @Sendable (B) -> C
 ) -> @Sendable (@escaping @Sendable (A) -> B, A) -> C {
-    { f, a in transform(f(a)) }
+    uncurry(partialApplyFlip(compose, transform))
 }

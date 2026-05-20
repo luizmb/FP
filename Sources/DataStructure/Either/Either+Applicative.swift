@@ -67,7 +67,7 @@ public extension Either {
             caseLeftLeft: withArg(\.0)(Either.left),
             caseLeftRight: withArg(\.0)(Either.left),
             caseRightLeft: withArg(\.1)(Either.left),
-            caseRightRight: { a, b in .right(handling(a, b)) }
+            caseRightRight: untuple(compose(handling, Either.right))
         )
     }
 }

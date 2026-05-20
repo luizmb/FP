@@ -405,9 +405,7 @@ public func untuple<A, B, C>(_ fn: @escaping @Sendable ((A, B)) -> C) -> @Sendab
 public func withArg<Arg1, Arg2, Picked, Return>(
     _ pickArgument: @escaping @Sendable ((Arg1, Arg2)) -> Picked
 ) -> @Sendable (@escaping @Sendable (Picked) -> Return) -> @Sendable (Arg1, Arg2) -> Return {
-    { transform in
-        { a1, a2 in transform(pickArgument((a1, a2))) }
-    }
+    curryT(compose(compose, untuple))(pickArgument)
 }
 
 // Removed due to crashing compiler bug in Swift 6.2
