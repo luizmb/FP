@@ -30,7 +30,7 @@
 /// ```
 ///
 /// - SeeAlso: ``Either``, ``Validation``
-public protocol SumType2<A, B> {
+public protocol SumType2<A, B>: Sendable {
     associatedtype A
     associatedtype B
 

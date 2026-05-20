@@ -18,7 +18,7 @@ public extension Optional {
         }
     }
 
-    static func bindT<L, A, B>(_ fn: @escaping @Sendable (A) -> Either<L, B>?) -> (Either<L, A>?) -> Either<L, B>? {
+    static func bindT<L, A, B>(_ fn: @escaping @Sendable (A) -> Either<L, B>?) -> @Sendable (Either<L, A>?) -> Either<L, B>? {
         { opt in opt.flatMapT(fn) }
     }
 }

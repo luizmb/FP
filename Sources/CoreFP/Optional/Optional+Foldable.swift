@@ -8,7 +8,7 @@
 /// ```
 /// When `f` function changes its type to return a non-optional, a default value has to be provided. This can be
 /// achieved by using the `alternative` function and `>>>` operator:
-public func withDefault<A>(_ fallback: A?) -> (A?) -> A? {
+public func withDefault<A: Sendable>(_ fallback: A?) -> @Sendable (A?) -> A? {
     { optional in
         optional ?? fallback
     }
@@ -24,7 +24,7 @@ public func withDefault<A>(_ fallback: A?) -> (A?) -> A? {
 /// ```
 /// When `f` function changes its type to return a non-optional, a default value has to be provided. This can be
 /// achieved by using the `alternative` function and `>>>` operator:
-public func withDefault<A>(_ fallback: A) -> (A?) -> A {
+public func withDefault<A: Sendable>(_ fallback: A) -> @Sendable (A?) -> A {
     { optional in
         optional ?? fallback
     }
@@ -50,10 +50,10 @@ public extension Optional {
     }
 
     /// Curried fold for point-free use.
-    static func fold<B>(
+    static func fold<B: Sendable>(
         onNone: B,
         onSome: @escaping @Sendable (Wrapped) -> B
-    ) -> (Wrapped?) -> B {
+    ) -> @Sendable (Wrapped?) -> B {
         { $0.fold(onNone: onNone, onSome: onSome) }
     }
 
@@ -66,7 +66,7 @@ public extension Optional {
     /// Curried foldMap for point-free use.
     static func foldMap<M: Monoid>(
         _ f: @escaping @Sendable (Wrapped) -> M
-    ) -> (Wrapped?) -> M {
+    ) -> @Sendable (Wrapped?) -> M {
         { $0.foldMap(f) }
     }
 

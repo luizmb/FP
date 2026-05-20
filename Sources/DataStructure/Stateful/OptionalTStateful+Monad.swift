@@ -16,7 +16,7 @@ public extension Optional {
         map { stateful in stateful.flatMap(fn) }
     }
 
-    static func bindT<S, A, B>(_ fn: @escaping @Sendable (A) -> Stateful<S, B>) -> (Stateful<S, A>?) -> Stateful<S, B>? {
+    static func bindT<S, A, B>(_ fn: @escaping @Sendable (A) -> Stateful<S, B>) -> @Sendable (Stateful<S, A>?) -> Stateful<S, B>? {
         { opt in opt.flatMapT(fn) }
     }
 }

@@ -19,7 +19,7 @@
 /// ```
 ///
 /// - SeeAlso: ``EndoMut`` for a composable, named mutation container.
-public protocol Mutable {}
+public protocol Mutable: Sendable {}
 
 public extension Mutable where Self: Any {
     /// Returns a mutated copy of `self` by applying the `inout` transform.

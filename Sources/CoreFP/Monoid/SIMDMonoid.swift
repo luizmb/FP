@@ -8,7 +8,7 @@
 /// `UInt` and its variants, `Float`, `Double`) conform automatically.
 ///
 /// - SeeAlso: ``SIMDMonoid``
-public protocol SIMDMonoidScalar: SIMDScalar, Hashable, Codable, Comparable, ExpressibleByIntegerLiteral {
+public protocol SIMDMonoidScalar: SIMDScalar, Hashable, Codable, Comparable, ExpressibleByIntegerLiteral, Sendable {
     static func simdAdd<V: SIMD>(_ a: V, _ b: V) -> V where V.Scalar == Self
     static func simdMultiply<V: SIMD>(_ a: V, _ b: V) -> V where V.Scalar == Self
     static var one: Self { get }

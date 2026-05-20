@@ -20,7 +20,7 @@ public extension Optional {
     }
 
     /// Curried bindT for Optional<Result<A,E>>
-    static func bindT<A, B, E: Error>(_ fn: @escaping @Sendable (A) -> Result<B, E>?) -> (Result<A, E>?) -> Result<B, E>? {
+    static func bindT<A, B, E: Error>(_ fn: @escaping @Sendable (A) -> Result<B, E>?) -> @Sendable (Result<A, E>?) -> Result<B, E>? {
         { opt in opt.flatMapT(fn) }
     }
 }

@@ -70,11 +70,11 @@ public enum NumericMonoid<T: Numeric & ExpressibleByIntegerLiteral & Sendable> {
     }
 }
 
-public protocol HasMax: Comparable {
+public protocol HasMax: Comparable, Sendable {
     static var max: Self { get }
 }
 
-public protocol HasMin: Comparable {
+public protocol HasMin: Comparable, Sendable {
     static var min: Self { get }
 }
 
