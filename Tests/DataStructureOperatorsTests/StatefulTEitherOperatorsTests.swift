@@ -23,7 +23,7 @@ import Testing
     }
 
     @Test func apply() {
-        let sf = Stateful<Int, Either<String, (Int) -> String>>.pure(.right { "\($0)" })
+        let sf = Stateful<Int, Either<String, @Sendable (Int) -> String>>.pure(.right { "\($0)" })
         let sa = Stateful<Int, Either<String, Int>>.pure(.right(42))
         let result = sf <*> sa
         #expect(result.eval(0) == .right("42"))
@@ -56,8 +56,8 @@ import Testing
     }
 
     @Test func kleisli() {
-        let f: (Int) -> Stateful<Int, Either<String, Int>> = { n in .pure(.right(n + 1)) }
-        let g: (Int) -> Stateful<Int, Either<String, String>> = { n in .pure(.right("\(n)")) }
+        let f: @Sendable (Int) -> Stateful<Int, Either<String, Int>> = { n in .pure(.right(n + 1)) }
+        let g: @Sendable (Int) -> Stateful<Int, Either<String, String>> = { n in .pure(.right("\(n)")) }
         let result = (f >=> g)(4)
         #expect(result.eval(0) == .right("5"))
     }

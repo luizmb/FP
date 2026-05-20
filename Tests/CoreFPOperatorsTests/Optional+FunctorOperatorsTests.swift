@@ -16,7 +16,7 @@ import Testing
     }
 
     @Test func curriedFmap() {
-        let double: (Int) -> Int = { $0 * 2 }
+        let double: @Sendable (Int) -> Int = { $0 * 2 }
         let fmap = Int?.fmap(double)
 
         #expect(fmap(5) == 10)
@@ -30,7 +30,7 @@ import Testing
         let value: Int? = 5
         let none: Int? = nil
 
-        let identity: (Int) -> Int = id
+        let identity: @Sendable (Int) -> Int = id
 
         #expect(value.map(identity) == value)
         #expect(none.map(identity) == none)
@@ -40,8 +40,8 @@ import Testing
         // fmap (g . f) == fmap g . fmap f
         let value: Int? = 5
 
-        let f: (Int) -> Int = { $0 * 2 }
-        let g: (Int) -> String = { "\($0)" }
+        let f: @Sendable (Int) -> Int = { $0 * 2 }
+        let g: @Sendable (Int) -> String = { "\($0)" }
 
         let composed = value.map(compose(f, g))
         let separate = value.map(f).map(g)

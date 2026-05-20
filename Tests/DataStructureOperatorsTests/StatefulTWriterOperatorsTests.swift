@@ -34,10 +34,10 @@ import Testing
     }
 
     @Test func kleisli() {
-        let f: (Int) -> Stateful<Int, Writer<[String], Int>> = { n in
+        let f: @Sendable (Int) -> Stateful<Int, Writer<[String], Int>> = { n in
             Stateful { _ in Writer(n + 1, ["f"]) }
         }
-        let g: (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["g"]) }
+        let g: @Sendable (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["g"]) }
         let result = f(4) >>- g
         let w = result.eval(0)
         #expect(w.value == "5")

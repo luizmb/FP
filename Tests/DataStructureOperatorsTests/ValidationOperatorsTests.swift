@@ -26,13 +26,13 @@ import Testing
     // MARK: - Applicative operators — the key ones
 
     @Test func applyOperatorBothSuccess() {
-        let fns: Validation<[String], (Int) -> Int> = .success { $0 * 3 }
+        let fns: Validation<[String], @Sendable (Int) -> Int> = .success { $0 * 3 }
         let vals: Validation<[String], Int> = .success(4)
         #expect((fns <*> vals) == .success(12))
     }
 
     @Test func applyOperatorAccumulatesErrors() {
-        let fns: Validation<[String], (Int) -> Int> = .failure(["fn error"])
+        let fns: Validation<[String], @Sendable (Int) -> Int> = .failure(["fn error"])
         let vals: Validation<[String], Int> = .failure(["val error"])
         #expect((fns <*> vals) == .failure(["fn error", "val error"]))
     }
@@ -58,8 +58,8 @@ import Testing
     }
 
     @Test func eitherTValidationKleisli() {
-        let f = { (n: Int) -> Either<String, Validation<[Int], Int>> in .right(.success(n + 1)) }
-        let g = { (n: Int) -> Either<String, Validation<[Int], String>> in .right(.success("val: \(n)")) }
+        let f: @Sendable (Int) -> Either<String, Validation<[Int], Int>> = { n in .right(.success(n + 1)) }
+        let g: @Sendable (Int) -> Either<String, Validation<[Int], String>> = { n in .right(.success("val: \(n)")) }
         let fg = f >=> g
         #expect(fg(4) == .right(.success("val: 5")))
     }
@@ -81,7 +81,7 @@ import Testing
     }
 
     @Test func writerTValidationApplyOperator() {
-        let wf = Writer<[String], Validation<[Int], (Int) -> Int>>(.failure([1]), ["l1"])
+        let wf = Writer<[String], Validation<[Int], @Sendable (Int) -> Int>>(.failure([1]), ["l1"])
         let wa = Writer<[String], Validation<[Int], Int>>(.failure([2]), ["l2"])
         let result = wf <*> wa
         #expect(result.value == .failure([1, 2]))
@@ -98,7 +98,7 @@ import Testing
     // MARK: - StatefulTValidation operators
 
     @Test func statefulTValidationApplyOperator() {
-        let sf = Stateful<Int, Validation<[String], (Int) -> Int>> { _ in .failure(["sf"]) }
+        let sf = Stateful<Int, Validation<[String], @Sendable (Int) -> Int>> { _ in .failure(["sf"]) }
         let sa = Stateful<Int, Validation<[String], Int>> { _ in .failure(["sa"]) }
         var state = 0
         let result = (sf <*> sa).run(&state)
@@ -115,7 +115,7 @@ import Testing
     // MARK: - ReaderTValidation operators
 
     @Test func readerTValidationApplyOperator() {
-        let rf = Reader<String, Validation<[Int], (Int) -> Int>> { _ in .failure([1]) }
+        let rf = Reader<String, Validation<[Int], @Sendable (Int) -> Int>> { _ in .failure([1]) }
         let ra = Reader<String, Validation<[Int], Int>> { _ in .failure([2]) }
         let result = (rf <*> ra)("env")
         #expect(result == .failure([1, 2]))

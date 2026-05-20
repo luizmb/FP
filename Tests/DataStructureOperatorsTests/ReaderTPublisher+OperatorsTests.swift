@@ -138,7 +138,7 @@ import Testing
                 .eraseToAnyPublisher()
         }
 
-        let fn: (Int) -> Reader<Environment, any Publisher<String, TestError>> = { value in
+        let fn: @Sendable (Int) -> Reader<Environment, any Publisher<String, TestError>> = { value in
             Reader { env in
                 Just("\(value + env.multiplier)")
                     .setFailureType(to: TestError.self)
@@ -164,7 +164,7 @@ import Testing
 
     @Test func kleisliComposition() {
         guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-        let parse: (String) -> Reader<Environment, any Publisher<Int, TestError>> = { s in
+        let parse: @Sendable (String) -> Reader<Environment, any Publisher<Int, TestError>> = { s in
             Reader { _ in
                 Just(Int(s) ?? 0)
                     .setFailureType(to: TestError.self)
@@ -172,7 +172,7 @@ import Testing
             }
         }
 
-        let scale: (Int) -> Reader<Environment, any Publisher<Int, TestError>> = { n in
+        let scale: @Sendable (Int) -> Reader<Environment, any Publisher<Int, TestError>> = { n in
             Reader { env in
                 Just(n * env.multiplier)
                     .setFailureType(to: TestError.self)

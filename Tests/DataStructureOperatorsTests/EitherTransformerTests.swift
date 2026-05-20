@@ -213,14 +213,14 @@ import Testing
     }
 
     @Test func eitherTStatefulKleisli() {
-        let f: (Int) -> Either<L, Stateful<Int, Int>> = { n in .right(Stateful { _ in n + 1 }) }
-        let g: (Int) -> Stateful<Int, String> = { n in Stateful { _ in "\(n)" } }
+        let f: @Sendable (Int) -> Either<L, Stateful<Int, Int>> = { n in .right(Stateful { _ in n + 1 }) }
+        let g: @Sendable (Int) -> Stateful<Int, String> = { n in Stateful { _ in "\(n)" } }
         let result = (f >=> g)(4)
         if case .right(let s) = result { #expect(s.eval(0) == "5") } else { Issue.record("Expected .right") }
     }
 
     @Test func eitherTStatefulApply() {
-        let eithF: Either<L, Stateful<Int, (Int) -> String>> = .right(.pure({ "\($0)" }))
+        let eithF: Either<L, Stateful<Int, @Sendable (Int) -> String>> = .right(.pure({ "\($0)" }))
         let eithA: Either<L, Stateful<Int, Int>> = .right(.get)
         let result = eithF <*> eithA
         if case .right(let s) = result { #expect(s.eval(5) == "5") } else { Issue.record("Expected .right") }
@@ -273,8 +273,8 @@ import Testing
     }
 
     @Test func eitherTWriterKleisli() {
-        let f: (Int) -> Either<L, Writer<[String], Int>> = { n in .right(Writer(n + 1, ["f"])) }
-        let g: (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["g"]) }
+        let f: @Sendable (Int) -> Either<L, Writer<[String], Int>> = { n in .right(Writer(n + 1, ["f"])) }
+        let g: @Sendable (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["g"]) }
         let result = (f >=> g)(4)
         if case .right(let w) = result {
             #expect(w.value == "5")
@@ -283,7 +283,7 @@ import Testing
     }
 
     @Test func eitherTWriterApply() {
-        let eithF: Either<L, Writer<[String], (Int) -> String>> = .right(Writer({ "\($0)" }, ["fn"]))
+        let eithF: Either<L, Writer<[String], @Sendable (Int) -> String>> = .right(Writer({ @Sendable in "\($0)" }, ["fn"]))
         let eithA: Either<L, Writer<[String], Int>> = .right(Writer(7, ["val"]))
         let result = eithF <*> eithA
         #expect(result == .right(Writer("7", ["fn", "val"])))

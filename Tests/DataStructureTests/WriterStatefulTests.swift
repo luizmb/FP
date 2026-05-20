@@ -15,7 +15,7 @@ import Testing
     }
 
     @Test func applicativeLogsAccumulate() {
-        let wf = Writer<[String], Stateful<Int, (Int) -> String>>(
+        let wf = Writer<[String], Stateful<Int, @Sendable (Int) -> String>>(
             Stateful { _ in { "\($0)" } },
             ["fn"]
         )
@@ -83,7 +83,7 @@ import Testing
     }
 
     @Test func statefulTWriterApplicative() {
-        let sf = Stateful<Int, Writer<[String], (Int) -> String>> { state in
+        let sf = Stateful<Int, Writer<[String], @Sendable (Int) -> String>> { state in
             state += 1
             return Writer({ "\($0)" }, ["fn"])
         }

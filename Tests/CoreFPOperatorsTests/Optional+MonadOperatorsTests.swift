@@ -14,14 +14,14 @@ import Testing
     }
 
     @Test func flippedBind() {
-        let double: (Int) -> Int? = { .some($0 * 2) }
+        let double: @Sendable (Int) -> Int? = { .some($0 * 2) }
         let result = double -<< 5
         #expect(result == 10)
     }
 
     @Test func kleisliComposition() {
-        let safe: (Int) -> Int? = { $0 > 0 ? .some($0) : .none }
-        let double: (Int) -> Int? = { .some($0 * 2) }
+        let safe: @Sendable (Int) -> Int? = { $0 > 0 ? .some($0) : .none }
+        let double: @Sendable (Int) -> Int? = { .some($0 * 2) }
 
         let composed = safe >=> double
         #expect(composed(5) == 10)

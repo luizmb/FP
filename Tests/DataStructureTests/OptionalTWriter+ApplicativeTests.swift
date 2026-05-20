@@ -5,7 +5,7 @@ import Testing
     // MARK: - Writer<W, A>? — Optional as outer, Writer as inner
 
     @Test func applyBothSome() {
-        let wf: Writer<[String], (Int) -> String>? = Writer({ "\($0)" }, ["fn"])
+        let wf: Writer<[String], @Sendable (Int) -> String>? = Writer({ "\($0)" }, ["fn"])
         let wa: Writer<[String], Int>? = Writer(7, ["val"])
         let result = applyOptionalWriter(wf, wa)
         #expect(result?.value == "7")
@@ -13,21 +13,21 @@ import Testing
     }
 
     @Test func applyNilFn() {
-        let wf: Writer<[String], (Int) -> String>? = nil
+        let wf: Writer<[String], @Sendable (Int) -> String>? = nil
         let wa: Writer<[String], Int>? = Writer(7, ["val"])
         let result = applyOptionalWriter(wf, wa)
         #expect(result == nil)
     }
 
     @Test func applyNilVal() {
-        let wf: Writer<[String], (Int) -> String>? = Writer({ "\($0)" }, ["fn"])
+        let wf: Writer<[String], @Sendable (Int) -> String>? = Writer({ "\($0)" }, ["fn"])
         let wa: Writer<[String], Int>? = nil
         let result = applyOptionalWriter(wf, wa)
         #expect(result == nil)
     }
 
     @Test func applyBothNil() {
-        let wf: Writer<[String], (Int) -> String>? = nil
+        let wf: Writer<[String], @Sendable (Int) -> String>? = nil
         let wa: Writer<[String], Int>? = nil
         let result = applyOptionalWriter(wf, wa)
         #expect(result == nil)

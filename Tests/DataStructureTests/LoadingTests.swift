@@ -267,8 +267,8 @@ struct LoadingFunctorTests {
 
     @Test func functorCompositionLaw() {
         // fmap (f . g) == fmap f . fmap g
-        let f: (Int) -> Int = { $0 + 1 }
-        let g: (Int) -> Int = { $0 * 2 }
+        let f: @Sendable (Int) -> Int = { $0 + 1 }
+        let g: @Sendable (Int) -> Int = { $0 * 2 }
         let values: [Sut] = [.idle, .loading(previous: 1), .loaded(2), .failed(error: .network, previous: 3)]
         for v in values {
             #expect(v.map { f(g($0)) } == v.map(g).map(f))
@@ -381,7 +381,7 @@ struct LoadingMonadTests {
 
     @Test func leftIdentity() {
         // return a >>= f == f a
-        let f: (Int) -> Sut = { .loaded($0 * 2) }
+        let f: @Sendable (Int) -> Sut = { .loaded($0 * 2) }
         #expect(Sut.loaded(5).flatMap(f) == f(5))
     }
 
@@ -394,21 +394,21 @@ struct LoadingMonadTests {
     @Test func associativity() {
         // (m >>= f) >>= g == m >>= (\x -> f x >>= g)
         let m: Sut = .loaded(2)
-        let f: (Int) -> Sut = { .loaded($0 + 1) }
-        let g: (Int) -> Sut = { .loaded($0 * 10) }
+        let f: @Sendable (Int) -> Sut = { .loaded($0 + 1) }
+        let g: @Sendable (Int) -> Sut = { .loaded($0 * 10) }
         #expect(m.flatMap(f).flatMap(g) == m.flatMap { f($0).flatMap(g) })
     }
 
     @Test func kleisli_composesLeftToRight() {
-        let f: (Int) -> Sut = { .loaded($0 + 1) }
-        let g: (Int) -> Sut = { .loaded($0 * 10) }
+        let f: @Sendable (Int) -> Sut = { .loaded($0 + 1) }
+        let g: @Sendable (Int) -> Sut = { .loaded($0 * 10) }
         let fg = Sut.kleisli(f, g)
         #expect(fg(2) == .loaded(30))
     }
 
     @Test func kleisliBack_composesRightToLeft() {
-        let f: (Int) -> Sut = { .loaded($0 + 1) }
-        let g: (Int) -> Sut = { .loaded($0 * 10) }
+        let f: @Sendable (Int) -> Sut = { .loaded($0 + 1) }
+        let g: @Sendable (Int) -> Sut = { .loaded($0 * 10) }
         let gf = Sut.kleisliBack(g, f)
         #expect(gf(2) == .loaded(30))
     }

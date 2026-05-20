@@ -22,7 +22,7 @@ import Testing
     }
 
     @Test func bind() {
-        let transform: (Int) -> Either<String, Int> = { .right($0 * 2) }
+        let transform: @Sendable (Int) -> Either<String, Int> = { .right($0 * 2) }
         let value: Either<String, Int> = .right(5)
         let result = Either.bind(transform)(value)
         #expect(result == .right(10))
@@ -48,7 +48,7 @@ import Testing
     @Test func monadLeftIdentityLaw() {
         // return a >>= f == f a
         let a = 5
-        let f: (Int) -> Either<String, Int> = { .right($0 * 2) }
+        let f: @Sendable (Int) -> Either<String, Int> = { .right($0 * 2) }
 
         let left = Either<String, Int>.right(a).flatMap(f)
         let right = f(a)
@@ -71,8 +71,8 @@ import Testing
     @Test func monadAssociativityLaw() {
         // (m >>= f) >>= g == m >>= (\x -> f x >>= g)
         let m: Either<String, Int> = .right(5)
-        let f: (Int) -> Either<String, Int> = { .right($0 * 2) }
-        let g: (Int) -> Either<String, Int> = { .right($0 + 10) }
+        let f: @Sendable (Int) -> Either<String, Int> = { .right($0 * 2) }
+        let g: @Sendable (Int) -> Either<String, Int> = { .right($0 + 10) }
 
         let left = m.flatMap(f).flatMap(g)
         let right = m.flatMap { x in f(x).flatMap(g) }
@@ -83,10 +83,10 @@ import Testing
     // MARK: - Kleisli Composition
 
     @Test func kleisliComposition() {
-        let f: (Int) -> Either<String, Int> = { x in
+        let f: @Sendable (Int) -> Either<String, Int> = { x in
             x > 0 ? .right(x * 2) : .left("negative")
         }
-        let g: (Int) -> Either<String, String> = { .right("\($0)") }
+        let g: @Sendable (Int) -> Either<String, String> = { .right("\($0)") }
 
         let composed = Either<String, Int>.kleisli(f, g)
         #expect(composed(5) == .right("10"))
@@ -94,8 +94,8 @@ import Testing
     }
 
     @Test func kleisliBack() {
-        let f: (Int) -> Either<String, Int> = { .right($0 * 2) }
-        let g: (Int) -> Either<String, String> = { .right("\($0)") }
+        let f: @Sendable (Int) -> Either<String, Int> = { .right($0 * 2) }
+        let g: @Sendable (Int) -> Either<String, String> = { .right("\($0)") }
 
         let composed = Either<String, Int>.kleisliBack(g, f)
         #expect(composed(5) == .right("10"))
@@ -114,23 +114,23 @@ import Testing
     }
 
     @Test func flippedBindOperator() {
-        let transform: (Int) -> Either<String, Int> = { .right($0 * 2) }
+        let transform: @Sendable (Int) -> Either<String, Int> = { .right($0 * 2) }
         let value: Either<String, Int> = .right(5)
         let result = transform -<< value
         #expect(result == .right(10))
     }
 
     @Test func kleisliOperator() {
-        let f: (Int) -> Either<String, Int> = { .right($0 * 2) }
-        let g: (Int) -> Either<String, String> = { .right("\($0)") }
+        let f: @Sendable (Int) -> Either<String, Int> = { .right($0 * 2) }
+        let g: @Sendable (Int) -> Either<String, String> = { .right("\($0)") }
 
         let composed = f >=> g
         #expect(composed(5) == .right("10"))
     }
 
     @Test func kleisliBackFunction() {
-        let f: (Int) -> Either<String, Int> = { .right($0 * 2) }
-        let g: (Int) -> Either<String, String> = { .right("\($0)") }
+        let f: @Sendable (Int) -> Either<String, Int> = { .right($0 * 2) }
+        let g: @Sendable (Int) -> Either<String, String> = { .right("\($0)") }
 
         let composed = Either<String, Int>.kleisliBack(g, f)
         #expect(composed(5) == .right("10"))

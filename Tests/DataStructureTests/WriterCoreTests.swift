@@ -101,7 +101,7 @@ import Testing
     // MARK: - Applicative
 
     @Test func apply() {
-        let wf = Writer<[String], (Int) -> String>(
+        let wf = Writer<[String], @Sendable (Int) -> String>(
             { "\($0)" },
             ["fn-log"]
         )
@@ -147,7 +147,7 @@ import Testing
     }
 
     @Test func bind() {
-        let double: (Int) -> Writer<[String], Int> = { n in
+        let double: @Sendable (Int) -> Writer<[String], Int> = { n in
             Writer<[String], Int>(n * 2, ["\(n)"])
         }
         let w = Writer<[String], Int>.bind(double)(Writer<[String], Int>(3, ["start"]))
@@ -156,10 +156,10 @@ import Testing
     }
 
     @Test func kleisli() {
-        let step1: (Int) -> Writer<[String], Int> = { n in
+        let step1: @Sendable (Int) -> Writer<[String], Int> = { n in
             Writer<[String], Int>(n + 1, ["step1"])
         }
-        let step2: (Int) -> Writer<[String], String> = { n in
+        let step2: @Sendable (Int) -> Writer<[String], String> = { n in
             Writer<[String], String>("\(n)", ["step2"])
         }
         let composed = Writer<[String], Int>.kleisli(step1, step2)

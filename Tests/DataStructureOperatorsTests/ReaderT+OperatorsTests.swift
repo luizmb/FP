@@ -37,7 +37,7 @@ import Testing
     }
 
     @Test func readerOptionalApply() {
-        let readerFn = Reader<Environment, ((Int) -> Int)?> { env in
+        let readerFn = Reader<Environment, (@Sendable (Int) -> Int)?> { env in
             { $0 * env.multiplier }
         }
         let readerValue = Reader<Environment, Int?> { env in env.addend }
@@ -96,7 +96,7 @@ import Testing
     }
 
     @Test func readerResultApply() throws {
-        let readerFn = Reader<Environment, Result<(Int) -> Int, TestError>> { env in
+        let readerFn = Reader<Environment, Result<@Sendable (Int) -> Int, TestError>> { env in
             .success({ $0 * env.multiplier })
         }
         let readerValue = Reader<Environment, Result<Int, TestError>> { env in .success(env.addend) }
@@ -141,7 +141,7 @@ import Testing
     // MARK: - ReaderT Applicative Functions
 
     @Test func applyOptional() {
-        let readerFn = Reader<Environment, ((Int) -> Int)?> { _ in { $0 * 2 } }
+        let readerFn = Reader<Environment, (@Sendable (Int) -> Int)?> { _ in { $0 * 2 } }
         let readerValue = Reader<Environment, Int?> { env in env.multiplier }
 
         let result = applyReaderOptional(readerFn, readerValue)
@@ -153,8 +153,8 @@ import Testing
         let reader1 = Reader<Environment, Int?> { env in env.multiplier }
         let reader2 = Reader<Environment, Int?> { env in env.addend }
 
-        let add: (Int, Int) -> Int = { $0 + $1 }
-        let lifted: (Reader<Environment, Int?>, Reader<Environment, Int?>) -> Reader<Environment, Int?> = liftA2ReaderOptional(add)
+        let add: @Sendable (Int, Int) -> Int = { $0 + $1 }
+        let lifted: @Sendable (Reader<Environment, Int?>, Reader<Environment, Int?>) -> Reader<Environment, Int?> = liftA2ReaderOptional(add)
         let result = lifted(reader1, reader2)
 
         let env = Environment(multiplier: 5, addend: 3)
@@ -162,7 +162,7 @@ import Testing
     }
 
     @Test func applyResult() throws {
-        let readerFn = Reader<Environment, Result<(Int) -> Int, TestError>> { _ in .success({ $0 * 2 }) }
+        let readerFn = Reader<Environment, Result<@Sendable (Int) -> Int, TestError>> { _ in .success({ $0 * 2 }) }
         let readerValue = Reader<Environment, Result<Int, TestError>> { env in .success(env.multiplier) }
 
         let result = applyReaderResult(readerFn, readerValue)
@@ -174,7 +174,7 @@ import Testing
         let reader1 = Reader<Environment, Result<Int, TestError>> { env in .success(env.multiplier) }
         let reader2 = Reader<Environment, Result<Int, TestError>> { env in .success(env.addend) }
 
-        let add: (Int, Int) -> Int = { $0 + $1 }
+        let add: @Sendable (Int, Int) -> Int = { $0 + $1 }
         let lifted: (
             Reader<Environment, Result<Int, TestError>>,
             Reader<Environment, Result<Int, TestError>>
@@ -204,8 +204,8 @@ import Testing
     }
 
     @Test func readerTStatefulKleisli() {
-        let f: (Int) -> Reader<Environment, Stateful<Int, Int>> = { n in Reader { _ in Stateful { _ in n + 1 } } }
-        let g: (Int) -> Stateful<Int, String> = { n in Stateful { _ in "\(n)" } }
+        let f: @Sendable (Int) -> Reader<Environment, Stateful<Int, Int>> = { n in Reader { _ in Stateful { _ in n + 1 } } }
+        let g: @Sendable (Int) -> Stateful<Int, String> = { n in Stateful { _ in "\(n)" } }
         let env = Environment(multiplier: 0, addend: 0)
         let result = (f >=> g)(4)
         #expect(result(env).eval(0) == "5")
@@ -232,8 +232,8 @@ import Testing
     }
 
     @Test func readerTWriterKleisli() {
-        let f: (Int) -> Reader<Environment, Writer<[String], Int>> = { n in Reader { _ in Writer(n + 1, ["f"]) } }
-        let g: (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["g"]) }
+        let f: @Sendable (Int) -> Reader<Environment, Writer<[String], Int>> = { n in Reader { _ in Writer(n + 1, ["f"]) } }
+        let g: @Sendable (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["g"]) }
         let env = Environment(multiplier: 0, addend: 0)
         let result = (f >=> g)(4)
         let w = result(env)

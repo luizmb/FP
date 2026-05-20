@@ -95,8 +95,8 @@ import Testing
     }
 
     @Test func kleisliOperator() {
-        let f: (Int) -> [Int?] = { n in [n, n * 2] }
-        let g: (Int) -> [String?] = { n in ["\(n)"] }
+        let f: @Sendable (Int) -> [Int?] = { n in [n, n * 2] }
+        let g: @Sendable (Int) -> [String?] = { n in ["\(n)"] }
         let h = f >=> g
         #expect(h(3) == ["3", "6"])
     }

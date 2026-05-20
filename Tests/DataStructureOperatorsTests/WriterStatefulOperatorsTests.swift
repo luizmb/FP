@@ -57,7 +57,7 @@ import Testing
     }
 
     @Test func statefulTWriterApply() {
-        let sf = Stateful<Int, Writer<[String], (Int) -> String>> { _ in Writer({ "\($0)" }, ["fn"]) }
+        let sf = Stateful<Int, Writer<[String], @Sendable (Int) -> String>> { _ in Writer({ "\($0)" }, ["fn"]) }
         let sa = Stateful<Int, Writer<[String], Int>> { _ in Writer(7, ["val"]) }
         let result = sf <*> sa
         let w = result.eval(0)
@@ -84,7 +84,7 @@ import Testing
     }
 
     @Test func writerTStatefulApply() {
-        let wf = Writer<[String], Stateful<Int, (Int) -> String>>(
+        let wf = Writer<[String], Stateful<Int, @Sendable (Int) -> String>>(
             Stateful { _ in { "\($0)" } },
             ["fn"]
         )

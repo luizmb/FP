@@ -33,7 +33,7 @@ import Testing
     // MARK: - ReaderT + Either Applicative Tests
 
     @Test func apply() {
-        let readerFn = Reader<Environment, Either<String, (Int) -> Int>> { env in
+        let readerFn = Reader<Environment, Either<String, @Sendable (Int) -> Int>> { env in
             .right({ $0 + env.multiplier })
         }
 
@@ -56,7 +56,7 @@ import Testing
             .right(10)
         }
 
-        let add: (Int, Int) -> Int = { $0 + $1 }
+        let add: @Sendable (Int, Int) -> Int = { $0 + $1 }
         let combined = liftA2ReaderEither(add)(reader1, reader2)
 
         let env = Environment(multiplier: 5)

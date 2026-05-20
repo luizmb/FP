@@ -9,7 +9,7 @@ public extension Loading {
     /// and `.failed` pass through unchanged (adapted to `B`); for the in-flight / error cases
     /// the `previous` value is mapped through `f` and projected via `loadedOrPrevious` so the
     /// stale-data invariant is preserved.
-    func flatMap<B: Sendable>(_ f: (Success) -> Loading<B, Failure>) -> Loading<B, Failure> {
+    func flatMap<B: Sendable>(_ f: @Sendable (Success) -> Loading<B, Failure>) -> Loading<B, Failure> {
         switch self {
         case .idle:
             .idle
@@ -26,7 +26,7 @@ public extension Loading {
     /// (>>=) :: m a -> (a -> m b) -> m b
     static func bind<B: Sendable>(
         _ f: @escaping @Sendable (Success) -> Loading<B, Failure>
-    ) -> (Loading<Success, Failure>) -> Loading<B, Failure> {
+    ) -> @Sendable (Loading<Success, Failure>) -> Loading<B, Failure> {
         { $0.flatMap(f) }
     }
 
@@ -35,7 +35,7 @@ public extension Loading {
     static func kleisli<A, B: Sendable>(
         _ fn1: @escaping @Sendable (A) -> Loading<Success, Failure>,
         _ fn2: @escaping @Sendable (Success) -> Loading<B, Failure>
-    ) -> (A) -> Loading<B, Failure> {
+    ) -> @Sendable (A) -> Loading<B, Failure> {
         { a in fn1(a).flatMap(fn2) }
     }
 
@@ -44,7 +44,7 @@ public extension Loading {
     static func kleisliBack<A, B: Sendable>(
         _ fn2: @escaping @Sendable (Success) -> Loading<B, Failure>,
         _ fn1: @escaping @Sendable (A) -> Loading<Success, Failure>
-    ) -> (A) -> Loading<B, Failure> {
+    ) -> @Sendable (A) -> Loading<B, Failure> {
         { a in fn1(a).flatMap(fn2) }
     }
 }

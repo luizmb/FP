@@ -31,7 +31,7 @@ import Testing
     // MARK: - Applicative Operators
 
     @Test func applyOperator() {
-        let functions: [(Int) -> Int] = [{ $0 * 2 }, { $0 + 10 }]
+        let functions: [@Sendable (Int) -> Int] = [{ $0 * 2 }, { $0 + 10 }]
         let values = [1, 2, 3]
 
         let result = functions <*> values
@@ -63,15 +63,15 @@ import Testing
     }
 
     @Test func flippedBindOperator() {
-        let fn: (Int) -> [Int] = { [$0, $0 * 2] }
+        let fn: @Sendable (Int) -> [Int] = { [$0, $0 * 2] }
         let array = [1, 2, 3]
         let result = fn -<< array
         #expect(result == [1, 2, 2, 4, 3, 6])
     }
 
     @Test func kleisliOperator() {
-        let duplicate: (Int) -> [Int] = { [$0, $0] }
-        let double: (Int) -> [Int] = { [$0 * 2] }
+        let duplicate: @Sendable (Int) -> [Int] = { [$0, $0] }
+        let double: @Sendable (Int) -> [Int] = { [$0 * 2] }
 
         let composed = duplicate >=> double
         #expect(composed(5) == [10, 10])

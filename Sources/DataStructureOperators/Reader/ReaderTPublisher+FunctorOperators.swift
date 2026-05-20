@@ -8,7 +8,9 @@ import Foundation
 
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
-public func <£^> <A: Sendable, B: Sendable, E: Error, Env: Sendable>(_ transform: @escaping @Sendable (A) -> B, _ reader: Reader<Env, any Publisher<A, E>>)
+public func <£^> <A: Sendable, B: Sendable, E: Error, Env: Sendable>(
+    _ transform: @escaping @Sendable (A
+) -> B, _ reader: Reader<Env, any Publisher<A, E>>)
 -> Reader<Env, any Publisher<B, E>>
 where A: Sendable, B: Sendable {
     reader.mapT(transform)
@@ -30,7 +32,10 @@ public func <£ <A1: Sendable, A: Sendable, B: Error, Env: Sendable>(_ value: A1
 
 // (<&^>) :: f (g a) -> (a -> b) -> f (g b)
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
-public func <&^> <A: Sendable, B: Sendable, E: Error, Env: Sendable>(_ reader: Reader<Env, any Publisher<A, E>>, _ transform: @escaping @Sendable (A) -> B)
+public func <&^> <A: Sendable, B: Sendable, E: Error, Env: Sendable>(
+    _ reader: Reader<Env, any Publisher<A, E>>,
+    _ transform: @escaping @Sendable (A
+) -> B)
 -> Reader<Env, any Publisher<B, E>>
 where A: Sendable, B: Sendable {
     transform <£^> reader

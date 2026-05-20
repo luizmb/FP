@@ -26,7 +26,7 @@ import Testing
     }
 
     @Test func apply() {
-        let wf = Writer<[String], ((Int) -> String)?>(.some { "\($0)" }, ["fn"])
+        let wf = Writer<[String], (@Sendable (Int) -> String)?>(.some { "\($0)" }, ["fn"])
         let wa = Writer<[String], Int?>(.some(7), ["val"])
         let result = wf <*> wa
         #expect(result.value == .some("7"))
@@ -64,8 +64,8 @@ import Testing
     }
 
     @Test func kleisli() {
-        let f: (Int) -> Writer<[String], Int?> = { n in Writer(.some(n + 1), ["f"]) }
-        let g: (Int) -> Writer<[String], String?> = { n in Writer(.some("\(n)"), ["g"]) }
+        let f: @Sendable (Int) -> Writer<[String], Int?> = { n in Writer(.some(n + 1), ["f"]) }
+        let g: @Sendable (Int) -> Writer<[String], String?> = { n in Writer(.some("\(n)"), ["g"]) }
         let result = (f >=> g)(4)
         #expect(result.value == .some("5"))
         #expect(result.log == ["f", "g"])

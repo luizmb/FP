@@ -26,15 +26,15 @@ import Testing
     }
 
     @Test func kleisli() {
-        let f: (Int) -> [Stateful<Int, Int>] = { n in [.pure(n), .pure(n + 1)] }
-        let g: (Int) -> Stateful<Int, String> = { n in .pure("\(n)") }
+        let f: @Sendable (Int) -> [Stateful<Int, Int>] = { n in [.pure(n), .pure(n + 1)] }
+        let g: @Sendable (Int) -> Stateful<Int, String> = { n in .pure("\(n)") }
         let results = (f >=> g)(3)
         #expect(results[0].eval(0) == "3")
         #expect(results[1].eval(0) == "4")
     }
 
     @Test func apply() {
-        let fns: [Stateful<Int, (Int) -> String>] = [.pure({ "\($0)" })]
+        let fns: [Stateful<Int, @Sendable (Int) -> String>] = [.pure({ "\($0)" })]
         let vals: [Stateful<Int, Int>] = [.pure(5)]
         let result = fns <*> vals
         #expect(result.count == 1)

@@ -8,25 +8,25 @@ import CoreFP
 public func <£> <A, B, C>(
     _ transform: @escaping @Sendable (B) -> C,
     _ f: @escaping @Sendable (A) -> B
-) -> (A) -> C {
+) -> @Sendable (A) -> C {
     compose(f, transform)
 }
 
 /// Map replace operator for functions (always returns a constant)
 /// (£>) :: (a -> b) -> c -> (a -> c)
-public func £> <A, B, C>(
+public func £> <A, B, C: Sendable>(
     _: @escaping @Sendable (A) -> B,
     _ value: C
-) -> (A) -> C {
+) -> @Sendable (A) -> C {
     const(value)
 }
 
 /// Flipped map replace operator for functions
 /// (<£) :: c -> (a -> b) -> (a -> c)
-public func <£ <A, B, C>(
+public func <£ <A, B, C: Sendable>(
     _ value: C,
     _ f: @escaping @Sendable (A) -> B
-) -> (A) -> C {
+) -> @Sendable (A) -> C {
     f £> value
 }
 
@@ -35,6 +35,6 @@ public func <£ <A, B, C>(
 public func <&> <A, B, C>(
     _ f: @escaping @Sendable (A) -> B,
     _ transform: @escaping @Sendable (B) -> C
-) -> (A) -> C {
+) -> @Sendable (A) -> C {
     compose(f, transform)
 }

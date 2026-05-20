@@ -46,7 +46,7 @@ import Testing
     // MARK: - Applicative Operators
 
     @Test func applicativeOperatorApply() {
-        let readerFn = Reader<Environment, Either<String, (Int) -> Int>> { env in
+        let readerFn = Reader<Environment, Either<String, @Sendable (Int) -> Int>> { env in
             .right({ $0 + env.multiplier })
         }
 

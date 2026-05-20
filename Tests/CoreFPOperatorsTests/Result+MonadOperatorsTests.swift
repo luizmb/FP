@@ -15,15 +15,15 @@ import Testing
     }
 
     @Test func flippedBind() {
-        let double: (Int) -> Result<Int, NSError> = { .success($0 * 2) }
+        let double: @Sendable (Int) -> Result<Int, NSError> = { .success($0 * 2) }
         let value: Result<Int, NSError> = .success(5)
         let result = double -<< value
         #expect((try? result.get()) == 10)
     }
 
     @Test func kleisliComposition() {
-        let safe: (Int) -> Result<Int, NSError> = { $0 > 0 ? .success($0) : .failure(NSError(domain: "test", code: 1)) }
-        let double: (Int) -> Result<Int, NSError> = { .success($0 * 2) }
+        let safe: @Sendable (Int) -> Result<Int, NSError> = { $0 > 0 ? .success($0) : .failure(NSError(domain: "test", code: 1)) }
+        let double: @Sendable (Int) -> Result<Int, NSError> = { .success($0 * 2) }
 
         let composed = safe >=> double
         #expect((try? composed(5).get()) == 10)

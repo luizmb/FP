@@ -54,7 +54,7 @@ import Testing
         let publisher1 = [1, 2].publisher
         let publisher2 = [10, 20].publisher
 
-        let add: (Int, Int) -> Int = { $0 + $1 }
+        let add: @Sendable (Int, Int) -> Int = { $0 + $1 }
         let combined = AnyPublisher<Int, Never>.liftA2(add)(publisher1, publisher2)
 
         combined.sink(
@@ -74,7 +74,7 @@ import Testing
         var cancellables = Set<AnyCancellable>()
 
         let publisher = [1, 2].publisher
-        let fn: (Int) -> AnyPublisher<Int, Never> = { value in
+        let fn: @Sendable (Int) -> AnyPublisher<Int, Never> = { value in
             [value, value * 10].publisher.eraseToAnyPublisher()
         }
         let bound = AnyPublisher<Int, Never>.bind(fn)(publisher)
@@ -92,11 +92,11 @@ import Testing
         var results: [String] = []
         var cancellables = Set<AnyCancellable>()
 
-        let f: (Int) -> AnyPublisher<Int, Never> = { value in
+        let f: @Sendable (Int) -> AnyPublisher<Int, Never> = { value in
             Just(value * 2).eraseToAnyPublisher()
         }
 
-        let g: (Int) -> AnyPublisher<String, Never> = { value in
+        let g: @Sendable (Int) -> AnyPublisher<String, Never> = { value in
             Just("\(value)").eraseToAnyPublisher()
         }
 

@@ -19,7 +19,7 @@ import Testing
     }
 
     @Test func apply() {
-        let wf = Writer<[String], Reader<Int, (Int) -> String>>(Reader { env in { "\(env + $0)" } }, ["fn"])
+        let wf = Writer<[String], Reader<Int, @Sendable (Int) -> String>>(Reader { env in { "\(env + $0)" } }, ["fn"])
         let wa = Writer<[String], Reader<Int, Int>>(Reader { $0 }, ["val"])
         let result = wf <*> wa
         #expect(result.value(5) == "10")
@@ -47,8 +47,8 @@ import Testing
     }
 
     @Test func kleisli() {
-        let f: (Int) -> Writer<[String], Reader<Int, Int>> = { n in Writer(Reader { $0 + n }, ["f"]) }
-        let g: (Int) -> Writer<[String], Reader<Int, String>> = { n in Writer(Reader { _ in "\(n)" }, ["g"]) }
+        let f: @Sendable (Int) -> Writer<[String], Reader<Int, Int>> = { n in Writer(Reader { $0 + n }, ["f"]) }
+        let g: @Sendable (Int) -> Writer<[String], Reader<Int, String>> = { n in Writer(Reader { _ in "\(n)" }, ["g"]) }
         let result = (f >=> g)(2)
         #expect(result.log == ["f"])
         // result.value is Reader<Int, String> whose output was captured when g was called

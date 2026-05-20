@@ -6,8 +6,8 @@ import Testing
     // MARK: - Basic Functor Tests
 
     @Test func basicFmap() {
-        let f: (Int) -> Int = { $0 + 1 }
-        let g: (Int) -> String = { "\($0)" }
+        let f: @Sendable (Int) -> Int = { $0 + 1 }
+        let g: @Sendable (Int) -> String = { "\($0)" }
 
         let composed = fmap(g, f)
 
@@ -16,11 +16,11 @@ import Testing
     }
 
     @Test func curriedFmap() {
-        let f: (Int) -> Int = { $0 * 2 }
-        let toString: (Int) -> String = { "\($0)" }
+        let f: @Sendable (Int) -> Int = { $0 * 2 }
+        let toString: @Sendable (Int) -> String = { "\($0)" }
 
         // Use the curried version explicitly with type annotation
-        let fmapToString: (@escaping (Int) -> Int) -> (Int) -> String = fmap(toString)
+        let fmapToString: @Sendable (@escaping @Sendable (Int) -> Int) -> @Sendable (Int) -> String = fmap(toString)
         let composed = fmapToString(f)
 
         #expect(composed(5) == "10")
@@ -30,8 +30,8 @@ import Testing
 
     @Test func functorIdentityLaw() {
         // fmap id == id
-        let f: (Int) -> Int = { $0 * 2 }
-        let identity: (Int) -> Int = id
+        let f: @Sendable (Int) -> Int = { $0 * 2 }
+        let identity: @Sendable (Int) -> Int = id
 
         let mapped = fmap(identity, f)
 
@@ -42,9 +42,9 @@ import Testing
 
     @Test func functorCompositionLaw() {
         // fmap (g . f) == fmap g . fmap f
-        let base: (Int) -> Int = { $0 + 1 }
-        let f: (Int) -> Int = { $0 * 2 }
-        let g: (Int) -> String = { "\($0)" }
+        let base: @Sendable (Int) -> Int = { $0 + 1 }
+        let f: @Sendable (Int) -> Int = { $0 * 2 }
+        let g: @Sendable (Int) -> String = { "\($0)" }
 
         // Left side: fmap (g . f)
         let left = fmap(compose(f, g), base)
@@ -62,8 +62,8 @@ import Testing
     // MARK: - Functor Operators
 
     @Test func fmapOperator() {
-        let f: (Int) -> Int = { $0 + 1 }
-        let g: (Int) -> String = { "\($0)" }
+        let f: @Sendable (Int) -> Int = { $0 + 1 }
+        let g: @Sendable (Int) -> String = { "\($0)" }
 
         let composed = g <£> f
 
@@ -73,9 +73,9 @@ import Testing
 
     @Test func fmapOperatorComposition() {
         // Test multiple compositions using the operator
-        let addOne: (Int) -> Int = { $0 + 1 }
-        let double: (Int) -> Int = { $0 * 2 }
-        let toString: (Int) -> String = { "\($0)" }
+        let addOne: @Sendable (Int) -> Int = { $0 + 1 }
+        let double: @Sendable (Int) -> Int = { $0 * 2 }
+        let toString: @Sendable (Int) -> String = { "\($0)" }
 
         let composed = toString <£> double <£> addOne
 
@@ -83,7 +83,7 @@ import Testing
     }
 
     @Test func mapReplaceOperator() {
-        let f: (Int) -> String = { "\($0)" }
+        let f: @Sendable (Int) -> String = { "\($0)" }
 
         let constant = f £> 99
 
@@ -92,7 +92,7 @@ import Testing
     }
 
     @Test func mapReplaceFlippedOperator() {
-        let f: (Int) -> String = { "\($0)" }
+        let f: @Sendable (Int) -> String = { "\($0)" }
 
         let constant = 42 <£ f
 
@@ -104,8 +104,8 @@ import Testing
 
     @Test func practicalExample() {
         // Compose string operations
-        let trimWhitespace: (String) -> String = { $0.trimmingCharacters(in: .whitespaces) }
-        let uppercase: (String) -> String = { $0.uppercased() }
+        let trimWhitespace: @Sendable (String) -> String = { $0.trimmingCharacters(in: .whitespaces) }
+        let uppercase: @Sendable (String) -> String = { $0.uppercased() }
 
         // We can use fmap to compose these
         let trimAndUpper = fmap(uppercase, trimWhitespace)
@@ -116,8 +116,8 @@ import Testing
 
     @Test func equivalenceWithComposition() {
         // fmap should be equivalent to function composition
-        let f: (Int) -> Int = { $0 + 1 }
-        let g: (Int) -> String = { "\($0)" }
+        let f: @Sendable (Int) -> Int = { $0 + 1 }
+        let g: @Sendable (Int) -> String = { "\($0)" }
 
         let viaFmap = fmap(g, f)
         let viaCompose = compose(f, g)

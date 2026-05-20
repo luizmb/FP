@@ -6,12 +6,12 @@ import Testing
     // MARK: - Basic Applicative Tests
 
     @Test func apply() {
-        let fn: ((Int) -> Int)? = { $0 * 2 }
+        let fn: (@Sendable (Int) -> Int)? = { $0 * 2 }
         let value: Int? = 5
         let result = fn <*> value
         #expect(result == 10)
 
-        let noneFn: ((Int) -> Int)? = nil
+        let noneFn: (@Sendable (Int) -> Int)? = nil
         let noneResult = noneFn <*> value
         #expect(noneResult == nil)
 
@@ -21,7 +21,7 @@ import Testing
     }
 
     @Test func liftA2() {
-        let add: (Int, Int) -> Int = { $0 + $1 }
+        let add: @Sendable (Int, Int) -> Int = { $0 + $1 }
         let lifted = Int?.liftA2(add)
 
         #expect(lifted(5, 3) == 8)
@@ -52,22 +52,22 @@ import Testing
     @Test func applicativeIdentityLaw() {
         // pure id <*> v = v
         let value: Int? = 5
-        let identity: ((Int) -> Int)? = id
+        let identity: (@Sendable (Int) -> Int)? = id
         let result = identity <*> value
         #expect(result == value)
     }
 
     @Test func applicativeCompositionLaw() {
         // pure (.) <*> u <*> v <*> w = u <*> (v <*> w)
-        let u: ((Int) -> String)? = { "\($0)" }
-        let v: ((Int) -> Int)? = { $0 * 2 }
+        let u: (@Sendable (Int) -> String)? = { "\($0)" }
+        let v: (@Sendable (Int) -> Int)? = { $0 * 2 }
         let w: Int? = 5
 
         // Left side: compose functions then apply to w
-        let composeFn: (@escaping (Int) -> String, @escaping (Int) -> Int) -> (Int) -> String = { f, g in
+        let composeFn: @Sendable (@escaping @Sendable (Int) -> String, @escaping @Sendable (Int) -> Int) -> @Sendable (Int) -> String = { f, g in
             { x in f(g(x)) }
         }
-        let composed = ((Int) -> String)?.liftA2(composeFn)(u, v)
+        let composed = (@Sendable (Int) -> String)?.liftA2(composeFn)(u, v)
         let left = composed <*> w
 
         // Right side: apply v to w, then apply u
@@ -79,10 +79,10 @@ import Testing
 
     @Test func applicativeHomomorphismLaw() {
         // pure f <*> pure x = pure (f x)
-        let f: (Int) -> Int = { $0 * 2 }
+        let f: @Sendable (Int) -> Int = { $0 * 2 }
         let x = 5
 
-        let pureF: ((Int) -> Int)? = .some(f)
+        let pureF: (@Sendable (Int) -> Int)? = .some(f)
         let pureX: Int? = .some(x)
         let left = pureF <*> pureX
         let right: Int? = .some(f(x))
@@ -92,14 +92,14 @@ import Testing
 
     @Test func applicativeInterchangeLaw() {
         // u <*> pure y = pure ($ y) <*> u
-        let u: ((Int) -> Int)? = { $0 * 2 }
+        let u: (@Sendable (Int) -> Int)? = { $0 * 2 }
         let y = 5
 
         let pureY: Int? = .some(y)
         let left = u <*> pureY
 
-        let applyTo: (@escaping (Int) -> Int) -> Int = { fn in fn(y) }
-        let pureApply: ((@escaping (Int) -> Int) -> Int)? = .some(applyTo)
+        let applyTo: @Sendable (@escaping @Sendable (Int) -> Int) -> Int = { fn in fn(y) }
+        let pureApply: (@Sendable (@escaping @Sendable (Int) -> Int) -> Int)? = .some(applyTo)
         let right = pureApply <*> u
 
         #expect(left == right)
@@ -108,7 +108,7 @@ import Testing
     // MARK: - Applicative Operators
 
     @Test func applyOperator() {
-        let fn: ((Int) -> Int)? = { $0 * 2 }
+        let fn: (@Sendable (Int) -> Int)? = { $0 * 2 }
         let value: Int? = 5
         let result = fn <*> value
         #expect(result == 10)

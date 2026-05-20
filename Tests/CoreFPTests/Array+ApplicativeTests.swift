@@ -5,14 +5,14 @@ import Testing
     @Test func liftA2() {
         let arr1 = [1, 2]
         let arr2 = [10, 20]
-        let add = { (a: Int, b: Int) in a + b }
+        let add: @Sendable (Int, Int) -> Int = { a, b in a + b }
 
         let result = Array.liftA2(add)(arr1, arr2)
         #expect(result == [11, 21, 12, 22])
     }
 
     @Test func apply() {
-        let functions: [(Int) -> Int] = [{ $0 * 2 }, { $0 + 10 }]
+        let functions: [@Sendable (Int) -> Int] = [{ $0 * 2 }, { $0 + 10 }]
         let values = [1, 2, 3]
 
         let result = Array.apply(functions, values)
@@ -34,15 +34,15 @@ import Testing
     @Test func applicativeIdentityLaw() {
         // pure id <*> v = v
         let array = [1, 2, 3]
-        let identityArr: [(Int) -> Int] = [id]
+        let identityArr: [@Sendable (Int) -> Int] = [id]
 
         #expect(Array.apply(identityArr, array) == array)
     }
 
     @Test func applicativeCompositionLaw() {
         // Simplified composition law test: u <*> (v <*> w) should work
-        let u: [(Int) -> Int] = [{ $0 * 2 }]
-        let v: [(Int) -> Int] = [{ $0 + 1 }]
+        let u: [@Sendable (Int) -> Int] = [{ $0 * 2 }]
+        let v: [@Sendable (Int) -> Int] = [{ $0 + 1 }]
         let w = [5]
 
         // First apply v to w, then apply u to the result

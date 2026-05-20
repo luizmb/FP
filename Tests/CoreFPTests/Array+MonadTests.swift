@@ -9,8 +9,8 @@ import Testing
     }
 
     @Test func kleisliComposition() {
-        let duplicate: (Int) -> [Int] = { [$0, $0] }
-        let double: (Int) -> [Int] = { [$0 * 2] }
+        let duplicate: @Sendable (Int) -> [Int] = { [$0, $0] }
+        let double: @Sendable (Int) -> [Int] = { [$0 * 2] }
 
         let composed = Array.kleisli(duplicate, double)
         #expect(composed(5) == [10, 10])
@@ -38,7 +38,7 @@ import Testing
     @Test func monadLeftIdentityLaw() {
         // return a >>= f = f a
         let a = 5
-        let f: (Int) -> [Int] = { [$0 * 2] }
+        let f: @Sendable (Int) -> [Int] = { [$0 * 2] }
 
         let left = [a].flatMap(f)
         let right = f(a)
@@ -49,7 +49,7 @@ import Testing
     @Test func monadRightIdentityLaw() {
         // m >>= return = m
         let m = [1, 2, 3]
-        let pureFunc: (Int) -> [Int] = { [$0] }
+        let pureFunc: @Sendable (Int) -> [Int] = { [$0] }
 
         #expect(m.flatMap(pureFunc) == m)
     }
@@ -57,8 +57,8 @@ import Testing
     @Test func monadAssociativityLaw() {
         // (m >>= f) >>= g = m >>= (\x -> f x >>= g)
         let m = [1, 2]
-        let f: (Int) -> [Int] = { [$0, $0 + 1] }
-        let g: (Int) -> [Int] = { [$0 * 2] }
+        let f: @Sendable (Int) -> [Int] = { [$0, $0 + 1] }
+        let g: @Sendable (Int) -> [Int] = { [$0 * 2] }
 
         let left = m.flatMap(f).flatMap(g)
         let right = m.flatMap { x in f(x).flatMap(g) }

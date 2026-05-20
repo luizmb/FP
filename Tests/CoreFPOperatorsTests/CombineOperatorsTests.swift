@@ -51,8 +51,8 @@ import Testing
         var cancellables = Set<AnyCancellable>()
         let publisher = [1, 2, 3].publisher
 
-        let f: (Int) -> Int = { $0 * 2 }
-        let g: (Int) -> String = { "\($0)" }
+        let f: @Sendable (Int) -> Int = { $0 * 2 }
+        let g: @Sendable (Int) -> String = { "\($0)" }
 
         // fmap (g . f) == fmap g . fmap f
         let composed = (compose(f, g) <£> publisher)
@@ -212,7 +212,7 @@ import Testing
         let publisher1 = [1, 2].publisher
         let publisher2 = [10, 20].publisher
 
-        let add: (Int, Int) -> Int = { $0 + $1 }
+        let add: @Sendable (Int, Int) -> Int = { $0 + $1 }
         let lifted = Result<Int, Never>.Publisher.liftA2(add)
         let result = lifted(publisher1, publisher2)
 
@@ -306,7 +306,7 @@ import Testing
         var cancellables = Set<AnyCancellable>()
         let publisher = [1, 2].publisher
 
-        let fn: (Int) -> AnyPublisher<Int, Never> = { value in
+        let fn: @Sendable (Int) -> AnyPublisher<Int, Never> = { value in
             [value, value * 10].publisher.eraseToAnyPublisher()
         }
 
@@ -344,7 +344,7 @@ import Testing
         var cancellables = Set<AnyCancellable>()
         let publisher = [1, 2].publisher
 
-        let fn: (Int) -> AnyPublisher<Int, Never> = { value in
+        let fn: @Sendable (Int) -> AnyPublisher<Int, Never> = { value in
             [value * 3].publisher.eraseToAnyPublisher()
         }
 
@@ -362,8 +362,8 @@ import Testing
 
     @Test func kleisliComposition() {
         var cancellables = Set<AnyCancellable>()
-        let fn1: (Int) -> AnyPublisher<Int, Never> = { [$0 * 2].publisher.eraseToAnyPublisher() }
-        let fn2: (Int) -> AnyPublisher<String, Never> = { ["\($0)"].publisher.eraseToAnyPublisher() }
+        let fn1: @Sendable (Int) -> AnyPublisher<Int, Never> = { [$0 * 2].publisher.eraseToAnyPublisher() }
+        let fn2: @Sendable (Int) -> AnyPublisher<String, Never> = { ["\($0)"].publisher.eraseToAnyPublisher() }
 
         let composed = AnyPublisher<Int, Never>.kleisli(fn1, fn2)
         let result = composed(5)
@@ -380,8 +380,8 @@ import Testing
 
     @Test func kleisliOperator() {
         var cancellables = Set<AnyCancellable>()
-        let fn1: (Int) -> AnyPublisher<Int, Never> = { [$0 * 2].publisher.eraseToAnyPublisher() }
-        let fn2: (Int) -> AnyPublisher<String, Never> = { ["\($0)"].publisher.eraseToAnyPublisher() }
+        let fn1: @Sendable (Int) -> AnyPublisher<Int, Never> = { [$0 * 2].publisher.eraseToAnyPublisher() }
+        let fn2: @Sendable (Int) -> AnyPublisher<String, Never> = { ["\($0)"].publisher.eraseToAnyPublisher() }
 
         let composed = fn1 >=> fn2
         let result = composed(5)
@@ -416,7 +416,7 @@ import Testing
         var cancellables = Set<AnyCancellable>()
         let value = 5
 
-        let f: (Int) -> AnyPublisher<Int, Never> = { [$0 * 2].publisher.eraseToAnyPublisher() }
+        let f: @Sendable (Int) -> AnyPublisher<Int, Never> = { [$0 * 2].publisher.eraseToAnyPublisher() }
 
         // return a >>= f == f a
         let left = Just(value).eraseToAnyPublisher() >>- f
@@ -469,8 +469,8 @@ import Testing
         var cancellables = Set<AnyCancellable>()
         let publisher = [1].publisher
 
-        let f: (Int) -> AnyPublisher<Int, Never> = { [$0 * 2].publisher.eraseToAnyPublisher() }
-        let g: (Int) -> AnyPublisher<Int, Never> = { [$0 + 10].publisher.eraseToAnyPublisher() }
+        let f: @Sendable (Int) -> AnyPublisher<Int, Never> = { [$0 * 2].publisher.eraseToAnyPublisher() }
+        let g: @Sendable (Int) -> AnyPublisher<Int, Never> = { [$0 + 10].publisher.eraseToAnyPublisher() }
 
         // (m >>= f) >>= g == m >>= (\x -> f x >>= g)
         let left = (publisher >>- f) >>- g

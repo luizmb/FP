@@ -125,7 +125,7 @@ import Testing
     // Comonad law: extract . extend f == f
     @Test func readerComonadLawExtractExtend() {
         let r = Reader<String, Int> { $0.count }
-        let f: (Reader<String, Int>) -> Int = { inner in inner.runReader("!!") * 2 }
+        let f: @Sendable (Reader<String, Int>) -> Int = { inner in inner.runReader("!!") * 2 }
         // extract(extend f r) should equal f(r)
         #expect(extract(r.extend(f)) == f(r))
     }

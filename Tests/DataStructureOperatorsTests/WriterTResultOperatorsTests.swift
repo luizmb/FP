@@ -28,7 +28,7 @@ import Testing
     }
 
     @Test func apply() {
-        let wf = Writer<[String], Result<(Int) -> String, TestError>>(.success { "\($0)" }, ["fn"])
+        let wf = Writer<[String], Result<@Sendable (Int) -> String, TestError>>(.success { "\($0)" }, ["fn"])
         let wa = Writer<[String], Result<Int, TestError>>(.success(9), ["val"])
         let result = wf <*> wa
         #expect(result.value == .success("9"))
@@ -51,8 +51,8 @@ import Testing
     }
 
     @Test func kleisli() {
-        let f: (Int) -> Writer<[String], Result<Int, TestError>> = { n in Writer(.success(n + 1), ["f"]) }
-        let g: (Int) -> Writer<[String], Result<String, TestError>> = { n in Writer(.success("\(n)"), ["g"]) }
+        let f: @Sendable (Int) -> Writer<[String], Result<Int, TestError>> = { n in Writer(.success(n + 1), ["f"]) }
+        let g: @Sendable (Int) -> Writer<[String], Result<String, TestError>> = { n in Writer(.success("\(n)"), ["g"]) }
         let result = (f >=> g)(4)
         #expect(result.value == .success("5"))
         #expect(result.log == ["f", "g"])

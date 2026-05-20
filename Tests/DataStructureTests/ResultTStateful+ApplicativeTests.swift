@@ -8,21 +8,21 @@ import Testing
     // MARK: - Result<Stateful<S, A>, E> — Result as outer, Stateful as inner
 
     @Test func applyBothSuccess() {
-        let rf: Result<Stateful<Int, (Int) -> String>, TestError> = .success(.pure({ "\($0)" }))
+        let rf: Result<Stateful<Int, @Sendable (Int) -> String>, TestError> = .success(.pure({ "\($0)" }))
         let ra: Result<Stateful<Int, Int>, TestError> = .success(.get)
         let result = applyResultStateful(rf, ra)
         #expect(result.success?.eval(5) == "5")
     }
 
     @Test func applyFailureFn() {
-        let rf: Result<Stateful<Int, (Int) -> String>, TestError> = .failure(.failure)
+        let rf: Result<Stateful<Int, @Sendable (Int) -> String>, TestError> = .failure(.failure)
         let ra: Result<Stateful<Int, Int>, TestError> = .success(.pure(5))
         let result = applyResultStateful(rf, ra)
         if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func applyFailureVal() {
-        let rf: Result<Stateful<Int, (Int) -> String>, TestError> = .success(.pure({ "\($0)" }))
+        let rf: Result<Stateful<Int, @Sendable (Int) -> String>, TestError> = .success(.pure({ "\($0)" }))
         let ra: Result<Stateful<Int, Int>, TestError> = .failure(.failure)
         let result = applyResultStateful(rf, ra)
         if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }

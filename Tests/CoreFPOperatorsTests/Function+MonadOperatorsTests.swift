@@ -6,8 +6,8 @@ import Testing
     // MARK: - Basic Monad Tests
 
     @Test func basicFlatMap() {
-        let f: (Int) -> String = { "\($0)" }
-        let transform: (String) -> (Int) -> Int = { str in
+        let f: @Sendable (Int) -> String = { "\($0)" }
+        let transform: @Sendable (String) -> @Sendable (Int) -> Int = { str in
             { r in (Int(str) ?? 0) + r }
         }
 
@@ -20,8 +20,8 @@ import Testing
     }
 
     @Test func curriedFlatMap() {
-        let f: (Int) -> Int = { $0 * 2 }
-        let transform: (Int) -> (Int) -> String = { x in
+        let f: @Sendable (Int) -> Int = { $0 * 2 }
+        let transform: @Sendable (Int) -> @Sendable (Int) -> String = { x in
             { r in "\(x + r)" }
         }
 
@@ -33,7 +33,7 @@ import Testing
     }
 
     @Test func basicJoin() {
-        let nested: (Int) -> (Int) -> String = { x in
+        let nested: @Sendable (Int) -> @Sendable (Int) -> String = { x in
             { r in "\(x + r)" }
         }
 
@@ -45,10 +45,10 @@ import Testing
     }
 
     @Test func kleisliComposition() {
-        let f: (Int) -> (String) -> Int = { x in
+        let f: @Sendable (Int) -> @Sendable (String) -> Int = { x in
             { r in x + (Int(r) ?? 0) }
         }
-        let g: (Int) -> (String) -> String = { y in
+        let g: @Sendable (Int) -> @Sendable (String) -> String = { y in
             { r in "\(y + (Int(r) ?? 0))" }
         }
 
@@ -61,10 +61,10 @@ import Testing
     }
 
     @Test func basicKleisliReverse() {
-        let f: (Int) -> (String) -> Int = { x in
+        let f: @Sendable (Int) -> @Sendable (String) -> Int = { x in
             { r in x + (Int(r) ?? 0) }
         }
-        let g: (Int) -> (String) -> String = { y in
+        let g: @Sendable (Int) -> @Sendable (String) -> String = { y in
             { r in "\(y + (Int(r) ?? 0))" }
         }
 
@@ -80,7 +80,7 @@ import Testing
         // return a >>- f == f a
         // For functions: pure a >>- f == f a
         let a = 5
-        let f: (Int) -> (String) -> String = { x in
+        let f: @Sendable (Int) -> @Sendable (String) -> String = { x in
             { r in "\(x)_\(r)" }
         }
 
@@ -94,7 +94,7 @@ import Testing
     @Test func monadRightIdentityLaw() {
         // m >>- return == m
         // For functions: f >>- pure == f
-        let m: (Int) -> String = { "\($0)" }
+        let m: @Sendable (Int) -> String = { "\($0)" }
 
         let left = m >>- pure
         let right = m
@@ -105,11 +105,11 @@ import Testing
 
     @Test func monadAssociativityLaw() {
         // (m >>- f) >>- g == m >>- (\x -> f x >>- g)
-        let m: (Int) -> Int = { $0 * 2 }
-        let f: (Int) -> (Int) -> String = { x in
+        let m: @Sendable (Int) -> Int = { $0 * 2 }
+        let f: @Sendable (Int) -> @Sendable (Int) -> String = { x in
             { r in "\(x + r)" }
         }
-        let g: (String) -> (Int) -> Int = { s in
+        let g: @Sendable (String) -> @Sendable (Int) -> Int = { s in
             { r in (Int(s) ?? 0) + r }
         }
 
@@ -125,7 +125,7 @@ import Testing
 
     @Test func kleisliLeftIdentityLaw() {
         // pure >=> f == f
-        let f: (Int) -> (String) -> String = { x in
+        let f: @Sendable (Int) -> @Sendable (String) -> String = { x in
             { r in "\(x)_\(r)" }
         }
 
@@ -137,7 +137,7 @@ import Testing
 
     @Test func kleisliRightIdentityLaw() {
         // f >=> pure == f
-        let f: (Int) -> (String) -> String = { x in
+        let f: @Sendable (Int) -> @Sendable (String) -> String = { x in
             { r in "\(x)_\(r)" }
         }
 
@@ -149,13 +149,13 @@ import Testing
 
     @Test func kleisliAssociativityLaw() {
         // (f >=> g) >=> h == f >=> (g >=> h)
-        let f: (Int) -> (String) -> Int = { x in
+        let f: @Sendable (Int) -> @Sendable (String) -> Int = { x in
             { r in x + (Int(r) ?? 0) }
         }
-        let g: (Int) -> (String) -> String = { y in
+        let g: @Sendable (Int) -> @Sendable (String) -> String = { y in
             { r in "\(y + (Int(r) ?? 0))" }
         }
-        let h: (String) -> (String) -> Int = { s in
+        let h: @Sendable (String) -> @Sendable (String) -> Int = { s in
             { r in (Int(s) ?? 0) + (Int(r) ?? 0) }
         }
 
@@ -168,8 +168,8 @@ import Testing
     // MARK: - Monad Operators
 
     @Test func bindOperator() {
-        let f: (Int) -> String = { "\($0)" }
-        let transform: (String) -> (Int) -> Int = { str in
+        let f: @Sendable (Int) -> String = { "\($0)" }
+        let transform: @Sendable (String) -> @Sendable (Int) -> Int = { str in
             { r in (Int(str) ?? 0) + r }
         }
 
@@ -180,8 +180,8 @@ import Testing
     }
 
     @Test func reverseBindOperator() {
-        let f: (Int) -> String = { "\($0)" }
-        let transform: (String) -> (Int) -> Int = { str in
+        let f: @Sendable (Int) -> String = { "\($0)" }
+        let transform: @Sendable (String) -> @Sendable (Int) -> Int = { str in
             { r in (Int(str) ?? 0) + r }
         }
 
@@ -193,10 +193,10 @@ import Testing
     }
 
     @Test func kleisliOperator() {
-        let f: (Int) -> (String) -> Int = { x in
+        let f: @Sendable (Int) -> @Sendable (String) -> Int = { x in
             { r in x + (Int(r) ?? 0) }
         }
-        let g: (Int) -> (String) -> String = { y in
+        let g: @Sendable (Int) -> @Sendable (String) -> String = { y in
             { r in "\(y + (Int(r) ?? 0))" }
         }
 
@@ -206,10 +206,10 @@ import Testing
     }
 
     @Test func reverseKleisliOperator() {
-        let f: (Int) -> (String) -> Int = { x in
+        let f: @Sendable (Int) -> @Sendable (String) -> Int = { x in
             { r in x + (Int(r) ?? 0) }
         }
-        let g: (Int) -> (String) -> String = { y in
+        let g: @Sendable (Int) -> @Sendable (String) -> String = { y in
             { r in "\(y + (Int(r) ?? 0))" }
         }
 
@@ -219,9 +219,9 @@ import Testing
     }
 
     @Test func multipleKleisliComposition() {
-        let f: (Int) -> (Int) -> Int = { x in { r in x + r } }
-        let g: (Int) -> (Int) -> Int = { y in { r in y * r } }
-        let h: (Int) -> (Int) -> Int = { z in { r in z - r } }
+        let f: @Sendable (Int) -> @Sendable (Int) -> Int = { x in { r in x + r } }
+        let g: @Sendable (Int) -> @Sendable (Int) -> Int = { y in { r in y * r } }
+        let h: @Sendable (Int) -> @Sendable (Int) -> Int = { z in { r in z - r } }
 
         let composed = f >=> g >=> h
 
@@ -241,9 +241,9 @@ import Testing
             let offset: Int
         }
 
-        let getMultiplier: (Config) -> Int = { $0.multiplier }
+        let getMultiplier: @Sendable (Config) -> Int = { $0.multiplier }
 
-        let compute: (Int) -> (Config) -> Int = { mult in
+        let compute: @Sendable (Int) -> @Sendable (Config) -> Int = { mult in
             { config in mult * config.offset }
         }
 
@@ -259,13 +259,13 @@ import Testing
             let y: Int
         }
 
-        let getX: (Environment) -> Int = { $0.x }
+        let getX: @Sendable (Environment) -> Int = { $0.x }
 
-        let addY: (Int) -> (Environment) -> Int = { x in
+        let addY: @Sendable (Int) -> @Sendable (Environment) -> Int = { x in
             { env in x + env.y }
         }
 
-        let multiplyByX: (Int) -> (Environment) -> Int = { sum in
+        let multiplyByX: @Sendable (Int) -> @Sendable (Environment) -> Int = { sum in
             { env in sum * env.x }
         }
 
@@ -280,7 +280,7 @@ import Testing
 
     @Test func joinPractical() {
         // Flatten a nested computation
-        let nestedComputation: (Int) -> (Int) -> Int = { x in
+        let nestedComputation: @Sendable (Int) -> @Sendable (Int) -> Int = { x in
             { r in x * r }
         }
 
@@ -292,13 +292,13 @@ import Testing
     }
 
     @Test func equivalenceWithManualBind() {
-        let f: (Int) -> String = { "\($0)" }
-        let transform: (String) -> (Int) -> Int = { str in
+        let f: @Sendable (Int) -> String = { "\($0)" }
+        let transform: @Sendable (String) -> @Sendable (Int) -> Int = { str in
             { r in (Int(str) ?? 0) + r }
         }
 
         let viaBind = f >>- transform
-        let manual: (Int) -> Int = { r in transform(f(r))(r) }
+        let manual: @Sendable (Int) -> Int = { r in transform(f(r))(r) }
 
         #expect(viaBind(5) == manual(5))
         #expect(viaBind(10) == manual(10))
@@ -306,10 +306,10 @@ import Testing
 
     @Test func flatMapEquivalentToJoinCompose() {
         // flatMap f g == join (fmap f g)
-        let f: (Int) -> (Int) -> String = { x in
+        let f: @Sendable (Int) -> @Sendable (Int) -> String = { x in
             { r in "\(x + r)" }
         }
-        let g: (Int) -> Int = { $0 * 2 }
+        let g: @Sendable (Int) -> Int = { $0 * 2 }
 
         let viaFlatMap = flatMap(g, f)
         let viaJoinFmap = join(fmap(f, g))
@@ -320,15 +320,15 @@ import Testing
 
     @Test func kleisliVsDirectComposition() {
         // Compare Kleisli composition with manual composition
-        let f: (Int) -> (String) -> Int = { x in
+        let f: @Sendable (Int) -> @Sendable (String) -> Int = { x in
             { r in x + (Int(r) ?? 0) }
         }
-        let g: (Int) -> (String) -> String = { y in
+        let g: @Sendable (Int) -> @Sendable (String) -> String = { y in
             { r in "\(y + (Int(r) ?? 0))" }
         }
 
         let viaKleisli = f >=> g
-        let manual: (Int) -> (String) -> String = { a in
+        let manual: @Sendable (Int) -> @Sendable (String) -> String = { a in
             { r in g(f(a)(r))(r) }
         }
 

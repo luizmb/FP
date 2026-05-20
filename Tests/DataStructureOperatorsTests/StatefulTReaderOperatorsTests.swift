@@ -17,7 +17,7 @@ import Testing
     }
 
     @Test func apply() {
-        let sf = Stateful<Int, Reader<String, (Int) -> String>> { _ in Reader { _ in { "\($0)" } } }
+        let sf = Stateful<Int, Reader<String, @Sendable (Int) -> String>> { _ in Reader { _ in { "\($0)" } } }
         let sa = Stateful<Int, Reader<String, Int>> { _ in Reader { _ in 7 } }
         let result = sf <*> sa
         #expect(result.eval(0)("env") == "7")

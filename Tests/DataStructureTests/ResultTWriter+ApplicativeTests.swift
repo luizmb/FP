@@ -8,7 +8,7 @@ import Testing
     // MARK: - Result<Writer<W, A>, E> — Result as outer, Writer as inner
 
     @Test func applyBothSuccess() {
-        let rf: Result<Writer<[String], (Int) -> String>, TestError> = .success(Writer({ "\($0)" }, ["fn"]))
+        let rf: Result<Writer<[String], @Sendable (Int) -> String>, TestError> = .success(Writer({ @Sendable in "\($0)" }, ["fn"]))
         let ra: Result<Writer<[String], Int>, TestError> = .success(Writer(7, ["val"]))
         let result = applyResultWriter(rf, ra)
         #expect(result.success?.value == "7")
@@ -16,14 +16,14 @@ import Testing
     }
 
     @Test func applyFailureFn() {
-        let rf: Result<Writer<[String], (Int) -> String>, TestError> = .failure(.failure)
+        let rf: Result<Writer<[String], @Sendable (Int) -> String>, TestError> = .failure(.failure)
         let ra: Result<Writer<[String], Int>, TestError> = .success(Writer(7, ["val"]))
         let result = applyResultWriter(rf, ra)
         if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func applyFailureVal() {
-        let rf: Result<Writer<[String], (Int) -> String>, TestError> = .success(Writer({ "\($0)" }, ["fn"]))
+        let rf: Result<Writer<[String], @Sendable (Int) -> String>, TestError> = .success(Writer({ @Sendable in "\($0)" }, ["fn"]))
         let ra: Result<Writer<[String], Int>, TestError> = .failure(.failure)
         let result = applyResultWriter(rf, ra)
         if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }

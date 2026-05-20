@@ -19,7 +19,7 @@ import Testing
     }
 
     @Test func apply() {
-        let wf = Writer<[String], [(Int) -> Int]>([{ $0 + 1 }, { $0 * 10 }], ["fn"])
+        let wf = Writer<[String], [@Sendable (Int) -> Int]>([{ $0 + 1 }, { $0 * 10 }], ["fn"])
         let wa = Writer<[String], [Int]>([1, 2], ["val"])
         let result = wf <*> wa
         #expect(result.value == [2, 3, 10, 20])
@@ -43,8 +43,8 @@ import Testing
     }
 
     @Test func kleisli() {
-        let f: (Int) -> Writer<[String], [Int]> = { n in Writer([n, n + 1], ["f"]) }
-        let g: (Int) -> Writer<[String], [String]> = { n in Writer(["\(n)"], ["g"]) }
+        let f: @Sendable (Int) -> Writer<[String], [Int]> = { n in Writer([n, n + 1], ["f"]) }
+        let g: @Sendable (Int) -> Writer<[String], [String]> = { n in Writer(["\(n)"], ["g"]) }
         let result = (f >=> g)(3)
         #expect(result.value == ["3", "4"])
     }

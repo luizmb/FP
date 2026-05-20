@@ -7,11 +7,17 @@ public func <*> <L, S, A, B>(_ eithF: Either<L, Stateful<S, @Sendable (A) -> B>>
 }
 
 // (*>) :: Either<l, Stateful<s, a>> -> Either<l, Stateful<s, b>> -> Either<l, Stateful<s, b>>
-public func *> <L, S, A, B>(_ lhs: Either<L, Stateful<S, A>>, _ rhs: Either<L, Stateful<S, B>>) -> Either<L, Stateful<S, B>> where L: Sendable, S: Sendable, A: Sendable, B: Sendable {
+public func *> <L, S, A, B>(
+    _ lhs: Either<L, Stateful<S, A>>,
+    _ rhs: Either<L, Stateful<S, B>>
+) -> Either<L, Stateful<S, B>> where L: Sendable, S: Sendable, A: Sendable, B: Sendable {
     seqRightEitherStateful(lhs, rhs)
 }
 
 // (<*) :: Either<l, Stateful<s, a>> -> Either<l, Stateful<s, b>> -> Either<l, Stateful<s, a>>
-public func <* <L, S, A, B>(_ lhs: Either<L, Stateful<S, A>>, _ rhs: Either<L, Stateful<S, B>>) -> Either<L, Stateful<S, A>> where L: Sendable, S: Sendable, A: Sendable, B: Sendable {
+public func <* <L, S, A, B>(
+    _ lhs: Either<L, Stateful<S, A>>,
+    _ rhs: Either<L, Stateful<S, B>>
+) -> Either<L, Stateful<S, A>> where L: Sendable, S: Sendable, A: Sendable, B: Sendable {
     seqLeftEitherStateful(lhs, rhs)
 }

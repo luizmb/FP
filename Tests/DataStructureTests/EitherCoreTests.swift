@@ -91,7 +91,7 @@ import Testing
     // MARK: - Applicative (Core Methods)
 
     @Test func liftA2() {
-        let add: (Int, Int) -> Int = { $0 + $1 }
+        let add: @Sendable (Int, Int) -> Int = { $0 + $1 }
         let liftedAdd = Either<String, Int>.liftA2(add)
 
         let right1: Either<String, Int> = .right(5)
@@ -160,8 +160,8 @@ import Testing
     }
 
     @Test func kleisli() {
-        let f: (Int) -> Either<String, Int> = { .right($0 * 2) }
-        let g: (Int) -> Either<String, String> = { .right("\($0)") }
+        let f: @Sendable (Int) -> Either<String, Int> = { .right($0 * 2) }
+        let g: @Sendable (Int) -> Either<String, String> = { .right("\($0)") }
 
         let composed = Either<String, Int>.kleisli(f, g)
         let result = composed(5)

@@ -37,7 +37,7 @@ import Testing
     // MARK: - Applicative operators
 
     @Test func applyOperator() {
-        let wf = Writer<[String], (Int) -> String>({ "\($0)" }, ["fn"])
+        let wf = Writer<[String], @Sendable (Int) -> String>({ "\($0)" }, ["fn"])
         let wa = Writer<[String], Int>(7, ["val"])
         let result = wf <*> wa
         #expect(result.value == "7")
@@ -70,7 +70,7 @@ import Testing
     }
 
     @Test func flippedBindOperator() {
-        let fn: (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["inner"]) }
+        let fn: @Sendable (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["inner"]) }
         let w = Writer<[String], Int>(4, ["outer"])
         let result = fn -<< w
         #expect(result.value == "4")
@@ -78,8 +78,8 @@ import Testing
     }
 
     @Test func kleisliOperator() {
-        let step1: (Int) -> Writer<[String], Int> = { n in Writer(n + 1, ["s1"]) }
-        let step2: (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["s2"]) }
+        let step1: @Sendable (Int) -> Writer<[String], Int> = { n in Writer(n + 1, ["s1"]) }
+        let step2: @Sendable (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["s2"]) }
         let composed = step1 >=> step2
         let result = composed(10)
         #expect(result.value == "11")

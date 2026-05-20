@@ -42,14 +42,14 @@ import Testing
     }
 
     @Test func applyStatefulValidationBothSuccess() {
-        let sf = Stateful<Int, Validation<[String], (Int) -> String>>.pure(.success { "\($0)" })
+        let sf = Stateful<Int, Validation<[String], @Sendable (Int) -> String>>.pure(.success { "\($0)" })
         let sa = Stateful<Int, Validation<[String], Int>>.pure(.success(42))
         let result = applyStatefulValidation(sf, sa)
         #expect(result.eval(0) == .success("42"))
     }
 
     @Test func applyStatefulValidationAccumulatesErrors() {
-        let sf = Stateful<Int, Validation<[String], (Int) -> String>>.pure(.failure(["e1"]))
+        let sf = Stateful<Int, Validation<[String], @Sendable (Int) -> String>>.pure(.failure(["e1"]))
         let sa = Stateful<Int, Validation<[String], Int>>.pure(.failure(["e2"]))
         let result = applyStatefulValidation(sf, sa)
         #expect(result.eval(0) == .failure(["e1", "e2"]))
