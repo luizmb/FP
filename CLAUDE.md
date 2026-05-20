@@ -83,6 +83,28 @@ Every operator that has a directional sense has a **flipped counterpart**. When 
 - `<£^>` and `<&^>` have **no base-type overloads** by design — transformer-only, so Swift always resolves unambiguously.
 - Optics (`Lens`, `Prism`, `AffineTraversal`) compose via `>>>` / `<<<` alongside regular function composition.
 
+## Sendable Contract — MANDATORY
+
+The library is **Sendable-first**. Composition (functor / applicative / monad / transformer surfaces, function helpers, optics, free functions like `compose` / `curry` / `flip` / `withArg`) takes and returns `@Sendable` closures everywhere. When adding new surfaces, follow these rules:
+
+- **All algebraic value types** (`Either`, `Validation`, `Reader`, `Stateful`, `Writer`, `Loading`, `NonEmpty`, `Newtype`, `Endo`, `EndoMut`, `Iso`, `Lens`, `Prism`, `AffineTraversal`, `DeferredTask`, `DeferredStream`, `ZIO`, `ZIOKleisli`, …) carry a conditional `extension X: Sendable where T: Sendable [, ...]` conformance. Stored closures are `@Sendable`.
+- **Algebra protocols** (`Semigroup`, `Monoid`, `SumType2`, `FunctionWrapper`, `CaseMatchable`, `HasCases`, `HasMax`, `HasMin`, `SIMDMonoidScalar`) refine `Sendable`. Conformers must be Sendable.
+- **`apply` / `<*>` and friends** require the *inner* closure type to be `@Sendable`, e.g. `Either<L, @Sendable (A) -> B>`, `Reader<E, @Sendable (A) -> B>`, `Stateful<S, @Sendable (A) -> B>`, `[@Sendable (A) -> B]`, `Result<@Sendable (A) -> B, E>`, etc. The Either pattern is the template — copy it for new transformer combinations.
+- **Composition free functions** (`compose`, `compose3`, `compose4`, `withArg`, `tuple`, `untuple`, `uncurry`, `flipU`, `call(then:)`, `lazy(_function:)`, `unlazy(_:)`) return `@Sendable` functions unconditionally — they only capture their input closures (which are already `@Sendable`).
+- **Helpers that capture a generic-typed value** (`curry`, `curryT`, `partialApply`, `flip` (2-arg + curried), `partialApplyFlip`, `lazy(value:)`, `pure`) require the captured generic to be `Sendable` to return `@Sendable`. The library exposes both: a non-Sendable original and a `<A: Sendable>` overload returning `@Sendable`. Compiler picks based on context.
+- **KeyPath → function**: Swift's implicit `KeyPath → (Root) -> Value` conversion is **not** `@Sendable`. Use `get(_:)` (CoreFP) or `prefix ^` (CoreFPOperators) to lift explicitly.
+- **`inout` cannot be captured in `@Sendable` closures.** When `Stateful<S, A>` combinators need to run multiple sub-`Stateful`s, evaluate them *before* the `@Sendable` block, in left-to-right applicative order:
+  ```swift
+  Stateful<S, B> { s in
+      let f = sf.run(&s)  // first
+      let a = sa.run(&s)  // second
+      return ...          // pure combine inside @Sendable body
+  }
+  ```
+- **Operator overload ambiguity:** When the same operator (`*>`, `<*`, etc.) has both a generic `Either<A, B>` overload and a specialised `Either<L, Stateful<S, A>>` transformer overload, Sendable constraints must be placed in `where` clauses (not inline on type parameters) on the generic version, with matching `where L: Sendable, S: Sendable, …` clauses on the transformer version. Otherwise Swift can't pick the more-specific overload.
+- **`Result.Monoids.Pessimistic` semigroup** — Failure is constrained to `Semigroup` but Success is **not**. Swift forbids `Success: Sendable` in a `Semigroup` conditional conformance (marker-protocol rule), so Pessimistic ships a separate `extension … : Sendable where Success: Sendable, Failure: Sendable {}` alongside its `: Semigroup` conformance. Same pattern for the other three `Result.Monoids.*` variants.
+- **What does NOT need `: Sendable`:** uninhabited phantom-namespace enums (`Of<T>`, `Of2<T,U>`, `Of3<T,U,V>`, `Result.Monoids`, `Bool.Monoids`). They have no instances; conformance would be vacuous. Same for the `Mutable` marker protocol — its conformers are arbitrary value types and most are already Sendable; forcing the protocol bound would over-restrict.
+
 ## Swift Limitations — What Cannot Be Implemented
 
 Swift lacks Higher-Kinded Types (HKT). You cannot write a type parameter that is itself generic — `protocol Functor { associatedtype F<A> }` is not valid Swift. This rules out entire categories of abstractions that exist in Haskell or Scala Cats:

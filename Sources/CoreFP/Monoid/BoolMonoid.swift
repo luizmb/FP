@@ -29,7 +29,7 @@ extension Bool {
     /// ```
     ///
     /// - SeeAlso: ``Monoid``, ``mconcat(_:)``
-    public enum Monoids: Sendable {
+    public enum Monoids {
         /// Monoid under conjunction (&&), with identity `true`.
         public struct And: Monoid, RawRepresentable {
             public let rawValue: Bool

@@ -10,19 +10,19 @@ import Foundation
 /// ```swift
 /// [1, 2, nil, 3].compactMap(Of<Int>.id)   // disambiguates id for Int
 /// ```
-public enum Of<T>: Sendable {}
+public enum Of<T> {}
 
 /// A phantom type namespace for free functions with two type parameters.
 ///
 /// Like ``Of``, but with two type parameters `T` and `U`. Methods return functions of type
 /// `(T) -> U`.
-public enum Of2<T, U>: Sendable {}
+public enum Of2<T, U> {}
 
 /// A phantom type namespace for free functions with three type parameters.
 ///
 /// Like ``Of``, but with three type parameters `T`, `U`, and `V`. Methods return functions
 /// of type `(T, U) -> V`.
-public enum Of3<T, U, V>: Sendable {}
+public enum Of3<T, U, V> {}
 
 /// Converts a `Never` value into any type — the type-theoretic absurdity function.
 ///

@@ -45,6 +45,7 @@ The library draws from Haskell and Scala Cats conventions and is designed to be 
   - [Composing Transformations (Endo)](#composing-transformations-endo)
   - [Cost-Free Mutations (EndoMut)](#cost-free-mutations-endomut)
   - [SumType2 — Shared Interface for Two-Case Types](#sumtype2--shared-interface-for-two-case-types)
+  - [Concurrency: Sendable-First](#concurrency-sendable-first)
   - [Utilities](#utilities)
   - [Operator Reference](#operator-reference)
   - [Types](#types)
@@ -1588,6 +1589,79 @@ let r = Result<Int, String>.from(Either<String, Int>.right(42))  // .success(42)
 ```
 
 The protocol defines three requirements — `left(_:)`, `right(_:)`, `match(caseLeft:caseRight:)`, and `from(_:)` — and provides `.a`, `.b`, `.isA`, `.isB` as extensions. Use `SumType2` in your own generic functions to work over `Either`, `Result`, and any custom two-case type simultaneously.
+
+---
+
+### Concurrency: Sendable-First
+
+FP is a **Sendable-first** library. Composition (functor / applicative / monad / transformer operators, function helpers, optics, etc.) requires `@Sendable` closures end-to-end; side effects live at the boundary, outside the composition layer.
+
+This is a deliberate FP discipline rather than a Swift concurrency quirk: composition should be pure, and `@Sendable` is the strongest static guarantee Swift gives us that a closure carries no side-channel state. Closures that capture mutable view-controller state, non-Sendable services, or other non-Sendable references can't be composed by `map` / `flatMap` / `<*>` — and that's the point.
+
+#### What's `Sendable` in the library
+
+| Layer | Sendable status |
+|---|---|
+| All algebraic types (`Either`, `Validation`, `Reader`, `Stateful`, `Writer`, `Loading`, `NonEmpty`, `Newtype`, `Endo`, `EndoMut`, `Iso`, `Lens`, `Prism`, `AffineTraversal`, `DeferredTask`, `DeferredStream`, `ZIO`, `ZIOKleisli`, …) | **Conditionally** `Sendable` when their type parameters are Sendable |
+| `Semigroup`, `Monoid`, `SumType2`, `FunctionWrapper`, `CaseMatchable`, `HasCases`, `HasMax`, `HasMin`, `SIMDMonoidScalar` | Refine `Sendable` (conformers must be Sendable) |
+| `apply` / `<*>` / `flatMap` / `>>-` / `>=>` / `liftA2` / `fmap` / `<£>` / `>>>` / composition helpers (`compose`, `curry`, `flip`, `withArg`, …) | Take and return `@Sendable` closures |
+| `KeyPath` / `WritableKeyPath` | Retroactively `@unchecked Sendable` (immutable metadata, safe to share) |
+
+#### Lifting `KeyPath` into `@Sendable` functions
+
+Swift's implicit `KeyPath → (Root) -> Value` conversion produces a closure that is **not** `@Sendable`, even though `KeyPath` itself is Sendable. To pass a key path into composition, lift it explicitly:
+
+```swift
+import CoreFP            // `get(_:)` — unambiguous free function
+import CoreFPOperators   // prefix `^` — terse form
+
+let predicate = compose(get(\User.name), equals("Alice"))      // 1. Unambiguous
+let predicate = compose(^\User.name, equals("Alice"))          // 2. Operator
+let predicate = compose({ $0.name }, equals("Alice"))          // 3. Explicit closure
+```
+
+The `^` prefix operator is overloaded:
+- `^\Person.age` on a `WritableKeyPath` returns a `Lens<Person, Int>`.
+- `^\Person.name` on a `KeyPath` (`let` property) returns either a curried Lens builder or a `@Sendable (Person) -> String`, picked by call-site context. When the context is ambiguous, fall back to `get(_:)`.
+
+#### Side effects at the boundary
+
+A `@Sendable` closure can capture `self` only if `self` is itself Sendable. View controllers, view models, and most reference types aren't — and shouldn't be smuggled into composition. The library uses three boundary patterns:
+
+```swift
+// 1. Combine — `sink` is non-@Sendable, accepts non-Sendable self
+publisher
+    .map(parseUser)             // pure composition, @Sendable closures
+    .sink { [weak self] user in self?.update(user) }   // boundary
+
+// 2. DeferredTask / DeferredStream — build the body Sendable, do the
+//    side effect outside in a Task that captures self
+Task { @MainActor in
+    let user = await fetchUserTask.run()
+    self.updateLabel(user.name)
+}
+
+// 3. Reader — pass dependencies through the environment, not via capture
+reader.runReader(env)            // returns a value; act on `self` next to it
+```
+
+#### Composition surfaces forbid `inout` captures
+
+`Stateful<S, A>` stores `@Sendable (inout S) -> A` and threads state through `flatMap`. The `@Sendable` requirement forbids capturing an `inout` from an enclosing scope into the closure body, so applicative / monad combinators evaluate each sub-`Stateful` *before* wrapping the next `@Sendable` block:
+
+```swift
+Stateful<S, B> { s in
+    let f = sf.run(&s)           // run sf first  (state advances)
+    let a = sa.run(&s)           // run sa second (state advances again)
+    return ...                   // combine results inside the @Sendable body
+}
+```
+
+This matches the standard left-to-right applicative semantics for State.
+
+#### Algebra protocols imply `Sendable`
+
+Because the algebra layer is intended for value types you compose and pass around, `Semigroup` (and therefore `Monoid`, `SumType2`, etc.) refine `Sendable`. The standard numeric, string, array, set, dictionary, and option types satisfy this trivially. If you write a custom `Semigroup`, the conforming type must be `Sendable` — usually free for value types.
 
 ---
 
