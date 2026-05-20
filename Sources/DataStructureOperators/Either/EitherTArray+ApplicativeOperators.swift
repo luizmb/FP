@@ -10,11 +10,11 @@ public func <*> <L, A, B>(_ fns: Either<L, [@Sendable (A) -> B]>, _ values: Eith
 }
 
 // (*>) :: Either<l,[a]> -> Either<l,[b]> -> Either<l,[b]>
-public func *> <L, A, B>(_ lhs: Either<L, [A]>, _ rhs: Either<L, [B]>) -> Either<L, [B]> {
+public func *> <L, A, B>(_ lhs: Either<L, [A]>, _ rhs: Either<L, [B]>) -> Either<L, [B]> where L: Sendable, A: Sendable, B: Sendable {
     seqRightEitherArray(lhs, rhs)
 }
 
 // (<*) :: Either<l,[a]> -> Either<l,[b]> -> Either<l,[a]>
-public func <* <L, A, B>(_ lhs: Either<L, [A]>, _ rhs: Either<L, [B]>) -> Either<L, [A]> {
+public func <* <L, A, B>(_ lhs: Either<L, [A]>, _ rhs: Either<L, [B]>) -> Either<L, [A]> where L: Sendable, A: Sendable, B: Sendable {
     seqLeftEitherArray(lhs, rhs)
 }

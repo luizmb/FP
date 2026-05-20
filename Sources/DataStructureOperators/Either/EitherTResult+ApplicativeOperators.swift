@@ -16,7 +16,7 @@ public func <*> <L, A, B, E: Error>(
 public func *> <L, A, B, E: Error>(
     _ lhs: Either<L, Result<A, E>>,
     _ rhs: Either<L, Result<B, E>>
-) -> Either<L, Result<B, E>> {
+) -> Either<L, Result<B, E>> where L: Sendable, A: Sendable, B: Sendable {
     seqRightEitherResult(lhs, rhs)
 }
 
@@ -24,6 +24,6 @@ public func *> <L, A, B, E: Error>(
 public func <* <L, A, B, E: Error>(
     _ lhs: Either<L, Result<A, E>>,
     _ rhs: Either<L, Result<B, E>>
-) -> Either<L, Result<A, E>> {
+) -> Either<L, Result<A, E>> where L: Sendable, A: Sendable, B: Sendable {
     seqLeftEitherResult(lhs, rhs)
 }

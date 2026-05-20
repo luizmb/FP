@@ -14,7 +14,7 @@ public func <*> <L, E: Semigroup, A, B>(
 public func *> <L, E: Semigroup, A, B>(
     _ lhs: Either<L, Validation<E, A>>,
     _ rhs: Either<L, Validation<E, B>>
-) -> Either<L, Validation<E, B>> {
+) -> Either<L, Validation<E, B>> where L: Sendable, A: Sendable, B: Sendable {
     seqRightEitherValidation(lhs, rhs)
 }
 
@@ -22,6 +22,6 @@ public func *> <L, E: Semigroup, A, B>(
 public func <* <L, E: Semigroup, A, B>(
     _ lhs: Either<L, Validation<E, A>>,
     _ rhs: Either<L, Validation<E, B>>
-) -> Either<L, Validation<E, A>> {
+) -> Either<L, Validation<E, A>> where L: Sendable, A: Sendable, B: Sendable {
     seqLeftEitherValidation(lhs, rhs)
 }
