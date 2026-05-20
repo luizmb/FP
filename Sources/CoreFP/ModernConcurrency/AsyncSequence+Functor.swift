@@ -5,7 +5,7 @@ public extension AsyncSequence {
     /// Curried fmap for functional composition
     static func fmap<T>(
         _ transform: @escaping @Sendable (Element) async throws -> T
-    ) -> (Self) -> AsyncThrowingMapSequence<Self, T> {
+    ) -> @Sendable (Self) -> AsyncThrowingMapSequence<Self, T> {
         { sequence in
             sequence.map(transform)
         }
@@ -17,7 +17,7 @@ public extension AsyncStream {
     /// Curried fmap for AsyncStream
     static func fmap<T>(
         _ transform: @escaping @Sendable (Element) -> T
-    ) -> (AsyncStream<Element>) -> AsyncMapSequence<AsyncStream<Element>, T> {
+    ) -> @Sendable (AsyncStream<Element>) -> AsyncMapSequence<AsyncStream<Element>, T> {
         { stream in
             stream.map(transform)
         }

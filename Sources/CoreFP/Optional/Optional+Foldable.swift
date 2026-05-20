@@ -52,7 +52,7 @@ public extension Optional {
     /// Curried fold for point-free use.
     static func fold<B>(
         onNone: B,
-        onSome: @escaping (Wrapped) -> B
+        onSome: @escaping @Sendable (Wrapped) -> B
     ) -> (Wrapped?) -> B {
         { $0.fold(onNone: onNone, onSome: onSome) }
     }
@@ -65,7 +65,7 @@ public extension Optional {
 
     /// Curried foldMap for point-free use.
     static func foldMap<M: Monoid>(
-        _ f: @escaping (Wrapped) -> M
+        _ f: @escaping @Sendable (Wrapped) -> M
     ) -> (Wrapped?) -> M {
         { $0.foldMap(f) }
     }

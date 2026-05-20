@@ -12,7 +12,7 @@ public func applyValidationStateful<E: Semigroup, S, A, B>(
 }
 
 public func liftA2ValidationStateful<E: Semigroup, S, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Validation<E, Stateful<S, A>>, Validation<E, Stateful<S, B>>) -> Validation<E, Stateful<S, C>> {
     Validation.liftA2(Stateful.liftA2(fn))
 }

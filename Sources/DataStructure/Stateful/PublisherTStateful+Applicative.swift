@@ -8,7 +8,7 @@ import Foundation
 /// liftA2 for PublisherTStateful
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func liftA2PublisherStateful<S, A, B, C, E: Error>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (AnyPublisher<Stateful<S, A>, E>, AnyPublisher<Stateful<S, B>, E>) -> AnyPublisher<Stateful<S, C>, E> {
     { pubA, pubB in
         pubA.zip(pubB)

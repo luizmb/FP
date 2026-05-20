@@ -14,7 +14,7 @@ public func applyEitherArray<L, A, B>(
 
 /// liftA2 for EitherTArray
 public func liftA2EitherArray<L, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Either<L, [A]>, Either<L, [B]>) -> Either<L, [C]> {
     Either.liftA2(Array.liftA2(fn))
 }

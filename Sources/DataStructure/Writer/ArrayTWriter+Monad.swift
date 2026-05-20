@@ -11,7 +11,7 @@ public extension Array {
         map { writer in writer.flatMap(fn) }
     }
 
-    static func bindT<W: Monoid, A, B>(_ fn: @escaping (A) -> Writer<W, B>) -> ([Writer<W, A>]) -> [Writer<W, B>] {
+    static func bindT<W: Monoid, A, B>(_ fn: @escaping @Sendable (A) -> Writer<W, B>) -> ([Writer<W, A>]) -> [Writer<W, B>] {
         { arr in arr.flatMapT(fn) }
     }
 }

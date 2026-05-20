@@ -12,7 +12,7 @@ public extension Writer {
 
     @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
     func flatMapT<Inner, B, E: Error>(
-        _ fn: @escaping (Inner) -> Writer<W, any Publisher<B, E>>
+        _ fn: @escaping @Sendable (Inner) -> Writer<W, any Publisher<B, E>>
     ) -> Writer<W, any Publisher<B, E>>
     where A == any Publisher<Inner, E> {
         Writer<W, any Publisher<B, E>>(
@@ -28,7 +28,7 @@ public extension Writer {
 
     @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
     static func bindT<Inner, B, E: Error>(
-        _ fn: @escaping (Inner) -> Writer<W, any Publisher<B, E>>
+        _ fn: @escaping @Sendable (Inner) -> Writer<W, any Publisher<B, E>>
     ) -> (Writer<W, any Publisher<Inner, E>>) -> Writer<W, any Publisher<B, E>>
     where A == any Publisher<Inner, E> {
         { $0.flatMapT(fn) }

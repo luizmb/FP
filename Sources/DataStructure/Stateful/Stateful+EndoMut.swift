@@ -21,14 +21,7 @@ extension Stateful where A == Void {
     /// let reducer: EndoMut<AppState> = stateLens.lift(statefulAction.toEndoMut())
     /// ```
     public func toEndoMut() -> EndoMut<S> {
-        // EndoMut now stores a `@Sendable` closure; `Stateful.run` does not (yet).
-        // The two function types have identical ABI; the only difference is the
-        // type-system annotation. Upgrading via `unsafeBitCast` is sound because
-        // `Stateful` already advertises "pure FP state transformation" semantically.
-        // When `Stateful` itself becomes `Sendable` in a follow-up, this bitcast
-        // can be replaced by `EndoMut(run)` directly.
-        let sendableRun = unsafeBitCast(run, to: (@Sendable (inout S) -> Void).self)
-        return EndoMut(sendableRun)
+        EndoMut(run)
     }
 }
 

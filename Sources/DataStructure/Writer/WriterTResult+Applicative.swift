@@ -16,7 +16,7 @@ public func applyWriterResult<W: Monoid, A, B, E: Error>(
 
 /// liftA2 for Writer<W, Result>
 public func liftA2WriterResult<W: Monoid, A, B, C, E: Error>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Writer<W, Result<A, E>>, Writer<W, Result<B, E>>) -> Writer<W, Result<C, E>> {
     { wa, wb in
         Writer<W, Result<C, E>>(

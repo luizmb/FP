@@ -11,7 +11,7 @@ public func applyValidationResult<E: Semigroup, A, B, Err: Error>(
 }
 
 public func liftA2ValidationResult<E: Semigroup, A, B, C, Err: Error>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Validation<E, Result<A, Err>>, Validation<E, Result<B, Err>>) -> Validation<E, Result<C, Err>> {
     Validation.liftA2(Result.liftA2(fn))
 }

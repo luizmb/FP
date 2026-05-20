@@ -5,7 +5,7 @@ import DataStructure
 
 // (<£^>) :: (A -> B) -> NonEmpty<A?> -> NonEmpty<B?>
 public func <£^> <A, B>(
-    _ fn: @escaping (A) -> B,
+    _ fn: @escaping @Sendable (A) -> B,
     _ ne: NonEmpty<A?>
 ) -> NonEmpty<B?> {
     ne.mapT(fn)
@@ -14,7 +14,7 @@ public func <£^> <A, B>(
 // (<&^>) :: NonEmpty<A?> -> (A -> B) -> NonEmpty<B?>
 public func <&^> <A, B>(
     _ ne: NonEmpty<A?>,
-    _ fn: @escaping (A) -> B
+    _ fn: @escaping @Sendable (A) -> B
 ) -> NonEmpty<B?> {
     ne.mapT(fn)
 }

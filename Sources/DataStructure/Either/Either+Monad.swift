@@ -4,7 +4,7 @@ import Foundation
 public extension Either {
     /// Monadic bind operation for Either
     /// (>>=) :: m a -> (a -> m b) -> m b
-    func flatMap<B1>(_ fn: @escaping (B) -> Either<A, B1>) -> Either<A, B1> {
+    func flatMap<B1>(_ fn: @escaping @Sendable (B) -> Either<A, B1>) -> Either<A, B1> {
         match(
             caseLeft: Either<A, B1>.left,
             caseRight: fn
@@ -14,7 +14,7 @@ public extension Either {
     /// Curried version of flatMap for functional composition
     /// (>>=) :: m a -> (a -> m b) -> m b
     static func bind<B1>(
-        _ fn: @escaping (B) -> Either<A, B1>
+        _ fn: @escaping @Sendable (B) -> Either<A, B1>
     ) -> (Either<A, B>) -> Either<A, B1> {
         { either in
             either.flatMap(fn)
@@ -24,8 +24,8 @@ public extension Either {
     /// Kleisli composition (left-to-right)
     /// (>=>) :: (a -> m b) -> (b -> m c) -> a -> m c
     static func kleisli<B0, B1>(
-        _ fn1: @escaping (B0) -> Either<A, B>,
-        _ fn2: @escaping (B) -> Either<A, B1>
+        _ fn1: @escaping @Sendable (B0) -> Either<A, B>,
+        _ fn2: @escaping @Sendable (B) -> Either<A, B1>
     ) -> (B0) -> Either<A, B1> {
         { b0 in
             fn1(b0).flatMap(fn2)
@@ -35,8 +35,8 @@ public extension Either {
     /// Kleisli composition (right-to-left)
     /// (<=<) :: (b -> m c) -> (a -> m b) -> a -> m c
     static func kleisliBack<B0, B1>(
-        _ fn2: @escaping (B) -> Either<A, B1>,
-        _ fn1: @escaping (B0) -> Either<A, B>
+        _ fn2: @escaping @Sendable (B) -> Either<A, B1>,
+        _ fn1: @escaping @Sendable (B0) -> Either<A, B>
     ) -> (B0) -> Either<A, B1> {
         { b0 in
             fn1(b0).flatMap(fn2)

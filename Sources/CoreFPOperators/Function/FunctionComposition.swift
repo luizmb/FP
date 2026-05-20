@@ -25,8 +25,8 @@
 /// - Note: Also overloaded for optic composition: `Lens >>> Lens`, `Lens >>> Prism`, etc.
 ///   See `CoreFPOperators/Utilities/OpticsComposition.swift`.
 public func >>> <A, B, C>(
-    _ f: @escaping (A) -> B,
-    _ g: @escaping (B) -> C
+    _ f: @escaping @Sendable (A) -> B,
+    _ g: @escaping @Sendable (B) -> C
 ) -> (A) -> C {
     { a in g(f(a)) }
 }
@@ -47,8 +47,8 @@ public func >>> <A, B, C>(
 ///
 /// - Note: Also overloaded for optic composition — see `CoreFPOperators/Utilities/OpticsComposition.swift`.
 public func <<< <A, B, C>(
-    _ g: @escaping (B) -> C,
-    _ f: @escaping (A) -> B
+    _ g: @escaping @Sendable (B) -> C,
+    _ f: @escaping @Sendable (A) -> B
 ) -> (A) -> C {
     { a in g(f(a)) }
 }
@@ -72,7 +72,7 @@ public func <<< <A, B, C>(
 /// let result = f £ g £ h £ x
 /// ```
 public func £ <A, B>(
-    _ fn: @escaping (A) -> B,
+    _ fn: @escaping @Sendable (A) -> B,
     _ value: A
 ) -> B {
     fn(value)
@@ -91,7 +91,7 @@ public func £ <A, B>(
 /// f <| g <| x    // f(g(x))
 /// ```
 public func <| <A, B>(
-    _ fn: @escaping (A) -> B,
+    _ fn: @escaping @Sendable (A) -> B,
     _ value: A
 ) -> B {
     fn(value)
@@ -115,7 +115,7 @@ public func <| <A, B>(
 /// ```
 public func |> <A, B>(
     _ value: A,
-    _ fn: @escaping (A) -> B
+    _ fn: @escaping @Sendable (A) -> B
 ) -> B {
     fn(value)
 }

@@ -19,7 +19,7 @@
 /// - Returns: a unified function that applies all given functions and returns a tuple
 ///            with all the results
 public func fanout<Input, each Output>(
-    _ functions: repeat (@escaping (Input) -> each Output)
+    _ functions: repeat (@escaping @Sendable (Input) -> each Output)
 ) -> (Input) -> (repeat each Output) {
     { input in
         (repeat (each functions)(input))

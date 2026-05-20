@@ -3,13 +3,13 @@ import Foundation
 
 public extension Either {
     static func fmap<B1>(
-        _ fn: @escaping (B) -> B1
-    ) -> (Either<A, B>) -> Either<A, B1> {
+        _ fn: @escaping @Sendable (B) -> B1
+    ) -> @Sendable (Either<A, B>) -> Either<A, B1> {
         { $0.mapRight(fn) }
     }
 
     func mapLeft<A1>(
-        _ lf: @escaping (A) -> A1
+        _ lf: @escaping @Sendable (A) -> A1
     ) -> Either<A1, B> {
         match(
             caseLeft: compose(lf, Either<A1, B>.left),
@@ -18,7 +18,7 @@ public extension Either {
     }
 
     func mapRight<B1>(
-        _ rf: @escaping (B) -> B1
+        _ rf: @escaping @Sendable (B) -> B1
     ) -> Either<A, B1> {
         match(
             caseLeft: Either<A, B1>.left,
@@ -27,8 +27,8 @@ public extension Either {
     }
 
     func bimap<A1, B1>(
-        _ lf: @escaping (A) -> A1,
-        _ rf: @escaping (B) -> B1
+        _ lf: @escaping @Sendable (A) -> A1,
+        _ rf: @escaping @Sendable (B) -> B1
     ) -> Either<A1, B1> {
         match(
             caseLeft: compose(lf, Either<A1, B1>.left),
@@ -37,8 +37,8 @@ public extension Either {
     }
 
     static func bimap<A1, B1>(
-        _ lf: @escaping (A) -> A1,
-        _ rf: @escaping (B) -> B1
+        _ lf: @escaping @Sendable (A) -> A1,
+        _ rf: @escaping @Sendable (B) -> B1
     ) -> (Either<A, B>) -> Either<A1, B1> {
         { $0.bimap(lf, rf) }
     }

@@ -9,7 +9,7 @@ public extension Either {
 
     /// Curried foldMap for point-free use.
     static func foldMap<M: Monoid>(
-        _ f: @escaping (B) -> M
+        _ f: @escaping @Sendable (B) -> M
     ) -> (Either<A, B>) -> M {
         { $0.foldMap(f) }
     }

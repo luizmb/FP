@@ -60,11 +60,11 @@ import Foundation
 /// | `.pure(a)` | `Stateful<S, A>` | Lift a value without touching the state |
 ///
 /// - SeeAlso: ``Reader``, ``Writer``, ``EndoMut``
-public struct Stateful<S, A> {
+public struct Stateful<S, A>: Sendable {
     /// The underlying state-transforming function.
-    public let run: (inout S) -> A
+    public let run: @Sendable (inout S) -> A
 
-    public init(_ fn: @escaping (inout S) -> A) {
+    public init(_ fn: @escaping @Sendable (inout S) -> A) {
         run = fn
     }
 

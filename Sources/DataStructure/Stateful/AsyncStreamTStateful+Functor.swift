@@ -12,7 +12,7 @@ public extension AsyncStream {
 
     static func fmapT<S, A, B>(
         _ fn: @escaping @Sendable (A) -> B
-    ) -> (AsyncStream<Stateful<S, A>>) -> AsyncMapSequence<AsyncStream<Stateful<S, A>>, Stateful<S, B>> {
+    ) -> @Sendable (AsyncStream<Stateful<S, A>>) -> AsyncMapSequence<AsyncStream<Stateful<S, A>>, Stateful<S, B>> {
         { stream in stream.mapT(fn) }
     }
 }

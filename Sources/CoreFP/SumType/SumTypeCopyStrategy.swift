@@ -19,8 +19,8 @@ where ParallelSumType.A == InvertedSumType.B, ParallelSumType.B == InvertedSumTy
     public let crossover: () -> InvertedSumType
 
     public init(
-        parallel: @escaping () -> ParallelSumType,
-        crossover: @escaping () -> InvertedSumType
+        parallel: @escaping @Sendable () -> ParallelSumType,
+        crossover: @escaping @Sendable () -> InvertedSumType
     ) {
         self.parallel = parallel
         self.crossover = crossover

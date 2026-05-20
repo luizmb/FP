@@ -8,8 +8,8 @@ public extension Writer {
     }
 
     static func fmapT<Inner, B>(
-        _ fn: @escaping (Inner) -> B
-    ) -> (Writer<W, Inner?>) -> Writer<W, B?> where A == Inner? {
+        _ fn: @escaping @Sendable (Inner) -> B
+    ) -> @Sendable (Writer<W, Inner?>) -> Writer<W, B?> where A == Inner? {
         { $0.mapT(fn) }
     }
 }

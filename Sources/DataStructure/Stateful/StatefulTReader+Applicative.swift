@@ -16,7 +16,7 @@ public func applyStatefulReader<S, Env, A, B>(
 
 /// liftA2 for Stateful<S, Reader>
 public func liftA2StatefulReader<S, Env, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Stateful<S, Reader<Env, A>>, Stateful<S, Reader<Env, B>>) -> Stateful<S, Reader<Env, C>> {
     { sa, sb in
         Stateful<S, Reader<Env, C>> { s in

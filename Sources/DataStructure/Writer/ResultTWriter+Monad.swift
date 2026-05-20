@@ -14,7 +14,7 @@ public extension Result {
     }
 
     static func bindT<W: Monoid, A, B>(
-        _ fn: @escaping (A) -> Writer<W, B>
+        _ fn: @escaping @Sendable (A) -> Writer<W, B>
     ) -> (Result<Writer<W, A>, Failure>) -> Result<Writer<W, B>, Failure> {
         { result in result.flatMapT(fn) }
     }

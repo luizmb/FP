@@ -4,7 +4,7 @@ public extension Result {
     /// Curried version of Swift's native flatMap for functional composition
     /// (>>=) :: m a -> (a -> m b) -> m b
     static func bind<A1>(
-        _ fn: @escaping (Success) -> Result<A1, Failure>
+        _ fn: @escaping @Sendable (Success) -> Result<A1, Failure>
     ) -> (Result<Success, Failure>) -> Result<A1, Failure> {
         { result in
             result.flatMap(fn)
@@ -14,8 +14,8 @@ public extension Result {
     /// Kleisli composition (left-to-right)
     /// (>=>) :: (a -> m b) -> (b -> m c) -> a -> m c
     static func kleisli<A0, A1>(
-        _ fn1: @escaping (A0) -> Result<Success, Failure>,
-        _ fn2: @escaping (Success) -> Result<A1, Failure>
+        _ fn1: @escaping @Sendable (A0) -> Result<Success, Failure>,
+        _ fn2: @escaping @Sendable (Success) -> Result<A1, Failure>
     ) -> (A0) -> Result<A1, Failure> {
         { a0 in
             fn1(a0).flatMap(fn2)
@@ -25,8 +25,8 @@ public extension Result {
     /// Kleisli composition (right-to-left)
     /// (<=<) :: (b -> m c) -> (a -> m b) -> a -> m c
     static func kleisliBack<A0, A1>(
-        _ fn2: @escaping (Success) -> Result<A1, Failure>,
-        _ fn1: @escaping (A0) -> Result<Success, Failure>
+        _ fn2: @escaping @Sendable (Success) -> Result<A1, Failure>,
+        _ fn1: @escaping @Sendable (A0) -> Result<Success, Failure>
     ) -> (A0) -> Result<A1, Failure> {
         { a0 in
             fn1(a0).flatMap(fn2)

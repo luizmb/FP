@@ -25,7 +25,7 @@ public extension Loading {
     /// Curried bind for functional composition.
     /// (>>=) :: m a -> (a -> m b) -> m b
     static func bind<B: Sendable>(
-        _ f: @escaping (Success) -> Loading<B, Failure>
+        _ f: @escaping @Sendable (Success) -> Loading<B, Failure>
     ) -> (Loading<Success, Failure>) -> Loading<B, Failure> {
         { $0.flatMap(f) }
     }
@@ -33,8 +33,8 @@ public extension Loading {
     /// Kleisli composition (left-to-right).
     /// (>=>) :: (a -> m b) -> (b -> m c) -> a -> m c
     static func kleisli<A, B: Sendable>(
-        _ fn1: @escaping (A) -> Loading<Success, Failure>,
-        _ fn2: @escaping (Success) -> Loading<B, Failure>
+        _ fn1: @escaping @Sendable (A) -> Loading<Success, Failure>,
+        _ fn2: @escaping @Sendable (Success) -> Loading<B, Failure>
     ) -> (A) -> Loading<B, Failure> {
         { a in fn1(a).flatMap(fn2) }
     }
@@ -42,8 +42,8 @@ public extension Loading {
     /// Kleisli composition (right-to-left).
     /// (<=<) :: (b -> m c) -> (a -> m b) -> a -> m c
     static func kleisliBack<A, B: Sendable>(
-        _ fn2: @escaping (Success) -> Loading<B, Failure>,
-        _ fn1: @escaping (A) -> Loading<Success, Failure>
+        _ fn2: @escaping @Sendable (Success) -> Loading<B, Failure>,
+        _ fn1: @escaping @Sendable (A) -> Loading<Success, Failure>
     ) -> (A) -> Loading<B, Failure> {
         { a in fn1(a).flatMap(fn2) }
     }

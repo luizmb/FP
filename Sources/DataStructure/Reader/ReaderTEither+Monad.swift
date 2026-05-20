@@ -1,11 +1,11 @@
 import Foundation
 
-public extension Reader {
+public extension Reader where Environment: Sendable {
     // MARK: - ReaderT + Either
 
     /// Monadic bind for ReaderT Either
     /// (>>=) :: m a -> (a -> m b) -> m b
-    func flatMapT<A, B, L>(_ fn: @escaping (A) -> Reader<Environment, Either<L, B>>) -> Reader<Environment, Either<L, B>>
+    func flatMapT<A, B, L>(_ fn: @escaping @Sendable (A) -> Reader<Environment, Either<L, B>>) -> Reader<Environment, Either<L, B>>
     where Output == Either<L, A> {
         Reader<Environment, Either<L, B>> { env in
             self.runReader(env).flatMap { a in
@@ -16,7 +16,7 @@ public extension Reader {
 
     /// Curried bind for ReaderT Either
     static func bindT<A, B, L>(
-        _ fn: @escaping (A) -> Reader<Environment, Either<L, B>>
+        _ fn: @escaping @Sendable (A) -> Reader<Environment, Either<L, B>>
     ) -> (Reader<Environment, Either<L, A>>) -> Reader<Environment, Either<L, B>>
     where Output == Either<L, A> {
         { reader in

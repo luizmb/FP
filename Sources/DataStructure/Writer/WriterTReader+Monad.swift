@@ -9,7 +9,7 @@ import Foundation
 
 public extension Writer {
     func flatMapT<Env, Inner, B>(
-        _ fn: @escaping (Inner) -> Writer<W, Reader<Env, B>>
+        _ fn: @escaping @Sendable (Inner) -> Writer<W, Reader<Env, B>>
     ) -> Writer<W, Reader<Env, B>> where A == Reader<Env, Inner> {
         Writer<W, Reader<Env, B>>(
             value.flatMap { inner in fn(inner).value },
@@ -18,7 +18,7 @@ public extension Writer {
     }
 
     static func bindT<Env, Inner, B>(
-        _ fn: @escaping (Inner) -> Writer<W, Reader<Env, B>>
+        _ fn: @escaping @Sendable (Inner) -> Writer<W, Reader<Env, B>>
     ) -> (Writer<W, Reader<Env, Inner>>) -> Writer<W, Reader<Env, B>>
     where A == Reader<Env, Inner> {
         { $0.flatMapT(fn) }

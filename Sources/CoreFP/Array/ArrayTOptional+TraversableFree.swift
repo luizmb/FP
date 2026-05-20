@@ -7,7 +7,7 @@ public func sequence<A>(_ optionals: [A?]) -> [A]? {
 
 /// Map and sequence
 /// traverse :: (a -> b?) -> [a] -> [b]?
-public func traverse<A, B>(_ fn: @escaping (A) -> B?) -> ([A]) -> [B]? {
+public func traverse<A, B>(_ fn: @escaping @Sendable (A) -> B?) -> ([A]) -> [B]? {
     { array in
         array.traverse(fn)
     }

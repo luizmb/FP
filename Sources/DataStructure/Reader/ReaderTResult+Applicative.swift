@@ -15,7 +15,7 @@ public func applyReaderResult<Env, A, B, E: Error>(
 
 /// liftA2 for ReaderT Result
 public func liftA2ReaderResult<Env, A, B, C, E: Error>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Reader<Env, Result<A, E>>, Reader<Env, Result<B, E>>) -> Reader<Env, Result<C, E>> {
     { readerA, readerB in
         Reader { env in

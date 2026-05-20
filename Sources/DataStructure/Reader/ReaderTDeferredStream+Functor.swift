@@ -13,7 +13,7 @@ public extension Reader {
 
     static func fmapT<A: Sendable, B: Sendable>(
         _ fn: @escaping @Sendable (A) -> B
-    ) -> (Reader<Environment, DeferredStream<A>>) -> Reader<Environment, DeferredStream<B>>
+    ) -> @Sendable (Reader<Environment, DeferredStream<A>>) -> Reader<Environment, DeferredStream<B>>
     where Output == DeferredStream<A> {
         { $0.mapT(fn) }
     }

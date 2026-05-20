@@ -5,11 +5,11 @@ import DataStructure
 // Type: Either<L, Result<A,E>>
 
 // (<£^>) :: (a -> b) -> Either<l,Result<a,e>> -> Either<l,Result<b,e>>
-public func <£^> <L, A, B, E: Error>(_ fn: @escaping (A) -> B, _ either: Either<L, Result<A, E>>) -> Either<L, Result<B, E>> {
+public func <£^> <L, A, B, E: Error>(_ fn: @escaping @Sendable (A) -> B, _ either: Either<L, Result<A, E>>) -> Either<L, Result<B, E>> {
     fmapTEitherResult(fn)(either)
 }
 
 // (<&^>) :: Either<l,Result<a,e>> -> (a -> b) -> Either<l,Result<b,e>>
-public func <&^> <L, A, B, E: Error>(_ either: Either<L, Result<A, E>>, _ fn: @escaping (A) -> B) -> Either<L, Result<B, E>> {
+public func <&^> <L, A, B, E: Error>(_ either: Either<L, Result<A, E>>, _ fn: @escaping @Sendable (A) -> B) -> Either<L, Result<B, E>> {
     fmapTEitherResult(fn)(either)
 }

@@ -13,7 +13,7 @@ public func applyOptionalStateful<S, A, B>(
 
 /// liftA2 for OptionalTStateful
 public func liftA2OptionalStateful<S, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Stateful<S, A>?, Stateful<S, B>?) -> Stateful<S, C>? {
     { sa, sb in
         sa.flatMap { a in sb.map { b in Stateful<S, C> { s in fn(a.run(&s), b.run(&s)) } } }

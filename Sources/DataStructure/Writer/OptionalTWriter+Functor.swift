@@ -10,7 +10,7 @@ public extension Optional {
         map { writer in writer.map(fn) }
     }
 
-    static func fmapT<W: Monoid, A, B>(_ fn: @escaping (A) -> B) -> (Writer<W, A>?) -> Writer<W, B>? {
+    static func fmapT<W: Monoid, A, B>(_ fn: @escaping @Sendable (A) -> B) -> @Sendable (Writer<W, A>?) -> Writer<W, B>? {
         { opt in opt.mapT(fn) }
     }
 }

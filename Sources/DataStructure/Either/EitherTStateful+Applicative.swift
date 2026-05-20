@@ -13,7 +13,7 @@ public func applyEitherStateful<L, S, A, B>(
 
 /// liftA2 for EitherTStateful
 public func liftA2EitherStateful<L, S, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Either<L, Stateful<S, A>>, Either<L, Stateful<S, B>>) -> Either<L, Stateful<S, C>> {
     { ea, eb in
         Either.liftA2 { sa, sb in Stateful<S, C> { s in fn(sa.run(&s), sb.run(&s)) } }(ea, eb)

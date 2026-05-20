@@ -14,7 +14,7 @@ public func applyResultWriter<W: Monoid, A, B, E: Error>(
 
 /// liftA2 for ResultTWriter
 public func liftA2ResultWriter<W: Monoid, A, B, C, E: Error>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Result<Writer<W, A>, E>, Result<Writer<W, B>, E>) -> Result<Writer<W, C>, E> {
     { ra, rb in
         ra.flatMap { wa in rb.map { wb in Writer<W, C>(fn(wa.value, wb.value), W.combine(wa.log, wb.log)) } }

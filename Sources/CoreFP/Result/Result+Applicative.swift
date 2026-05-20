@@ -2,7 +2,7 @@ import Foundation
 
 public extension Result {
     // liftA2 :: (a1 -> a2 -> a) -> Result<a1, b> -> Result<a2, b> -> Result<a, b>
-    static func liftA2<A1, A2>(_ fn: @escaping (A1, A2) -> A) -> (
+    static func liftA2<A1, A2>(_ fn: @escaping @Sendable (A1, A2) -> A) -> @Sendable (
         Result<A1, B>, Result<A2, B>
     ) -> Result<A, B> {
         { resultA, resultB in

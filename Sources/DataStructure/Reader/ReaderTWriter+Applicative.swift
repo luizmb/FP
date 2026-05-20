@@ -14,7 +14,7 @@ public func applyReaderWriter<Env, W: Monoid, A, B>(
 
 /// liftA2 for ReaderTWriter
 public func liftA2ReaderWriter<Env, W: Monoid, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Reader<Env, Writer<W, A>>, Reader<Env, Writer<W, B>>) -> Reader<Env, Writer<W, C>> {
     { ra, rb in
         Reader { env in Writer<W, C>(fn(ra(env).value, rb(env).value), W.combine(ra(env).log, rb(env).log)) }

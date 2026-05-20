@@ -6,8 +6,8 @@ import Foundation
 // Type: AnyPublisher<Either<L,A>, E>
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func liftA2PublisherEither<L, A, B, C, E: Error>(
-    _ fn: @escaping (A, B) -> C
+public func liftA2PublisherEither<L: Sendable, A: Sendable, B: Sendable, C: Sendable, E: Error>(
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (AnyPublisher<Either<L, A>, E>, AnyPublisher<Either<L, B>, E>) -> AnyPublisher<Either<L, C>, E> {
     { pubA, pubB in
         pubA.zip(pubB)
@@ -17,7 +17,7 @@ public func liftA2PublisherEither<L, A, B, C, E: Error>(
 }
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func seqRightPublisherEither<L, A, B, E: Error>(
+public func seqRightPublisherEither<L: Sendable, A: Sendable, B: Sendable, E: Error>(
     _ lhs: AnyPublisher<Either<L, A>, E>,
     _ rhs: AnyPublisher<Either<L, B>, E>
 ) -> AnyPublisher<Either<L, B>, E> {
@@ -27,7 +27,7 @@ public func seqRightPublisherEither<L, A, B, E: Error>(
 }
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func seqLeftPublisherEither<L, A, B, E: Error>(
+public func seqLeftPublisherEither<L: Sendable, A: Sendable, B: Sendable, E: Error>(
     _ lhs: AnyPublisher<Either<L, A>, E>,
     _ rhs: AnyPublisher<Either<L, B>, E>
 ) -> AnyPublisher<Either<L, A>, E> {

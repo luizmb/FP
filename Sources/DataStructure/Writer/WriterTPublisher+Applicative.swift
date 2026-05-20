@@ -22,7 +22,7 @@ public func applyWriterPublisher<W: Monoid, A, B, E: Error>(
 /// liftA2 for Writer<W, Publisher>
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func liftA2WriterPublisher<W: Monoid, A, B, C, E: Error>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Writer<W, any Publisher<A, E>>, Writer<W, any Publisher<B, E>>) -> Writer<W, any Publisher<C, E>> {
     { wa, wb in
         Writer<W, any Publisher<C, E>>(

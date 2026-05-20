@@ -2,7 +2,7 @@ import Foundation
 
 public extension Optional {
     // liftA2 :: (a1 -> a2 -> a) -> Optional<a1> -> Optional<a2> -> Optional<a>
-    static func liftA2<A1, A2>(_ fn: @escaping (A1, A2) -> A) -> (A1?, A2?) -> A? {
+    static func liftA2<A1, A2>(_ fn: @escaping @Sendable (A1, A2) -> A) -> @Sendable (A1?, A2?) -> A? {
         { optionalA, optionalB in
             (A1, A2)?.zip(optionalA, optionalB).map(fn)
         }

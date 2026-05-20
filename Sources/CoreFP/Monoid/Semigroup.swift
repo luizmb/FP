@@ -38,7 +38,7 @@
 /// ```
 ///
 /// - SeeAlso: ``Monoid``, ``sconcat(_:_:)``, ``mconcat(_:)``
-public protocol Semigroup {
+public protocol Semigroup: Sendable {
     /// Combines two values using the associative operation.
     ///
     /// The operation must satisfy associativity:

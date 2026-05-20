@@ -14,10 +14,10 @@ public func applyArrayResult<A, B, E: Error>(
 
 /// liftA2 for ArrayTResult: (A,B)->C -> [Result<A,E>] -> [Result<B,E>] -> [Result<C,E>]
 public func liftA2ArrayResult<A, B, C, E: Error>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> ([Result<A, E>], [Result<B, E>]) -> [Result<C, E>] {
     { arrA, arrB in
-        Array.liftA2(Result.liftA2(fn))(arrA, arrB)
+        Array.liftA2({ @Sendable a, b in Result.liftA2(fn)(a, b) })(arrA, arrB)
     }
 }
 

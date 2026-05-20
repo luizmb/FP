@@ -13,7 +13,7 @@ public func applyValidationOptional<E: Semigroup, A, B>(
 }
 
 public func liftA2ValidationOptional<E: Semigroup, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Validation<E, A?>, Validation<E, B?>) -> Validation<E, C?> {
     Validation.liftA2(Optional.liftA2(fn))
 }

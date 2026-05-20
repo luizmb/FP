@@ -26,10 +26,10 @@ public extension Result {
     /// let eitherSuccessLeft = strategy.parallel()    // Either<Success, Failure>
     /// let eitherSuccessRight = strategy.crossover()  // Either<Failure, Success>
     /// ```
-    var either: SumTypeCopyStrategy<Either<Success, Failure>, Either<Failure, Success>> {
-        .init(
-            parallel: { Either.from(self) },
-            crossover: { Either.from(self).inverted() }
-        )
-    }
+    // NOTE: The `either` strategy var requires capturing `self: Result<...>` in
+    // `@Sendable` closures, which needs `Success: Sendable, Failure: Sendable`.
+    // Swift does not allow `where T: Sendable` clauses on computed properties, so
+    // this convenience is currently unavailable. Callers can construct the strategy
+    // by hand at the call site, or use `Either.from(result)` / `.inverted()`
+    // directly.
 }

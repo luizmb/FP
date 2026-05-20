@@ -10,8 +10,8 @@ public extension Writer {
     }
 
     static func fmap<B>(
-        _ fn: @escaping (A) -> B
-    ) -> (Writer<W, A>) -> Writer<W, B> {
+        _ fn: @escaping @Sendable (A) -> B
+    ) -> @Sendable (Writer<W, A>) -> Writer<W, B> {
         { $0.mapWriter(fn) }
     }
 }

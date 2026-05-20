@@ -10,7 +10,7 @@ public extension Optional {
     /// (>>=) :: [a]? -> (a -> [b]?) -> [b]?
     /// nil → nil
     /// .some(arr) → mapM fn arr (sequence the results, concatenating on success)
-    func flatMapT<A, B>(_ fn: @escaping (A) -> [B]?) -> [B]? where Wrapped == [A] {
+    func flatMapT<A, B>(_ fn: @escaping @Sendable (A) -> [B]?) -> [B]? where Wrapped == [A] {
         flatMap { arr in
             arr.map(fn).reduce(.some([])) { (acc: [B]?, next: [B]?) in
                 acc.flatMap { combined in next.map { combined + $0 } }
@@ -19,7 +19,7 @@ public extension Optional {
     }
 
     /// Curried bindT for Optional<[A]>
-    static func bindT<A, B>(_ fn: @escaping (A) -> [B]?) -> ([A]?) -> [B]? {
+    static func bindT<A, B>(_ fn: @escaping @Sendable (A) -> [B]?) -> ([A]?) -> [B]? {
         { opt in opt.flatMapT(fn) }
     }
 }

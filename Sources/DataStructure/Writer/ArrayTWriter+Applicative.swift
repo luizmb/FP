@@ -14,7 +14,7 @@ public func applyArrayWriter<W: Monoid, A, B>(
 
 /// liftA2 for ArrayTWriter
 public func liftA2ArrayWriter<W: Monoid, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> ([Writer<W, A>], [Writer<W, B>]) -> [Writer<W, C>] {
     { arrA, arrB in
         arrA.flatMap { wa in arrB.map { wb in Writer<W, C>(fn(wa.value, wb.value), W.combine(wa.log, wb.log)) } }

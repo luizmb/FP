@@ -3,8 +3,8 @@ import Foundation
 public extension Array {
     /// liftA2 :: (a -> b -> c) -> [a] -> [b] -> [c]
     static func liftA2<A1, A2>(
-        _ fn: @escaping (A1, A2) -> Element
-    ) -> ([A1], [A2]) -> [Element] {
+        _ fn: @escaping @Sendable (A1, A2) -> Element
+    ) -> @Sendable ([A1], [A2]) -> [Element] {
         { arrayA, arrayB in
             arrayA.flatMap { a in
                 arrayB.map { b in

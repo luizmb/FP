@@ -11,10 +11,10 @@ public func applyArrayOptional<A, B>(_ fns: [((A) -> B)?], _ values: [A?]) -> [B
 
 /// liftA2 for ArrayTOptional: (A,B)->C -> [A?] -> [B?] -> [C?]
 public func liftA2ArrayOptional<A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> ([A?], [B?]) -> [C?] {
     { arrA, arrB in
-        Array.liftA2(Optional.liftA2(fn))(arrA, arrB)
+        Array.liftA2({ @Sendable a, b in Optional.liftA2(fn)(a, b) })(arrA, arrB)
     }
 }
 

@@ -13,7 +13,7 @@ public extension NonEmpty {
     }
 
     static func bindT<Inner, B>(
-        _ fn: @escaping (Inner) -> NonEmpty<B?>
+        _ fn: @escaping @Sendable (Inner) -> NonEmpty<B?>
     ) -> (NonEmpty<Inner?>) -> NonEmpty<B?> {
         { $0.flatMapT(fn) }
     }

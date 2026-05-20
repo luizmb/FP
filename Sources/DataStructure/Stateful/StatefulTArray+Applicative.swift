@@ -17,7 +17,7 @@ public func applyStatefulArray<S, A, B>(
 
 /// liftA2 for Stateful<S, Array>
 public func liftA2StatefulArray<S, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Stateful<S, [A]>, Stateful<S, [B]>) -> Stateful<S, [C]> {
     { sa, sb in
         Stateful<S, [C]> { s in

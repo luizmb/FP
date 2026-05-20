@@ -14,7 +14,7 @@ public func applyEitherWriter<L, W: Monoid, A, B>(
 
 /// liftA2 for EitherTWriter
 public func liftA2EitherWriter<L, W: Monoid, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Either<L, Writer<W, A>>, Either<L, Writer<W, B>>) -> Either<L, Writer<W, C>> {
     { ea, eb in
         Either.liftA2 { wa, wb in Writer<W, C>(fn(wa.value, wb.value), W.combine(wa.log, wb.log)) }(ea, eb)

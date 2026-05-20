@@ -24,18 +24,18 @@ public func not() -> (Bool) -> Bool {
 public func not(_ value: Bool) -> Bool {
    !value
 }
-public func not<A>(_ predicate: @escaping (A) -> Bool) -> (A) -> Bool {
+public func not<A>(_ predicate: @escaping @Sendable (A) -> Bool) -> (A) -> Bool {
     { !predicate($0) }
 }
 public func and(_ value: Bool) -> (Bool) -> Bool {
     { value && $0 }
 }
-public func and<A>(_ p1: @escaping (A) -> Bool, _ p2: @escaping (A) -> Bool) -> (A) -> Bool {
+public func and<A>(_ p1: @escaping @Sendable (A) -> Bool, _ p2: @escaping @Sendable (A) -> Bool) -> (A) -> Bool {
     { p1($0) && p2($0) }
 }
 public func or(_ value: Bool) -> (Bool) -> Bool {
     { value || $0 }
 }
-public func or<A>(_ p1: @escaping (A) -> Bool, _ p2: @escaping (A) -> Bool) -> (A) -> Bool {
+public func or<A>(_ p1: @escaping @Sendable (A) -> Bool, _ p2: @escaping @Sendable (A) -> Bool) -> (A) -> Bool {
     { p1($0) || p2($0) }
 }

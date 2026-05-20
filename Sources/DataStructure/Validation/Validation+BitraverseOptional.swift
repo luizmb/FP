@@ -19,8 +19,8 @@ public extension Validation {
 
 /// bitraverse :: (e -> e1?) -> (a -> b?) -> Validation e a -> Validation e1 b?
 public func bitraverse<E: Semigroup, A, E1: Semigroup, B>(
-    _ ef: @escaping (E) -> E1?,
-    _ af: @escaping (A) -> B?
+    _ ef: @escaping @Sendable (E) -> E1?,
+    _ af: @escaping @Sendable (A) -> B?
 ) -> (Validation<E, A>) -> Validation<E1, B>? {
     { $0.bitraverse(ef, af) }
 }

@@ -19,7 +19,7 @@ public func applyReaderOptional<Env, A, B>(
 
 /// liftA2 for ReaderT Optional
 public func liftA2ReaderOptional<Env, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Reader<Env, A?>, Reader<Env, B?>) -> Reader<Env, C?> {
     { readerA, readerB in
         Reader { env in

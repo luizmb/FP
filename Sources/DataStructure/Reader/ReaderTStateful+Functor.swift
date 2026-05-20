@@ -4,14 +4,14 @@ import Foundation
 // Type: Reader<Env, Stateful<S, A>>
 
 public extension Reader {
-    func mapT<S, A, B>(_ fn: @escaping (A) -> B) -> Reader<Environment, Stateful<S, B>>
+    func mapT<S, A, B>(_ fn: @escaping @Sendable (A) -> B) -> Reader<Environment, Stateful<S, B>>
     where Output == Stateful<S, A> {
         mapReader { stateful in stateful.map(fn) }
     }
 
     static func fmapT<S, A, B>(
-        _ fn: @escaping (A) -> B
-    ) -> (Reader<Environment, Stateful<S, A>>) -> Reader<Environment, Stateful<S, B>>
+        _ fn: @escaping @Sendable (A) -> B
+    ) -> @Sendable (Reader<Environment, Stateful<S, A>>) -> Reader<Environment, Stateful<S, B>>
     where Output == Stateful<S, A> {
         { $0.mapT(fn) }
     }

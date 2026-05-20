@@ -80,9 +80,9 @@ import Foundation
 /// - SeeAlso: ``Writer``, ``Stateful``, ``ZIO``, ``FunctionWrapper``
 public struct Reader<Environment, Output>: FunctionWrapper {
     /// The underlying function. Call this (or use `callAsFunction`) to run the reader.
-    public let runReader: (Environment) -> Output
+    public let runReader: @Sendable (Environment) -> Output
 
-    public init(_ fn: @escaping (Environment) -> Output) {
+    public init(_ fn: @escaping @Sendable (Environment) -> Output) {
         self.runReader = fn
     }
 

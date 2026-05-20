@@ -4,15 +4,15 @@ import DataStructure
 import Foundation
 
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
-public func <£> <Env, A, B>(
-    _ transform: @escaping (A) -> B,
+public func <£> <Env: Sendable, A: Sendable, B: Sendable>(
+    _ transform: @escaping @Sendable (A) -> B,
     _ reader: Reader<Env, A>
 ) -> Reader<Env, B> {
     reader.map(transform)
 }
 
 // ($>) :: f a -> b -> f b
-public func £> <Env, A, B>(
+public func £> <Env: Sendable, A: Sendable, B: Sendable>(
     _ reader: Reader<Env, A>,
     _ value: B
 ) -> Reader<Env, B> {
@@ -20,7 +20,7 @@ public func £> <Env, A, B>(
 }
 
 // (<$) :: b -> f a -> f b
-public func <£ <Env, A, B>(
+public func <£ <Env: Sendable, A: Sendable, B: Sendable>(
     _ value: B,
     _ reader: Reader<Env, A>
 ) -> Reader<Env, B> {

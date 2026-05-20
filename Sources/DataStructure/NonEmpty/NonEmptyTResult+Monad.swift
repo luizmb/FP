@@ -22,7 +22,7 @@ public extension NonEmpty {
     }
 
     static func bindT<Inner, E, Output>(
-        _ fn: @escaping (Inner) -> NonEmpty<Result<Output, E>>
+        _ fn: @escaping @Sendable (Inner) -> NonEmpty<Result<Output, E>>
     ) -> (NonEmpty<Result<Inner, E>>) -> NonEmpty<Result<Output, E>> {
         { $0.flatMapT(fn) }
     }

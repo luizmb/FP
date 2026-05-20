@@ -14,7 +14,7 @@ public func applyOptionalWriter<W: Monoid, A, B>(
 
 /// liftA2 for OptionalTWriter
 public func liftA2OptionalWriter<W: Monoid, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Writer<W, A>?, Writer<W, B>?) -> Writer<W, C>? {
     { wa, wb in
         wa.flatMap { a in wb.map { b in Writer<W, C>(fn(a.value, b.value), W.combine(a.log, b.log)) } }

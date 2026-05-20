@@ -14,8 +14,8 @@ public extension NonEmpty {
     }
 
     static func fmapT<Inner, E, Output>(
-        _ fn: @escaping (Inner) -> Output
-    ) -> (NonEmpty<Result<Inner, E>>) -> NonEmpty<Result<Output, E>> {
+        _ fn: @escaping @Sendable (Inner) -> Output
+    ) -> @Sendable (NonEmpty<Result<Inner, E>>) -> NonEmpty<Result<Output, E>> {
         { $0.mapT(fn) }
     }
 }

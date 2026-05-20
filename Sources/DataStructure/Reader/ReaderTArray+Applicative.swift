@@ -17,7 +17,7 @@ public func applyReaderArray<Env, A, B>(
 
 /// liftA2 for ReaderT Array
 public func liftA2ReaderArray<Env, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Reader<Env, [A]>, Reader<Env, [B]>) -> Reader<Env, [C]> {
     { readerA, readerB in
         Reader { env in

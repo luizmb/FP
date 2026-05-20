@@ -12,7 +12,7 @@ public func applyEitherValidation<L, E: Semigroup, A, B>(
 }
 
 public func liftA2EitherValidation<L, E: Semigroup, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Either<L, Validation<E, A>>, Either<L, Validation<E, B>>) -> Either<L, Validation<E, C>> {
     Either.liftA2(Validation.liftA2(fn))
 }

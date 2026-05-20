@@ -11,12 +11,12 @@ public extension Optional {
     /// flatMapT :: Stateful<s, a>? -> (a -> Stateful<s, b>) -> Stateful<s, b>?
     /// nil             → nil
     /// some(stateful)  → some(stateful.flatMap(fn))
-    func flatMapT<S, A, B>(_ fn: @escaping (A) -> Stateful<S, B>) -> Stateful<S, B>?
+    func flatMapT<S, A, B>(_ fn: @escaping @Sendable (A) -> Stateful<S, B>) -> Stateful<S, B>?
     where Wrapped == Stateful<S, A> {
         map { stateful in stateful.flatMap(fn) }
     }
 
-    static func bindT<S, A, B>(_ fn: @escaping (A) -> Stateful<S, B>) -> (Stateful<S, A>?) -> Stateful<S, B>? {
+    static func bindT<S, A, B>(_ fn: @escaping @Sendable (A) -> Stateful<S, B>) -> (Stateful<S, A>?) -> Stateful<S, B>? {
         { opt in opt.flatMapT(fn) }
     }
 }

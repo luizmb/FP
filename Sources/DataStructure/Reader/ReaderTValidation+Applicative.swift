@@ -12,7 +12,7 @@ public func applyReaderValidation<Env, E: Semigroup, A, B>(
 }
 
 public func liftA2ReaderValidation<Env, E: Semigroup, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Reader<Env, Validation<E, A>>, Reader<Env, Validation<E, B>>) -> Reader<Env, Validation<E, C>> {
     { ra, rb in Reader { env in Validation.liftA2(fn)(ra(env), rb(env)) } }
 }

@@ -11,7 +11,7 @@ public func applyValidationArray<E: Semigroup, A, B>(
 }
 
 public func liftA2ValidationArray<E: Semigroup, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Validation<E, [A]>, Validation<E, [B]>) -> Validation<E, [C]> {
     Validation.liftA2(Array.liftA2(fn))
 }

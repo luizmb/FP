@@ -7,12 +7,12 @@ import Foundation
 public extension Optional {
     /// mapT for Optional<[A]> — maps over the inner Array
     /// fmap :: (a -> b) -> [a]? -> [b]?
-    func mapT<A, B>(_ fn: @escaping (A) -> B) -> [B]? where Wrapped == [A] {
+    func mapT<A, B>(_ fn: @escaping @Sendable (A) -> B) -> [B]? where Wrapped == [A] {
         map { arr in arr.map(fn) }
     }
 
     /// Curried fmapT for Optional<[A]>
-    static func fmapT<A, B>(_ fn: @escaping (A) -> B) -> ([A]?) -> [B]? {
+    static func fmapT<A, B>(_ fn: @escaping @Sendable (A) -> B) -> @Sendable ([A]?) -> [B]? {
         { opt in opt.mapT(fn) }
     }
 }

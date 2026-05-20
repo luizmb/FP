@@ -8,14 +8,14 @@ import CoreFPOperators
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func >>- <L, A, B, E: Error>(
     _ pub: AnyPublisher<Either<L, A>, E>,
-    _ fn: @escaping (A) -> AnyPublisher<Either<L, B>, E>
+    _ fn: @escaping @Sendable (A) -> AnyPublisher<Either<L, B>, E>
 ) -> AnyPublisher<Either<L, B>, E> {
     flatMapTPublisherEither(pub, fn)
 }
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func -<< <L, A, B, E: Error>(
-    _ fn: @escaping (A) -> AnyPublisher<Either<L, B>, E>,
+    _ fn: @escaping @Sendable (A) -> AnyPublisher<Either<L, B>, E>,
     _ pub: AnyPublisher<Either<L, A>, E>
 ) -> AnyPublisher<Either<L, B>, E> {
     flatMapTPublisherEither(pub, fn)

@@ -27,8 +27,8 @@ public extension NonEmpty {
 
     /// Lift a binary function across all combinations.
     static func liftA2<B, C>(
-        _ fn: @escaping (A, B) -> C
-    ) -> (NonEmpty<A>, NonEmpty<B>) -> NonEmpty<C> {
+        _ fn: @escaping @Sendable (A, B) -> C
+    ) -> @Sendable (NonEmpty<A>, NonEmpty<B>) -> NonEmpty<C> {
         { na, nb in NonEmpty<C>.apply(na.map { a in { b in fn(a, b) } }, nb) }
     }
 

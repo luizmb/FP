@@ -7,7 +7,7 @@ import CoreFP
 // (<£^>) :: (a -> b) -> AnyPublisher<Result<a,e2>,e> -> AnyPublisher<Result<b,e2>,e>
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func <£^> <A, B, E: Error, E2: Error>(
-    _ fn: @escaping (A) -> B,
+    _ fn: @escaping @Sendable (A) -> B,
     _ pub: AnyPublisher<Result<A, E2>, E>
 ) -> AnyPublisher<Result<B, E2>, E> {
     mapTPublisherResult(fn, pub)
@@ -17,7 +17,7 @@ public func <£^> <A, B, E: Error, E2: Error>(
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func <&^> <A, B, E: Error, E2: Error>(
     _ pub: AnyPublisher<Result<A, E2>, E>,
-    _ fn: @escaping (A) -> B
+    _ fn: @escaping @Sendable (A) -> B
 ) -> AnyPublisher<Result<B, E2>, E> {
     mapTPublisherResult(fn, pub)
 }

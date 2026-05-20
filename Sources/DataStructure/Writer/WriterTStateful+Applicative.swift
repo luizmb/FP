@@ -17,7 +17,7 @@ public func applyWriterStateful<W: Monoid, S, A, B>(
 
 /// liftA2 for Writer<W, Stateful>
 public func liftA2WriterStateful<W: Monoid, S, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Writer<W, Stateful<S, A>>, Writer<W, Stateful<S, B>>) -> Writer<W, Stateful<S, C>> {
     { wa, wb in
         Writer<W, Stateful<S, C>>(

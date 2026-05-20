@@ -15,7 +15,7 @@ public extension Loading {
 
     /// Curried form for point-free style.
     /// (<$>) :: Functor f => (a -> b) -> f a -> f b
-    static func fmap<B: Sendable>(_ f: @escaping (Success) -> B) -> (Loading<Success, Failure>) -> Loading<B, Failure> {
+    static func fmap<B: Sendable>(_ f: @escaping @Sendable (Success) -> B) -> @Sendable (Loading<Success, Failure>) -> Loading<B, Failure> {
         { $0.map(f) }
     }
 }

@@ -6,7 +6,7 @@ import CoreFP
 
 public extension Writer {
     func flatMapT<E: Semigroup, Inner, B>(
-        _ fn: @escaping (Inner) -> Writer<W, Validation<E, B>>
+        _ fn: @escaping @Sendable (Inner) -> Writer<W, Validation<E, B>>
     ) -> Writer<W, Validation<E, B>> where A == Validation<E, Inner> {
         value.match(
             caseFailure: { e in Writer<W, Validation<E, B>>(.failure(e), log) },
@@ -18,7 +18,7 @@ public extension Writer {
     }
 
     static func bindT<E: Semigroup, Inner, B>(
-        _ fn: @escaping (Inner) -> Writer<W, Validation<E, B>>
+        _ fn: @escaping @Sendable (Inner) -> Writer<W, Validation<E, B>>
     ) -> (Writer<W, Validation<E, Inner>>) -> Writer<W, Validation<E, B>>
     where A == Validation<E, Inner> {
         { $0.flatMapT(fn) }

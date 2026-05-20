@@ -2,12 +2,12 @@ import Foundation
 
 public extension Reader {
     // pure :: a -> Reader<env, a>  — constant reader, ignores the environment
-    static func pure(_ value: Output) -> Reader<Environment, Output> {
+    static func pure(_ value: Output) -> Reader<Environment, Output> where Output: Sendable {
         Reader { _ in value }
     }
 
     // liftA2 :: (b1 -> b2 -> b) -> Reader e b1 -> Reader e b2 -> Reader e b
-    static func liftA2<B1, B2>(_ fn: @escaping (B1, B2) -> Output) -> (
+    static func liftA2<B1, B2>(_ fn: @escaping @Sendable (B1, B2) -> Output) -> @Sendable (
         Reader<Environment, B1>, Reader<Environment, B2>
     ) -> Reader<Environment, Output> {
         { readerA, readerB in

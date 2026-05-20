@@ -28,8 +28,8 @@ public extension Stateful {
     }
 
     static func liftA2<B, C>(
-        _ fn: @escaping (A, B) -> C
-    ) -> (Stateful<S, A>, Stateful<S, B>) -> Stateful<S, C> {
+        _ fn: @escaping @Sendable (A, B) -> C
+    ) -> @Sendable (Stateful<S, A>, Stateful<S, B>) -> Stateful<S, C> {
         { sa, sb in
             Stateful<S, C> { s in
                 let a = sa.run(&s)

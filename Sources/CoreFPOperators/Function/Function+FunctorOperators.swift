@@ -6,8 +6,8 @@ import CoreFP
 /// For functions, this is function composition
 /// (<£>) :: (b -> c) -> (a -> b) -> (a -> c)
 public func <£> <A, B, C>(
-    _ transform: @escaping (B) -> C,
-    _ f: @escaping (A) -> B
+    _ transform: @escaping @Sendable (B) -> C,
+    _ f: @escaping @Sendable (A) -> B
 ) -> (A) -> C {
     compose(f, transform)
 }
@@ -15,7 +15,7 @@ public func <£> <A, B, C>(
 /// Map replace operator for functions (always returns a constant)
 /// (£>) :: (a -> b) -> c -> (a -> c)
 public func £> <A, B, C>(
-    _: @escaping (A) -> B,
+    _: @escaping @Sendable (A) -> B,
     _ value: C
 ) -> (A) -> C {
     const(value)
@@ -25,7 +25,7 @@ public func £> <A, B, C>(
 /// (<£) :: c -> (a -> b) -> (a -> c)
 public func <£ <A, B, C>(
     _ value: C,
-    _ f: @escaping (A) -> B
+    _ f: @escaping @Sendable (A) -> B
 ) -> (A) -> C {
     f £> value
 }
@@ -33,8 +33,8 @@ public func <£ <A, B, C>(
 /// Flipped functor fmap for functions — left-to-right composition
 /// (<&>) :: (a -> b) -> (b -> c) -> (a -> c)
 public func <&> <A, B, C>(
-    _ f: @escaping (A) -> B,
-    _ transform: @escaping (B) -> C
+    _ f: @escaping @Sendable (A) -> B,
+    _ transform: @escaping @Sendable (B) -> C
 ) -> (A) -> C {
     compose(f, transform)
 }

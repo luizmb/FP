@@ -52,7 +52,7 @@ extension SIMDMonoidScalar where Self: FloatingPoint & ExpressibleByIntegerLiter
 /// ```
 ///
 /// - SeeAlso: ``NumericMonoid``, ``Monoid``
-public enum SIMDMonoid<T: SIMD> where T.Scalar: SIMDMonoidScalar {
+public enum SIMDMonoid<T: SIMD & Sendable> where T.Scalar: SIMDMonoidScalar {
     /// Monoid under element-wise addition, with identity vector of zeros.
     public struct Sum: Monoid, RawRepresentable {
         public let rawValue: T

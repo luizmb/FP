@@ -8,8 +8,8 @@ public extension NonEmpty {
     }
 
     static func fmapT<Inner, B>(
-        _ fn: @escaping (Inner) -> B
-    ) -> (NonEmpty<Inner?>) -> NonEmpty<B?> {
+        _ fn: @escaping @Sendable (Inner) -> B
+    ) -> @Sendable (NonEmpty<Inner?>) -> NonEmpty<B?> {
         { $0.mapT(fn) }
     }
 }

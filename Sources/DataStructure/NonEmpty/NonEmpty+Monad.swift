@@ -12,21 +12,21 @@ public extension NonEmpty {
     }
 
     static func bind<B>(
-        _ fn: @escaping (A) -> NonEmpty<B>
+        _ fn: @escaping @Sendable (A) -> NonEmpty<B>
     ) -> (NonEmpty<A>) -> NonEmpty<B> {
         { $0.flatMap(fn) }
     }
 
     static func kleisli<O0, B>(
-        _ fn1: @escaping (O0) -> NonEmpty<A>,
-        _ fn2: @escaping (A) -> NonEmpty<B>
+        _ fn1: @escaping @Sendable (O0) -> NonEmpty<A>,
+        _ fn2: @escaping @Sendable (A) -> NonEmpty<B>
     ) -> (O0) -> NonEmpty<B> {
         { fn1($0).flatMap(fn2) }
     }
 
     static func kleisliBack<O0, B>(
-        _ fn2: @escaping (A) -> NonEmpty<B>,
-        _ fn1: @escaping (O0) -> NonEmpty<A>
+        _ fn2: @escaping @Sendable (A) -> NonEmpty<B>,
+        _ fn1: @escaping @Sendable (O0) -> NonEmpty<A>
     ) -> (O0) -> NonEmpty<B> {
         { fn1($0).flatMap(fn2) }
     }

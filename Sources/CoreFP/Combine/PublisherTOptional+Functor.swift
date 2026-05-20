@@ -8,7 +8,7 @@ import Foundation
 /// mapT for AnyPublisher<A?, E> — maps over the inner Optional's value
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func mapTPublisherOptional<A, B, E: Error>(
-    _ fn: @escaping (A) -> B,
+    _ fn: @escaping @Sendable (A) -> B,
     _ publisher: AnyPublisher<A?, E>
 ) -> AnyPublisher<B?, E> {
     publisher.map { optA in optA.map(fn) }.eraseToAnyPublisher()
@@ -17,7 +17,7 @@ public func mapTPublisherOptional<A, B, E: Error>(
 /// Curried fmapT
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func fmapTPublisherOptional<A, B, E: Error>(
-    _ fn: @escaping (A) -> B
+    _ fn: @escaping @Sendable (A) -> B
 ) -> (AnyPublisher<A?, E>) -> AnyPublisher<B?, E> {
     { publisher in mapTPublisherOptional(fn, publisher) }
 }

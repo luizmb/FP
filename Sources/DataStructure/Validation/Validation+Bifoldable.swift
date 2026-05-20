@@ -9,8 +9,8 @@ public extension Validation {
 
     /// Curried static form for point-free use.
     static func bifoldMap<C>(
-        _ ef: @escaping (E) -> C,
-        _ af: @escaping (A) -> C
+        _ ef: @escaping @Sendable (E) -> C,
+        _ af: @escaping @Sendable (A) -> C
     ) -> (Validation<E, A>) -> C {
         { $0.bifoldMap(ef, af) }
     }
@@ -18,8 +18,8 @@ public extension Validation {
 
 /// bifoldMap :: (e -> c) -> (a -> c) -> Validation e a -> c
 public func bifoldMap<E: Semigroup, A, C>(
-    _ ef: @escaping (E) -> C,
-    _ af: @escaping (A) -> C
+    _ ef: @escaping @Sendable (E) -> C,
+    _ af: @escaping @Sendable (A) -> C
 ) -> (Validation<E, A>) -> C {
     { $0.bifoldMap(ef, af) }
 }

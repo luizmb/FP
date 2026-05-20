@@ -5,7 +5,7 @@ import Foundation
 
 /// mapT for Either<L, [A]>
 public func mapTEitherArray<L, A, B>(
-    _ fn: @escaping (A) -> B,
+    _ fn: @escaping @Sendable (A) -> B,
     _ either: Either<L, [A]>
 ) -> Either<L, [B]> {
     either.mapRight { arr in arr.map(fn) }
@@ -13,7 +13,7 @@ public func mapTEitherArray<L, A, B>(
 
 /// Curried fmapT
 public func fmapTEitherArray<L, A, B>(
-    _ fn: @escaping (A) -> B
+    _ fn: @escaping @Sendable (A) -> B
 ) -> (Either<L, [A]>) -> Either<L, [B]> {
     { either in mapTEitherArray(fn, either) }
 }

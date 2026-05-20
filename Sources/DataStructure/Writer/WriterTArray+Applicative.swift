@@ -16,7 +16,7 @@ public func applyWriterArray<W: Monoid, A, B>(
 
 /// liftA2 for Writer<W, Array>
 public func liftA2WriterArray<W: Monoid, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Writer<W, [A]>, Writer<W, [B]>) -> Writer<W, [C]> {
     { wa, wb in
         Writer<W, [C]>(

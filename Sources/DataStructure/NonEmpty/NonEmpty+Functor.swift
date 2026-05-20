@@ -7,8 +7,8 @@ public extension NonEmpty {
     }
 
     static func fmap<B>(
-        _ fn: @escaping (A) -> B
-    ) -> (NonEmpty<A>) -> NonEmpty<B> {
+        _ fn: @escaping @Sendable (A) -> B
+    ) -> @Sendable (NonEmpty<A>) -> NonEmpty<B> {
         { $0.map(fn) }
     }
 }
@@ -16,7 +16,7 @@ public extension NonEmpty {
 // MARK: - Free functions
 
 public func fmap<A, B>(
-    _ fn: @escaping (A) -> B,
+    _ fn: @escaping @Sendable (A) -> B,
     _ ne: NonEmpty<A>
 ) -> NonEmpty<B> {
     ne.map(fn)

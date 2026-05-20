@@ -51,7 +51,7 @@
 /// - `mconcat([f, g])` is equivalent to `f` then `g`.
 ///
 /// - SeeAlso: ``EndoMut``, ``Iso``, ``mconcat(_:)``, ``sconcat(_:_:)``
-public struct Endo<A>: Sendable {
+public struct Endo<A>: FunctionWrapper {
     public let runEndo: @Sendable (A) -> A
 
     public init(_ fn: @escaping @Sendable (A) -> A) {

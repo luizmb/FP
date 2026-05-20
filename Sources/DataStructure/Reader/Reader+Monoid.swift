@@ -27,11 +27,13 @@ extension Reader: Semigroup where Output: Semigroup {
 }
 
 extension Reader: Monoid where Output: Monoid {
-    /// The identity `Reader`: lifts `Output.identity` into the Reader context via
-    /// ``pure(_:)``, producing the same value for every environment.
+    /// The identity Reader — a constant reader returning `Output.identity` for any environment.
     ///
     /// ```swift
-    /// Reader<MyEnv, [String]>.identity.runReader(env) // []
+    /// let id = Reader<Int, [String]>.identity
+    /// id.runReader(42) // []
     /// ```
-    public static var identity: Self { .pure(.identity) }
+    public static var identity: Self {
+        Reader { _ in Output.identity }
+    }
 }

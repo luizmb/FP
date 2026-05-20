@@ -8,7 +8,7 @@ public extension Writer {
     /// .left(l)   → Writer(.left(l), log)
     /// .right(a)  → Writer(result, W.combine(log, innerLog))
     func flatMapT<L, Inner, B>(
-        _ fn: @escaping (Inner) -> Writer<W, Either<L, B>>
+        _ fn: @escaping @Sendable (Inner) -> Writer<W, Either<L, B>>
     ) -> Writer<W, Either<L, B>> where A == Either<L, Inner> {
         switch value {
         case .left(let l): return Writer<W, Either<L, B>>(.left(l), log)
@@ -19,7 +19,7 @@ public extension Writer {
     }
 
     static func bindT<L, Inner, B>(
-        _ fn: @escaping (Inner) -> Writer<W, Either<L, B>>
+        _ fn: @escaping @Sendable (Inner) -> Writer<W, Either<L, B>>
     ) -> (Writer<W, Either<L, Inner>>) -> Writer<W, Either<L, B>>
     where A == Either<L, Inner> {
         { $0.flatMapT(fn) }

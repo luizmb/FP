@@ -5,7 +5,7 @@ import Foundation
 
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
 public func <£> <S, F, B>(
-    _ transform: @escaping (S) -> B,
+    _ transform: @escaping @Sendable (S) -> B,
     _ loading: Loading<S, F>
 ) -> Loading<B, F> {
     Loading<S, F>.fmap(transform)(loading)
@@ -14,7 +14,7 @@ public func <£> <S, F, B>(
 // (<&>) :: Functor f => f a -> (a -> b) -> f b
 public func <&> <S, F, B>(
     _ loading: Loading<S, F>,
-    _ transform: @escaping (S) -> B
+    _ transform: @escaping @Sendable (S) -> B
 ) -> Loading<B, F> {
     loading.map(transform)
 }

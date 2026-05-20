@@ -6,7 +6,7 @@
 /// .right(ne)  → apply fn element-wise; short-circuit on first Left, combine Rights.
 public func flatMapTEitherNonEmpty<L, A, B>(
     _ either: Either<L, NonEmpty<A>>,
-    _ fn: @escaping (A) -> Either<L, NonEmpty<B>?>
+    _ fn: @escaping @Sendable (A) -> Either<L, NonEmpty<B>?>
 ) -> Either<L, NonEmpty<B>?> {
     either.flatMap { ne in
         var accumulated: NonEmpty<B>?
@@ -25,7 +25,7 @@ public func flatMapTEitherNonEmpty<L, A, B>(
 
 /// Curried version
 public func bindTEitherNonEmpty<L, A, B>(
-    _ fn: @escaping (A) -> Either<L, NonEmpty<B>?>
+    _ fn: @escaping @Sendable (A) -> Either<L, NonEmpty<B>?>
 ) -> (Either<L, NonEmpty<A>>) -> Either<L, NonEmpty<B>?> {
     { flatMapTEitherNonEmpty($0, fn) }
 }

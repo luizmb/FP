@@ -18,8 +18,8 @@ public extension Writer {
     }
 
     static func liftA2<B, C>(
-        _ fn: @escaping (A, B) -> C
-    ) -> (Writer<W, A>, Writer<W, B>) -> Writer<W, C> {
+        _ fn: @escaping @Sendable (A, B) -> C
+    ) -> @Sendable (Writer<W, A>, Writer<W, B>) -> Writer<W, C> {
         { wa, wb in
             Writer<W, C>(fn(wa.value, wb.value), W.combine(wa.log, wb.log))
         }

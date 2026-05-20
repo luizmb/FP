@@ -12,7 +12,7 @@ public func applyValidationWriter<E: Semigroup, W: Monoid, A, B>(
 }
 
 public func liftA2ValidationWriter<E: Semigroup, W: Monoid, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Validation<E, Writer<W, A>>, Validation<E, Writer<W, B>>) -> Validation<E, Writer<W, C>> {
     Validation.liftA2(Writer.liftA2(fn))
 }
