@@ -1596,7 +1596,44 @@ The protocol defines three requirements — `left(_:)`, `right(_:)`, `match(case
 
 FP is a **Sendable-first** library. Composition (functor / applicative / monad / transformer operators, function helpers, optics, etc.) requires `@Sendable` closures end-to-end; side effects live at the boundary, outside the composition layer.
 
-This is a deliberate FP discipline rather than a Swift concurrency quirk: composition should be pure, and `@Sendable` is the strongest static guarantee Swift gives us that a closure carries no side-channel state. Closures that capture mutable view-controller state, non-Sendable services, or other non-Sendable references can't be composed by `map` / `flatMap` / `<*>` — and that's the point.
+This is a deliberate FP discipline rather than a Swift concurrency quirk: composition should be pure, and `@Sendable` is the strongest static guarantee Swift gives us that a closure carries no side-channel state.
+
+#### Closures should ideally capture *nothing*
+
+`@Sendable` rules out closures that capture non-Sendable values (mutable view-controller state, services, classes), and that's the first line of defence. But the deeper FP principle is stronger: **the closures you pass to `map` / `flatMap` / `<*>` / `compose` / `>=>` ideally shouldn't capture anything at all** — not even Sendable values.
+
+A closure that captures a captured variable introduces hidden inputs (or hidden outputs). Two flavours:
+
+- **Effect** — the closure writes to something outside itself: increments a counter, mutates a class property, logs, sends a network request. The function's *output* depends on more than its arguments; it changes the world.
+- **Co-effect** — the closure reads from something outside itself: a global, a singleton, the current time, a flag stored in `self`. The function's output depends on more than its arguments; it observes the world.
+
+Either kind of capture breaks **referential transparency** — the property that `f(x)` always returns the same value for the same `x`, and that replacing `f(x)` with its result anywhere in the program doesn't change behaviour. Without referential transparency, equational reasoning collapses: you can no longer refactor by substitution, test by passing arguments, or rely on the functor/applicative/monad laws.
+
+The library can't enforce capture-freeness at the type level — Swift has no `@Pure` attribute — so it does the next-best thing and requires `@Sendable`, which at least blocks non-Sendable captures. The intent is for you to go further:
+
+```swift
+// ❌ Co-effect: reads `formatter` from the enclosing scope
+let formatter = DateFormatter()  // (Sendable struct, would compile)
+let render = { (date: Date) -> String in formatter.string(from: date) }
+
+// ❌ Effect: writes `count` from the enclosing scope
+var count = 0
+let increment = { (n: Int) -> Int in count += 1; return n + count }
+
+// ✅ Capture-free: depends only on its argument
+let render = { (date: Date) -> String in
+    DateFormatter().string(from: date)   // or pass the formatter as an argument
+}
+
+// ✅ State threaded explicitly through the type system
+let increment: @Sendable (Int) -> Stateful<Int, Int> = { n in
+    Stateful<Int, Int> { state in state += 1; return n + state }
+}
+```
+
+Where state, dependencies, environments, or accumulated logs are unavoidable, the library gives you a *type* to represent them: `Stateful` for mutation, `Reader` for dependencies, `Writer` for accumulated logs, `Either` / `Validation` for failure, `DeferredTask` for async IO. Lift the would-be capture into one of those, and the closure stays capture-free while the dependency becomes visible in the function's type signature.
+
+Closures that capture nothing can't surprise you. That's the bar; `@Sendable` is the floor.
 
 #### What's `Sendable` in the library
 
