@@ -6,7 +6,7 @@ import CoreFP
 
 public extension Reader {
     func flatMapT<E: Semigroup, Inner, B>(
-        _ fn: @escaping (Inner) -> Reader<Environment, Validation<E, B>>
+        _ fn: @escaping @Sendable (Inner) -> Reader<Environment, Validation<E, B>>
     ) -> Reader<Environment, Validation<E, B>>
     where Output == Validation<E, Inner> {
         Reader<Environment, Validation<E, B>> { env in
@@ -18,7 +18,7 @@ public extension Reader {
     }
 
     static func bindT<E: Semigroup, Inner, B>(
-        _ fn: @escaping (Inner) -> Reader<Environment, Validation<E, B>>
+        _ fn: @escaping @Sendable (Inner) -> Reader<Environment, Validation<E, B>>
     ) -> (Reader<Environment, Validation<E, Inner>>) -> Reader<Environment, Validation<E, B>>
     where Output == Validation<E, Inner> {
         { $0.flatMapT(fn) }

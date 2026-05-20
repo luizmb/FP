@@ -4,7 +4,7 @@ import DataStructure
 
 // (<*>) :: Validation<e, Stateful<s,(a->b)>> -> Validation<e, Stateful<s,a>> -> Validation<e, Stateful<s,b>>
 public func <*> <E: Semigroup, S, A, B>(
-    _ fns: Validation<E, Stateful<S, (A) -> B>>,
+    _ fns: Validation<E, Stateful<S, @Sendable (A) -> B>>,
     _ values: Validation<E, Stateful<S, A>>
 ) -> Validation<E, Stateful<S, B>> {
     applyValidationStateful(fns, values)

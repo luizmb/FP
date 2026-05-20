@@ -4,7 +4,7 @@ import Foundation
 
 /// Apply for ReaderT Reader
 public func applyReaderReader<Env1, Env2, A, B>(
-    _ readerF: Reader<Env1, Reader<Env2, (A) -> B>>,
+    _ readerF: Reader<Env1, Reader<Env2, @Sendable (A) -> B>>,
     _ readerA: Reader<Env1, Reader<Env2, A>>
 ) -> Reader<Env1, Reader<Env2, B>> {
     Reader { env1 in
@@ -20,7 +20,7 @@ public func applyReaderReader<Env1, Env2, A, B>(
 
 /// liftA2 for ReaderT Reader
 public func liftA2ReaderReader<Env1, Env2, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Reader<Env1, Reader<Env2, A>>, Reader<Env1, Reader<Env2, B>>) -> Reader<Env1, Reader<Env2, C>> {
     { readerA, readerB in
         Reader { env1 in

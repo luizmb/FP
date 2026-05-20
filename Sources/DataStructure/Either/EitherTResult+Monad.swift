@@ -10,7 +10,7 @@ import Foundation
 /// .right(.success(a)) → fn(a)
 public func flatMapTEitherResult<L, A, B, E: Error>(
     _ either: Either<L, Result<A, E>>,
-    _ fn: @escaping (A) -> Either<L, Result<B, E>>
+    _ fn: @escaping @Sendable (A) -> Either<L, Result<B, E>>
 ) -> Either<L, Result<B, E>> {
     either.flatMap { result in
         switch result {
@@ -22,7 +22,7 @@ public func flatMapTEitherResult<L, A, B, E: Error>(
 
 /// Curried version
 public func bindTEitherResult<L, A, B, E: Error>(
-    _ fn: @escaping (A) -> Either<L, Result<B, E>>
+    _ fn: @escaping @Sendable (A) -> Either<L, Result<B, E>>
 ) -> (Either<L, Result<A, E>>) -> Either<L, Result<B, E>> {
     { either in flatMapTEitherResult(either, fn) }
 }

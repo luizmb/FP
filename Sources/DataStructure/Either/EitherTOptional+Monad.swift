@@ -10,7 +10,7 @@ import Foundation
 /// .right(.some(a)) → fn(a)
 public func flatMapTEitherOptional<L, A, B>(
     _ either: Either<L, A?>,
-    _ fn: @escaping (A) -> Either<L, B?>
+    _ fn: @escaping @Sendable (A) -> Either<L, B?>
 ) -> Either<L, B?> {
     either.flatMap { optA in
         optA.map(fn) ?? .right(.none)
@@ -19,7 +19,7 @@ public func flatMapTEitherOptional<L, A, B>(
 
 /// Curried version
 public func bindTEitherOptional<L, A, B>(
-    _ fn: @escaping (A) -> Either<L, B?>
+    _ fn: @escaping @Sendable (A) -> Either<L, B?>
 ) -> (Either<L, A?>) -> Either<L, B?> {
     { either in flatMapTEitherOptional(either, fn) }
 }

@@ -4,7 +4,7 @@ import DataStructure
 
 // (<*>) :: Reader<env, Validation<e,(a->b)>> -> Reader<env, Validation<e,a>> -> Reader<env, Validation<e,b>>
 public func <*> <Env, E: Semigroup, A, B>(
-    _ readerF: Reader<Env, Validation<E, (A) -> B>>,
+    _ readerF: Reader<Env, Validation<E, @Sendable (A) -> B>>,
     _ readerA: Reader<Env, Validation<E, A>>
 ) -> Reader<Env, Validation<E, B>> {
     applyReaderValidation(readerF, readerA)

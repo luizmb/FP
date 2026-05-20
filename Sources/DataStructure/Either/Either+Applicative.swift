@@ -3,7 +3,7 @@ import Foundation
 
 public extension Either {
     // liftA2 :: (b1 -> b2 -> b) -> Either a b1 -> Either a b2 -> Either a b
-    static func liftA2<B1, B2>(_ fn: @escaping (B1, B2) -> B) -> (
+    static func liftA2<B1, B2>(_ fn: @escaping @Sendable (B1, B2) -> B) -> @Sendable (
         Either<A, B1>, Either<A, B2>
     ) -> Either<A, B> {
         { eitherA, eitherB in
@@ -12,19 +12,22 @@ public extension Either {
     }
 
     /// apply :: Either<a, (b0 -> b)> -> Either<a, b0> -> Either<a, b>
-    static func apply<B0>(_ functions: Either<A, (B0) -> B>, _ values: Either<A, B0>) -> Either<A, B> {
-        functions.flatMap(values.mapRight)
+    static func apply<B0>(
+        _ functions: Either<A, @Sendable (B0) -> B>,
+        _ values: Either<A, B0>
+    ) -> Either<A, B> where A: Sendable, B0: Sendable {
+        functions.flatMap { @Sendable f in values.mapRight(f) }
     }
 
     /// seqRight :: Either<a, b> -> Either<a, c> -> Either<a, c>
     /// Run both, discard the left result, return the right
-    func seqRight<C>(_ rhs: Either<A, C>) -> Either<A, C> {
+    func seqRight<C>(_ rhs: Either<A, C>) -> Either<A, C> where A: Sendable, C: Sendable {
         flatMap(const(rhs))
     }
 
     /// seqLeft :: Either<a, b> -> Either<a, c> -> Either<a, b>
     /// Run both, return the left result
-    func seqLeft<C>(_ rhs: Either<A, C>) -> Either<A, B> {
+    func seqLeft<C>(_ rhs: Either<A, C>) -> Either<A, B> where A: Sendable, B: Sendable, C: Sendable {
         flatMap { b in rhs.mapRight(const(b)) }
     }
 
@@ -59,7 +62,7 @@ public extension Either {
     private static func specialRightRight<Ba, Bb>(
         lhs: Either<A, Ba>,
         rhs: Either<A, Bb>,
-        handling: @escaping (Ba, Bb) -> B
+        handling: @escaping @Sendable (Ba, Bb) -> B
     ) -> Either<A, B> {
         .match(
             lhs,

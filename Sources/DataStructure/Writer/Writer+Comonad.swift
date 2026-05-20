@@ -26,7 +26,7 @@ public extension Writer {
 
     // Curried static forms for point-free use.
     static func extend<B>(
-        _ f: @escaping (Writer<W, A>) -> B
+        _ f: @escaping @Sendable (Writer<W, A>) -> B
     ) -> (Writer<W, A>) -> Writer<W, B> {
         { $0.extend(f) }
     }
@@ -39,7 +39,7 @@ public func extract<W: Monoid, A>(_ writer: Writer<W, A>) -> A {
 
 /// extend :: (Writer w a -> b) -> Writer w a -> Writer w b
 public func extend<W: Monoid, A, B>(
-    _ f: @escaping (Writer<W, A>) -> B
+    _ f: @escaping @Sendable (Writer<W, A>) -> B
 ) -> (Writer<W, A>) -> Writer<W, B> {
     { $0.extend(f) }
 }

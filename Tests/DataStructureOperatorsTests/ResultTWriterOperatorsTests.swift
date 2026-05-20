@@ -41,15 +41,15 @@ import Testing
     }
 
     @Test func kleisli() {
-        let f: (Int) -> Result<Writer<[String], Int>, TestError> = { n in .success(Writer(n + 1, ["f"])) }
-        let g: (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["g"]) }
+        let f: @Sendable (Int) -> Result<Writer<[String], Int>, TestError> = { n in .success(Writer(n + 1, ["f"])) }
+        let g: @Sendable (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["g"]) }
         let result = (f >=> g)(4)
         #expect(result.success?.value == "5")
         #expect(result.success?.log == ["f", "g"])
     }
 
     @Test func apply() {
-        let rf: Result<Writer<[String], (Int) -> String>, TestError> = .success(Writer({ "\($0)" }, ["fn"]))
+        let rf: Result<Writer<[String], @Sendable (Int) -> String>, TestError> = .success(Writer({ @Sendable in "\($0)" }, ["fn"]))
         let ra: Result<Writer<[String], Int>, TestError> = .success(Writer(7, ["val"]))
         let result = rf <*> ra
         #expect(result.success?.value == "7")
@@ -57,7 +57,7 @@ import Testing
     }
 
     @Test func applyFailure() {
-        let rf: Result<Writer<[String], (Int) -> String>, TestError> = .failure(.failure)
+        let rf: Result<Writer<[String], @Sendable (Int) -> String>, TestError> = .failure(.failure)
         let ra: Result<Writer<[String], Int>, TestError> = .success(Writer(7, ["val"]))
         let result = rf <*> ra
         if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }

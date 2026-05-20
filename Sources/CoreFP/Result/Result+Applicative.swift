@@ -2,7 +2,7 @@ import Foundation
 
 public extension Result {
     // liftA2 :: (a1 -> a2 -> a) -> Result<a1, b> -> Result<a2, b> -> Result<a, b>
-    static func liftA2<A1, A2>(_ fn: @escaping (A1, A2) -> A) -> (
+    static func liftA2<A1, A2>(_ fn: @escaping @Sendable (A1, A2) -> A) -> @Sendable (
         Result<A1, B>, Result<A2, B>
     ) -> Result<A, B> {
         { resultA, resultB in
@@ -11,7 +11,7 @@ public extension Result {
     }
 
     /// apply :: Result<(a -> b), e> -> Result<a, e> -> Result<b, e>
-    static func apply<A>(_ functions: Result<(A) -> Success, Failure>, _ values: Result<A, Failure>) -> Result<Success, Failure> {
+    static func apply<A>(_ functions: Result<@Sendable (A) -> Success, Failure>, _ values: Result<A, Failure>) -> Result<Success, Failure> {
         functions.flatMap(values.map)
     }
 

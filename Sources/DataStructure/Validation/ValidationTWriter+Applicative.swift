@@ -5,14 +5,14 @@ import CoreFP
 // Outer Validation accumulates errors; success case combines Writer values and logs.
 
 public func applyValidationWriter<E: Semigroup, W: Monoid, A, B>(
-    _ vf: Validation<E, Writer<W, (A) -> B>>,
+    _ vf: Validation<E, Writer<W, @Sendable (A) -> B>>,
     _ va: Validation<E, Writer<W, A>>
 ) -> Validation<E, Writer<W, B>> {
     Validation.liftA2(Writer.apply)(vf, va)
 }
 
 public func liftA2ValidationWriter<E: Semigroup, W: Monoid, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Validation<E, Writer<W, A>>, Validation<E, Writer<W, B>>) -> Validation<E, Writer<W, C>> {
     Validation.liftA2(Writer.liftA2(fn))
 }

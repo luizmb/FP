@@ -35,21 +35,21 @@ import Testing
     }
 
     @Test func kleisli() {
-        let f: (Int) -> Stateful<Int, Int>? = { n in .some(.pure(n + 1)) }
-        let g: (Int) -> Stateful<Int, String> = { n in .pure("\(n)") }
+        let f: @Sendable (Int) -> Stateful<Int, Int>? = { n in .some(.pure(n + 1)) }
+        let g: @Sendable (Int) -> Stateful<Int, String> = { n in .pure("\(n)") }
         let result = (f >=> g)(3)
         #expect(result?.eval(0) == "4")
     }
 
     @Test func apply() {
-        let sf: Stateful<Int, (Int) -> String>? = .pure({ "\($0)" })
+        let sf: Stateful<Int, @Sendable (Int) -> String>? = .pure({ "\($0)" })
         let sa: Stateful<Int, Int>? = .get
         let result = sf <*> sa
         #expect(result?.eval(5) == "5")
     }
 
     @Test func applyNil() {
-        let sf: Stateful<Int, (Int) -> String>? = nil
+        let sf: Stateful<Int, @Sendable (Int) -> String>? = nil
         let sa: Stateful<Int, Int>? = .pure(5)
         let result = sf <*> sa
         #expect(result == nil)

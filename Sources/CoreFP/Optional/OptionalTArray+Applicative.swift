@@ -6,14 +6,14 @@ import Foundation
 
 /// apply for OptionalTArray: [(A->B)]? -> [A]? -> [B]?
 /// If outer is nil → nil; otherwise use Array.apply
-public func applyOptionalArray<A, B>(_ fns: [(A) -> B]?, _ values: [A]?) -> [B]? {
+public func applyOptionalArray<A, B>(_ fns: [@Sendable (A) -> B]?, _ values: [A]?) -> [B]? {
     fns.flatMap { fs in values.map { arr in Array.apply(fs, arr) } }
 }
 
 /// liftA2 for OptionalTArray: (A,B)->C -> [A]? -> [B]? -> [C]?
 /// Double-lift through Optional then Array
 public func liftA2OptionalArray<A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> ([A]?, [B]?) -> [C]? {
     { optA, optB in
         guard let a = optA, let b = optB else { return nil }

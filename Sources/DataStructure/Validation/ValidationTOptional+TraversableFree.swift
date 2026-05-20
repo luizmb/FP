@@ -9,6 +9,6 @@ public func sequence<E: Semigroup, B>(_ validation: Validation<E, B?>) -> Valida
 
 /// Map and sequence over the success side of a Validation, collecting into Optional.
 /// traverse :: (a -> b?) -> Validation e a -> Validation e b?
-public func traverse<E: Semigroup, A, B>(_ fn: @escaping (A) -> B?) -> (Validation<E, A>) -> Validation<E, B>? {
+public func traverse<E: Semigroup, A, B>(_ fn: @escaping @Sendable (A) -> B?) -> (Validation<E, A>) -> Validation<E, B>? {
     { validation in validation.traverse(fn) }
 }

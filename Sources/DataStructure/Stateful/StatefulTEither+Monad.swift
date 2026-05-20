@@ -7,7 +7,7 @@ public extension Stateful {
     // the "inout parameter captured by escaping closure" error.
 
     func flatMapT<L, Inner, B>(
-        _ fn: @escaping (Inner) -> Stateful<S, Either<L, B>>
+        _ fn: @escaping @Sendable (Inner) -> Stateful<S, Either<L, B>>
     ) -> Stateful<S, Either<L, B>> where A == Either<L, Inner> {
         Stateful<S, Either<L, B>> { s in
             switch self.run(&s) {
@@ -18,7 +18,7 @@ public extension Stateful {
     }
 
     static func bindT<L, Inner, B>(
-        _ fn: @escaping (Inner) -> Stateful<S, Either<L, B>>
+        _ fn: @escaping @Sendable (Inner) -> Stateful<S, Either<L, B>>
     ) -> (Stateful<S, Either<L, Inner>>) -> Stateful<S, Either<L, B>>
     where A == Either<L, Inner> {
         { $0.flatMapT(fn) }

@@ -19,7 +19,7 @@ public func applyReaderPublisher<Env, A, B, E: Error>(
 /// liftA2 for ReaderT Publisher
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func liftA2ReaderPublisher<Env, A, B, C, E: Error>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Reader<Env, any Publisher<A, E>>, Reader<Env, any Publisher<B, E>>) -> Reader<Env, any Publisher<C, E>> {
     { readerA, readerB in
         Reader { env in

@@ -5,7 +5,7 @@ import Foundation
 
 /// apply for Stateful<S, Optional>
 public func applyStatefulOptional<S, A, B>(
-    _ sf: Stateful<S, ((A) -> B)?>,
+    _ sf: Stateful<S, (@Sendable (A) -> B)?>,
     _ sa: Stateful<S, A?>
 ) -> Stateful<S, B?> {
     Stateful<S, B?> { s in
@@ -16,7 +16,7 @@ public func applyStatefulOptional<S, A, B>(
 
 /// liftA2 for Stateful<S, Optional>
 public func liftA2StatefulOptional<S, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Stateful<S, A?>, Stateful<S, B?>) -> Stateful<S, C?> {
     { sa, sb in
         Stateful<S, C?> { s in

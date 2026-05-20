@@ -64,8 +64,8 @@ import Testing
         // fmap (g . f) == fmap g . fmap f
         let value: Either<String, Int> = .right(5)
 
-        let f: (Int) -> Int = { $0 * 2 }
-        let g: (Int) -> String = { "\($0)" }
+        let f: @Sendable (Int) -> Int = { $0 * 2 }
+        let g: @Sendable (Int) -> String = { "\($0)" }
 
         let composed = value.mapRight(compose(f, g))
         let separate = value.mapRight(f).mapRight(g)

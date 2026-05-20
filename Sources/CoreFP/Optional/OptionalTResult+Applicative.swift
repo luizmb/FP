@@ -6,7 +6,7 @@ import Foundation
 /// apply for OptionalTResult: Result<(A->B),E>? -> Result<A,E>? -> Result<B,E>?
 /// If outer is nil → nil; otherwise use Result.apply
 public func applyOptionalResult<A, B, E: Error>(
-    _ fns: Result<(A) -> B, E>?,
+    _ fns: Result<@Sendable (A) -> B, E>?,
     _ values: Result<A, E>?
 ) -> Result<B, E>? {
     fns.flatMap { rf in values.map { ra in Result.apply(rf, ra) } }
@@ -14,9 +14,9 @@ public func applyOptionalResult<A, B, E: Error>(
 
 /// liftA2 for OptionalTResult: (A,B)->C -> Result<A,E>? -> Result<B,E>? -> Result<C,E>?
 public func liftA2OptionalResult<A, B, C, E: Error>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Result<A, E>?, Result<B, E>?) -> Result<C, E>? {
-    Optional.liftA2(Result.liftA2(fn))
+    Optional.liftA2({ @Sendable a, b in Result.liftA2(fn)(a, b) })
 }
 
 /// seqRight for OptionalTResult: Result<A,E>? -> Result<B,E>? -> Result<B,E>?

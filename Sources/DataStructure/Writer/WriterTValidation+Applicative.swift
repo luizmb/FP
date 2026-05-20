@@ -5,7 +5,7 @@ import CoreFP
 // Combines logs left-to-right; accumulates Validation errors.
 
 public func applyWriterValidation<W: Monoid, E: Semigroup, A, B>(
-    _ wf: Writer<W, Validation<E, (A) -> B>>,
+    _ wf: Writer<W, Validation<E, @Sendable (A) -> B>>,
     _ wa: Writer<W, Validation<E, A>>
 ) -> Writer<W, Validation<E, B>> {
     Writer<W, Validation<E, B>>(
@@ -15,7 +15,7 @@ public func applyWriterValidation<W: Monoid, E: Semigroup, A, B>(
 }
 
 public func liftA2WriterValidation<W: Monoid, E: Semigroup, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Writer<W, Validation<E, A>>, Writer<W, Validation<E, B>>) -> Writer<W, Validation<E, C>> {
     { wa, wb in
         Writer<W, Validation<E, C>>(

@@ -89,26 +89,26 @@ import Testing
     // MARK: - Applicative — the key behaviour
 
     @Test func applySuccessSuccess() {
-        let fns: Validation<[String], (Int) -> Int> = .success { $0 * 2 }
+        let fns: Validation<[String], @Sendable (Int) -> Int> = .success { $0 * 2 }
         let vals: Validation<[String], Int> = .success(5)
         #expect(Validation.apply(fns, vals) == .success(10))
     }
 
     @Test func applyFailureSuccess() {
-        let fns: Validation<[String], (Int) -> Int> = .failure(["e1"])
+        let fns: Validation<[String], @Sendable (Int) -> Int> = .failure(["e1"])
         let vals: Validation<[String], Int> = .success(5)
         #expect(Validation.apply(fns, vals) == .failure(["e1"]))
     }
 
     @Test func applySuccessFailure() {
-        let fns: Validation<[String], (Int) -> Int> = .success { $0 * 2 }
+        let fns: Validation<[String], @Sendable (Int) -> Int> = .success { $0 * 2 }
         let vals: Validation<[String], Int> = .failure(["e2"])
         #expect(Validation.apply(fns, vals) == .failure(["e2"]))
     }
 
     @Test func applyAccumulatesBothFailures() {
         // THE key test — both errors must be combined
-        let fns: Validation<[String], (Int) -> Int> = .failure(["e1"])
+        let fns: Validation<[String], @Sendable (Int) -> Int> = .failure(["e1"])
         let vals: Validation<[String], Int> = .failure(["e2"])
         #expect(Validation.apply(fns, vals) == .failure(["e1", "e2"]))
     }
@@ -286,7 +286,7 @@ import Testing
     }
 
     @Test func validationTOptionalApplyBothFailures() {
-        let vf: Validation<[String], ((Int) -> Int)?> = .failure(["e1"])
+        let vf: Validation<[String], (@Sendable (Int) -> Int)?> = .failure(["e1"])
         let va: Validation<[String], Int?> = .failure(["e2"])
         #expect(applyValidationOptional(vf, va) == .failure(["e1", "e2"]))
     }
@@ -300,7 +300,7 @@ import Testing
     }
 
     @Test func validationTArrayApplyAccumulatesErrors() {
-        let vf: Validation<[String], [(Int) -> Int]> = .failure(["e1"])
+        let vf: Validation<[String], [@Sendable (Int) -> Int]> = .failure(["e1"])
         let va: Validation<[String], [Int]> = .failure(["e2"])
         #expect(applyValidationArray(vf, va) == .failure(["e1", "e2"]))
     }
@@ -315,13 +315,13 @@ import Testing
 
     @Test func eitherTValidationApplyAccumulatesInner() {
         // Either is right on both sides — Validation accumulates inner errors
-        let ef: Either<String, Validation<[Int], (Int) -> Int>> = .right(.failure([1]))
+        let ef: Either<String, Validation<[Int], @Sendable (Int) -> Int>> = .right(.failure([1]))
         let ea: Either<String, Validation<[Int], Int>> = .right(.failure([2]))
         #expect(applyEitherValidation(ef, ea) == .right(.failure([1, 2])))
     }
 
     @Test func eitherTValidationApplyShortCircuitsOnEitherLeft() {
-        let ef: Either<String, Validation<[Int], (Int) -> Int>> = .left("outer err")
+        let ef: Either<String, Validation<[Int], @Sendable (Int) -> Int>> = .left("outer err")
         let ea: Either<String, Validation<[Int], Int>> = .right(.failure([2]))
         #expect(applyEitherValidation(ef, ea) == .left("outer err"))
     }
@@ -345,7 +345,7 @@ import Testing
     // MARK: - Transformer: WriterTValidation
 
     @Test func writerTValidationApplyAccumulatesLogsAndErrors() {
-        let wf = Writer<[String], Validation<[Int], (Int) -> Int>>(.failure([1]), ["log1"])
+        let wf = Writer<[String], Validation<[Int], @Sendable (Int) -> Int>>(.failure([1]), ["log1"])
         let wa = Writer<[String], Validation<[Int], Int>>(.failure([2]), ["log2"])
         let result = applyWriterValidation(wf, wa)
         #expect(result.value == .failure([1, 2]))
@@ -369,7 +369,7 @@ import Testing
     // MARK: - Transformer: StatefulTValidation
 
     @Test func statefulTValidationApplyAccumulatesErrors() {
-        let sf = Stateful<Int, Validation<[String], (Int) -> Int>> { _ in .failure(["e1"]) }
+        let sf = Stateful<Int, Validation<[String], @Sendable (Int) -> Int>> { _ in .failure(["e1"]) }
         let sa = Stateful<Int, Validation<[String], Int>> { _ in .failure(["e2"]) }
         var state = 0
         let result = applyStatefulValidation(sf, sa).run(&state)
@@ -396,7 +396,7 @@ import Testing
     // MARK: - Transformer: ReaderTValidation
 
     @Test func readerTValidationApplyAccumulatesErrors() {
-        let rf = Reader<String, Validation<[Int], (Int) -> Int>> { _ in .failure([1]) }
+        let rf = Reader<String, Validation<[Int], @Sendable (Int) -> Int>> { _ in .failure([1]) }
         let ra = Reader<String, Validation<[Int], Int>> { _ in .failure([2]) }
         let result = applyReaderValidation(rf, ra)("env")
         #expect(result == .failure([1, 2]))

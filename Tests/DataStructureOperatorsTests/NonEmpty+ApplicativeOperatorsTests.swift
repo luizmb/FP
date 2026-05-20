@@ -7,13 +7,13 @@ import Testing
     // MARK: - <*> apply
 
     @Test func applyOperator_singleFunction() {
-        let nf = NonEmpty<(Int) -> Int>(head: { $0 * 2 })
+        let nf = NonEmpty<@Sendable (Int) -> Int>(head: { $0 * 2 })
         let na = NonEmpty(head: 1, tail: [2, 3])
         #expect((nf <*> na).toArray == [2, 4, 6])
     }
 
     @Test func applyOperator_cartesian() {
-        let nf = NonEmpty<(Int) -> Int>(head: { $0 + 1 }, tail: [{ $0 * 10 }])
+        let nf = NonEmpty<@Sendable (Int) -> Int>(head: { $0 + 1 }, tail: [{ $0 * 10 }])
         let na = NonEmpty(head: 1, tail: [2])
         #expect((nf <*> na).toArray == [2, 3, 10, 20])
     }

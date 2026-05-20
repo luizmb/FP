@@ -9,8 +9,8 @@ public extension Writer {
     }
 
     static func fmapT<Inner, B, E: Error>(
-        _ fn: @escaping (Inner) -> B
-    ) -> (Writer<W, Result<Inner, E>>) -> Writer<W, Result<B, E>>
+        _ fn: @escaping @Sendable (Inner) -> B
+    ) -> @Sendable (Writer<W, Result<Inner, E>>) -> Writer<W, Result<B, E>>
     where A == Result<Inner, E> {
         { $0.mapT(fn) }
     }

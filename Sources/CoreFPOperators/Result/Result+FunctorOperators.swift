@@ -1,7 +1,7 @@
 import CoreFP
 
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
-public func <£> <A1, A, B>(_ transform: @escaping (A) -> A1, _ result: Result<A, B>) -> Result<A1, B> {
+public func <£> <A1, A, B>(_ transform: @escaping @Sendable (A) -> A1, _ result: Result<A, B>) -> Result<A1, B> {
     Result<A, B>.fmap(transform)(result)
 }
 

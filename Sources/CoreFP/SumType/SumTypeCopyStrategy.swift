@@ -13,14 +13,14 @@ import Foundation
 /// consistent inversions of each other.
 ///
 /// - SeeAlso: ``SumType2``
-public struct SumTypeCopyStrategy<ParallelSumType: SumType2, InvertedSumType: SumType2>
+public struct SumTypeCopyStrategy<ParallelSumType: SumType2, InvertedSumType: SumType2>: Sendable
 where ParallelSumType.A == InvertedSumType.B, ParallelSumType.B == InvertedSumType.A {
-    public let parallel: () -> ParallelSumType
-    public let crossover: () -> InvertedSumType
+    public let parallel: @Sendable () -> ParallelSumType
+    public let crossover: @Sendable () -> InvertedSumType
 
     public init(
-        parallel: @escaping () -> ParallelSumType,
-        crossover: @escaping () -> InvertedSumType
+        parallel: @escaping @Sendable () -> ParallelSumType,
+        crossover: @escaping @Sendable () -> InvertedSumType
     ) {
         self.parallel = parallel
         self.crossover = crossover

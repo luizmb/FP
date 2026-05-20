@@ -19,7 +19,7 @@ public extension Writer {
     }
 
     static func bindT<Inner, B, E: Error>(
-        _ fn: @escaping (Inner) -> Writer<W, Result<B, E>>
+        _ fn: @escaping @Sendable (Inner) -> Writer<W, Result<B, E>>
     ) -> (Writer<W, Result<Inner, E>>) -> Writer<W, Result<B, E>>
     where A == Result<Inner, E> {
         { $0.flatMapT(fn) }

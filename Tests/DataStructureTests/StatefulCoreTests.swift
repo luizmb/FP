@@ -98,7 +98,7 @@ import Testing
     // MARK: - Applicative
 
     @Test func apply() {
-        let sf = Stateful<Int, (Int) -> String>.pure { "\($0)" }
+        let sf = Stateful<Int, @Sendable (Int) -> String>.pure { "\($0)" }
         let sa = Stateful<Int, Int>.get
         let result = Stateful<Int, String>.apply(sf, sa)
         #expect(result.eval(7) == "7")
@@ -145,7 +145,7 @@ import Testing
     }
 
     @Test func bind() {
-        let double: (Int) -> Stateful<Int, Int> = { value in
+        let double: @Sendable (Int) -> Stateful<Int, Int> = { value in
             Stateful { state in
                 state += value
                 return value * 2
@@ -158,13 +158,13 @@ import Testing
     }
 
     @Test func kleisli() {
-        let addToState: (Int) -> Stateful<Int, Int> = { n in
+        let addToState: @Sendable (Int) -> Stateful<Int, Int> = { n in
             Stateful { state in
                 state += n
                 return state
             }
         }
-        let doubleFromState: (Int) -> Stateful<Int, String> = { n in
+        let doubleFromState: @Sendable (Int) -> Stateful<Int, String> = { n in
             Stateful { _ in "\(n * 2)" }
         }
         let composed = Stateful<Int, Int>.kleisli(addToState, doubleFromState)
@@ -251,7 +251,7 @@ import Testing
     }
 
     @Test func accumulateState() {
-        let push: (Int) -> Stateful<[Int], Void> = { value in
+        let push: @Sendable (Int) -> Stateful<[Int], Void> = { value in
             .modifyInPlace { $0.append(value) }
         }
         let program = push(1).seqRight(push(2)).seqRight(push(3))

@@ -8,12 +8,12 @@ import Testing
     // MARK: - Basic Applicative Tests
 
     @Test func apply() {
-        let fn: Either<String, (Int) -> Int> = .right({ $0 * 2 })
+        let fn: Either<String, @Sendable (Int) -> Int> = .right({ $0 * 2 })
         let value: Either<String, Int> = .right(5)
         let result = fn <*> value
         #expect(result == .right(10))
 
-        let leftFn: Either<String, (Int) -> Int> = .left("error")
+        let leftFn: Either<String, @Sendable (Int) -> Int> = .left("error")
         let leftResult = leftFn <*> value
         #expect(leftResult == .left("error"))
 
@@ -23,7 +23,7 @@ import Testing
     }
 
     @Test func liftA2() {
-        let add: (Int, Int) -> Int = { $0 + $1 }
+        let add: @Sendable (Int, Int) -> Int = { $0 + $1 }
         let lifted = Either<String, Int>.liftA2(add)
 
         let value1: Either<String, Int> = .right(5)
@@ -66,22 +66,24 @@ import Testing
     @Test func applicativeIdentityLaw() {
         // pure id <*> v = v
         let value: Either<String, Int> = .right(5)
-        let identityE: Either<String, (Int) -> Int> = .right(id)
+        let identityE: Either<String, @Sendable (Int) -> Int> = .right(id)
         let result = identityE <*> value
         #expect(result == value)
     }
 
     @Test func applicativeCompositionLaw() {
         // pure (.) <*> u <*> v <*> w = u <*> (v <*> w)
-        let u: Either<String, (Int) -> String> = .right({ "\($0)" })
-        let v: Either<String, (Int) -> Int> = .right({ $0 * 2 })
+        let u: Either<String, @Sendable (Int) -> String> = .right({ "\($0)" })
+        let v: Either<String, @Sendable (Int) -> Int> = .right({ $0 * 2 })
         let w: Either<String, Int> = .right(5)
 
         // Left side: compose functions then apply to w
-        let composeFn: (@escaping (Int) -> String, @escaping (Int) -> Int) -> (Int) -> String = { f, g in
-            { x in f(g(x)) }
-        }
-        let composed = Either<String, (Int) -> String>.liftA2(composeFn)(u, v)
+        typealias ComposeFn = @Sendable (
+            @escaping @Sendable (Int) -> String,
+            @escaping @Sendable (Int) -> Int
+        ) -> @Sendable (Int) -> String
+        let composeFn: ComposeFn = { f, g in { x in f(g(x)) } }
+        let composed = Either<String, @Sendable (Int) -> String>.liftA2(composeFn)(u, v)
         let left = composed <*> w
 
         // Right side: apply v to w, then apply u
@@ -93,10 +95,10 @@ import Testing
 
     @Test func applicativeHomomorphismLaw() {
         // pure f <*> pure x = pure (f x)
-        let f: (Int) -> Int = { $0 * 2 }
+        let f: @Sendable (Int) -> Int = { $0 * 2 }
         let x = 5
 
-        let pureF: Either<String, (Int) -> Int> = .right(f)
+        let pureF: Either<String, @Sendable (Int) -> Int> = .right(f)
         let pureX: Either<String, Int> = .right(x)
         let left = pureF <*> pureX
         let right: Either<String, Int> = .right(f(x))
@@ -106,14 +108,14 @@ import Testing
 
     @Test func applicativeInterchangeLaw() {
         // u <*> pure y = pure ($ y) <*> u
-        let u: Either<String, (Int) -> Int> = .right({ $0 * 2 })
+        let u: Either<String, @Sendable (Int) -> Int> = .right({ $0 * 2 })
         let y = 5
 
         let pureY: Either<String, Int> = .right(y)
         let left = u <*> pureY
 
-        let applyTo: (@escaping (Int) -> Int) -> Int = { fn in fn(y) }
-        let pureApply: Either<String, (@escaping (Int) -> Int) -> Int> = .right(applyTo)
+        let applyTo: @Sendable (@escaping @Sendable (Int) -> Int) -> Int = { fn in fn(y) }
+        let pureApply: Either<String, @Sendable (@escaping @Sendable (Int) -> Int) -> Int> = .right(applyTo)
         let right = pureApply <*> u
 
         #expect(left == right)
@@ -122,7 +124,7 @@ import Testing
     // MARK: - Applicative Operators
 
     @Test func applyOperator() {
-        let fn: Either<String, (Int) -> Int> = .right({ $0 * 2 })
+        let fn: Either<String, @Sendable (Int) -> Int> = .right({ $0 * 2 })
         let value: Either<String, Int> = .right(5)
         let result = fn <*> value
         #expect(result == .right(10))

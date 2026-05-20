@@ -5,7 +5,7 @@ import Foundation
 
 /// apply for Stateful<S, Result>
 public func applyStatefulResult<S, A, B, E: Error>(
-    _ sf: Stateful<S, Result<(A) -> B, E>>,
+    _ sf: Stateful<S, Result<@Sendable (A) -> B, E>>,
     _ sa: Stateful<S, Result<A, E>>
 ) -> Stateful<S, Result<B, E>> {
     Stateful<S, Result<B, E>> { s in
@@ -15,7 +15,7 @@ public func applyStatefulResult<S, A, B, E: Error>(
 
 /// liftA2 for Stateful<S, Result>
 public func liftA2StatefulResult<S, A, B, C, E: Error>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Stateful<S, Result<A, E>>, Stateful<S, Result<B, E>>) -> Stateful<S, Result<C, E>> {
     { sa, sb in
         Stateful<S, Result<C, E>> { s in

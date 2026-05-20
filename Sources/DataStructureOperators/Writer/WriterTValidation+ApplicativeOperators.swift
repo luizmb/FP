@@ -4,7 +4,7 @@ import DataStructure
 
 // (<*>) :: Writer<w, Validation<e,(a->b)>> -> Writer<w, Validation<e,a>> -> Writer<w, Validation<e,b>>
 public func <*> <W: Monoid, E: Semigroup, A, B>(
-    _ wf: Writer<W, Validation<E, (A) -> B>>,
+    _ wf: Writer<W, Validation<E, @Sendable (A) -> B>>,
     _ wa: Writer<W, Validation<E, A>>
 ) -> Writer<W, Validation<E, B>> {
     applyWriterValidation(wf, wa)

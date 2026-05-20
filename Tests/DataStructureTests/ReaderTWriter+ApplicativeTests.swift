@@ -7,7 +7,7 @@ import Testing
     // MARK: - Reader<Env, Writer<W, A>> — Reader as outer, Writer as inner
 
     @Test func apply() {
-        let rf: Reader<Env, Writer<[String], (Int) -> String>> = Reader { _ in Writer({ "\($0)" }, ["fn"]) }
+        let rf: Reader<Env, Writer<[String], @Sendable (Int) -> String>> = Reader { _ in Writer({ "\($0)" }, ["fn"]) }
         let ra: Reader<Env, Writer<[String], Int>> = Reader { env in Writer(env.value, ["val"]) }
         let result = applyReaderWriter(rf, ra)
         let w = result(Env(value: 7))
@@ -16,7 +16,7 @@ import Testing
     }
 
     @Test func applyUsesEnv() {
-        let rf: Reader<Env, Writer<[String], (Int) -> Int>> = Reader { env in Writer({ $0 + env.value }, ["fn"]) }
+        let rf: Reader<Env, Writer<[String], @Sendable (Int) -> Int>> = Reader { env in Writer({ $0 + env.value }, ["fn"]) }
         let ra: Reader<Env, Writer<[String], Int>> = Reader { env in Writer(env.value * 2, ["val"]) }
         let result = applyReaderWriter(rf, ra)
         let env = Env(value: 3)

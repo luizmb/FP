@@ -7,7 +7,7 @@ import Foundation
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func liftA2PublisherResult<A, B, C, E: Error, E2: Error>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (AnyPublisher<Result<A, E2>, E>, AnyPublisher<Result<B, E2>, E>) -> AnyPublisher<Result<C, E2>, E> {
     { pubA, pubB in
         pubA.zip(pubB)

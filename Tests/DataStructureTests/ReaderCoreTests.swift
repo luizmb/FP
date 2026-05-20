@@ -94,7 +94,7 @@ import Testing
     }
 
     @Test func apply() {
-        let readerFn = Reader<Environment, (Int) -> Int> { env in
+        let readerFn = Reader<Environment, @Sendable (Int) -> Int> { env in
             { value in value + env.offset }
         }
 
@@ -121,7 +121,7 @@ import Testing
             env.offset
         }
 
-        let add: (Int, Int) -> Int = { $0 + $1 }
+        let add: @Sendable (Int, Int) -> Int = { $0 + $1 }
         let combined = Reader<Environment, Int>.liftA2(add)(reader1, reader2)
 
         let env = Environment(multiplier: 5, offset: 3)
@@ -137,7 +137,7 @@ import Testing
             env.offset
         }
 
-        let add: (Int, Int) -> Int = { $0 + $1 }
+        let add: @Sendable (Int, Int) -> Int = { $0 + $1 }
         let liftedAdd = Reader<Environment, Int>.liftA2(add)
         let combined = liftedAdd(reader1, reader2)
 
@@ -176,11 +176,11 @@ import Testing
     }
 
     @Test func kleisli() {
-        let f: (Int) -> Reader<Environment, Int> = { value in
+        let f: @Sendable (Int) -> Reader<Environment, Int> = { value in
             Reader { env in value + env.offset }
         }
 
-        let g: (Int) -> Reader<Environment, String> = { value in
+        let g: @Sendable (Int) -> Reader<Environment, String> = { value in
             Reader { env in "\(value * env.multiplier)" }
         }
 
@@ -192,11 +192,11 @@ import Testing
     }
 
     @Test func kleisliBack() {
-        let f: (Int) -> Reader<Environment, Int> = { value in
+        let f: @Sendable (Int) -> Reader<Environment, Int> = { value in
             Reader { env in value + env.offset }
         }
 
-        let g: (Int) -> Reader<Environment, String> = { value in
+        let g: @Sendable (Int) -> Reader<Environment, String> = { value in
             Reader { env in "\(value * env.multiplier)" }
         }
 

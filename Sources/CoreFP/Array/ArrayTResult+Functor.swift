@@ -6,12 +6,12 @@ import Foundation
 public extension Array {
     /// mapT for [Result<A,E>] — maps over the inner Result's Success
     /// fmap :: (a -> b) -> [Result<a,e>] -> [Result<b,e>]
-    func mapT<A, B, E: Error>(_ fn: @escaping (A) -> B) -> [Result<B, E>] where Element == Result<A, E> {
+    func mapT<A, B, E: Error>(_ fn: @escaping @Sendable (A) -> B) -> [Result<B, E>] where Element == Result<A, E> {
         map { result in result.map(fn) }
     }
 
     /// Curried fmapT for [Result<A,E>]
-    static func fmapT<A, B, E: Error>(_ fn: @escaping (A) -> B) -> ([Result<A, E>]) -> [Result<B, E>] {
+    static func fmapT<A, B, E: Error>(_ fn: @escaping @Sendable (A) -> B) -> @Sendable ([Result<A, E>]) -> [Result<B, E>] {
         { arr in arr.mapT(fn) }
     }
 }

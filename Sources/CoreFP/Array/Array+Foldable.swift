@@ -5,7 +5,7 @@ public extension Array {
     /// foldLeft :: b -> (b -> a -> b) -> [a] -> b
     static func foldLeft<B>(
         _ initial: B,
-        _ f: @escaping (B, Element) -> B
+        _ f: @escaping @Sendable (B, Element) -> B
     ) -> ([Element]) -> B {
         { $0.reduce(initial, f) }
     }
@@ -13,7 +13,7 @@ public extension Array {
     /// Right-associative fold using an accumulator.
     /// foldRight :: (a -> b -> b) -> b -> [a] -> b
     static func foldRight<B>(
-        _ f: @escaping (Element, B) -> B,
+        _ f: @escaping @Sendable (Element, B) -> B,
         _ initial: B
     ) -> ([Element]) -> B {
         { $0.reversed().reduce(initial) { acc, elem in f(elem, acc) } }
@@ -22,7 +22,7 @@ public extension Array {
     /// Map each element to a Monoid, then combine.
     /// foldMap :: Monoid m => (a -> m) -> [a] -> m
     static func foldMap<M: Monoid>(
-        _ f: @escaping (Element) -> M
+        _ f: @escaping @Sendable (Element) -> M
     ) -> ([Element]) -> M {
         { mconcat($0.map(f)) }
     }

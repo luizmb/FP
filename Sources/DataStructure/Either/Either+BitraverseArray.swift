@@ -19,8 +19,8 @@ public extension Either {
 
 /// bitraverse :: (a -> [c]) -> (b -> [d]) -> Either a b -> [Either c d]
 public func bitraverse<A, B, C, D>(
-    _ lf: @escaping (A) -> [C],
-    _ rf: @escaping (B) -> [D]
+    _ lf: @escaping @Sendable (A) -> [C],
+    _ rf: @escaping @Sendable (B) -> [D]
 ) -> (Either<A, B>) -> [Either<C, D>] {
     { $0.bitraverse(lf, rf) }
 }

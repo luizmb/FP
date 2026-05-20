@@ -2,7 +2,7 @@ import Foundation
 
 public extension Reader {
     // ReaderT + Array
-    func mapT<A, B>(_ fn: @escaping (A) -> B) -> Reader<Environment, [B]>
+    func mapT<A, B>(_ fn: @escaping @Sendable (A) -> B) -> Reader<Environment, [B]>
     where Output == [A] {
         mapReader { array in
             array.map(fn)
@@ -10,8 +10,8 @@ public extension Reader {
     }
 
     static func fmap<A, B>(
-        _ fn: @escaping (A) -> B
-    ) -> (Reader<Environment, [A]>) -> Reader<Environment, [B]>
+        _ fn: @escaping @Sendable (A) -> B
+    ) -> @Sendable (Reader<Environment, [A]>) -> Reader<Environment, [B]>
     where Output == [A] {
         { $0.mapT(fn) }
     }

@@ -16,26 +16,26 @@ public extension Publisher {
     }
 
     static func fmap<A1>(
-        _ fn: @escaping (A) -> A1
-    ) -> (any Publisher<A, Failure>) -> any Publisher<A1, Failure> {
+        _ fn: @escaping @Sendable (A) -> A1
+    ) -> @Sendable (any Publisher<A, Failure>) -> any Publisher<A1, Failure> {
         { $0.eraseToAnyPublisher().map(fn) }
     }
 
     func mapLeft<A1>(
-        _ lf: @escaping (Output) -> A1
+        _ lf: @escaping @Sendable (Output) -> A1
     ) -> any Publisher<A1, Failure> {
         map(lf)
     }
 
     func mapRight<B1: Error>(
-        _ rf: @escaping (B) -> B1
+        _ rf: @escaping @Sendable (B) -> B1
     ) -> any Publisher<A, B1> {
         mapError(rf)
     }
 
     func bimap<A1, B1: Error>(
-        _ lf: @escaping (A) -> A1,
-        _ rf: @escaping (B) -> B1
+        _ lf: @escaping @Sendable (A) -> A1,
+        _ rf: @escaping @Sendable (B) -> B1
     ) -> any Publisher<A1, B1> {
         map(lf)
             .mapError(rf)

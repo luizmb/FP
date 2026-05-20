@@ -17,8 +17,8 @@ public extension Validation {
 
 /// bitraverse :: (e -> Result<e1,err>) -> (a -> Result<b,err>) -> Validation e a -> Result<Validation e1 b, err>
 public func bitraverse<E: Semigroup, A, E1: Semigroup, B, Err: Error>(
-    _ ef: @escaping (E) -> Result<E1, Err>,
-    _ af: @escaping (A) -> Result<B, Err>
+    _ ef: @escaping @Sendable (E) -> Result<E1, Err>,
+    _ af: @escaping @Sendable (A) -> Result<B, Err>
 ) -> (Validation<E, A>) -> Result<Validation<E1, B>, Err> {
     { $0.bitraverse(ef, af) }
 }

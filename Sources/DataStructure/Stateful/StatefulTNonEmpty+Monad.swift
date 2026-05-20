@@ -3,7 +3,7 @@
 
 public extension Stateful {
     func flatMapT<Inner, B>(
-        _ fn: @escaping (Inner) -> Stateful<S, NonEmpty<B>?>
+        _ fn: @escaping @Sendable (Inner) -> Stateful<S, NonEmpty<B>?>
     ) -> Stateful<S, NonEmpty<B>?> where A == NonEmpty<Inner> {
         Stateful<S, NonEmpty<B>?> { s in
             let results = self.run(&s).toArray.map { fn($0).run(&s) }
@@ -16,7 +16,7 @@ public extension Stateful {
     }
 
     static func bindT<Inner, B>(
-        _ fn: @escaping (Inner) -> Stateful<S, NonEmpty<B>?>
+        _ fn: @escaping @Sendable (Inner) -> Stateful<S, NonEmpty<B>?>
     ) -> (Stateful<S, NonEmpty<Inner>>) -> Stateful<S, NonEmpty<B>?>
     where A == NonEmpty<Inner> {
         { $0.flatMapT(fn) }

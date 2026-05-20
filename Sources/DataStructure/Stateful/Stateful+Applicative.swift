@@ -4,7 +4,7 @@ public extension Stateful {
     /// apply :: Stateful<s, (input -> a)> -> Stateful<s, input> -> Stateful<s, a>
     /// Runs sf then sa left-to-right, threading state through both.
     /// Follows Reader's convention: `A` is the result type, `Input` is the argument type.
-    static func apply<Input>(_ sf: Stateful<S, (Input) -> A>, _ sa: Stateful<S, Input>) -> Stateful<S, A> {
+    static func apply<Input>(_ sf: Stateful<S, @Sendable (Input) -> A>, _ sa: Stateful<S, Input>) -> Stateful<S, A> {
         Stateful<S, A> { s in
             let f = sf.run(&s)
             let a = sa.run(&s)
@@ -28,8 +28,8 @@ public extension Stateful {
     }
 
     static func liftA2<B, C>(
-        _ fn: @escaping (A, B) -> C
-    ) -> (Stateful<S, A>, Stateful<S, B>) -> Stateful<S, C> {
+        _ fn: @escaping @Sendable (A, B) -> C
+    ) -> @Sendable (Stateful<S, A>, Stateful<S, B>) -> Stateful<S, C> {
         { sa, sb in
             Stateful<S, C> { s in
                 let a = sa.run(&s)

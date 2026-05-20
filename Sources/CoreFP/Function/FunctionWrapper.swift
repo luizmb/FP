@@ -29,16 +29,16 @@
 ///     typealias Input = A
 ///     typealias Output = B
 ///     let fn: (A) -> B
-///     init(_ fn: @escaping (A) -> B) { self.fn = fn }
+///     init(_ fn: @escaping @Sendable (A) -> B) { self.fn = fn }
 ///     func callAsFunction(_ input: A) -> B { fn(input) }
 /// }
 /// ```
-public protocol FunctionWrapper<Input, Output> {
+public protocol FunctionWrapper<Input, Output>: Sendable {
     associatedtype Input
     associatedtype Output
 
     /// Initialise the wrapper from a closure.
-    init(_ fn: @escaping (Input) -> Output)
+    init(_ fn: @escaping @Sendable (Input) -> Output)
     /// Invoke the wrapped function.
     func callAsFunction(_ input: Input) -> Output
 }

@@ -2,7 +2,7 @@ import CoreFP
 import Foundation
 
 // (<*>) :: Result<(a -> b), e> -> Result<a, e> -> Result<b, e>
-public func <*> <A, A0, B>(_ lhs: Result<(A0) -> A, B>, _ rhs: Result<A0, B>) -> Result<A, B> {
+public func <*> <A, A0, B>(_ lhs: Result<@Sendable (A0) -> A, B>, _ rhs: Result<A0, B>) -> Result<A, B> {
     Result<A, B>.apply(lhs, rhs)
 }
 

@@ -38,21 +38,21 @@ import Testing
     }
 
     @Test func kleisli() {
-        let f: (Int) -> Result<Stateful<Int, Int>, TestError> = { n in .success(.pure(n + 1)) }
-        let g: (Int) -> Stateful<Int, String> = { n in .pure("\(n)") }
+        let f: @Sendable (Int) -> Result<Stateful<Int, Int>, TestError> = { n in .success(.pure(n + 1)) }
+        let g: @Sendable (Int) -> Stateful<Int, String> = { n in .pure("\(n)") }
         let result = (f >=> g)(4)
         #expect(result.success?.eval(0) == "5")
     }
 
     @Test func apply() {
-        let rf: Result<Stateful<Int, (Int) -> String>, TestError> = .success(.pure({ "\($0)" }))
+        let rf: Result<Stateful<Int, @Sendable (Int) -> String>, TestError> = .success(.pure({ "\($0)" }))
         let ra: Result<Stateful<Int, Int>, TestError> = .success(.get)
         let result = rf <*> ra
         #expect(result.success?.eval(5) == "5")
     }
 
     @Test func applyFailure() {
-        let rf: Result<Stateful<Int, (Int) -> String>, TestError> = .failure(.failure)
+        let rf: Result<Stateful<Int, @Sendable (Int) -> String>, TestError> = .failure(.failure)
         let ra: Result<Stateful<Int, Int>, TestError> = .success(.pure(5))
         let result = rf <*> ra
         if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }

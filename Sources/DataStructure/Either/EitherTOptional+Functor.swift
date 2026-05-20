@@ -6,7 +6,7 @@ import Foundation
 /// mapT for Either<L, A?> — maps the inner Optional's value
 /// fmap :: (a -> b) -> Either<l, a?> -> Either<l, b?>
 public func mapTEitherOptional<L, A, B>(
-    _ fn: @escaping (A) -> B,
+    _ fn: @escaping @Sendable (A) -> B,
     _ either: Either<L, A?>
 ) -> Either<L, B?> {
     either.mapRight { optA in optA.map(fn) }
@@ -14,7 +14,7 @@ public func mapTEitherOptional<L, A, B>(
 
 /// Curried fmapT
 public func fmapTEitherOptional<L, A, B>(
-    _ fn: @escaping (A) -> B
+    _ fn: @escaping @Sendable (A) -> B
 ) -> (Either<L, A?>) -> Either<L, B?> {
     { either in mapTEitherOptional(fn, either) }
 }

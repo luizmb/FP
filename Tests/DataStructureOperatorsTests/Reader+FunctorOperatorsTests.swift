@@ -22,7 +22,7 @@ import Testing
 
     @Test func curriedFmap() {
         let reader = Reader<Environment, Int> { env in env.multiplier }
-        let double: (Int) -> Int = { $0 * 2 }
+        let double: @Sendable (Int) -> Int = { $0 * 2 }
         let fmap = Reader<Environment, Int>.fmap(double)
         let doubled = fmap(reader)
 
@@ -139,8 +139,8 @@ import Testing
         // fmap (g . f) == fmap g . fmap f
         let reader = Reader<Environment, Int> { env in env.multiplier }
 
-        let f: (Int) -> Int = { $0 * 2 }
-        let g: (Int) -> String = { "\($0)" }
+        let f: @Sendable (Int) -> Int = { $0 * 2 }
+        let g: @Sendable (Int) -> String = { "\($0)" }
 
         let composed = reader.map(compose(f, g))
         let separate = reader.map(f).map(g)

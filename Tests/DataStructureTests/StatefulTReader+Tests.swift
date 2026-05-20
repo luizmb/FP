@@ -31,7 +31,7 @@ import Testing
     }
 
     @Test func applyStatefulReaderBoth() {
-        let sf = Stateful<Int, Reader<Env, (Int) -> String>>.pure(
+        let sf = Stateful<Int, Reader<Env, @Sendable (Int) -> String>>.pure(
             Reader { _ in { "\($0)" } }
         )
         let sa = Stateful<Int, Reader<Env, Int>>.pure(
@@ -95,7 +95,7 @@ import Testing
     }
 
     @Test func applyReaderStatefulTest() {
-        let rf = Reader<Env, Stateful<Int, (Int) -> String>> { _ in .pure({ "\($0)" }) }
+        let rf = Reader<Env, Stateful<Int, @Sendable (Int) -> String>> { _ in .pure({ "\($0)" }) }
         let ra = Reader<Env, Stateful<Int, Int>> { env in .pure(env.multiplier) }
         let result = DataStructure.applyReaderStateful(rf, ra)
         let env = Env(multiplier: 5)

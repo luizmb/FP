@@ -55,7 +55,7 @@ import Testing
 
     @Test func arrayFilterM() {
         let array = [1, 2, 3, 4, 5]
-        let isEven: (Int) -> Bool = { $0.isMultiple(of: 2) }
+        let isEven: @Sendable (Int) -> Bool = { $0.isMultiple(of: 2) }
 
         let result = Array.filterM(isEven)(array)
         #expect(result == [2, 4])
@@ -92,7 +92,7 @@ import Testing
     // MARK: - Traverse Tests
 
     @Test func traverseOptional() {
-        let safeDivide: (Int) -> Int? = { divisor in
+        let safeDivide: @Sendable (Int) -> Int? = { divisor in
             divisor != 0 ? .some(10 / divisor) : .none
         }
 
@@ -107,7 +107,7 @@ import Testing
     }
 
     @Test func traverseResult() {
-        let safeParse: (String) -> Result<Int, NSError> = { str in
+        let safeParse: @Sendable (String) -> Result<Int, NSError> = { str in
             guard let int = Int(str) else {
                 return .failure(NSError(domain: "parse", code: 1))
             }
@@ -129,7 +129,7 @@ import Testing
     @Test func traverseIdentityLaw() {
         // traverse pure = pure
         let values = [1, 2, 3]
-        let identity: (Int) -> Int? = { .some($0) }
+        let identity: @Sendable (Int) -> Int? = { .some($0) }
 
         #expect(traverse(id)(values) == [1, 2, 3])
     }
@@ -139,7 +139,7 @@ import Testing
     @Test func sequenceTraverseRelationship() {
         // sequence = traverse id
         let optionals: [Int?] = [1, 2, 3]
-        let identity: (Int?) -> Int? = id
+        let identity: @Sendable (Int?) -> Int? = id
 
         #expect(sequence(optionals) == traverse(identity)(optionals))
     }

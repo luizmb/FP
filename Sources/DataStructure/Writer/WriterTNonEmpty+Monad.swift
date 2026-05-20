@@ -19,7 +19,7 @@ public extension Writer {
     }
 
     static func bindT<Inner, B>(
-        _ fn: @escaping (Inner) -> Writer<W, NonEmpty<B>?>
+        _ fn: @escaping @Sendable (Inner) -> Writer<W, NonEmpty<B>?>
     ) -> (Writer<W, NonEmpty<Inner>>) -> Writer<W, NonEmpty<B>?>
     where A == NonEmpty<Inner> {
         { $0.flatMapT(fn) }

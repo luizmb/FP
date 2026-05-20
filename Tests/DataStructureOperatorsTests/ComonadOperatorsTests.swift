@@ -54,7 +54,7 @@ import Testing
 
     @Test func readerFlippedExtendOperator() {
         let r = Reader<String, Int> { $0.count }
-        let f: (Reader<String, Int>) -> Int = { inner in inner.runReader("xyz") }
+        let f: @Sendable (Reader<String, Int>) -> Int = { inner in inner.runReader("xyz") }
         let result: Reader<String, Int> = f <<- r
         // result.runReader("ab") = ("ab" + "xyz").count = 5
         #expect(result.runReader("ab") == 5)

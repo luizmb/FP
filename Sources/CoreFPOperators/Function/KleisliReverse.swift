@@ -22,22 +22,22 @@ import CoreFP
 /// // equivalent to: toNonNegative >=> safeDiv
 /// ```
 public func <=< <A0, A, A1>(
-    _ fn2: @escaping (A) -> A1?,
-    _ fn1: @escaping (A0) -> A?
+    _ fn2: @escaping @Sendable (A) -> A1?,
+    _ fn1: @escaping @Sendable (A0) -> A?
 ) -> (A0) -> A1? { fn1 >=> fn2 }
 
 // MARK: - Array
 
 public func <=< <A0, A, A1>(
-    _ fn2: @escaping (A) -> [A1],
-    _ fn1: @escaping (A0) -> [A]
+    _ fn2: @escaping @Sendable (A) -> [A1],
+    _ fn1: @escaping @Sendable (A0) -> [A]
 ) -> (A0) -> [A1] { fn1 >=> fn2 }
 
 // MARK: - Result
 
 public func <=< <A0, A, A1, B>(
-    _ fn2: @escaping (A) -> Result<A1, B>,
-    _ fn1: @escaping (A0) -> Result<A, B>
+    _ fn2: @escaping @Sendable (A) -> Result<A1, B>,
+    _ fn1: @escaping @Sendable (A0) -> Result<A, B>
 ) -> (A0) -> Result<A1, B> { fn1 >=> fn2 }
 
 // MARK: - Publisher
@@ -47,8 +47,8 @@ import Combine
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func <=< <A0, A, A1, B: Error, P1: Publisher, P2: Publisher>(
-    _ fn2: @escaping (A) -> P2,
-    _ fn1: @escaping (A0) -> P1
+    _ fn2: @escaping @Sendable (A) -> P2,
+    _ fn1: @escaping @Sendable (A0) -> P1
 ) -> (A0) -> any Publisher<A1, B>
 where P1.Output == A, P1.Failure == B, P2.Output == A1, P2.Failure == B { fn1 >=> fn2 }
 

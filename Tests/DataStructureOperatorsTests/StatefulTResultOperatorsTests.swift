@@ -25,7 +25,7 @@ import Testing
     }
 
     @Test func apply() {
-        let sf = Stateful<Int, Result<(Int) -> String, TestError>>.pure(.success { "\($0)" })
+        let sf = Stateful<Int, Result<@Sendable (Int) -> String, TestError>>.pure(.success { "\($0)" })
         let sa = Stateful<Int, Result<Int, TestError>>.pure(.success(9))
         let result = sf <*> sa
         #expect(result.eval(0) == .success("9"))
@@ -58,8 +58,8 @@ import Testing
     }
 
     @Test func kleisli() {
-        let f: (Int) -> Stateful<Int, Result<Int, TestError>> = { n in .pure(.success(n + 1)) }
-        let g: (Int) -> Stateful<Int, Result<String, TestError>> = { n in .pure(.success("\(n)")) }
+        let f: @Sendable (Int) -> Stateful<Int, Result<Int, TestError>> = { n in .pure(.success(n + 1)) }
+        let g: @Sendable (Int) -> Stateful<Int, Result<String, TestError>> = { n in .pure(.success("\(n)")) }
         let result = (f >=> g)(4)
         #expect(result.eval(0) == .success("5"))
     }

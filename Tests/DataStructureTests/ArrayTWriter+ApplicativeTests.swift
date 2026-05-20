@@ -5,7 +5,7 @@ import Testing
     // MARK: - [Writer<W, A>] — Array as outer, Writer as inner
 
     @Test func apply() {
-        let fns: [Writer<[String], (Int) -> String>] = [
+        let fns: [Writer<[String], @Sendable (Int) -> String>] = [
             Writer({ "\($0)" }, ["fn"])
         ]
         let vals: [Writer<[String], Int>] = [
@@ -18,7 +18,7 @@ import Testing
     }
 
     @Test func applyCartesianProduct() {
-        let fns: [Writer<[String], (Int) -> Int>] = [
+        let fns: [Writer<[String], @Sendable (Int) -> Int>] = [
             Writer({ $0 + 1 }, ["f1"]),
             Writer({ $0 * 2 }, ["f2"])
         ]
@@ -59,14 +59,14 @@ import Testing
     }
 
     @Test func applyEmptyFns() {
-        let fns: [Writer<[String], (Int) -> Int>] = []
+        let fns: [Writer<[String], @Sendable (Int) -> Int>] = []
         let vals: [Writer<[String], Int>] = [Writer(5, ["a"])]
         let result = applyArrayWriter(fns, vals)
         #expect(result.isEmpty)
     }
 
     @Test func applyEmptyVals() {
-        let fns: [Writer<[String], (Int) -> Int>] = [Writer({ $0 }, ["f"])]
+        let fns: [Writer<[String], @Sendable (Int) -> Int>] = [Writer({ $0 }, ["f"])]
         let vals: [Writer<[String], Int>] = []
         let result = applyArrayWriter(fns, vals)
         #expect(result.isEmpty)

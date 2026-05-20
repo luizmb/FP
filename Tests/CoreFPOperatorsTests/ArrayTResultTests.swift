@@ -88,8 +88,8 @@ import Testing
     }
 
     @Test func kleisliOperator() {
-        let f: (Int) -> [Result<Int, Err>] = { n in [.success(n), .success(n * 2)] }
-        let g: (Int) -> [Result<String, Err>] = { n in [.success("\(n)")] }
+        let f: @Sendable (Int) -> [Result<Int, Err>] = { n in [.success(n), .success(n * 2)] }
+        let g: @Sendable (Int) -> [Result<String, Err>] = { n in [.success("\(n)")] }
         let h = f >=> g
         #expect(h(3) == [.success("3"), .success("6")])
     }

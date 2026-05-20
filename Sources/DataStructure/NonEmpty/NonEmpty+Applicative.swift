@@ -10,7 +10,7 @@ public extension NonEmpty {
 
     /// Apply every wrapped function to every wrapped value (cartesian product).
     /// Result is always non-empty since both inputs are non-empty.
-    static func apply<Input>(_ nf: NonEmpty<(Input) -> A>, _ na: NonEmpty<Input>) -> NonEmpty<A> {
+    static func apply<Input>(_ nf: NonEmpty<@Sendable (Input) -> A>, _ na: NonEmpty<Input>) -> NonEmpty<A> {
         let all = nf.toArray.flatMap { f in na.toArray.map { f($0) } }
         return NonEmpty(head: all[0], tail: Array(all.dropFirst()))
     }
@@ -27,9 +27,9 @@ public extension NonEmpty {
 
     /// Lift a binary function across all combinations.
     static func liftA2<B, C>(
-        _ fn: @escaping (A, B) -> C
-    ) -> (NonEmpty<A>, NonEmpty<B>) -> NonEmpty<C> {
-        { na, nb in NonEmpty<C>.apply(na.map { a in { b in fn(a, b) } }, nb) }
+        _ fn: @escaping @Sendable (A, B) -> C
+    ) -> @Sendable (NonEmpty<A>, NonEmpty<B>) -> NonEmpty<C> where A: Sendable {
+        { na, nb in NonEmpty<C>.apply(na.map { a in { @Sendable b in fn(a, b) } }, nb) }
     }
 
     /// Zip by index (shortest wins) — paired semantics, not cartesian.

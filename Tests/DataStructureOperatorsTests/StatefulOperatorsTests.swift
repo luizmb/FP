@@ -33,7 +33,7 @@ import Testing
     // MARK: - Applicative operators
 
     @Test func applyOperator() {
-        let sf = Stateful<Int, (Int) -> String>.pure { "\($0)" }
+        let sf = Stateful<Int, @Sendable (Int) -> String>.pure { "\($0)" }
         let sa = Stateful<Int, Int>.get
         let result = sf <*> sa
         #expect(result.eval(9) == "9")
@@ -71,7 +71,7 @@ import Testing
     }
 
     @Test func reversedBindOperator() {
-        let fn: (Int) -> Stateful<Int, String> = { value in
+        let fn: @Sendable (Int) -> Stateful<Int, String> = { value in
             Stateful<Int, String>.pure("\(value)")
         }
         let s = Stateful<Int, Int>.get
@@ -80,8 +80,8 @@ import Testing
     }
 
     @Test func kleisliOperator() {
-        let addOne: (Int) -> Stateful<Int, Int> = { n in .pure(n + 1) }
-        let toString: (Int) -> Stateful<Int, String> = { n in .pure("\(n)") }
+        let addOne: @Sendable (Int) -> Stateful<Int, Int> = { n in .pure(n + 1) }
+        let toString: @Sendable (Int) -> Stateful<Int, String> = { n in .pure("\(n)") }
         let composed = addOne >=> toString
         #expect(composed(4).eval(0) == "5")
     }

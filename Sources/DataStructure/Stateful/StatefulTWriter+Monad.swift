@@ -9,13 +9,13 @@ import Foundation
 
 public extension Stateful {
     /// flatMapT :: Stateful<s, Writer<w, a>> -> (a -> Writer<w, b>) -> Stateful<s, Writer<w, b>>
-    func flatMapT<W: Monoid, Inner, B>(_ fn: @escaping (Inner) -> Writer<W, B>) -> Stateful<S, Writer<W, B>>
+    func flatMapT<W: Monoid, Inner, B>(_ fn: @escaping @Sendable (Inner) -> Writer<W, B>) -> Stateful<S, Writer<W, B>>
     where A == Writer<W, Inner> {
         mapStateful { writer in writer.flatMap(fn) }
     }
 
     static func bindT<W: Monoid, Inner, B>(
-        _ fn: @escaping (Inner) -> Writer<W, B>
+        _ fn: @escaping @Sendable (Inner) -> Writer<W, B>
     ) -> (Stateful<S, Writer<W, Inner>>) -> Stateful<S, Writer<W, B>>
     where A == Writer<W, Inner> {
         { $0.flatMapT(fn) }

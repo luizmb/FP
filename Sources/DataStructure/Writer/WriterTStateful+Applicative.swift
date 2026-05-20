@@ -6,7 +6,7 @@ import Foundation
 /// apply for Writer<W, Stateful>
 /// Both outer logs are accumulated eagerly; the state threads through the composed stateful.
 public func applyWriterStateful<W: Monoid, S, A, B>(
-    _ wf: Writer<W, Stateful<S, (A) -> B>>,
+    _ wf: Writer<W, Stateful<S, @Sendable (A) -> B>>,
     _ wa: Writer<W, Stateful<S, A>>
 ) -> Writer<W, Stateful<S, B>> {
     Writer<W, Stateful<S, B>>(
@@ -17,7 +17,7 @@ public func applyWriterStateful<W: Monoid, S, A, B>(
 
 /// liftA2 for Writer<W, Stateful>
 public func liftA2WriterStateful<W: Monoid, S, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Writer<W, Stateful<S, A>>, Writer<W, Stateful<S, B>>) -> Writer<W, Stateful<S, C>> {
     { wa, wb in
         Writer<W, Stateful<S, C>>(

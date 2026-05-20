@@ -5,21 +5,21 @@ import Testing
     // MARK: - Either<L, Writer<W, A>> — Either as outer, Writer as inner
 
     @Test func applyBothRight() {
-        let eithF: Either<String, Writer<[String], (Int) -> String>> = .right(Writer({ "\($0)" }, ["fn"]))
+        let eithF: Either<String, Writer<[String], @Sendable (Int) -> String>> = .right(Writer({ @Sendable in "\($0)" }, ["fn"]))
         let eithA: Either<String, Writer<[String], Int>> = .right(Writer(7, ["val"]))
         let result = applyEitherWriter(eithF, eithA)
         #expect(result == .right(Writer("7", ["fn", "val"])))
     }
 
     @Test func applyLeftFn() {
-        let eithF: Either<String, Writer<[String], (Int) -> String>> = .left("err")
+        let eithF: Either<String, Writer<[String], @Sendable (Int) -> String>> = .left("err")
         let eithA: Either<String, Writer<[String], Int>> = .right(Writer(7, ["val"]))
         let result = applyEitherWriter(eithF, eithA)
         #expect(result == .left("err"))
     }
 
     @Test func applyLeftVal() {
-        let eithF: Either<String, Writer<[String], (Int) -> String>> = .right(Writer({ "\($0)" }, ["fn"]))
+        let eithF: Either<String, Writer<[String], @Sendable (Int) -> String>> = .right(Writer({ @Sendable in "\($0)" }, ["fn"]))
         let eithA: Either<String, Writer<[String], Int>> = .left("err")
         let result = applyEitherWriter(eithF, eithA)
         #expect(result == .left("err"))

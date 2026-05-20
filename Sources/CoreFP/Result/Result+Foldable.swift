@@ -9,7 +9,7 @@ public extension Result {
 
     /// Curried foldMap for point-free use.
     static func foldMap<M: Monoid>(
-        _ f: @escaping (Success) -> M
+        _ f: @escaping @Sendable (Success) -> M
     ) -> (Result<Success, Failure>) -> M {
         { $0.foldMap(f) }
     }

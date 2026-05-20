@@ -13,7 +13,7 @@ public extension Writer {
 
     static func fmapT<Inner: Sendable, B: Sendable>(
         _ fn: @escaping @Sendable (Inner) -> B
-    ) -> (Writer<W, DeferredTask<Inner>>) -> Writer<W, DeferredTask<B>> {
+    ) -> @Sendable (Writer<W, DeferredTask<Inner>>) -> Writer<W, DeferredTask<B>> {
         { $0.mapT(fn) }
     }
 }

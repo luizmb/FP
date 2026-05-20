@@ -44,7 +44,7 @@ import Testing
     }
 
     @Test func readerTWriterApply() {
-        let rf: Reader<Int, Writer<[String], (Int) -> String>> = Reader { _ in Writer({ "\($0)" }, ["fn"]) }
+        let rf: Reader<Int, Writer<[String], @Sendable (Int) -> String>> = Reader { _ in Writer({ "\($0)" }, ["fn"]) }
         let ra: Reader<Int, Writer<[String], Int>> = Reader { env in Writer(env, ["val"]) }
         let result = rf <*> ra
         let w = result.runReader(7)

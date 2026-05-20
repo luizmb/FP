@@ -5,7 +5,7 @@ import Foundation
 
 /// apply for OptionalTStateful: Stateful<S,(A->B)>? -> Stateful<S,A>? -> Stateful<S,B>?
 public func applyOptionalStateful<S, A, B>(
-    _ sf: Stateful<S, (A) -> B>?,
+    _ sf: Stateful<S, @Sendable (A) -> B>?,
     _ sa: Stateful<S, A>?
 ) -> Stateful<S, B>? {
     sf.flatMap { f in sa.map { a in Stateful<S, B>.apply(f, a) } }
@@ -13,7 +13,7 @@ public func applyOptionalStateful<S, A, B>(
 
 /// liftA2 for OptionalTStateful
 public func liftA2OptionalStateful<S, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Stateful<S, A>?, Stateful<S, B>?) -> Stateful<S, C>? {
     { sa, sb in
         sa.flatMap { a in sb.map { b in Stateful<S, C> { s in fn(a.run(&s), b.run(&s)) } } }

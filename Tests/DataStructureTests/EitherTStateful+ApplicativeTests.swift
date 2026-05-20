@@ -5,21 +5,21 @@ import Testing
     // MARK: - Either<L, Stateful<S, A>> — Either as outer, Stateful as inner
 
     @Test func applyBothRight() {
-        let eithF: Either<String, Stateful<Int, (Int) -> String>> = .right(.pure({ "\($0)" }))
+        let eithF: Either<String, Stateful<Int, @Sendable (Int) -> String>> = .right(.pure({ "\($0)" }))
         let eithA: Either<String, Stateful<Int, Int>> = .right(.get)
         let result = applyEitherStateful(eithF, eithA)
         #expect(result.mapRight { $0.eval(5) } == .right("5"))
     }
 
     @Test func applyLeftFn() {
-        let eithF: Either<String, Stateful<Int, (Int) -> String>> = .left("err")
+        let eithF: Either<String, Stateful<Int, @Sendable (Int) -> String>> = .left("err")
         let eithA: Either<String, Stateful<Int, Int>> = .right(.pure(5))
         let result = applyEitherStateful(eithF, eithA)
         if case .left(let l) = result { #expect(l == "err") } else { Issue.record("Expected .left") }
     }
 
     @Test func applyLeftVal() {
-        let eithF: Either<String, Stateful<Int, (Int) -> String>> = .right(.pure({ "\($0)" }))
+        let eithF: Either<String, Stateful<Int, @Sendable (Int) -> String>> = .right(.pure({ "\($0)" }))
         let eithA: Either<String, Stateful<Int, Int>> = .left("err")
         let result = applyEitherStateful(eithF, eithA)
         if case .left(let l) = result { #expect(l == "err") } else { Issue.record("Expected .left") }

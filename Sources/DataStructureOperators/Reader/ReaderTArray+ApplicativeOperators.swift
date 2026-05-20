@@ -6,7 +6,7 @@ import Foundation
 
 // (<*>) :: Reader e [(a -> b)] -> Reader e [a] -> Reader e [b]
 public func <*> <Env, A, B>(
-    _ readerF: Reader<Env, [(A) -> B]>,
+    _ readerF: Reader<Env, [@Sendable (A) -> B]>,
     _ readerA: Reader<Env, [A]>
 ) -> Reader<Env, [B]> {
     applyReaderArray(readerF, readerA)

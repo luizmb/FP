@@ -6,7 +6,7 @@ import Foundation
 
 /// apply for EitherTOptional: Either<L,(A->B)?> -> Either<L,A?> -> Either<L,B?>
 public func applyEitherOptional<L, A, B>(
-    _ fns: Either<L, ((A) -> B)?>,
+    _ fns: Either<L, (@Sendable (A) -> B)?>,
     _ values: Either<L, A?>
 ) -> Either<L, B?> {
     Either.liftA2(Optional.apply)(fns, values)
@@ -14,7 +14,7 @@ public func applyEitherOptional<L, A, B>(
 
 /// liftA2 for EitherTOptional
 public func liftA2EitherOptional<L, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Either<L, A?>, Either<L, B?>) -> Either<L, C?> {
     Either.liftA2(Optional.liftA2(fn))
 }

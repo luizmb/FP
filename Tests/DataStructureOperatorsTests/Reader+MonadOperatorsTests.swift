@@ -12,7 +12,7 @@ import Testing
 
     @Test func flatMap() {
         let reader1 = Reader<Environment, Int> { env in env.multiplier }
-        let reader2: (Int) -> Reader<Environment, Int> = { value in
+        let reader2: @Sendable (Int) -> Reader<Environment, Int> = { value in
             Reader { env in value * env.addend }
         }
 
@@ -24,7 +24,7 @@ import Testing
 
     @Test func bind() {
         let reader = Reader<Environment, Int> { env in env.multiplier }
-        let transform: (Int) -> Reader<Environment, Int> = { value in
+        let transform: @Sendable (Int) -> Reader<Environment, Int> = { value in
             Reader { env in value + env.addend }
         }
 
@@ -37,11 +37,11 @@ import Testing
     // MARK: - Kleisli Composition Tests
 
     @Test func kleisliComposition() {
-        let getMultiplier: (Int) -> Reader<Environment, Int> = { value in
+        let getMultiplier: @Sendable (Int) -> Reader<Environment, Int> = { value in
             Reader { env in value * env.multiplier }
         }
 
-        let addAddend: (Int) -> Reader<Environment, Int> = { value in
+        let addAddend: @Sendable (Int) -> Reader<Environment, Int> = { value in
             Reader { env in value + env.addend }
         }
 
@@ -103,7 +103,7 @@ import Testing
     @Test func leftIdentity() {
         // return a >>= f = f a
         let a = 5
-        let f: (Int) -> Reader<Environment, Int> = { value in
+        let f: @Sendable (Int) -> Reader<Environment, Int> = { value in
             Reader { env in value * env.multiplier }
         }
 
@@ -117,7 +117,7 @@ import Testing
     @Test func rightIdentity() {
         // m >>= return = m
         let m = Reader<Environment, Int> { env in env.multiplier }
-        let pureFunc: (Int) -> Reader<Environment, Int> = { value in
+        let pureFunc: @Sendable (Int) -> Reader<Environment, Int> = { value in
             Reader { _ in value }
         }
 
@@ -130,10 +130,10 @@ import Testing
     @Test func associativity() {
         // (m >>= f) >>= g = m >>= (\x -> f x >>= g)
         let m = Reader<Environment, Int> { env in env.multiplier }
-        let f: (Int) -> Reader<Environment, Int> = { value in
+        let f: @Sendable (Int) -> Reader<Environment, Int> = { value in
             Reader { env in value + env.addend }
         }
-        let g: (Int) -> Reader<Environment, Int> = { value in
+        let g: @Sendable (Int) -> Reader<Environment, Int> = { value in
             Reader { _ in value * 2 }
         }
 

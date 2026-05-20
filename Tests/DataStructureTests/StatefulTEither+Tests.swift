@@ -42,14 +42,14 @@ import Testing
     }
 
     @Test func applyStatefulEitherRight() {
-        let sf = Stateful<Int, Either<String, (Int) -> String>>.pure(.right { "\($0)" })
+        let sf = Stateful<Int, Either<String, @Sendable (Int) -> String>>.pure(.right { "\($0)" })
         let sa = Stateful<Int, Either<String, Int>>.pure(.right(42))
         let result = applyStatefulEither(sf, sa)
         #expect(result.eval(0) == .right("42"))
     }
 
     @Test func applyStatefulEitherLeft() {
-        let sf = Stateful<Int, Either<String, (Int) -> String>>.pure(.left("err"))
+        let sf = Stateful<Int, Either<String, @Sendable (Int) -> String>>.pure(.left("err"))
         let sa = Stateful<Int, Either<String, Int>>.pure(.right(42))
         let result = applyStatefulEither(sf, sa)
         #expect(result.eval(0) == .left("err"))

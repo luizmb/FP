@@ -32,15 +32,15 @@ import Testing
     }
 
     @Test func kleisli() {
-        let f: (Int) -> [Writer<[String], Int>] = { n in [Writer(n, ["f1"]), Writer(n + 1, ["f2"])] }
-        let g: (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["g"]) }
+        let f: @Sendable (Int) -> [Writer<[String], Int>] = { n in [Writer(n, ["f1"]), Writer(n + 1, ["f2"])] }
+        let g: @Sendable (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["g"]) }
         let result = (f >=> g)(5)
         #expect(result[0].value == "5")
         #expect(result[1].value == "6")
     }
 
     @Test func apply() {
-        let fns: [Writer<[String], (Int) -> String>] = [Writer({ "\($0)" }, ["fn"])]
+        let fns: [Writer<[String], @Sendable (Int) -> String>] = [Writer({ "\($0)" }, ["fn"])]
         let vals: [Writer<[String], Int>] = [Writer(5, ["val"])]
         let result = fns <*> vals
         #expect(result.count == 1)

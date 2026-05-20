@@ -13,7 +13,7 @@ public extension Stateful {
 
     static func fmapT<Inner: Sendable, B: Sendable>(
         _ fn: @escaping @Sendable (Inner) -> B
-    ) -> (Stateful<S, DeferredTask<Inner>>) -> Stateful<S, DeferredTask<B>>
+    ) -> @Sendable (Stateful<S, DeferredTask<Inner>>) -> Stateful<S, DeferredTask<B>>
     where A == DeferredTask<Inner> {
         { $0.mapT(fn) }
     }

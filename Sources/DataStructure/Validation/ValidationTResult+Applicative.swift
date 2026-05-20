@@ -4,14 +4,14 @@ import CoreFP
 // Type: Validation<E, Result<A, Err>>
 
 public func applyValidationResult<E: Semigroup, A, B, Err: Error>(
-    _ vf: Validation<E, Result<(A) -> B, Err>>,
+    _ vf: Validation<E, Result<@Sendable (A) -> B, Err>>,
     _ va: Validation<E, Result<A, Err>>
 ) -> Validation<E, Result<B, Err>> {
     Validation.liftA2(Result.apply)(vf, va)
 }
 
 public func liftA2ValidationResult<E: Semigroup, A, B, C, Err: Error>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Validation<E, Result<A, Err>>, Validation<E, Result<B, Err>>) -> Validation<E, Result<C, Err>> {
     Validation.liftA2(Result.liftA2(fn))
 }

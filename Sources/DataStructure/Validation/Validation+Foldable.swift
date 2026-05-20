@@ -9,7 +9,7 @@ public extension Validation {
 
     /// Curried foldMap for point-free use.
     static func foldMap<M: Monoid>(
-        _ f: @escaping (A) -> M
+        _ f: @escaping @Sendable (A) -> M
     ) -> (Validation<E, A>) -> M {
         { $0.foldMap(f) }
     }

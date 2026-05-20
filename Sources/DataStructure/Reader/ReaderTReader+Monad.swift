@@ -5,8 +5,8 @@ public extension Reader {
 
     /// Monadic bind for ReaderT Reader
     /// (>>=) :: m a -> (a -> m b) -> m b
-    func flatMapT<A, B, Env2>(_ fn: @escaping (A) -> Reader<Environment, Reader<Env2, B>>) -> Reader<Environment, Reader<Env2, B>>
-    where Output == Reader<Env2, A> {
+    func flatMapT<A, B, Env2>(_ fn: @escaping @Sendable (A) -> Reader<Environment, Reader<Env2, B>>) -> Reader<Environment, Reader<Env2, B>>
+    where Output == Reader<Env2, A>, Environment: Sendable {
         Reader<Environment, Reader<Env2, B>> { env1 in
             let innerReader = self.runReader(env1)
             return Reader<Env2, B> { env2 in
@@ -19,9 +19,9 @@ public extension Reader {
 
     /// Curried bind for ReaderT Reader
     static func bindT<A, B, Env2>(
-        _ fn: @escaping (A) -> Reader<Environment, Reader<Env2, B>>
+        _ fn: @escaping @Sendable (A) -> Reader<Environment, Reader<Env2, B>>
     ) -> (Reader<Environment, Reader<Env2, A>>) -> Reader<Environment, Reader<Env2, B>>
-    where Output == Reader<Env2, A> {
+    where Output == Reader<Env2, A>, Environment: Sendable {
         { reader in
             reader.flatMapT(fn)
         }

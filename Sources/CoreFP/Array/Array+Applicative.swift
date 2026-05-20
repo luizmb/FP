@@ -3,8 +3,8 @@ import Foundation
 public extension Array {
     /// liftA2 :: (a -> b -> c) -> [a] -> [b] -> [c]
     static func liftA2<A1, A2>(
-        _ fn: @escaping (A1, A2) -> Element
-    ) -> ([A1], [A2]) -> [Element] {
+        _ fn: @escaping @Sendable (A1, A2) -> Element
+    ) -> @Sendable ([A1], [A2]) -> [Element] {
         { arrayA, arrayB in
             arrayA.flatMap { a in
                 arrayB.map { b in
@@ -16,7 +16,7 @@ public extension Array {
 
     /// Applicative apply - applies an array of functions to an array of values
     /// (<*>) :: [a -> b] -> [a] -> [b]
-    static func apply<A>(_ functions: [(A) -> Element], _ values: [A]) -> [Element] {
+    static func apply<A>(_ functions: [@Sendable (A) -> Element], _ values: [A]) -> [Element] {
         functions.flatMap(values.map)
     }
 

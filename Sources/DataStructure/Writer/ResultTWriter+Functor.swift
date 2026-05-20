@@ -11,8 +11,8 @@ public extension Result {
     }
 
     static func fmapT<W: Monoid, A, B>(
-        _ fn: @escaping (A) -> B
-    ) -> (Result<Writer<W, A>, Failure>) -> Result<Writer<W, B>, Failure> {
+        _ fn: @escaping @Sendable (A) -> B
+    ) -> @Sendable (Result<Writer<W, A>, Failure>) -> Result<Writer<W, B>, Failure> {
         { result in result.mapT(fn) }
     }
 }

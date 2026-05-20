@@ -20,7 +20,7 @@ public func applyStatefulPublisher<S, A, B, E: Error>(
 /// liftA2 for Stateful<S, Publisher>
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func liftA2StatefulPublisher<S, A, B, C, E: Error>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Stateful<S, any Publisher<A, E>>, Stateful<S, any Publisher<B, E>>) -> Stateful<S, any Publisher<C, E>> {
     { sa, sb in
         Stateful<S, any Publisher<C, E>> { s in

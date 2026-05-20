@@ -6,7 +6,7 @@ import Foundation
 
 /// apply for ArrayTWriter: [Writer<W,(A->B)>] -> [Writer<W,A>] -> [Writer<W,B>]
 public func applyArrayWriter<W: Monoid, A, B>(
-    _ fns: [Writer<W, (A) -> B>],
+    _ fns: [Writer<W, @Sendable (A) -> B>],
     _ vals: [Writer<W, A>]
 ) -> [Writer<W, B>] {
     fns.flatMap { wf in vals.map { wa in Writer<W, B>(wf.value(wa.value), W.combine(wf.log, wa.log)) } }
@@ -14,7 +14,7 @@ public func applyArrayWriter<W: Monoid, A, B>(
 
 /// liftA2 for ArrayTWriter
 public func liftA2ArrayWriter<W: Monoid, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> ([Writer<W, A>], [Writer<W, B>]) -> [Writer<W, C>] {
     { arrA, arrB in
         arrA.flatMap { wa in arrB.map { wb in Writer<W, C>(fn(wa.value, wb.value), W.combine(wa.log, wb.log)) } }

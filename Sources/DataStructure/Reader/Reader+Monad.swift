@@ -4,7 +4,7 @@ import Foundation
 public extension Reader {
     /// Monadic bind operation for Reader
     /// (>>=) :: m a -> (a -> m b) -> m b
-    func flatMap<O1>(_ fn: @escaping (Output) -> Reader<Environment, O1>) -> Reader<Environment, O1> {
+    func flatMap<O1>(_ fn: @escaping @Sendable (Output) -> Reader<Environment, O1>) -> Reader<Environment, O1> {
         Reader<Environment, O1> { env in
             fn(self.runReader(env)).runReader(env)
         }
@@ -13,7 +13,7 @@ public extension Reader {
     /// Curried version of flatMap for functional composition
     /// (>>=) :: m a -> (a -> m b) -> m b
     static func bind<O1>(
-        _ fn: @escaping (Output) -> Reader<Environment, O1>
+        _ fn: @escaping @Sendable (Output) -> Reader<Environment, O1>
     ) -> (Reader<Environment, Output>) -> Reader<Environment, O1> {
         { reader in
             reader.flatMap(fn)
@@ -23,8 +23,8 @@ public extension Reader {
     /// Kleisli composition (left-to-right)
     /// (>=>) :: (a -> m b) -> (b -> m c) -> a -> m c
     static func kleisli<O0, O1>(
-        _ fn1: @escaping (O0) -> Reader<Environment, Output>,
-        _ fn2: @escaping (Output) -> Reader<Environment, O1>
+        _ fn1: @escaping @Sendable (O0) -> Reader<Environment, Output>,
+        _ fn2: @escaping @Sendable (Output) -> Reader<Environment, O1>
     ) -> (O0) -> Reader<Environment, O1> {
         { o0 in
             fn1(o0).flatMap(fn2)
@@ -34,8 +34,8 @@ public extension Reader {
     /// Kleisli composition (right-to-left)
     /// (<=<) :: (b -> m c) -> (a -> m b) -> a -> m c
     static func kleisliBack<O0, O1>(
-        _ fn2: @escaping (Output) -> Reader<Environment, O1>,
-        _ fn1: @escaping (O0) -> Reader<Environment, Output>
+        _ fn2: @escaping @Sendable (Output) -> Reader<Environment, O1>,
+        _ fn1: @escaping @Sendable (O0) -> Reader<Environment, Output>
     ) -> (O0) -> Reader<Environment, O1> {
         { o0 in
             fn1(o0).flatMap(fn2)
@@ -60,7 +60,7 @@ public extension Reader {
 
     /// Retrieves a function of the environment
     /// asks :: (env -> a) -> m a
-    static func asks<O>(_ fn: @escaping (Environment) -> O) -> Reader<Environment, O> {
+    static func asks<O>(_ fn: @escaping @Sendable (Environment) -> O) -> Reader<Environment, O> {
         Reader<Environment, O>(fn)
     }
 
@@ -72,7 +72,7 @@ public extension Reader {
 
     /// Executes a computation in a modified environment
     /// local :: (env -> env) -> m a -> m a
-    func local(_ fn: @escaping (Environment) -> Environment) -> Reader<Environment, Output> {
+    func local(_ fn: @escaping @Sendable (Environment) -> Environment) -> Reader<Environment, Output> {
         Reader { env in
             self.runReader(fn(env))
         }

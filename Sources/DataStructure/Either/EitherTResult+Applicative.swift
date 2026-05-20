@@ -6,7 +6,7 @@ import Foundation
 
 /// apply for EitherTResult
 public func applyEitherResult<L, A, B, E: Error>(
-    _ fns: Either<L, Result<(A) -> B, E>>,
+    _ fns: Either<L, Result<@Sendable (A) -> B, E>>,
     _ values: Either<L, Result<A, E>>
 ) -> Either<L, Result<B, E>> {
     Either.liftA2(Result.apply)(fns, values)
@@ -14,7 +14,7 @@ public func applyEitherResult<L, A, B, E: Error>(
 
 /// liftA2 for EitherTResult
 public func liftA2EitherResult<L, A, B, C, E: Error>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Either<L, Result<A, E>>, Either<L, Result<B, E>>) -> Either<L, Result<C, E>> {
     Either.liftA2(Result.liftA2(fn))
 }

@@ -6,7 +6,7 @@ import CoreFP
 
 public func flatMapTStatefulValidation<S, E: Semigroup, A, B>(
     _ stateful: Stateful<S, Validation<E, A>>,
-    _ fn: @escaping (A) -> Stateful<S, Validation<E, B>>
+    _ fn: @escaping @Sendable (A) -> Stateful<S, Validation<E, B>>
 ) -> Stateful<S, Validation<E, B>> {
     Stateful<S, Validation<E, B>> { s in
         stateful.run(&s).match(
@@ -17,7 +17,7 @@ public func flatMapTStatefulValidation<S, E: Semigroup, A, B>(
 }
 
 public func bindTStatefulValidation<S, E: Semigroup, A, B>(
-    _ fn: @escaping (A) -> Stateful<S, Validation<E, B>>
+    _ fn: @escaping @Sendable (A) -> Stateful<S, Validation<E, B>>
 ) -> (Stateful<S, Validation<E, A>>) -> Stateful<S, Validation<E, B>> {
     { flatMapTStatefulValidation($0, fn) }
 }

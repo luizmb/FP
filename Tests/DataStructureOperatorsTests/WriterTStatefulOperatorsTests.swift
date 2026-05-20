@@ -19,7 +19,7 @@ import Testing
     }
 
     @Test func apply() {
-        let wf = Writer<[String], Stateful<Int, (Int) -> String>>(
+        let wf = Writer<[String], Stateful<Int, @Sendable (Int) -> String>>(
             Stateful { _ in { "\($0)" } },
             ["fn"]
         )
@@ -63,10 +63,10 @@ import Testing
     }
 
     @Test func kleisli() {
-        let f: (Int) -> Writer<[String], Stateful<Int, Int>> = { n in
+        let f: @Sendable (Int) -> Writer<[String], Stateful<Int, Int>> = { n in
             Writer(Stateful { _ in n + 1 }, ["f"])
         }
-        let g: (Int) -> Writer<[String], Stateful<Int, String>> = { n in
+        let g: @Sendable (Int) -> Writer<[String], Stateful<Int, String>> = { n in
             Writer(Stateful { _ in "\(n)" }, ["g"])
         }
         let result = (f >=> g)(4)

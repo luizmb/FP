@@ -4,7 +4,7 @@ import DataStructure
 
 // (<*>) :: Reader<env, Writer<w, (a -> b)>> -> Reader<env, Writer<w, a>> -> Reader<env, Writer<w, b>>
 public func <*> <Env, W: Monoid, A, B>(
-    _ rf: Reader<Env, Writer<W, (A) -> B>>,
+    _ rf: Reader<Env, Writer<W, @Sendable (A) -> B>>,
     _ ra: Reader<Env, Writer<W, A>>
 ) -> Reader<Env, Writer<W, B>> {
     applyReaderWriter(rf, ra)

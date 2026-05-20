@@ -5,7 +5,7 @@ import Foundation
 
 // (<$>) :: (a -> b) -> Writer<w, a> -> Writer<w, b>
 public func <£> <W: Monoid, A, B>(
-    _ transform: @escaping (A) -> B,
+    _ transform: @escaping @Sendable (A) -> B,
     _ writer: Writer<W, A>
 ) -> Writer<W, B> {
     writer.map(transform)
@@ -30,7 +30,7 @@ public func <£ <W: Monoid, A, B>(
 // (<&>) :: Writer<w, a> -> (a -> b) -> Writer<w, b>
 public func <&> <W: Monoid, A, B>(
     _ writer: Writer<W, A>,
-    _ transform: @escaping (A) -> B
+    _ transform: @escaping @Sendable (A) -> B
 ) -> Writer<W, B> {
     writer.mapWriter(transform)
 }

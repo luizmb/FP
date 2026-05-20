@@ -12,7 +12,7 @@ import Testing
     }
 
     @Test func applicativeLogsAccumulate() {
-        let wf = Writer<[String], Reader<Int, (Int) -> String>>(
+        let wf = Writer<[String], Reader<Int, @Sendable (Int) -> String>>(
             Reader { env in { "\(env + $0)" } },
             ["fn"]
         )

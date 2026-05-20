@@ -195,7 +195,7 @@ public extension Of {
 /// that we don't have all parameters at the time of calling.
 /// (partial application)
 public func curry<A, B, C>(
-    _ function: @escaping (A, B) -> C
+    _ function: @escaping @Sendable (A, B) -> C
 ) -> (A) -> (B) -> C {
     { (a: A) -> (B) -> C in
         { (b: B) -> C in
@@ -204,8 +204,20 @@ public func curry<A, B, C>(
     }
 }
 
+/// Sendable overload — picked by the compiler in `@Sendable`-requiring positions.
+/// Requires `A: Sendable` because the partially-applied `a` is captured in the inner closure.
+public func curry<A: Sendable, B, C>(
+    _ function: @escaping @Sendable (A, B) -> C
+) -> @Sendable (A) -> @Sendable (B) -> C {
+    { (a: A) -> @Sendable (B) -> C in
+        { (b: B) -> C in
+            function(a, b)
+        }
+    }
+}
+
 public func curryT<A, B, C>(
-    _ function: @escaping ((A, B)) -> C
+    _ function: @escaping @Sendable ((A, B)) -> C
 ) -> (A) -> (B) -> C {
     { (a: A) -> (B) -> C in
         { (b: B) -> C in
@@ -214,10 +226,29 @@ public func curryT<A, B, C>(
     }
 }
 
+/// Sendable overload — requires `A: Sendable` for the inner closure capture.
+public func curryT<A: Sendable, B, C>(
+    _ function: @escaping @Sendable ((A, B)) -> C
+) -> @Sendable (A) -> @Sendable (B) -> C {
+    { (a: A) -> @Sendable (B) -> C in
+        { (b: B) -> C in
+            function((a, b))
+        }
+    }
+}
+
 public func partialApply<A, B, C>(
-    _ function: @escaping (A, B) -> C,
+    _ function: @escaping @Sendable (A, B) -> C,
     _ value: A
 ) -> (B) -> C {
+    curry(function)(value)
+}
+
+/// Sendable overload — requires `A: Sendable` because `value` is captured.
+public func partialApply<A: Sendable, B, C>(
+    _ function: @escaping @Sendable (A, B) -> C,
+    _ value: A
+) -> @Sendable (B) -> C {
     curry(function)(value)
 }
 
@@ -225,16 +256,16 @@ public func partialApply<A, B, C>(
 /// and compresses into a single function that take both arguments at
 /// once.
 public func uncurry<A, B, C>(
-    _ function: @escaping (A) -> (B) -> C
-) -> (A, B) -> C {
+    _ function: @escaping @Sendable (A) -> @Sendable (B) -> C
+) -> @Sendable (A, B) -> C {
     { (a: A, b: B) -> C in
         function(a)(b)
     }
 }
 
 /// Zero arguments curry, adds lazy evaluation to a value or operation
-public func lazy<A, B>(_ function: @escaping (A) -> B)
--> () -> (A) -> B {
+public func lazy<A, B>(_ function: @escaping @Sendable (A) -> B)
+-> @Sendable () -> @Sendable (A) -> B {
     {
         function
     }
@@ -248,11 +279,19 @@ public func lazy<A>(_ value: A)
     }
 }
 
+/// Sendable overload — requires `A: Sendable` because `value` is captured in a `@Sendable` thunk.
+public func lazy<A: Sendable>(_ value: A)
+-> @Sendable () -> A {
+    {
+        value
+    }
+}
+
 /// Opposite of lazy/zurry, removes the layer of Void application
 /// Applies the argument Void of the curried function
 public func unlazy<A, B>(
-    _ function: @escaping (A) -> () -> B
-) -> (A) -> B {
+    _ function: @escaping @Sendable (A) -> @Sendable () -> B
+) -> @Sendable (A) -> B {
     { (a: A) -> B in
         function(a)()
     }
@@ -261,8 +300,8 @@ public func unlazy<A, B>(
 /// Opposite of lazy/zurry, removes the layer of Void application
 /// Applies the argument Void of the curried function
 public func unlazy<A, B>(
-    _ function: @escaping () -> (A) -> B
-) -> (A) -> B {
+    _ function: @escaping @Sendable () -> @Sendable (A) -> B
+) -> @Sendable (A) -> B {
     { (a: A) -> B in
         function()(a)
     }
@@ -271,13 +310,13 @@ public func unlazy<A, B>(
 /// Opposite of lazy/zurry, removes the layer of Void application
 /// Applies the argument Void of the curried function
 public func unlazy<A>(
-    _ function: @escaping () -> (A)
+    _ function: @escaping @Sendable () -> (A)
 ) -> A {
     function()
 }
 
 public func flip<A, B, C>(
-    _ function: @escaping (A, B) -> C
+    _ function: @escaping @Sendable (A, B) -> C
 ) -> (B) -> (A) -> C {
     { (b: B) -> (A) -> C in
         { (a: A) -> C in
@@ -286,25 +325,55 @@ public func flip<A, B, C>(
     }
 }
 
+/// Sendable overload — requires `B: Sendable` because the inner closure captures `b`.
+public func flip<A, B: Sendable, C>(
+    _ function: @escaping @Sendable (A, B) -> C
+) -> @Sendable (B) -> @Sendable (A) -> C {
+    { (b: B) -> @Sendable (A) -> C in
+        { (a: A) -> C in
+            function(a, b)
+        }
+    }
+}
+
 public func partialApplyFlip<A, B, C>(
-    _ function: @escaping (A, B) -> C,
+    _ function: @escaping @Sendable (A, B) -> C,
     _ value: B
 ) -> (A) -> C {
     flip(function)(value)
 }
 
+/// Sendable overload — requires `B: Sendable` because `value` is captured.
+public func partialApplyFlip<A, B: Sendable, C>(
+    _ function: @escaping @Sendable (A, B) -> C,
+    _ value: B
+) -> @Sendable (A) -> C {
+    flip(function)(value)
+}
+
 public func flipU<A, B, C>(
-    _ function: @escaping (A, B) -> C
-) -> (B, A) -> C {
+    _ function: @escaping @Sendable (A, B) -> C
+) -> @Sendable (B, A) -> C {
     { (b: B, a: A) -> C in
         function(a, b)
     }
 }
 
 public func flip<A, B, C>(
-    _ function: @escaping (A) -> (B) -> C
+    _ function: @escaping @Sendable (A) -> (B) -> C
 ) -> (B) -> (A) -> C {
     { (b: B) -> (A) -> C in
+        { (a: A) -> C in
+            function(a)(b)
+        }
+    }
+}
+
+/// Sendable overload — requires `B: Sendable` for the inner closure capture.
+public func flip<A, B: Sendable, C>(
+    _ function: @escaping @Sendable (A) -> @Sendable (B) -> C
+) -> @Sendable (B) -> @Sendable (A) -> C {
+    { (b: B) -> @Sendable (A) -> C in
         { (a: A) -> C in
             function(a)(b)
         }
@@ -315,11 +384,11 @@ public func tuple<A, B>(_ a: A, _ b: B) -> (A, B) {
     (a, b)
 }
 
-public func tuple<A, B, C>(_ fn: @escaping (A, B) -> C) -> ((A, B)) -> C {
+public func tuple<A, B, C>(_ fn: @escaping @Sendable (A, B) -> C) -> @Sendable ((A, B)) -> C {
     { tuple in fn(tuple.0, tuple.1) }
 }
 
-public func untuple<A, B, C>(_ fn: @escaping ((A, B)) -> C) -> (A, B) -> C {
+public func untuple<A, B, C>(_ fn: @escaping @Sendable ((A, B)) -> C) -> @Sendable (A, B) -> C {
     { a, b in fn((a, b)) }
 }
 
@@ -334,8 +403,8 @@ public func untuple<A, B, C>(_ fn: @escaping ((A, B)) -> C) -> (A, B) -> C {
 /// When `f` function changes its type and introduces another argument, the key path cannot be used anymore as
 /// it uses only a single argument. However, it still can be changed to use `usingArg` function and `|>` operator:
 public func withArg<Arg1, Arg2, Picked, Return>(
-    _ pickArgument: @escaping ((Arg1, Arg2)) -> Picked
-) -> (@escaping (Picked) -> Return) -> (Arg1, Arg2) -> Return {
+    _ pickArgument: @escaping @Sendable ((Arg1, Arg2)) -> Picked
+) -> @Sendable (@escaping @Sendable (Picked) -> Return) -> @Sendable (Arg1, Arg2) -> Return {
     curryT(compose(compose, untuple))(pickArgument)
 }
 
@@ -356,7 +425,7 @@ public func withArg<Arg1, Arg2, Picked, Return>(
 ///
 /// Intended for mock/stub implementations that must never be called in production:
 /// ```swift
-/// init(fn: @escaping () -> AnyPublisher<String, Never> = fail("Mock not implemented")) -> Mock
+/// init(fn: @escaping @Sendable () -> AnyPublisher<String, Never> = fail("Mock not implemented")) -> Mock
 /// ```
 ///
 /// **Be careful with this function in production code — it will crash the app if not overridden.**

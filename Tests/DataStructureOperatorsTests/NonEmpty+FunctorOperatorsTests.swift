@@ -43,8 +43,8 @@ import Testing
     }
 
     @Test func functorLaw_composition() {
-        let f: (Int) -> Int = { $0 + 1 }
-        let g: (Int) -> Int = { $0 * 2 }
+        let f: @Sendable (Int) -> Int = { $0 + 1 }
+        let g: @Sendable (Int) -> Int = { $0 * 2 }
         let lhs = compose(f, g) <£> three
         let rhs = g <£> (f <£> three)
         #expect(lhs == rhs)

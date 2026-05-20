@@ -3,7 +3,7 @@
 /// - Parameter function: (A) - B
 /// - Returns: a function that transforms (A, A) into (B, B)
 public func mapTuple2<A, B>(
-    _ function: @escaping (A) -> B
+    _ function: @escaping @Sendable (A) -> B
 ) -> (A, A) -> (B, B) {
     { input1, input2 in
         (function(input1), function(input2))
@@ -15,7 +15,7 @@ public func mapTuple2<A, B>(
 /// - Parameter function: (A) - B
 /// - Returns: a function that transforms (A, A, A) into (B, B, B)
 public func mapTuple3<A, B>(
-    _ function: @escaping (A) -> B
+    _ function: @escaping @Sendable (A) -> B
 ) -> (A, A, A) -> (B, B, B) {
     { input1, input2, input3 in
         (function(input1), function(input2), function(input3))

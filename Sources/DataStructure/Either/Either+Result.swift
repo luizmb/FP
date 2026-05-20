@@ -15,7 +15,7 @@ public extension Either {
     }
 }
 
-public extension Result {
+public extension Result where Success: Sendable, Failure: Sendable {
     /// Returns a ``SumTypeCopyStrategy`` for converting to `Either`.
     ///
     /// `either.parallel()` produces `Either<Success, Failure>` (success is left).

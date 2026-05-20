@@ -156,8 +156,8 @@ private enum TestError: Error, Equatable { case bad(String) }
     }
 
     @Test func functorLaw_composition() {
-        let f: (Int) -> Int = { $0 + 1 }
-        let g: (Int) -> Int = { $0 * 2 }
+        let f: @Sendable (Int) -> Int = { $0 + 1 }
+        let g: @Sendable (Int) -> Int = { $0 * 2 }
         #expect(three.map(compose(f, g)) == three.map(f).map(g))
     }
 
@@ -169,13 +169,13 @@ private enum TestError: Error, Equatable { case bad(String) }
     }
 
     @Test func apply_singleFunction() {
-        let nf = NonEmpty<(Int) -> Int>(head: { $0 * 2 })
+        let nf = NonEmpty<@Sendable (Int) -> Int>(head: { $0 * 2 })
         let na = NonEmpty(head: 1, tail: [2, 3])
         #expect(NonEmpty.apply(nf, na).toArray == [2, 4, 6])
     }
 
     @Test func apply_multipleFunctions() {
-        let nf = NonEmpty<(Int) -> Int>(head: { $0 + 1 }, tail: [{ $0 * 10 }])
+        let nf = NonEmpty<@Sendable (Int) -> Int>(head: { $0 + 1 }, tail: [{ $0 * 10 }])
         let na = NonEmpty(head: 1, tail: [2])
         // cartesian: (+1)(1), (+1)(2), (*10)(1), (*10)(2)
         #expect(NonEmpty.apply(nf, na).toArray == [2, 3, 10, 20])
@@ -211,14 +211,14 @@ private enum TestError: Error, Equatable { case bad(String) }
     }
 
     @Test func bind_static() {
-        let double: (Int) -> NonEmpty<Int> = { NonEmpty(head: $0, tail: [$0]) }
+        let double: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0, tail: [$0]) }
         let result = NonEmpty<Int>.bind(double)(NonEmpty(head: 3))
         #expect(result.toArray == [3, 3])
     }
 
     @Test func kleisli_composition() {
-        let f: (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 + 1) }
-        let g: (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
+        let f: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 + 1) }
+        let g: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
         let fg = NonEmpty<Int>.kleisli(f, g)
         #expect(fg(3).toArray == [8])   // (3+1)*2
     }
@@ -248,7 +248,7 @@ private enum TestError: Error, Equatable { case bad(String) }
     // MARK: - Monad laws
 
     @Test func monadLaw_leftIdentity() {
-        let f: (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
+        let f: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
         #expect(NonEmpty.pure(3).flatMap(f) == f(3))
     }
 
@@ -257,8 +257,8 @@ private enum TestError: Error, Equatable { case bad(String) }
     }
 
     @Test func monadLaw_associativity() {
-        let f: (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 + 1) }
-        let g: (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
+        let f: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 + 1) }
+        let g: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
         #expect(three.flatMap(f).flatMap(g) == three.flatMap { f($0).flatMap(g) })
     }
 

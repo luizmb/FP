@@ -4,7 +4,7 @@ import CoreFP
 // Type: [A?] = Array<Optional<A>>
 
 // (<*>) :: [(a -> b)?] -> [a?] -> [b?]
-public func <*> <A, B>(_ fns: [((A) -> B)?], _ values: [A?]) -> [B?] {
+public func <*> <A, B>(_ fns: [(@Sendable (A) -> B)?], _ values: [A?]) -> [B?] {
     applyArrayOptional(fns, values)
 }
 

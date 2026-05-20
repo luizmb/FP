@@ -23,14 +23,14 @@ import Testing
     }
 
     @Test func apply() {
-        let sf = Stateful<Int, ((Int) -> String)?>.pure(.some { "\($0)" })
+        let sf = Stateful<Int, (@Sendable (Int) -> String)?>.pure(.some { "\($0)" })
         let sa = Stateful<Int, Int?>.pure(.some(7))
         let result = sf <*> sa
         #expect(result.eval(0) == .some("7"))
     }
 
     @Test func applyNone() {
-        let sf = Stateful<Int, ((Int) -> String)?>.pure(nil)
+        let sf = Stateful<Int, (@Sendable (Int) -> String)?>.pure(nil)
         let sa = Stateful<Int, Int?>.pure(.some(7))
         let result = sf <*> sa
         #expect(result.eval(0) == nil)
@@ -63,8 +63,8 @@ import Testing
     }
 
     @Test func kleisli() {
-        let f: (Int) -> Stateful<Int, Int?> = { n in .pure(.some(n + 1)) }
-        let g: (Int) -> Stateful<Int, String?> = { n in .pure(.some("\(n)")) }
+        let f: @Sendable (Int) -> Stateful<Int, Int?> = { n in .pure(.some(n + 1)) }
+        let g: @Sendable (Int) -> Stateful<Int, String?> = { n in .pure(.some("\(n)")) }
         let result = (f >=> g)(4)
         #expect(result.eval(0) == .some("5"))
     }

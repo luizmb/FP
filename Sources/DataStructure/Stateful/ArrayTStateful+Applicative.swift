@@ -5,7 +5,7 @@ import Foundation
 
 /// apply for ArrayTStateful: [Stateful<S,(A->B)>] -> [Stateful<S,A>] -> [Stateful<S,B>]
 public func applyArrayStateful<S, A, B>(
-    _ fns: [Stateful<S, (A) -> B>],
+    _ fns: [Stateful<S, @Sendable (A) -> B>],
     _ vals: [Stateful<S, A>]
 ) -> [Stateful<S, B>] {
     fns.flatMap { sf in vals.map { sa in Stateful<S, B>.apply(sf, sa) } }
@@ -13,7 +13,7 @@ public func applyArrayStateful<S, A, B>(
 
 /// liftA2 for ArrayTStateful
 public func liftA2ArrayStateful<S, A, B, C>(
-    _ fn: @escaping (A, B) -> C
+    _ fn: @escaping @Sendable (A, B) -> C
 ) -> ([Stateful<S, A>], [Stateful<S, B>]) -> [Stateful<S, C>] {
     { arrA, arrB in
         arrA.flatMap { sa in arrB.map { sb in Stateful<S, C> { s in fn(sa.run(&s), sb.run(&s)) } } }

@@ -15,7 +15,7 @@ import Testing
     // MARK: - -<< bind (fn left)
 
     @Test func bindOperator_flipped() {
-        let double: (Int) -> NonEmpty<Int> = { NonEmpty(head: $0, tail: [$0]) }
+        let double: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0, tail: [$0]) }
         let result = double -<< NonEmpty(head: 3)
         #expect(result.toArray == [3, 3])
     }
@@ -23,8 +23,8 @@ import Testing
     // MARK: - >=> kleisli (left-to-right)
 
     @Test func kleisliOperator_leftToRight() {
-        let f: (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 + 1) }
-        let g: (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
+        let f: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 + 1) }
+        let g: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
         let fg = f >=> g
         #expect(fg(3).toArray == [8])   // (3+1)*2
     }
@@ -32,8 +32,8 @@ import Testing
     // MARK: - <=< kleisli (right-to-left)
 
     @Test func kleisliOperator_rightToLeft() {
-        let f: (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 + 1) }
-        let g: (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
+        let f: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 + 1) }
+        let g: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
         let gf = g <=< f
         #expect(gf(3).toArray == [8])   // same as f >=> g
     }
@@ -41,7 +41,7 @@ import Testing
     // MARK: - Monad laws via operators
 
     @Test func monadLaw_leftIdentity() {
-        let f: (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
+        let f: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
         #expect((NonEmpty.pure(3) >>- f) == f(3))
     }
 
@@ -52,8 +52,8 @@ import Testing
 
     @Test func monadLaw_associativity() {
         let ne = NonEmpty(head: 1, tail: [2, 3])
-        let f: (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 + 1) }
-        let g: (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
+        let f: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 + 1) }
+        let g: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
         #expect((ne >>- f >>- g) == (ne >>- { f($0) >>- g }))
     }
 }

@@ -13,7 +13,7 @@ public extension AsyncStream {
 
     static func fmapT<W: Monoid, A, B>(
         _ fn: @escaping @Sendable (A) -> B
-    ) -> (AsyncStream<Writer<W, A>>) -> AsyncMapSequence<AsyncStream<Writer<W, A>>, Writer<W, B>> {
+    ) -> @Sendable (AsyncStream<Writer<W, A>>) -> AsyncMapSequence<AsyncStream<Writer<W, A>>, Writer<W, B>> {
         { stream in stream.mapT(fn) }
     }
 }

@@ -4,47 +4,47 @@ import Foundation
 public extension Reader {
     /// Functor map - transforms the output value
     /// fmap :: (a -> b) -> f a -> f b
-    func map<O1>(_ fn: @escaping (Output) -> O1) -> Reader<Environment, O1> {
+    func map<O1>(_ fn: @escaping @Sendable (Output) -> O1) -> Reader<Environment, O1> {
         mapReader(fn)
     }
 
     /// Curried fmap for functional composition
     static func fmap<O1>(
-        _ fn: @escaping (Output) -> O1
-    ) -> (Reader<Environment, Output>) -> Reader<Environment, O1> {
+        _ fn: @escaping @Sendable (Output) -> O1
+    ) -> @Sendable (Reader<Environment, Output>) -> Reader<Environment, O1> {
         { reader in
             reader.map(fn)
         }
     }
 
     func contramapEnvironment<GlobalEnvironment>(
-        _ fn: @escaping (GlobalEnvironment) -> Environment
+        _ fn: @escaping @Sendable (GlobalEnvironment) -> Environment
     ) -> Reader<GlobalEnvironment, Output> {
-        .init(compose(fn, runReader))
+        .init { @Sendable env in self.runReader(fn(env)) }
     }
 
     static func contramapEnvironment<GlobalEnvironment>(
-        _ fn: @escaping (GlobalEnvironment) -> Environment
+        _ fn: @escaping @Sendable (GlobalEnvironment) -> Environment
     ) -> (Reader<Environment, Output>) -> Reader<GlobalEnvironment, Output> {
         { $0.contramapEnvironment(fn) }
     }
 
     func mapReader<O1>(
-        _ fn: @escaping (Output) -> O1
+        _ fn: @escaping @Sendable (Output) -> O1
     ) -> Reader<Environment, O1> {
-        .init(compose(runReader, fn))
+        .init { @Sendable env in fn(self.runReader(env)) }
     }
 
     func dimap<GlobalEnvironment, O1>(
-        _ contramapEnvironment: @escaping (GlobalEnvironment) -> Environment,
-        _ mapReader: @escaping (Output) -> O1
+        _ contramapEnvironment: @escaping @Sendable (GlobalEnvironment) -> Environment,
+        _ mapReader: @escaping @Sendable (Output) -> O1
     ) -> Reader<GlobalEnvironment, O1> {
-        .init(compose3(contramapEnvironment, runReader, mapReader))
+        .init { @Sendable env in mapReader(self.runReader(contramapEnvironment(env))) }
     }
 
     static func dimap<GlobalEnvironment, O1>(
-        _ contramapEnv: @escaping (GlobalEnvironment) -> Environment,
-        _ mapOut: @escaping (Output) -> O1
+        _ contramapEnv: @escaping @Sendable (GlobalEnvironment) -> Environment,
+        _ mapOut: @escaping @Sendable (Output) -> O1
     ) -> (Reader<Environment, Output>) -> Reader<GlobalEnvironment, O1> {
         { $0.dimap(contramapEnv, mapOut) }
     }
