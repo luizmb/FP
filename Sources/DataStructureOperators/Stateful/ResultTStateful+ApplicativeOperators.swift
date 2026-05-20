@@ -2,7 +2,10 @@ import CoreFPOperators
 import DataStructure
 
 // (<*>) :: Result<Stateful<s, (a -> b)>, e> -> Result<Stateful<s, a>, e> -> Result<Stateful<s, b>, e>
-public func <*> <S, A, B, E: Error>(_ rf: Result<Stateful<S, @Sendable (A) -> B>, E>, _ ra: Result<Stateful<S, A>, E>) -> Result<Stateful<S, B>, E> {
+public func <*> <S, A, B, E: Error>(
+    _ rf: Result<Stateful<S, @Sendable (A) -> B>, E>,
+    _ ra: Result<Stateful<S, A>, E>
+) -> Result<Stateful<S, B>, E> {
     applyResultStateful(rf, ra)
 }
 

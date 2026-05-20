@@ -5,12 +5,17 @@ import DataStructure
 // Type: Either<L, [A]>
 
 // (>>-) :: Either<l,[a]> -> (a -> Either<l,[b]>) -> Either<l,[b]>
-public func >>- <L: Sendable, A: Sendable, B: Sendable>(_ either: Either<L, [A]>, _ fn: @escaping @Sendable (A) -> Either<L, [B]>) -> Either<L, [B]> {
+public func >>- <L: Sendable, A: Sendable, B: Sendable>(
+    _ either: Either<L, [A]>,
+    _ fn: @escaping @Sendable (A) -> Either<L, [B]>) -> Either<L, [B]> {
     flatMapTEitherArray(either, fn)
 }
 
 // (-<<) :: (a -> Either<l,[b]>) -> Either<l,[a]> -> Either<l,[b]>
-public func -<< <L: Sendable, A: Sendable, B: Sendable>(_ fn: @escaping @Sendable (A) -> Either<L, [B]>, _ either: Either<L, [A]>) -> Either<L, [B]> {
+public func -<< <L: Sendable, A: Sendable, B: Sendable>(
+    _ fn: @escaping @Sendable (A) -> Either<L, [B]>,
+    _ either: Either<L, [A]>
+) -> Either<L, [B]> {
     flatMapTEitherArray(either, fn)
 }
 

@@ -5,7 +5,10 @@ import DataStructure
 // Type: [Either<L,A>]
 
 // (<*>) :: [Either<l,(a->b)>] -> [Either<l,a>] -> [Either<l,b>]
-public func <*> <L: Sendable, A: Sendable, B: Sendable>(_ fns: [Either<L, @Sendable (A) -> B>], _ values: [Either<L, A>]) -> [Either<L, B>] {
+public func <*> <L: Sendable, A: Sendable, B: Sendable>(
+    _ fns: [Either<L, @Sendable (A) -> B>],
+    _ values: [Either<L, A>]
+) -> [Either<L, B>] {
     applyArrayEither(fns, values)
 }
 

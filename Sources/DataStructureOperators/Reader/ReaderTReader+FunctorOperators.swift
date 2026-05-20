@@ -7,9 +7,9 @@ import Foundation
 
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
 public func <£^> <A: Sendable, B: Sendable, Env1: Sendable, Env2: Sendable>(
-    _ transform: @escaping @Sendable (A
-) -> B, _ reader: Reader<Env1, Reader<Env2, A>>)
--> Reader<Env1, Reader<Env2, B>> {
+    _ transform: @escaping @Sendable (A) -> B,
+    _ reader: Reader<Env1, Reader<Env2, A>>
+) -> Reader<Env1, Reader<Env2, B>> {
     reader.mapT(transform)
 }
 

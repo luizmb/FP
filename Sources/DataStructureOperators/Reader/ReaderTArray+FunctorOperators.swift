@@ -24,7 +24,6 @@ public func <£ <A: Sendable, B: Sendable, Env: Sendable>(_ value: A, _ reader: 
 // (<&^>) :: f (g a) -> (a -> b) -> f (g b)
 public func <&^> <A: Sendable, B: Sendable, Env: Sendable>(
     _ reader: Reader<Env, [A]>,
-    _ transform: @escaping @Sendable (A
-) -> B) -> Reader<Env, [B]> {
+    _ transform: @escaping @Sendable (A) -> B) -> Reader<Env, [B]> {
     transform <£^> reader
 }

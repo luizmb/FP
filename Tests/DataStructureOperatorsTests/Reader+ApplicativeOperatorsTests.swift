@@ -53,9 +53,11 @@ import Testing
         let w = Reader<Environment, Int> { env in env.addend }
 
         // Left side: compose functions then apply to w
-        let composeFn: @Sendable (@escaping @Sendable (Int) -> String, @escaping @Sendable (Int) -> Int) -> @Sendable (Int) -> String = { f, g in
-            { x in f(g(x)) }
-        }
+        typealias ComposeFn = @Sendable (
+            @escaping @Sendable (Int) -> String,
+            @escaping @Sendable (Int) -> Int
+        ) -> @Sendable (Int) -> String
+        let composeFn: ComposeFn = { f, g in { x in f(g(x)) } }
         let composed = Reader<Environment, @Sendable (Int) -> String>.liftA2(composeFn)(u, v)
         let left = composed <*> w
 

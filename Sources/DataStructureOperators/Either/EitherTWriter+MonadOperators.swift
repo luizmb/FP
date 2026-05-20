@@ -6,12 +6,17 @@ import DataStructure
 // Type: Either<L, Writer<W, A>>
 
 // (>>-) :: Either<l, Writer<w, a>> -> (a -> Writer<w, b>) -> Either<l, Writer<w, b>>
-public func >>- <L, W: Monoid, A, B>(_ either: Either<L, Writer<W, A>>, _ fn: @escaping @Sendable (A) -> Writer<W, B>) -> Either<L, Writer<W, B>> {
+public func >>- <L, W: Monoid, A, B>(
+    _ either: Either<L, Writer<W, A>>,
+    _ fn: @escaping @Sendable (A) -> Writer<W, B>) -> Either<L, Writer<W, B>> {
     either.flatMapT(fn)
 }
 
 // (-<<) :: (a -> Writer<w, b>) -> Either<l, Writer<w, a>> -> Either<l, Writer<w, b>>
-public func -<< <L, W: Monoid, A, B>(_ fn: @escaping @Sendable (A) -> Writer<W, B>, _ either: Either<L, Writer<W, A>>) -> Either<L, Writer<W, B>> {
+public func -<< <L, W: Monoid, A, B>(
+    _ fn: @escaping @Sendable (A) -> Writer<W, B>,
+    _ either: Either<L, Writer<W, A>>
+) -> Either<L, Writer<W, B>> {
     either.flatMapT(fn)
 }
 

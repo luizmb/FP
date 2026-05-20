@@ -6,10 +6,9 @@ import Foundation
 
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
 public func <£^> <A: Sendable, B: Sendable, L: Sendable, Env: Sendable>(
-    _ transform: @escaping @Sendable (A
-) -> B, _ reader: Reader<Env, Either<L, A>>)
--> Reader<Env, Either<L, B>>
-where A: Sendable, B: Sendable, L: Sendable {
+    _ transform: @escaping @Sendable (A) -> B,
+    _ reader: Reader<Env, Either<L, A>>
+) -> Reader<Env, Either<L, B>> {
     reader.mapT(transform)
 }
 
@@ -36,8 +35,7 @@ public func <£ <B1: Sendable, A: Sendable, B: Sendable, Env: Sendable>(
 // (<&^>) :: f (g a) -> (a -> b) -> f (g b)
 public func <&^> <A: Sendable, B: Sendable, L: Sendable, Env: Sendable>(
     _ reader: Reader<Env, Either<L, A>>,
-    _ transform: @escaping @Sendable (A
-) -> B) -> Reader<Env, Either<L, B>>
-where A: Sendable, B: Sendable, L: Sendable {
+    _ transform: @escaping @Sendable (A) -> B
+) -> Reader<Env, Either<L, B>> {
     transform <£^> reader
 }

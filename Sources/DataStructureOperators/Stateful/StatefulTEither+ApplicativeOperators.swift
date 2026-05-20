@@ -3,8 +3,9 @@ import DataStructure
 
 // (<*>) :: Stateful<s, Either<l, (a -> b)>> -> Stateful<s, Either<l, a>> -> Stateful<s, Either<l, b>>
 public func <*> <S: Sendable, L: Sendable, A: Sendable, B: Sendable>(
-    _ sf: Stateful<S, Either<L, @Sendable (A
-) -> B>>, _ sa: Stateful<S, Either<L, A>>) -> Stateful<S, Either<L, B>> {
+    _ sf: Stateful<S, Either<L, @Sendable (A) -> B>>,
+    _ sa: Stateful<S, Either<L, A>>
+) -> Stateful<S, Either<L, B>> {
     applyStatefulEither(sf, sa)
 }
 

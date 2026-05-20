@@ -154,7 +154,10 @@ import Testing
         let reader2 = Reader<Environment, Int?> { env in env.addend }
 
         let add: @Sendable (Int, Int) -> Int = { $0 + $1 }
-        let lifted: @Sendable (Reader<Environment, Int?>, Reader<Environment, Int?>) -> Reader<Environment, Int?> = liftA2ReaderOptional(add)
+        let lifted: @Sendable (
+            Reader<Environment, Int?>,
+            Reader<Environment, Int?>
+        ) -> Reader<Environment, Int?> = liftA2ReaderOptional(add)
         let result = lifted(reader1, reader2)
 
         let env = Environment(multiplier: 5, addend: 3)

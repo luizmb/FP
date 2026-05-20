@@ -9,7 +9,9 @@ public extension Result {
         map { stateful in stateful.map(fn) }
     }
 
-    static func fmapT<S, A, B>(_ fn: @escaping @Sendable (A) -> B) -> @Sendable (Result<Stateful<S, A>, Failure>) -> Result<Stateful<S, B>, Failure> {
+    static func fmapT<S, A, B>(
+        _ fn: @escaping @Sendable (A) -> B
+    ) -> @Sendable (Result<Stateful<S, A>, Failure>) -> Result<Stateful<S, B>, Failure> {
         { result in result.mapT(fn) }
     }
 }

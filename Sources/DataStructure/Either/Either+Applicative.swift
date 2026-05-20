@@ -12,7 +12,10 @@ public extension Either {
     }
 
     /// apply :: Either<a, (b0 -> b)> -> Either<a, b0> -> Either<a, b>
-    static func apply<B0>(_ functions: Either<A, @Sendable (B0) -> B>, _ values: Either<A, B0>) -> Either<A, B> where A: Sendable, B0: Sendable {
+    static func apply<B0>(
+        _ functions: Either<A, @Sendable (B0) -> B>,
+        _ values: Either<A, B0>
+    ) -> Either<A, B> where A: Sendable, B0: Sendable {
         functions.flatMap { @Sendable f in values.mapRight(f) }
     }
 

@@ -5,12 +5,17 @@ import DataStructure
 // Type: Either<L, Stateful<S, A>>
 
 // (>>-) :: Either<l, Stateful<s, a>> -> (a -> Stateful<s, b>) -> Either<l, Stateful<s, b>>
-public func >>- <L, S, A, B>(_ either: Either<L, Stateful<S, A>>, _ fn: @escaping @Sendable (A) -> Stateful<S, B>) -> Either<L, Stateful<S, B>> {
+public func >>- <L, S, A, B>(
+    _ either: Either<L, Stateful<S, A>>,
+    _ fn: @escaping @Sendable (A) -> Stateful<S, B>) -> Either<L, Stateful<S, B>> {
     either.flatMapT(fn)
 }
 
 // (-<<) :: (a -> Stateful<s, b>) -> Either<l, Stateful<s, a>> -> Either<l, Stateful<s, b>>
-public func -<< <L, S, A, B>(_ fn: @escaping @Sendable (A) -> Stateful<S, B>, _ either: Either<L, Stateful<S, A>>) -> Either<L, Stateful<S, B>> {
+public func -<< <L, S, A, B>(
+    _ fn: @escaping @Sendable (A) -> Stateful<S, B>,
+    _ either: Either<L, Stateful<S, A>>
+) -> Either<L, Stateful<S, B>> {
     either.flatMapT(fn)
 }
 

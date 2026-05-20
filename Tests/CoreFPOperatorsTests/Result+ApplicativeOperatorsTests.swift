@@ -74,9 +74,11 @@ import Testing
         let w: Result<Int, TestError> = .success(5)
 
         // Left side: compose functions then apply to w
-        let composeFn: @Sendable (@escaping @Sendable (Int) -> String, @escaping @Sendable (Int) -> Int) -> @Sendable (Int) -> String = { f, g in
-            { x in f(g(x)) }
-        }
+        typealias ComposeFn = @Sendable (
+            @escaping @Sendable (Int) -> String,
+            @escaping @Sendable (Int) -> Int
+        ) -> @Sendable (Int) -> String
+        let composeFn: ComposeFn = { f, g in { x in f(g(x)) } }
         let composed = Result<@Sendable (Int) -> String, TestError>.liftA2(composeFn)(u, v)
         let left = composed <*> w
 
