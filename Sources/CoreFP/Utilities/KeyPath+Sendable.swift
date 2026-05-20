@@ -16,3 +16,24 @@
 // reference itself.
 extension KeyPath: @retroactive @unchecked Sendable {}
 extension WritableKeyPath: @retroactive @unchecked Sendable {}
+
+/// Lifts a `KeyPath` into an explicit `@Sendable` getter function.
+///
+/// Swift's implicit `KeyPath → (Root) -> Value` conversion produces a closure that is
+/// **not** annotated `@Sendable`, even though `KeyPath` itself is `Sendable` (see the
+/// retroactive conformance above). This blocks key paths from being passed where a
+/// `@Sendable` function is required — e.g. into `compose`, `withArg`, `Reducer.lift`,
+/// or any `@Sendable`-typed binding.
+///
+/// `get(_:)` performs the lift explicitly, returning a `@Sendable` closure that captures
+/// the (Sendable) key path:
+///
+/// ```swift
+/// let getName: @Sendable (User) -> String = get(\User.name)
+/// let predicate = compose(get(\User.name), equals("Alice"))   // tacit again
+/// ```
+///
+/// For the operator form `^\User.name`, see `Sources/CoreFPOperators/Utilities/KeyPath.swift`.
+public func get<Root: Sendable, Value: Sendable>(_ keyPath: KeyPath<Root, Value>) -> @Sendable (Root) -> Value {
+    { $0[keyPath: keyPath] }
+}
