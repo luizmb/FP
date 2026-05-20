@@ -7,8 +7,8 @@ import Foundation
 /// (>>=) :: (r -> a) -> (a -> r -> b) -> (r -> b)
 public func flatMap<R, A, B>(
     _ f: @escaping @Sendable (R) -> A,
-    _ transform: @escaping @Sendable (A) -> (R) -> B
-) -> (R) -> B {
+    _ transform: @escaping @Sendable (A) -> @Sendable (R) -> B
+) -> @Sendable (R) -> B {
     { r in
         transform(f(r))(r)
     }
@@ -16,8 +16,8 @@ public func flatMap<R, A, B>(
 
 /// Curried version of flatMap for functions
 public func flatMap<R, A, B>(
-    _ transform: @escaping @Sendable (A) -> (R) -> B
-) -> (@escaping @Sendable (R) -> A) -> (R) -> B {
+    _ transform: @escaping @Sendable (A) -> @Sendable (R) -> B
+) -> @Sendable (@escaping @Sendable (R) -> A) -> @Sendable (R) -> B {
     { f in
         { r in
             transform(f(r))(r)
@@ -29,8 +29,8 @@ public func flatMap<R, A, B>(
 /// Flattens a nested function by applying the outer function and then the inner
 /// join :: (r -> (r -> a)) -> (r -> a)
 public func join<R, A>(
-    _ f: @escaping @Sendable (R) -> (R) -> A
-) -> (R) -> A {
+    _ f: @escaping @Sendable (R) -> @Sendable (R) -> A
+) -> @Sendable (R) -> A {
     { r in
         f(r)(r)
     }
@@ -40,19 +40,19 @@ public func join<R, A>(
 /// Composes two monadic functions (Kleisli arrows)
 /// (>=>) :: (a -> r -> b) -> (b -> r -> c) -> (a -> r -> c)
 public func kleisli<R, A: Sendable, B, C>(
-    _ f: @escaping @Sendable (A) -> (R) -> B,
-    _ g: @escaping @Sendable (B) -> (R) -> C
-) -> (A) -> (R) -> C {
+    _ f: @escaping @Sendable (A) -> @Sendable (R) -> B,
+    _ g: @escaping @Sendable (B) -> @Sendable (R) -> C
+) -> @Sendable (A) -> @Sendable (R) -> C {
     { a in
-        flatMap({ r in f(a)(r) }, g)
+        flatMap({ @Sendable r in f(a)(r) }, g)
     }
 }
 
 /// Reverse Kleisli composition for functions
 /// (<=<) :: (b -> r -> c) -> (a -> r -> b) -> (a -> r -> c)
 public func kleisliReverse<R, A: Sendable, B, C>(
-    _ g: @escaping @Sendable (B) -> (R) -> C,
-    _ f: @escaping @Sendable (A) -> (R) -> B
-) -> (A) -> (R) -> C {
+    _ g: @escaping @Sendable (B) -> @Sendable (R) -> C,
+    _ f: @escaping @Sendable (A) -> @Sendable (R) -> B
+) -> @Sendable (A) -> @Sendable (R) -> C {
     kleisli(f, g)
 }

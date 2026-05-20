@@ -5,9 +5,9 @@ import CoreFP
 /// Applicative apply operator for functions (S combinator)
 /// (<*>) :: (r -> a -> b) -> (r -> a) -> (r -> b)
 public func <*> <R, A, B>(
-    _ f: @escaping @Sendable (R) -> (A) -> B,
+    _ f: @escaping @Sendable (R) -> @Sendable (A) -> B,
     _ g: @escaping @Sendable (R) -> A
-) -> (R) -> B {
+) -> @Sendable (R) -> B {
     apply(f, g)
 }
 
@@ -16,7 +16,7 @@ public func <*> <R, A, B>(
 public func *> <R, A, B>(
     _ f: @escaping @Sendable (R) -> A,
     _ g: @escaping @Sendable (R) -> B
-) -> (R) -> B {
+) -> @Sendable (R) -> B {
     { r in
         _ = f(r)
         return g(r)
@@ -28,7 +28,7 @@ public func *> <R, A, B>(
 public func <* <R, A, B>(
     _ f: @escaping @Sendable (R) -> A,
     _ g: @escaping @Sendable (R) -> B
-) -> (R) -> A {
+) -> @Sendable (R) -> A {
     { r in
         let result = f(r)
         _ = g(r)
