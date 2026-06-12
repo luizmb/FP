@@ -15,7 +15,7 @@
 ///
 /// | Module | Contents |
 /// |--------|---------|
-/// | `CoreFP` | Optics (Lens, Prism, AffineTraversal, Iso), Semigroup/Monoid hierarchy, DeferredStream, free functions, SumType protocol |
+/// | `CoreFP` | Optics (Lens, Prism, AffineTraversal, Iso), Semigroup/Monoid hierarchy, free functions, SumType protocol |
 /// | `CoreFPOperators` | All operator definitions: `>>>`, `<<<`, `£`, `<|>`, `<£>`, `<*>`, `>>-`, `>=>`, `<=<`, etc. |
 /// | `DataStructure` | Either, Reader, Writer, Stateful, Validation, NonEmpty |
 /// | `DataStructureOperators` | Operator overloads for all DataStructure types |

@@ -8,14 +8,10 @@
 //   join([[ A ]])               -> [A]                   (Array)
 //   join(A??)                   -> A?                    (Optional)
 //   join(Result<Result<A,E>,E>) -> Result<A, E>          (Result)
-//   join(DeferredTask<DeferredTask<A>>) -> DeferredTask<A>
-//   join(DeferredStream<DeferredStream<A>>) -> DeferredStream<A>
 //
 //   void([A])                   -> [Void]
 //   void(A?)                    -> Void?
 //   void(Result<A,E>)           -> Result<Void, E>
-//   void(DeferredTask<A>)       -> DeferredTask<Void>
-//   void(DeferredStream<A>)     -> DeferredStream<Void>
 
 // MARK: - Array
 
@@ -50,12 +46,3 @@ public func void<A, E: Error>(_ fa: Result<A, E>) -> Result<Void, E> {
     fa.void()
 }
 
-// MARK: - DeferredStream
-
-public func join<A: Sendable>(_ nested: DeferredStream<DeferredStream<A>>) -> DeferredStream<A> {
-    DeferredStream.join(nested)
-}
-
-public func void<A: Sendable>(_ fa: DeferredStream<A>) -> DeferredStream<Void> {
-    fa.void()
-}
