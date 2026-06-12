@@ -2,11 +2,12 @@ public extension DeferredStream {
     // bind / flatMap :: DeferredStream a -> (a -> DeferredStream b) -> DeferredStream b
     // concatMap: sequential, lawful
     func flatMap<B: Sendable>(_ fn: @escaping @Sendable (Element) -> DeferredStream<B>) -> DeferredStream<B> {
-        let outer = self
+        let outerFactory = self.factory
         return DeferredStream<B> {
-            AsyncStream<B> { continuation in
+            let upstream = outerFactory()
+            return AsyncStream<B> { continuation in
                 let task = Task { @Sendable in
-                    for await element in outer {
+                    for await element in upstream {
                         for await b in fn(element) {
                             continuation.yield(b)
                         }
@@ -27,12 +28,15 @@ public extension DeferredStream {
     // alt :: DeferredStream a -> DeferredStream a -> DeferredStream a
     // Concatenation: yield all elements from lhs, then all from rhs.
     static func alt(_ lhs: DeferredStream<Element>, _ rhs: @autoclosure () -> DeferredStream<Element>) -> DeferredStream<Element> {
-        let captured = rhs()
+        let lhsFactory = lhs.factory
+        let rhsFactory = rhs().factory
         return DeferredStream<Element> {
-            AsyncStream<Element> { continuation in
+            let lhsStream = lhsFactory()
+            let rhsStream = rhsFactory()
+            return AsyncStream<Element> { continuation in
                 let task = Task { @Sendable in
-                    for await element in lhs { continuation.yield(element) }
-                    for await element in captured { continuation.yield(element) }
+                    for await element in lhsStream { continuation.yield(element) }
+                    for await element in rhsStream { continuation.yield(element) }
                     continuation.finish()
                 }
                 continuation.onTermination = { _ in task.cancel() }

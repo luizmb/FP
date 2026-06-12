@@ -48,7 +48,7 @@
 public struct DeferredStream<Element: Sendable>: AsyncSequence, Sendable {
     public typealias AsyncIterator = AsyncStream<Element>.AsyncIterator
 
-    let factory: @Sendable () -> AsyncStream<Element>
+    public let factory: @Sendable () -> AsyncStream<Element>
 
     public init(_ factory: @escaping @Sendable () -> AsyncStream<Element>) {
         self.factory = factory

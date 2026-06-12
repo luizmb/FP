@@ -122,11 +122,6 @@ public func <=< <Env: Sendable, A: Sendable, B: Sendable, C: Sendable, E: Error>
 #endif
 
 public func <=< <Env: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Reader<Env, DeferredTask<C>>,
-    _ fn1: @escaping @Sendable (A) -> Reader<Env, DeferredTask<B>>
-) -> (A) -> Reader<Env, DeferredTask<C>> { fn1 >=> fn2 }
-
-public func <=< <Env: Sendable, A: Sendable, B: Sendable, C: Sendable>(
     _ fn2: @escaping @Sendable (B) -> Reader<Env, DeferredStream<C>>,
     _ fn1: @escaping @Sendable (A) -> Reader<Env, DeferredStream<B>>
 ) -> (A) -> Reader<Env, DeferredStream<C>> { fn1 >=> fn2 }
@@ -231,11 +226,6 @@ public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable, E: Error>(
 ) -> (A) -> Writer<W, any Publisher<C, E>> { fn1 >=> fn2 }
 
 #endif
-
-public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Writer<W, DeferredTask<C>>,
-    _ fn1: @escaping @Sendable (A) -> Writer<W, DeferredTask<B>>
-) -> (A) -> Writer<W, DeferredTask<C>> { fn1 >=> fn2 }
 
 public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable>(
     _ fn2: @escaping @Sendable (B) -> Writer<W, DeferredStream<C>>,

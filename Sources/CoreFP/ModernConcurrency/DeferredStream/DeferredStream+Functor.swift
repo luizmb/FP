@@ -1,11 +1,12 @@
 public extension DeferredStream {
     // fmap :: (a -> b) -> DeferredStream a -> DeferredStream b
     func map<B: Sendable>(_ fn: @escaping @Sendable (Element) -> B) -> DeferredStream<B> {
-        let outer = self
+        let outerFactory = self.factory
         return DeferredStream<B> {
-            AsyncStream<B> { continuation in
+            let upstream = outerFactory()
+            return AsyncStream<B> { continuation in
                 let task = Task { @Sendable in
-                    for await element in outer {
+                    for await element in upstream {
                         continuation.yield(fn(element))
                     }
                     continuation.finish()

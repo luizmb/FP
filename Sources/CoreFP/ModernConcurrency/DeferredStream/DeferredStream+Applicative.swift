@@ -25,10 +25,12 @@ public extension DeferredStream {
         _ sb: DeferredStream<B>
     ) -> DeferredStream<(Element, B)> {
         DeferredStream<(Element, B)> {
-            AsyncStream<(Element, B)> { continuation in
+            let streamA = sa.factory()
+            let streamB = sb.factory()
+            return AsyncStream<(Element, B)> { continuation in
                 let task = Task { @Sendable in
-                    var ia = sa.makeAsyncIterator()
-                    var ib = sb.makeAsyncIterator()
+                    var ia = streamA.makeAsyncIterator()
+                    var ib = streamB.makeAsyncIterator()
                     while let a = await ia.next(), let b = await ib.next() {
                         continuation.yield((a, b))
                     }
@@ -47,11 +49,14 @@ public extension DeferredStream {
         _ sc: DeferredStream<C>
     ) -> DeferredStream<(Element, B, C)> {
         DeferredStream<(Element, B, C)> {
-            AsyncStream<(Element, B, C)> { continuation in
+            let streamA = sa.factory()
+            let streamB = sb.factory()
+            let streamC = sc.factory()
+            return AsyncStream<(Element, B, C)> { continuation in
                 let task = Task { @Sendable in
-                    var ia = sa.makeAsyncIterator()
-                    var ib = sb.makeAsyncIterator()
-                    var ic = sc.makeAsyncIterator()
+                    var ia = streamA.makeAsyncIterator()
+                    var ib = streamB.makeAsyncIterator()
+                    var ic = streamC.makeAsyncIterator()
                     while let a = await ia.next(), let b = await ib.next(), let c = await ic.next() {
                         continuation.yield((a, b, c))
                     }
@@ -71,12 +76,16 @@ public extension DeferredStream {
         _ sd: DeferredStream<D>
     ) -> DeferredStream<(Element, B, C, D)> {
         DeferredStream<(Element, B, C, D)> {
-            AsyncStream<(Element, B, C, D)> { continuation in
+            let streamA = sa.factory()
+            let streamB = sb.factory()
+            let streamC = sc.factory()
+            let streamD = sd.factory()
+            return AsyncStream<(Element, B, C, D)> { continuation in
                 let task = Task { @Sendable in
-                    var ia = sa.makeAsyncIterator()
-                    var ib = sb.makeAsyncIterator()
-                    var ic = sc.makeAsyncIterator()
-                    var id = sd.makeAsyncIterator()
+                    var ia = streamA.makeAsyncIterator()
+                    var ib = streamB.makeAsyncIterator()
+                    var ic = streamC.makeAsyncIterator()
+                    var id = streamD.makeAsyncIterator()
                     while let a = await ia.next(), let b = await ib.next(),
                           let c = await ic.next(), let d = await id.next() {
                         continuation.yield((a, b, c, d))
@@ -96,10 +105,12 @@ public func applyDeferredStream<A: Sendable, B: Sendable>(
     _ values: DeferredStream<A>
 ) -> DeferredStream<B> {
     DeferredStream<B> {
-        AsyncStream<B> { continuation in
+        let fnStream = fns.factory()
+        let valStream = values.factory()
+        return AsyncStream<B> { continuation in
             let task = Task { @Sendable in
-                var fnIter = fns.makeAsyncIterator()
-                var valIter = values.makeAsyncIterator()
+                var fnIter = fnStream.makeAsyncIterator()
+                var valIter = valStream.makeAsyncIterator()
                 while let fn = await fnIter.next(), let val = await valIter.next() {
                     continuation.yield(fn(val))
                 }
@@ -116,10 +127,12 @@ public func liftA2DeferredStream<A: Sendable, B: Sendable, C: Sendable>(
 ) -> @Sendable (DeferredStream<A>, DeferredStream<B>) -> DeferredStream<C> {
     { @Sendable sa, sb in
         DeferredStream<C> {
-            AsyncStream<C> { continuation in
+            let streamA = sa.factory()
+            let streamB = sb.factory()
+            return AsyncStream<C> { continuation in
                 let task = Task { @Sendable in
-                    var ia = sa.makeAsyncIterator()
-                    var ib = sb.makeAsyncIterator()
+                    var ia = streamA.makeAsyncIterator()
+                    var ib = streamB.makeAsyncIterator()
                     while let a = await ia.next(), let b = await ib.next() {
                         continuation.yield(fn(a, b))
                     }
