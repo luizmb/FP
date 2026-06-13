@@ -1,9 +1,9 @@
 import Foundation
+import FPMacrosExpander
 import SwiftDiagnostics
 import SwiftParser
 import SwiftSyntax
 import SwiftSyntaxMacros
-import FPMacrosExpander
 
 // MARK: - Minimal context
 

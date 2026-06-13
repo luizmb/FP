@@ -45,4 +45,3 @@ public func join<A, E: Error>(_ nested: Result<Result<A, E>, E>) -> Result<A, E>
 public func void<A, E: Error>(_ fa: Result<A, E>) -> Result<Void, E> {
     fa.void()
 }
-
