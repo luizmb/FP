@@ -526,7 +526,7 @@ Types that support `apply` are called **Applicatives**. Every Monad is an Applic
 
 **Parallel execution**
 
-Because `zip` and `apply` combine *independent* effects, they can run concurrently. When you zip two `DeferredTask` values, both start immediately and the result becomes available when the slower one finishes. `flatMap`, by contrast, can only start the second task after the first provides a value — it is inherently sequential.
+Because `zip` and `apply` combine *independent* effects, they can run concurrently. `flatMap`, by contrast, can only start the second step after the first provides a value — it is inherently sequential.
 
 Use `zip` when two effects don't depend on each other. Use `flatMap` when they do.
 
@@ -609,7 +609,7 @@ Each step can return *multiple* results. `flatMap` collects all combinations:
 
 Think of it as "for each input element, generate zero or more output elements, then collect everything flat."
 
-**Publisher / DeferredTask** — async sequencing
+**Publisher** — async sequencing
 
 The second effect can't start until the first finishes and provides its value:
 
@@ -741,28 +741,6 @@ Optional(1)   <|> Optional(3)   // Optional(1) — first wins if present
 Result<Int, Error>.failure(err) <|> .success(3)   // .success(3)
 Result<Int, Error>.success(1)   <|> .success(3)   // .success(1)
 
-// DeferredStream — second stream starts when first finishes
-let a = DeferredStream<Int>.wrap(AsyncStream.just(1, 2))
-let b = DeferredStream<Int>.wrap(AsyncStream.just(3, 4))
-for await v in (a <|> b) { print(v) }  // 1, 2, 3, 4
-
-// DeferredTask<A?> — race: both start concurrently, first non-nil wins, other cancelled
-let primary:  DeferredTask<User?> = DeferredTask { await primaryAPI.find(id: 42) }
-let fallback: DeferredTask<User?> = DeferredTask { await fallbackAPI.find(id: 42) }
-let user = await (primary <|> fallback).run()
-
-// DeferredTask<Result<A,E>> — race: both start concurrently, first .success wins
-let fast: DeferredTask<Result<Data, Error>> = DeferredTask { await cdn.fetch(url) }
-let slow: DeferredTask<Result<Data, Error>> = DeferredTask { await origin.fetch(url) }
-let data = await (fast <|> slow).run()
-```
-
-`DeferredTask` has no `empty` (a never-resolving task would deadlock), so `<|>` is only available on the transformer variants `DeferredTask<A?>` and `DeferredTask<Result<A,E>>`. For racing two tasks with no fallback semantics, use `race`:
-
-```swift
-// race — first-to-complete wins, other is cancelled (base DeferredTask<A>)
-let fastest = await race(taskA, taskB).run()
-```
 
 ---
 
@@ -1631,7 +1609,7 @@ let increment: @Sendable (Int) -> Stateful<Int, Int> = { n in
 }
 ```
 
-Where state, dependencies, environments, or accumulated logs are unavoidable, the library gives you a *type* to represent them: `Stateful` for mutation, `Reader` for dependencies, `Writer` for accumulated logs, `Either` / `Validation` for failure, `DeferredTask` for async IO. Lift the would-be capture into one of those, and the closure stays capture-free while the dependency becomes visible in the function's type signature.
+Where state, dependencies, environments, or accumulated logs are unavoidable, the library gives you a *type* to represent them: `Stateful` for mutation, `Reader` for dependencies, `Writer` for accumulated logs, `Either` / `Validation` for failure. Lift the would-be capture into one of those, and the closure stays capture-free while the dependency becomes visible in the function's type signature.
 
 Closures that capture nothing can't surprise you. That's the bar; `@Sendable` is the floor.
 
@@ -1639,7 +1617,7 @@ Closures that capture nothing can't surprise you. That's the bar; `@Sendable` is
 
 | Layer | Sendable status |
 |---|---|
-| All algebraic types (`Either`, `Validation`, `Reader`, `Stateful`, `Writer`, `Loading`, `NonEmpty`, `Newtype`, `Endo`, `EndoMut`, `Iso`, `Lens`, `Prism`, `AffineTraversal`, `DeferredTask`, `DeferredStream`, `ZIO`, `ZIOKleisli`, …) | **Conditionally** `Sendable` when their type parameters are Sendable |
+| All algebraic types (`Either`, `Validation`, `Reader`, `Stateful`, `Writer`, `Loading`, `NonEmpty`, `Newtype`, `Endo`, `EndoMut`, `Iso`, `Lens`, `Prism`, `AffineTraversal`, …) | **Conditionally** `Sendable` when their type parameters are Sendable |
 | `Semigroup`, `Monoid`, `SumType2`, `FunctionWrapper`, `CaseMatchable`, `HasCases`, `HasMax`, `HasMin`, `SIMDMonoidScalar` | Refine `Sendable` (conformers must be Sendable) |
 | `apply` / `<*>` / `flatMap` / `>>-` / `>=>` / `liftA2` / `fmap` / `<£>` / `>>>` / composition helpers (`compose`, `curry`, `flip`, `withArg`, …) | Take and return `@Sendable` closures |
 | `KeyPath` / `WritableKeyPath` | Retroactively `@unchecked Sendable` (immutable metadata, safe to share) |
@@ -1671,14 +1649,7 @@ publisher
     .map(parseUser)             // pure composition, @Sendable closures
     .sink { [weak self] user in self?.update(user) }   // boundary
 
-// 2. DeferredTask / DeferredStream — build the body Sendable, do the
-//    side effect outside in a Task that captures self
-Task { @MainActor in
-    let user = await fetchUserTask.run()
-    self.updateLabel(user.name)
-}
-
-// 3. Reader — pass dependencies through the environment, not via capture
+// 2. Reader — pass dependencies through the environment, not via capture
 reader.runReader(env)            // returns a value; act on `self` next to it
 ```
 
@@ -1854,9 +1825,9 @@ users.map(fanout(\.name, \.age, \.isAdmin))
 
 ```swift
 // join — one layer in, same container out
-join([[1, 2], [3, 4]])                                      // [1, 2, 3, 4]
-join(Optional(Optional(42)))                                // Optional(42)
-join(Result<Result<Int, E>, E>.success(.success(42)))       // .success(42)
+join([[1, 2], [3, 4]])                                    // [1, 2, 3, 4]
+join(Optional(Optional(42)))                              // Optional(42)
+join(Result<Result<Int, E>, E>.success(.success(42)))     // .success(42)
 
 // void — like map(ignore); keeps structure, discards values
 void([1, 2, 3])          // [(), (), ()]
@@ -2006,17 +1977,17 @@ All operators require `CoreFPOperators` (for built-in types) or `DataStructureOp
 
 | Operator | Flipped | Description | Types |
 |----------|---------|-------------|-------|
-| `<£>` | `<&>` | Functor map — fn left / container left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Loading`, `Reader`, `Stateful`, `Validation`, `Writer` |
-| `<£^>` | `<&^>` | Transformer map (nested containers) — transformer-only, no base-type overloads | `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` transformer variants |
-| `£>` | `<£` | Replace contents with a constant — container left / value left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Loading`, `Reader`, `Stateful`, `Validation`, `Writer` |
-| `<*>` | — | Applicative apply — wrapped function on left, wrapped value on right | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` |
-| `*>` | `<*` | Sequence two effects — keep right / keep left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` |
-| `>>-` | `-<<` | Monadic bind — container left / fn left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `DeferredTask`, `DeferredStream`, `Either`, `Loading`, `Reader`, `Stateful`, `Writer` |
+| `<£>` | `<&>` | Functor map — fn left / container left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `Either`, `Loading`, `Reader`, `Stateful`, `Validation`, `Writer` |
+| `<£^>` | `<&^>` | Transformer map (nested containers) — transformer-only, no base-type overloads | `Either`, `Reader`, `Stateful`, `Validation`, `Writer` transformer variants |
+| `£>` | `<£` | Replace contents with a constant — container left / value left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `Either`, `Loading`, `Reader`, `Stateful`, `Validation`, `Writer` |
+| `<*>` | — | Applicative apply — wrapped function on left, wrapped value on right | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` |
+| `*>` | `<*` | Sequence two effects — keep right / keep left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` |
+| `>>-` | `-<<` | Monadic bind — container left / fn left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `Either`, `Loading`, `Reader`, `Stateful`, `Writer` |
 | `->>` | `<<-` | Comonad extend — container left / fn left | `Writer` |
-| `>=>` | `<=<` | Kleisli composition — left-to-right / right-to-left | `Optional`, `Array`, `Result`, `DeferredTask`, `DeferredStream`, `Either`, `Loading`, `Reader`, `Stateful`, `Writer` |
+| `>=>` | `<=<` | Kleisli composition — left-to-right / right-to-left | `Optional`, `Array`, `Result`, `Either`, `Loading`, `Reader`, `Stateful`, `Writer` |
 | `>>>` | `<<<` | Function / optics composition — left-to-right / right-to-left | Functions, `Iso`, `Lens`, `Prism`, `AffineTraversal` |
 | `£` / `<\|` | `\|>` | Function application — fn left / value left | Any function |
-| `<\|>` | — | Alternative / choice | `Optional`, `Array`, `Result`, `Publisher`, `DeferredTask<A?>`, `DeferredTask<Result<A,E>>`, `DeferredStream` |
+| `<\|>` | — | Alternative / choice | `Optional`, `Array`, `Result`, `Publisher` |
 | `<>` | — | Semigroup append | `String`, `Array`, `Optional`, `Dictionary`, `Set`, `Result`, `Int.Monoids.*`, `Bool.Monoids.*`, `SIMD4<Int>.Monoids.*`, … |
 | `++` | — | Concatenation | `String`, `Array` |
 | `^` _(prefix)_ | — | Lift `WritableKeyPath` → `Lens`; `KeyPath` → partial `Lens` builder | `WritableKeyPath`, `KeyPath` |
@@ -2039,8 +2010,8 @@ Each type in this library has a dedicated reference page with comprehensive exam
 | [Result](docs/types/Result.md) | Swift's built-in result, extended with `bimap`, Kleisli composition, and Monoid strategies |
 | [Publisher](docs/types/Publisher.md) | Combine's `AnyPublisher`, extended with functional operations |
 | [AsyncSequence](docs/types/AsyncSequence.md) | Swift's `AsyncSequence`, extended with functional operations |
-| [DeferredTask](docs/types/DeferredTask.md) | Lazy async computation — nothing runs until `.run()` is called |
-| [DeferredStream](docs/types/DeferredStream.md) | Lazy async stream — nothing starts until first iteration |
+| [DeferredTask](docs/types/DeferredTask.md) | Lazy async computation — migrated to LongLiveCombine |
+| [DeferredStream](docs/types/DeferredStream.md) | Lazy async stream — migrated to LongLiveCombine |
 | [Binding](docs/types/Binding.md) | SwiftUI's `Binding`, extended with `[optic:]` subscripts for `Lens`, `Iso`, `Prism`, and `AffineTraversal` _(Apple platforms only)_ |
 
 #### DataStructure
@@ -2054,8 +2025,8 @@ Each type in this library has a dedicated reference page with comprehensive exam
 | [Stateful](docs/types/Stateful.md) | State threading monad — wraps `(inout S) -> A` |
 | [Writer](docs/types/Writer.md) | Append-as-you-go monad — produces a value alongside an accumulated log |
 | [NonEmpty](docs/types/NonEmpty.md) | Statically guaranteed non-empty sequence — Semigroup (no Monoid), full FAM + Foldable + Traversable |
-| [ZIO](docs/types/ZIO.md) | Three-layer monad stack (`Reader` + `Result` + `DeferredTask`) — `Env → DeferredTask<Result<Success, Failure>>` |
-| [ZIOKleisli](docs/types/ZIOKleisli.md) | First-class Kleisli arrow in the ZIO monad — `(Input) → ZIO<Env, Success, Failure>` |
+| [ZIO](docs/types/ZIO.md) | Three-layer monad stack — migrated to LongLiveCombine |
+| [ZIOKleisli](docs/types/ZIOKleisli.md) | Kleisli arrow for ZIO — migrated to LongLiveCombine |
 
 ---
 
@@ -2380,7 +2351,7 @@ Test targets: `CoreFPTests`, `CoreFPOperatorsTests`, `DataStructureTests`, `Data
 swift test
 
 # Run a specific test by name (Swift Testing uses / as separator)
-swift test --filter "DeferredTaskTests/flatMap"
+swift test --filter "EitherFunctorTests/flatMap"
 
 # Run all tests whose name contains a word (matches across targets)
 swift test --filter "CoreFP"

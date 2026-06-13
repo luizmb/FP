@@ -1,5 +1,7 @@
 # ZIO
 
+**Migrated to LongLiveCombine.** `ZIO` now lives in the [`ReactiveConcurrency`](https://github.com/luizmb/LongLiveCombine) module of the LongLiveCombine library.
+
 `ZIO<Env, Success, Failure>` is a three-layer monad stack:
 
 ```
@@ -9,226 +11,15 @@ ReaderT Env (ExceptT Failure DeferredTask) Success
 
 It combines dependency injection (`Reader`), typed error handling (`Result`), and deferred async execution (`DeferredTask`) into a single composable type. The environment is supplied once via `provide`; nothing executes until the resulting `DeferredTask` is `.run()`.
 
-Generic parameter order mirrors `Result<Success, Failure>` and Swift convention:
-
-| Parameter | Role |
-|-----------|------|
-| `Env` | Required environment / dependencies |
-| `Success` | Value produced on the happy path |
-| `Failure` | Typed error |
+This type is no longer part of the FP library. Import it from LongLiveCombine instead:
 
 ```swift
-import DataStructure
-
-enum AppError: Error { case notFound }
-struct DB { func find(id: Int) async -> String? { ... } }
-
-let fetchUser: ZIO<DB, String, AppError> = ZIO { db in
-    DeferredTask {
-        guard let user = await db.find(id: 42) else { return .failure(.notFound) }
-        return .success(user)
-    }
-}
-
-// Provide the environment and run
-let result = await fetchUser.provide(DB()).run()  // Result<String, AppError>
+// Package.swift
+.package(url: "https://github.com/luizmb/LongLiveCombine.git", from: "1.0.0")
 ```
-
----
-
-## Construction
 
 ```swift
-// From a closure
-let greet: ZIO<String, String, Never> = ZIO { name in
-    .pure(.success("Hello, \(name)!"))
-}
-
-// Lift a pure value — environment is ignored
-let pure = ZIO<String, Int, Never>.pure(42)
-
-// Ask for the whole environment
-let env = ZIO<String, String, Never>.ask         // ZIO that succeeds with the Env itself
-
-// Transform the environment before use
-let length = ZIO<String, Int, Never>.asks(\.count)  // success = env.count
-
-// Supply a modified environment to self (does not escape the Env type)
-let local = greet.local { name in "Dr. \(name)" }  // transforms env before injection
+import ReactiveConcurrency
 ```
 
----
-
-## `map` — transform the success value
-
-```swift
-let doubled = ZIO<Int, Int, Never>.pure(21).map { $0 * 2 }
-let result  = await doubled.provide(0).run()  // .success(42)
-
-// Static fmap variant for point-free composition
-let tripler: (ZIO<Int, Int, Never>) -> ZIO<Int, Int, Never> = ZIO.fmap { $0 * 3 }
-```
-
----
-
-## `mapError` — transform the failure value
-
-```swift
-enum AppError: Error { case raw(String) }
-enum UIError: Error  { case message(String) }
-
-let mapped = someZIO.mapError { raw in UIError.message(raw.localizedDescription) }
-```
-
----
-
-## `contramapEnvironment` — narrow the environment (contravariant functor on `Env`)
-
-Transform the environment *before* it is passed into the ZIO, widening the accepted type from a specific `Env` to any `GlobalEnv` that contains it.
-
-```swift
-struct AppEnv { var db: DB }
-
-let userZIO: ZIO<DB, String, AppError> = ZIO { db in ... }
-
-// Adapt so it can run with AppEnv instead of DB directly
-let appZIO: ZIO<AppEnv, String, AppError> = userZIO.contramapEnvironment(\.db)
-let result = await appZIO.provide(AppEnv(db: DB())).run()
-
-// Static variant
-let adapt: (ZIO<DB, String, AppError>) -> ZIO<AppEnv, String, AppError>
-    = ZIO.contramapEnvironment(\.db)
-
-// Free function
-let appZIO2 = contramapEnvironmentZIO(\.db, userZIO)
-
-// Operator — `>>>` feeds the env-transform into the ZIO
-let appZIO3 = (\.db as @Sendable (AppEnv) -> DB) >>> userZIO
-```
-
----
-
-## `dimap` — transform both environment and success (bivariant functor)
-
-Combines `contramapEnvironment` (contravariant on `Env`) with `map` (covariant on `Success`) in one pass.
-
-```swift
-let result: ZIO<AppEnv, String, AppError> = userZIO.dimap(
-    \.db,              // (AppEnv) -> DB   — narrow env
-    { $0.uppercased() } // (String) -> String — transform output
-)
-
-// Static variant
-ZIO.dimap(\.db, { $0.uppercased() })(userZIO)
-
-// Free function
-dimapZIO(\.db, { $0.uppercased() }, userZIO)
-```
-
----
-
-## `replace` — discard success value, substitute a constant
-
-```swift
-let unit = ZIO<Int, Int, Never>.pure(42).replace(())  // ZIO<Int, Void, Never>
-```
-
----
-
-## `<*>` — Apply (parallel execution)
-
-Apply a ZIO-wrapped function to a ZIO-wrapped value. Both use the same environment.
-
-```swift
-let fn:  ZIO<Int, @Sendable (Int) -> Int, Never> = .pure({ $0 * 5 })
-let val: ZIO<Int, Int, Never>                    = .pure(3)
-
-let result = await applyZIO(fn, val).provide(0).run()  // .success(15)
-
-// liftA2 — combine two ZIOs with a binary function
-let sum = liftA2ZIO { a, b in a + b }(ZIO.pure(3), ZIO.pure(4))
-```
-
----
-
-## `flatMap` — sequential composition
-
-Chain ZIOs where the second depends on the result of the first.
-
-```swift
-let pipeline = ZIO<DB, String, AppError>.pure("Alice")
-    .flatMap { name in ZIO { db in DeferredTask { .success(await db.greet(name)) } } }
-
-// Static bind variant for point-free composition
-let bound = ZIO<DB, String, AppError>.bind { name in
-    ZIO { db in DeferredTask { .success(await db.greet(name)) } }
-}
-
-// flatMapError — recover from failures
-let recovered = failingZIO.flatMapError { _ in ZIO.pure(defaultValue) }
-```
-
----
-
-## `join` — flatten nested ZIOs
-
-```swift
-let nested: ZIO<Int, ZIO<Int, String, Never>, Never> = .pure(.pure("hello"))
-let flat:   ZIO<Int, String, Never> = ZIO.join(nested)
-```
-
----
-
-## `>=>` / `<=<` — Kleisli composition
-
-Compose two functions that each return a `ZIO`.
-
-```swift
-let parse:    @Sendable (String) -> ZIO<DB, Int, AppError> = { s in .pure(Int(s) ?? 0) }
-let lookup:   @Sendable (Int) -> ZIO<DB, String, AppError> = { id in ... }
-
-let pipeline = parse >=> lookup   // (String) -> ZIO<DB, String, AppError>
-
-// Named functions
-let f = ZIO<DB, Int, AppError>.kleisli(parse, lookup)
-```
-
----
-
-## `seqRight` / `seqLeft` — sequence effects, discard one result
-
-```swift
-let log = ZIO<DB, Void, Never>.pure(())  // logging side effect
-let fetch: ZIO<DB, String, AppError> = ...
-
-let withLog = log.seqRight(fetch)   // log runs first, fetch result returned
-```
-
----
-
-## `void` — discard success value
-
-```swift
-let sideEffect = fetchUser.void()   // ZIO<DB, Void, AppError>
-```
-
----
-
-## `provide` / `callAsFunction`
-
-```swift
-// Both are equivalent — supply the environment and get back a DeferredTask
-let task: DeferredTask<Result<String, AppError>> = fetchUser.provide(DB())
-let same: DeferredTask<Result<String, AppError>> = fetchUser(DB())
-
-let result = await task.run()
-```
-
----
-
-## Module
-
-```swift
-import DataStructure          // ZIO type + named functions
-import DataStructureOperators // Operators (<£>, <*>, >>-, >=>…)
-```
+For documentation on all operations (`map`, `mapError`, `contramapEnvironment`, `dimap`, `flatMap`, `>=>`, `provide`, etc.), see the LongLiveCombine repository.

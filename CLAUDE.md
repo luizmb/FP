@@ -18,7 +18,7 @@ swift test 2>&1 | xcsift
 swift test --target CoreFPTests 2>&1 | xcsift
 
 # Run a specific test by name (Swift Testing uses / as separator)
-swift test --filter "DeferredTaskTests/flatMap" 2>&1 | xcsift
+swift test --filter "EitherFunctorTests/flatMap" 2>&1 | xcsift
 ```
 
 Test targets: `CoreFPTests`, `CoreFPOperatorsTests`, `DataStructureTests`, `DataStructureOperatorsTests`.
@@ -38,7 +38,7 @@ The `FP` umbrella product re-exports all four. **Operators must always delegate 
 
 ### Monad Transformer Naming
 
-Transformers are named `OuterTInner`, e.g. `OptionalTArray` means `Optional<[A]>`, `DeferredTaskTEither` means `DeferredTask<Either<E, A>>`. Each transformer exposes three operations as free functions: `mapT`, `liftA2*`, `flatMapT`.
+Transformers are named `OuterTInner`, e.g. `OptionalTArray` means `Optional<[A]>`, `ReaderTEither` means `Reader<Env, Either<L, A>>`. Each transformer exposes three operations as free functions: `mapT`, `liftA2*`, `flatMapT`.
 
 ### Key Types
 
@@ -47,8 +47,6 @@ Transformers are named `OuterTInner`, e.g. `OptionalTArray` means `Optional<[A]>
 - **`Reader<Env, Out>`** — dependency injection monad; wraps `(Env) -> Out`
 - **`Stateful<S, A>`** — state threading monad; named `Stateful` (not `State`) to avoid SwiftUI conflicts; wraps `(S) -> (S, A)`
 - **`Writer<Log, A>`** — append-as-you-go monad; wraps `(A, Log)`
-- **`DeferredTask<A>`** — lazy async computation (IO monad); nothing executes until `.run()` is called
-- **`DeferredStream<A>`** — lazy async stream; streaming counterpart to `DeferredTask`
 
 ### SumType Protocol
 
@@ -87,7 +85,7 @@ Every operator that has a directional sense has a **flipped counterpart**. When 
 
 The library is **Sendable-first**. Composition (functor / applicative / monad / transformer surfaces, function helpers, optics, free functions like `compose` / `curry` / `flip` / `withArg`) takes and returns `@Sendable` closures everywhere. When adding new surfaces, follow these rules:
 
-- **All algebraic value types** (`Either`, `Validation`, `Reader`, `Stateful`, `Writer`, `Loading`, `NonEmpty`, `Newtype`, `Endo`, `EndoMut`, `Iso`, `Lens`, `Prism`, `AffineTraversal`, `DeferredTask`, `DeferredStream`, `ZIO`, `ZIOKleisli`, …) carry a conditional `extension X: Sendable where T: Sendable [, ...]` conformance. Stored closures are `@Sendable`.
+- **All algebraic value types** (`Either`, `Validation`, `Reader`, `Stateful`, `Writer`, `Loading`, `NonEmpty`, `Newtype`, `Endo`, `EndoMut`, `Iso`, `Lens`, `Prism`, `AffineTraversal`, …) carry a conditional `extension X: Sendable where T: Sendable [, ...]` conformance. Stored closures are `@Sendable`.
 - **Algebra protocols** (`Semigroup`, `Monoid`, `SumType2`, `FunctionWrapper`, `CaseMatchable`, `HasCases`, `HasMax`, `HasMin`, `SIMDMonoidScalar`) refine `Sendable`. Conformers must be Sendable.
 - **`apply` / `<*>` and friends** require the *inner* closure type to be `@Sendable`, e.g. `Either<L, @Sendable (A) -> B>`, `Reader<E, @Sendable (A) -> B>`, `Stateful<S, @Sendable (A) -> B>`, `[@Sendable (A) -> B]`, `Result<@Sendable (A) -> B, E>`, etc. The Either pattern is the template — copy it for new transformer combinations.
 - **Composition free functions** (`compose`, `compose3`, `compose4`, `withArg`, `tuple`, `untuple`, `uncurry`, `flipU`, `call(then:)`, `lazy(_function:)`, `unlazy(_:)`) return `@Sendable` functions unconditionally — they only capture their input closures (which are already `@Sendable`).
