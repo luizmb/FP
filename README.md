@@ -2025,8 +2025,6 @@ Each type in this library has a dedicated reference page with comprehensive exam
 | [Stateful](docs/types/Stateful.md) | State threading monad — wraps `(inout S) -> A` |
 | [Writer](docs/types/Writer.md) | Append-as-you-go monad — produces a value alongside an accumulated log |
 | [NonEmpty](docs/types/NonEmpty.md) | Statically guaranteed non-empty sequence — Semigroup (no Monoid), full FAM + Foldable + Traversable |
-| [ZIO](docs/types/ZIO.md) | Three-layer monad stack — migrated to LongLiveCombine |
-| [ZIOKleisli](docs/types/ZIOKleisli.md) | Kleisli arrow for ZIO — migrated to LongLiveCombine |
 
 ---
 
