@@ -93,8 +93,6 @@ infix operator <|>: AlternativePrecedence
 /// **Precedence:** `KleisliCompositionRight` (right-associative, priority 1).
 ///
 /// ```swift
-/// let getProfile: (UserID) -> DeferredTask<Profile> = getUser >=> enrichProfile
-///
 /// // Optional:
 /// let firstNonZeroDigit: (String) -> Int? = Int.init >=> { $0 > 0 ? $0 : nil }
 /// ```
@@ -107,7 +105,8 @@ infix operator >=>: KleisliCompositionRight
 /// **Precedence:** `KleisliCompositionRight` (right-associative, priority 1).
 ///
 /// ```swift
-/// let getProfile: (UserID) -> DeferredTask<Profile> = enrichProfile <=< getUser
+/// // Optional:
+/// let firstNonZeroDigit: (String) -> Int? = { $0 > 0 ? $0 : nil } <=< Int.init
 /// ```
 infix operator <=<: KleisliCompositionRight
 

@@ -22,7 +22,7 @@ The library is organised as a strict two-layer system.
 
 **Module placement rule:**
 - If either side of a transformer involves `Either`, `Validation`, `Reader`, `Stateful`, or `Writer` → `DataStructure` / `DataStructureOperators`.
-- If both sides are Swift built-ins or `CoreFP` types (`Array`, `Optional`, `Result`, `DeferredTask`, `DeferredStream`, `AsyncStream`, `Publisher`) → `CoreFP` / `CoreFPOperators`.
+- If both sides are Swift built-ins or `CoreFP` types (`Array`, `Optional`, `Result`, `AsyncStream`, `Publisher`) → `CoreFP` / `CoreFPOperators`.
 
 ---
 
@@ -77,8 +77,6 @@ The library is organised as a strict two-layer system.
 | `Array` | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ | ✅ |
 | `Optional` | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ | ✅ |
 | `Result` | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
-| `DeferredTask` | ✅ | ✅ | ✅ | — | — | ✅ | ✅ | — |
-| `DeferredStream` | ✅ | ✅ | ✅ | ✅ | — | ✅ | ✅ | — |
 | `AsyncSequence` | ✅ | ✅ | ✅ | — | — | — | — | — |
 | `Publisher` | ✅ | ✅ | ✅ | ✅ | — | — | — | — |
 | `Function` (`(R)->A`) | ✅ | ✅ | ✅ | — | — | ✅ | — | — |
@@ -112,12 +110,6 @@ Naming: `OuterTInner`. Every stack exposes `mapT` (Functor), `applyXxx` + `liftA
 | `OptionalTResult` | `Optional` | `Result` | ✅ | ✅ | ✅ |
 | `ArrayTOptional` | `Array` | `Optional` | ✅ | ✅ | ✅ |
 | `ArrayTResult` | `Array` | `Result` | ✅ | ✅ | ✅ |
-| `DeferredTaskTOptional` | `DeferredTask` | `Optional` | ✅ | ✅ | ✅ |
-| `DeferredTaskTArray` | `DeferredTask` | `Array` | ✅ | ✅ | ✅ |
-| `DeferredTaskTResult` | `DeferredTask` | `Result` | ✅ | ✅ | ✅ |
-| `DeferredStreamTOptional` | `DeferredStream` | `Optional` | ✅ | ✅ | ✅ |
-| `DeferredStreamTArray` | `DeferredStream` | `Array` | ✅ | ✅ | ✅ |
-| `DeferredStreamTResult` | `DeferredStream` | `Result` | ✅ | ✅ | ✅ |
 | `AsyncSequenceTOptional` | `AsyncSequence` | `Optional` | ✅ | ✅ | ✅ |
 | `AsyncSequenceTArray` | `AsyncSequence` | `Array` | ✅ | ✅ | ✅ |
 | `AsyncSequenceTResult` | `AsyncSequence` | `Result` | ✅ | ✅ | ✅ |
@@ -131,8 +123,6 @@ Naming: `OuterTInner`. Every stack exposes `mapT` (Functor), `applyXxx` + `liftA
 |---|---|---|---|
 | `OptionalTEither` | ✅ | ✅ | ✅ |
 | `ArrayTEither` | ✅ | ✅ | ✅ |
-| `DeferredTaskTEither` | ✅ | ✅ | ✅ |
-| `DeferredStreamTEither` | ✅ | ✅ | ✅ |
 | `AsyncSequenceTEither` | ✅ | ✅ | ✅ |
 | `PublisherTEither` | ✅ | ✅ | ✅ |
 | `EitherTOptional` | ✅ | ✅ | ✅ |
@@ -155,8 +145,6 @@ Validation is an accumulating Applicative. All `ValidationT*` stacks expose Func
 | `ValidationTReader` | ✅ | ✅ |
 | `ValidationTStateful` | ✅ | ✅ |
 | `ValidationTWriter` | ✅ | ✅ |
-| `DeferredTaskTValidation` | ✅ | ✅ |
-| `DeferredStreamTValidation` | ✅ | ✅ |
 
 ### Reader transformer stacks (DataStructure)
 
@@ -170,14 +158,10 @@ Validation is an accumulating Applicative. All `ValidationT*` stacks expose Func
 | `ReaderTReader` | ✅ | ✅ | ✅ |
 | `ReaderTStateful` | ✅ | ✅ | ✅ |
 | `ReaderTWriter` | ✅ | ✅ | ✅ |
-| `ReaderTDeferredTask` | ✅ | ✅ | ✅ |
-| `ReaderTDeferredStream` | ✅ | ✅ | ✅ |
 | `ReaderTAsyncSequence` | ✅ | ✅ | ✅ |
 | `ReaderTPublisher` | ✅ | ✅ | ✅ |
 
 ### Stateful transformer stacks (DataStructure)
-
-`StatefulTDeferredTask` and `StatefulTDeferredStream` have no Monad instance — `flatMapT` would require `inout S` to cross an `@escaping`/`@Sendable` boundary, which Swift prohibits. Applicative is fine because state is threaded synchronously to extract the lazy values before any async execution.
 
 | Stack | F | A | M |
 |---|---|---|---|
@@ -188,8 +172,6 @@ Validation is an accumulating Applicative. All `ValidationT*` stacks expose Func
 | `StatefulTValidation` | ✅ | ✅ | — |
 | `StatefulTReader` | ✅ | ✅ | — |
 | `StatefulTWriter` | ✅ | ✅ | ✅ |
-| `StatefulTDeferredTask` | ✅ | ✅ | — |
-| `StatefulTDeferredStream` | ✅ | ✅ | — |
 | `StatefulTAsyncStream` | ✅ | ✅ | — |
 | `StatefulTPublisher` | ✅ | ✅ | — |
 | `ArrayTStateful` | ✅ | ✅ | ✅ |
@@ -208,8 +190,6 @@ Validation is an accumulating Applicative. All `ValidationT*` stacks expose Func
 | `WriterTValidation` | ✅ | ✅ | — |
 | `WriterTReader` | ✅ | ✅ | ✅ |
 | `WriterTStateful` | ✅ | ✅ | ✅ |
-| `WriterTDeferredTask` | ✅ | ✅ | ✅ |
-| `WriterTDeferredStream` | ✅ | ✅ | ✅ |
 | `WriterTAsyncStream` | ✅ | ✅ | ✅ |
 | `WriterTPublisher` | ✅ | ✅ | — |
 | `ArrayTWriter` | ✅ | ✅ | ✅ |
@@ -250,7 +230,7 @@ Validation is an accumulating Applicative. All `ValidationT*` stacks expose Func
 
 ### Alternative
 
-`<|>` operator for: `Array`, `Optional`, `Result`, `Either`, `DeferredStream` (concatenation), `Validation` (first-success), `Publisher` (first-success via `.catch`).
+`<|>` operator for: `Array`, `Optional`, `Result`, `Either`, `Validation` (first-success), `Publisher` (first-success via `.catch`).
 
 ### Traversable operators
 
@@ -317,7 +297,7 @@ Free curried functions for `Either`, `Result`, `Validation`. No dedicated operat
 ### `join` / `void` free functions
 
 Top-level free functions (not just static methods) for all monadic types:
-- `join` for `Array`, `Optional`, `Result`, `DeferredTask`, `DeferredStream`, `Either`, `Reader`, `Stateful`, `Writer`, `Function`
+- `join` for `Array`, `Optional`, `Result`, `Either`, `Reader`, `Stateful`, `Writer`, `Function`
 - `void` for all of the above plus `Validation`
 
 ### SumType protocol
@@ -335,7 +315,7 @@ Top-level free functions (not just static methods) for all monadic types:
 
 | Situation | Reason |
 |---|---|
-| `StatefulTDeferredTask` / `StatefulTDeferredStream` / `StatefulTPublisher` / `StatefulTAsyncStream` have no Monad | `flatMapT` closure would need to capture `inout S` across `@escaping`/`@Sendable` — Swift prohibits this |
+| `StatefulTPublisher` / `StatefulTAsyncStream` have no Monad | `flatMapT` closure would need to capture `inout S` across `@escaping`/`@Sendable` — Swift prohibits this |
 | `Stateful` is not a Profunctor | State type `S` is invariant (appears in both covariant and contravariant position); proper zooming requires a `Lens` |
 | `ValidationT*` stacks have no Monad | Validation's error-accumulation semantics are incompatible with `flatMap`'s short-circuit requirement |
 | `WriterTPublisher` / `PublisherTStateful` have no Monad | Publisher combinators don't compose cleanly with `inout`-threading state or log-accumulating flatMap |
@@ -347,9 +327,7 @@ Top-level free functions (not just static methods) for all monadic types:
 
 ### Near term
 
-| Item | Notes |
-|---|---|
-| `Alternative` for `DeferredTask` | Race semantics: first-to-succeed; needs a structured-concurrency `race` primitive |
+_(nothing pending)_
 
 ### Medium term
 
@@ -362,7 +340,7 @@ Top-level free functions (not just static methods) for all monadic types:
 | Item | Notes |
 |---|---|
 | MTL-style monad classes (`MonadReader`, `MonadWriter`, `MonadState`) | Lift `ask`/`tell`/`get` through transformer stacks; limited by Swift's lack of multi-param type classes |
-| `MonadError` (`throwError`, `catchError`) | For `Either`, `Result`, `DeferredTask` |
+| `MonadError` (`throwError`, `catchError`) | For `Either`, `Result` |
 | Free Monad | Separates program structure from interpretation; requires `Functor` protocol constraint |
 | Comonad-based stream processing | Cellular automata, sliding-window transforms |
 
@@ -381,7 +359,7 @@ swift test --filter "WriterCoreTests"
 swift test --filter "EitherFunctorTests/bimapCurried"
 ```
 
-**Test targets:** `CoreFPTests`, `CoreFPOperatorsTests`, `DataStructureTests`, `DataStructureOperatorsTests`
+**Test targets:** `CoreFPTests`, `CoreFPOperatorsTests`, `DataStructureTests`, `DataStructureOperatorsTests`, `FPMacrosTests`
 
 ---
 

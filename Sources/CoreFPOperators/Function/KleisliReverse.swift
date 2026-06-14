@@ -61,17 +61,3 @@ public func <=< <A, B: AsyncSequence, C: AsyncSequence>(
     _ fn2: @escaping @Sendable (B.Element) async throws -> C,
     _ fn1: @escaping @Sendable (A) async throws -> B
 ) -> (A) async throws -> AsyncThrowingFlatMapSequence<AsyncThrowingMapSequence<B, C>, C> { fn1 >=> fn2 }
-
-// MARK: - DeferredTask
-
-public func <=< <A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> DeferredTask<C>,
-    _ fn1: @escaping @Sendable (A) -> DeferredTask<B>
-) -> @Sendable (A) -> DeferredTask<C> { fn1 >=> fn2 }
-
-// MARK: - DeferredStream
-
-public func <=< <A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> DeferredStream<C>,
-    _ fn1: @escaping @Sendable (A) -> DeferredStream<B>
-) -> @Sendable (A) -> DeferredStream<C> { fn1 >=> fn2 }
