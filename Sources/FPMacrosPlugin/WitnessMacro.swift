@@ -326,19 +326,19 @@ private func disambiguatedNames(_ methods: [WitnessMethod]) -> [String] {
     }
 }
 
-private func typeToken(_ type: String) -> String {
+func typeToken(_ type: String) -> String {
     let cleaned = type.filter { $0.isLetter || $0.isNumber }
     return cleaned.isEmpty ? "Value" : cleaned
 }
 
 // MARK: - Generics
 
-private struct GenericClause {
+struct GenericClause {
     let declaration: String   // e.g. "<Item, Failure: Error>" or ""
     let usage: String         // e.g. "<Item, Failure>" or ""
 }
 
-private func genericClause(_ associatedTypes: [(name: String, constraint: String?)]) -> GenericClause {
+func genericClause(_ associatedTypes: [(name: String, constraint: String?)]) -> GenericClause {
     guard !associatedTypes.isEmpty else { return GenericClause(declaration: "", usage: "") }
     let decl = associatedTypes
         .map { entry in entry.constraint.map { "\(entry.name): \($0)" } ?? entry.name }
@@ -349,9 +349,9 @@ private func genericClause(_ associatedTypes: [(name: String, constraint: String
 
 // MARK: - Helpers
 
-private let markerProtocols: Set<String> = ["Sendable", "AnyObject", "Any"]
+let markerProtocols: Set<String> = ["Sendable", "AnyObject", "Any"]
 
-private func witnessAccess(_ modifiers: DeclModifierListSyntax) -> AccessLevel {
+func witnessAccess(_ modifiers: DeclModifierListSyntax) -> AccessLevel {
     for modifier in modifiers {
         switch modifier.name.text {
         case "open", "public": return .public   // `open` structs are illegal → public witness
@@ -366,13 +366,13 @@ private func witnessAccess(_ modifiers: DeclModifierListSyntax) -> AccessLevel {
 }
 
 /// Whole-identifier check: does `name` appear as a standalone token in `text`?
-private func appears(_ name: String, in text: String) -> Bool {
+func appears(_ name: String, in text: String) -> Bool {
     substitute(name, with: "\u{0}", in: text).contains("\u{0}")
 }
 
 /// Replace standalone occurrences of identifier `name` with `replacement`, respecting
 /// identifier boundaries so `T` doesn't match inside `Tally`.
-private func substitute(_ name: String, with replacement: String, in text: String) -> String {
+func substitute(_ name: String, with replacement: String, in text: String) -> String {
     func isIdentifierChar(_ c: Character) -> Bool { c.isLetter || c.isNumber || c == "_" }
     var result = ""
     let chars = Array(text)
@@ -391,14 +391,14 @@ private func substitute(_ name: String, with replacement: String, in text: Strin
     return result
 }
 
-private func matches(_ name: String, in chars: [Character], at index: Int) -> Bool {
+func matches(_ name: String, in chars: [Character], at index: Int) -> Bool {
     let target = Array(name)
     guard index + target.count <= chars.count else { return false }
     for offset in 0..<target.count where chars[index + offset] != target[offset] { return false }
     return true
 }
 
-private extension String {
+extension String {
     var capitalizedFirst: String { isEmpty ? self : prefix(1).uppercased() + dropFirst() }
     var lowercasedFirst: String { isEmpty ? self : prefix(1).lowercased() + dropFirst() }
 }

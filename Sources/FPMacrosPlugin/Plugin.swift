@@ -6,6 +6,7 @@ struct FPMacrosPlugin: CompilerPlugin {
     let providingMacros: [any Macro.Type] = [
         LensesMacro.self,
         PrismsMacro.self,
-        WitnessMacro.self
+        WitnessMacro.self,
+        MockMacro.self
     ]
 }
