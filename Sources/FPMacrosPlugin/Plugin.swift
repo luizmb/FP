@@ -5,6 +5,7 @@ import SwiftSyntaxMacros
 struct FPMacrosPlugin: CompilerPlugin {
     let providingMacros: [any Macro.Type] = [
         LensesMacro.self,
-        PrismsMacro.self
+        PrismsMacro.self,
+        WitnessMacro.self
     ]
 }
