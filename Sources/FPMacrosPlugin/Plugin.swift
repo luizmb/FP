@@ -7,6 +7,8 @@ struct FPMacrosPlugin: CompilerPlugin {
         LensesMacro.self,
         PrismsMacro.self,
         WitnessMacro.self,
-        MockMacro.self
+        MockMacro.self,
+        DeriveMonoidMacro.self,
+        IsoMacro.self
     ]
 }
