@@ -161,6 +161,29 @@ public struct PrismsMacro: MemberMacro {
     }
 }
 
+// MARK: - Prismatic conformance
+
+extension PrismsMacro: ExtensionMacro {
+    public static func expansion(
+        of node: AttributeSyntax,
+        attachedTo declaration: some DeclGroupSyntax,
+        providingExtensionsOf type: some TypeSyntaxProtocol,
+        conformingTo protocols: [TypeSyntax],
+        in context: some MacroExpansionContext
+    ) throws -> [ExtensionDeclSyntax] {
+        // Only enums, only when the prism namespace is emitted (`static var prism` is the
+        // conformance witness), and only when the compiler actually asked for the conformance
+        // (`protocols` is empty when the type already conforms).
+        guard let enumDecl = declaration.as(EnumDeclSyntax.self),
+              accessKeyword(from: enumDecl.modifiers) != "private",
+              parseOptions(from: node).emitsPrismStruct,
+              !protocols.isEmpty
+        else { return [] }
+
+        return [try ExtensionDeclSyntax("extension \(type.trimmed): Prismatic {}")]
+    }
+}
+
 // MARK: - Parsing
 
 private func collectCases(from enumDecl: EnumDeclSyntax) -> [CaseInfo] {

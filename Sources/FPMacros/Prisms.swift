@@ -84,6 +84,7 @@
 /// Shape.Cases.allCases                   // [.circle, .rectangle, .empty]
 /// ```
 @attached(member, names: arbitrary)
+@attached(extension, conformances: Prismatic)
 public macro Prisms(_ options: PrismsOptions = .all) =
     #externalMacro(module: "FPMacrosPlugin", type: "PrismsMacro")
 

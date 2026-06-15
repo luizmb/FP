@@ -348,3 +348,26 @@ struct PrismsDynamicMemberTests {
         #expect(none.none != nil)
     }
 }
+
+// MARK: - Prismatic conformance & \.case key paths
+
+private func requirePrismatic<T: Prismatic>(_ type: T.Type) {}
+
+@Suite("@Prisms — Prismatic case key paths")
+struct PrismsCaseKeyPathTests {
+    @Test func autoConformsToPrismatic() {
+        // Compiles only if `@Prisms` auto-conformed `Shape` to `Prismatic` (no hand-written extension).
+        requirePrismatic(Shape.self)
+    }
+
+    @Test func caseKeyPathRecoversPrism() {
+        let prism = Prism(\.circle as PrismKeyPath<Shape, Double>)
+        #expect(prism.preview(.circle(3.14)) == 3.14)
+        #expect(prism.preview(.empty) == nil)
+        if case .circle(let value) = prism.review(2.0) {
+            #expect(value == 2.0)
+        } else {
+            Issue.record("review should build .circle")
+        }
+    }
+}
