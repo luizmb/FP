@@ -2010,8 +2010,6 @@ Each type in this library has a dedicated reference page with comprehensive exam
 | [Result](docs/types/Result.md) | Swift's built-in result, extended with `bimap`, Kleisli composition, and Monoid strategies |
 | [Publisher](docs/types/Publisher.md) | Combine's `AnyPublisher`, extended with functional operations |
 | [AsyncSequence](docs/types/AsyncSequence.md) | Swift's `AsyncSequence`, extended with functional operations |
-| [DeferredTask](docs/types/DeferredTask.md) | Lazy async computation — migrated to ReactiveConcurrency |
-| [DeferredStream](docs/types/DeferredStream.md) | Lazy async stream — migrated to ReactiveConcurrency |
 | [Binding](docs/types/Binding.md) | SwiftUI's `Binding`, extended with `[optic:]` subscripts for `Lens`, `Iso`, `Prism`, and `AffineTraversal` _(Apple platforms only)_ |
 
 #### DataStructure

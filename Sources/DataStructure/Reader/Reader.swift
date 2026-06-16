@@ -77,7 +77,7 @@ import Foundation
 /// fetchUser >=> enrichProfile    // Kleisli composition
 /// ```
 ///
-/// - SeeAlso: ``Writer``, ``Stateful``, ``ZIO``, ``FunctionWrapper``
+/// - SeeAlso: ``Writer``, ``Stateful``, ``FunctionWrapper``
 public struct Reader<Environment, Output>: FunctionWrapper {
     /// The underlying function. Call this (or use `callAsFunction`) to run the reader.
     public let runReader: @Sendable (Environment) -> Output

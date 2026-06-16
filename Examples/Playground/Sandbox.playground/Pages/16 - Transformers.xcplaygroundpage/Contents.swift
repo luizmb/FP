@@ -6,7 +6,6 @@ import FP
 // Stack two monadic contexts. Naming: OuterTInner.
 //   OptionalTArray      = [A]?              Optional<Array<A>>
 //   EitherTArray        = Either<L, [A]>
-//   DeferredTaskTEither = DeferredTask<Either<L, A>>
 //
 // mapT / flatMapT / liftA2T map over the INNER type through
 // BOTH layers. Operators: <£^> (fn left), <&^> (value left).
@@ -86,29 +85,6 @@ func eitherTArray() {
     // left("too small") — first element triggered the left
 }
 // learn(eitherTArray)
-
-// MARK: - DeferredTaskTEither  (DeferredTask<Either<L, A>>)
-
-func deferredTaskTEither() async {
-    let taskRight: DeferredTask<Either<String, Int>> = DeferredTask { .right(42) }
-    let taskLeft:  DeferredTask<Either<String, Int>> = DeferredTask { .left("not found") }
-
-    // mapT — transform the success value inside the async Either
-    let mapped = mapTDeferredTaskEither({ $0 * 2 }, taskRight)   // named free function, still lazy
-    let withOp = { $0 * 2 } <£^> taskRight
-
-    await mapped.run()                                           // right(84)
-    await withOp.run()                                           // right(84)
-    await mapTDeferredTaskEither({ $0 * 2 }, taskLeft).run()     // left("not found")
-
-    // flatMapT — chain async-failable steps
-    let chained = flatMapTDeferredTaskEither(taskRight) { n in
-        DeferredTask { n > 0 ? Either<String, Int>.right(n + 1) : .left("non-positive") }
-    }
-
-    await chained.run()   // right(43)
-}
-// learn(deferredTaskTEither)
 
 // MARK: - ArrayTOptional  ([A?])
 

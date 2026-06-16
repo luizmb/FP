@@ -141,49 +141,6 @@ func functorStateful() {
 }
 // learn(functorStateful)
 
-// MARK: - DeferredTask
-
-func functorDeferredTask() async {
-    let task     = DeferredTask { 5 }
-    let doubled  = task.fmap { $0 * 2 }   // still lazy
-    let withOp1  = { $0 * 2 } <£> task    // fn left
-    let withOp2  = task <&> { $0 * 2 }    // value left
-    let replaced = task £> "done"          // replace
-
-    await doubled.run()    // 10
-    await withOp1.run()    // 10
-    await withOp2.run()    // 10
-    await replaced.run()   // "done"
-}
-// learn(functorDeferredTask)
-
-// MARK: - DeferredStream
-
-func functorDeferredStream() async {
-    let stream = DeferredStream {
-        AsyncStream<Int> { c in
-            for i in 1...3 { c.yield(i) }
-            c.finish()
-        }
-    }
-
-    let doubled  = stream.fmap { $0 * 2 }   // still lazy
-    let withOp1  = { $0 * 2 } <£> stream    // fn left
-    let withOp2  = stream <&> { $0 * 2 }    // value left
-    let replaced = stream £> "x"            // replace each element
-
-    var r1: [Int] = [], r2: [Int] = [], r3: [Int] = [], r4: [String] = []
-    for await v in doubled  { r1.append(v) }
-    for await v in withOp1  { r2.append(v) }
-    for await v in withOp2  { r3.append(v) }
-    for await v in replaced { r4.append(v) }
-    r1   // [2, 4, 6]
-    r2   // [2, 4, 6]
-    r3   // [2, 4, 6]
-    r4   // ["x", "x", "x"]
-}
-// learn(functorDeferredStream)
-
 // MARK: - Publisher (Combine)
 
 func functorPublisher() async {
