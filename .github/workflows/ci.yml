@@ -78,3 +78,22 @@ jobs:
         uses: skiptools/swift-android-action@v2
         with:
           free-disk-space: true
+
+  test-windows:
+    name: Build & Test (Windows)
+    runs-on: windows-latest
+    steps:
+      # Installs the Swift toolchain for Windows (uses the Visual Studio C++ tools preinstalled on
+      # the runner). Toolchain setup must come before checkout/build.
+      - uses: compnerd/gha-setup-swift@main
+        with:
+          swift-version: swift-6.2-release
+          swift-build: 6.2-RELEASE
+
+      - uses: actions/checkout@v6
+
+      - name: Build
+        run: swift build
+
+      - name: Test
+        run: swift test
