@@ -238,7 +238,9 @@ extension Double: HasMax, HasMin {
     }
 }
 
-#if arch(x86_64)
+// Float80 exists only on x86, and even there it is unavailable on Windows and Android
+// (the Swift Android SDK marks it unavailable on the target platform regardless of arch).
+#if arch(x86_64) && !os(Windows) && !os(Android)
 extension Float80: HasMax, HasMin {
     public typealias Monoids = NumericMonoid<Float80>
 
