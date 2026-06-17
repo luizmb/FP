@@ -5,11 +5,8 @@ import Foundation
 // `Optional<Wrapped>` is generic, so the static `prism` accessor is a computed
 // `static var` returning a fresh `Prisms()` per access.
 //
-// Unlike our own enum types (Either, Validation, Loading), `Optional` is part of the
-// Swift standard library, so we cannot add `@dynamicMemberLookup` to its declaration.
-// The per-case `.some` and `.none` accessors are therefore kept as explicit computed
-// properties rather than being collapsed into a subscript. They predate this prism but
-// remain the ergonomic call-site path.
+// `Prismatic` conformance unlocks `\.case` key paths; payload extraction goes through the
+// prism (`Optional.prism.some.preview(x)`) or `\.some`.
 
 public extension Optional {
     struct Prisms: Sendable {
@@ -24,9 +21,6 @@ public extension Optional {
     }
 
     static var prism: Prisms { Prisms() }
-
-    var some: Wrapped? { a }
-    var none: Void? { if case .none = self { () } else { nil } }
 
     enum Cases: CoreFP.CaseMatchable {
         public typealias Subject = Wrapped?
@@ -45,3 +39,4 @@ public extension Optional {
 }
 
 extension Optional: CoreFP.HasCases {}
+extension Optional: CoreFP.Prismatic {}

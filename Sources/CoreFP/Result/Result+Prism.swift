@@ -5,10 +5,8 @@ import Foundation
 // `Result<Success, Failure>` is generic, so the static `prism` accessor is a computed
 // `static var` returning a fresh `Prisms()` per access.
 //
-// Unlike our own enum types (Either, Validation, Loading), `Result` is part of the
-// Swift standard library, so we cannot add `@dynamicMemberLookup` to its declaration.
-// The per-case `.success` and `.failure` accessors are therefore kept as explicit
-// computed properties rather than being collapsed into a subscript.
+// `Prismatic` conformance unlocks `\.case` key paths; payload extraction goes through the
+// prism (`Result.prism.success.preview(x)`) or `\.success`.
 
 public extension Result {
     struct Prisms: Sendable {
@@ -23,9 +21,6 @@ public extension Result {
     }
 
     static var prism: Prisms { Prisms() }
-
-    var success: Success? { a }
-    var failure: Failure? { b }
 
     enum Cases: CoreFP.CaseMatchable {
         public typealias Subject = Result
@@ -44,3 +39,4 @@ public extension Result {
 }
 
 extension Result: CoreFP.HasCases {}
+extension Result: CoreFP.Prismatic {}

@@ -7,9 +7,8 @@ import Foundation
 // static `prism` accessor is a computed `static var` returning a fresh `Prisms()` per
 // access — matching what the macro emits for any generic host.
 //
-// `@dynamicMemberLookup` lives on the `Either` declaration in `Either.swift`; the
-// subscript here lights up `either.left` / `either.right` accessors through a single
-// keypath-driven subscript rather than per-case computed properties.
+// `Prismatic` conformance unlocks `\.case` key paths; payload extraction goes through the
+// prism (`Either.prism.left.preview(x)`) or `\.left`.
 
 public extension Either {
     struct Prisms: Sendable {
@@ -24,12 +23,6 @@ public extension Either {
     }
 
     static var prism: Prisms { Prisms() }
-
-    subscript<PrismFocus>(
-        dynamicMember keyPath: KeyPath<Prisms, CoreFP.Prism<Either, PrismFocus>>
-    ) -> PrismFocus? {
-        Self.prism[keyPath: keyPath].preview(self)
-    }
 
     enum Cases: CoreFP.CaseMatchable {
         public typealias Subject = Either
@@ -48,3 +41,4 @@ public extension Either {
 }
 
 extension Either: CoreFP.HasCases {}
+extension Either: CoreFP.Prismatic {}

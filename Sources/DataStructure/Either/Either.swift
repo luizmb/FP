@@ -64,7 +64,6 @@ import Foundation
 /// predicate over the case names. See `Either+Prism.swift`.
 ///
 /// - SeeAlso: ``Validation``, ``SumType2``, `Result`
-@dynamicMemberLookup
 public enum Either<A, B>: SumType2 {
     /// The left case — by convention, often used for errors or "alternative" values.
     case left(A)

@@ -6,9 +6,8 @@ import CoreFP
 // static `prism` accessor is a computed `static var` returning a fresh `Prisms()` per
 // access — matching what the macro emits for any generic host.
 //
-// `@dynamicMemberLookup` lives on the `Validation` declaration in `Validation.swift`;
-// the subscript here lights up `validation.failure` / `validation.success` accessors
-// through a single keypath-driven subscript rather than per-case computed properties.
+// `Prismatic` conformance unlocks `\.case` key paths; payload extraction goes through the
+// prism (`Validation.prism.success.preview(x)`) or `\.success`.
 
 public extension Validation {
     struct Prisms: Sendable {
@@ -23,12 +22,6 @@ public extension Validation {
     }
 
     static var prism: Prisms { Prisms() }
-
-    subscript<PrismFocus>(
-        dynamicMember keyPath: KeyPath<Prisms, CoreFP.Prism<Validation, PrismFocus>>
-    ) -> PrismFocus? {
-        Self.prism[keyPath: keyPath].preview(self)
-    }
 
     enum Cases: CoreFP.CaseMatchable {
         public typealias Subject = Validation
@@ -47,3 +40,4 @@ public extension Validation {
 }
 
 extension Validation: CoreFP.HasCases {}
+extension Validation: CoreFP.Prismatic {}
