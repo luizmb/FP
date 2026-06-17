@@ -209,64 +209,6 @@ func applicativeStateful() {
 }
 // learn(applicativeStateful)
 
-// MARK: - DeferredTask
-
-func applicativeDeferredTask() async {
-    let taskA = DeferredTask { 3 }
-    let taskB = DeferredTask { 4 }
-
-    // liftA2 — both run sequentially, results combined
-    let sumTask = liftA2DeferredTask(+)(taskA, taskB)
-
-    // apply — wrapped function applied to wrapped value
-    let fnTask  = DeferredTask<@Sendable (Int) -> Int> { { $0 * 10 } }
-    let product = fnTask <*> taskA
-
-    // seqRight / seqLeft
-    let seqR   = taskA *> taskB
-    let seqL   = taskA <* taskB
-
-    // zip
-    let zipped = DeferredTask<Int>.zip(taskA, taskB)
-
-    await sumTask.run()    // 7
-    await product.run()    // 30
-    await seqR.run()       // 4
-    await seqL.run()       // 3
-    await zipped.run()     // (3, 4)
-}
-// learn(applicativeDeferredTask)
-
-// MARK: - DeferredStream
-
-func applicativeDeferredStream() async {
-    // NOTE: DeferredStream's liftA2 is zip-based — pairs elements positionally,
-    // stopping when either stream ends. This differs from Array's cartesian product.
-    let streamA = DeferredStream { AsyncStream<Int> { c in c.yield(1); c.yield(2); c.finish() } }
-    let streamB = DeferredStream { AsyncStream<Int> { c in c.yield(10); c.yield(20); c.finish() } }
-
-    // liftA2 — zip elements pairwise, apply fn
-    let sumStream = liftA2DeferredStream(+)(streamA, streamB)
-    let seqR      = streamA *> streamB
-    let seqL      = streamA <* streamB
-    let zipped    = DeferredStream<Int>.zip(streamA, streamB)
-
-    var sum: [Int] = []
-    for await v in sumStream { sum.append(v) }
-    sum    // [11, 22] — (1+10), (2+20)
-
-    var zp: [(Int, Int)] = []
-    for await v in zipped { zp.append(v) }
-    zp     // [(1, 10), (2, 20)]
-
-    var sr: [Int] = [], sl: [Int] = []
-    for await v in seqR { sr.append(v) }
-    for await v in seqL { sl.append(v) }
-    sr    // [10, 20]
-    sl    // [1, 2]
-}
-// learn(applicativeDeferredStream)
-
 // MARK: - Publisher (Combine)
 
 func applicativePublisher() async {

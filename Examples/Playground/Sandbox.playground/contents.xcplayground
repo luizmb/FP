@@ -13,8 +13,6 @@
         <page name='10 - Reader'/>
         <page name='11 - Writer'/>
         <page name='12 - Stateful'/>
-        <page name='13 - DeferredTask'/>
-        <page name='14 - DeferredStream'/>
         <page name='15 - Optics'/>
         <page name='16 - Transformers'/>
         <page name='17 - Function Utilities'/>
