@@ -44,4 +44,23 @@ public protocol Semigroup: Sendable {
     /// The operation must satisfy associativity:
     /// `combine(combine(a, b), c) == combine(a, combine(b, c))`
     static func combine(_ lhs: Self, _ rhs: Self) -> Self
+
+    /// Folds a non-empty run of values left-to-right.
+    ///
+    /// A **customization point**: the default folds pairwise with ``combine(_:_:)``, which is
+    /// O(n) calls — but for a type whose `combine` copies a growing accumulator (any
+    /// concatenative `Semigroup`, e.g. `Array`/`String`), that default is O(n²). Such types
+    /// should override `sconcat` with a single-pass build.
+    ///
+    /// Because this is a protocol *requirement* (not an extension-only method), overrides are
+    /// dispatched dynamically — so a generic caller, the free ``sconcat(_:_:)`` function, and
+    /// the default ``Monoid/mconcat(_:)`` all pick up a type's override.
+    static func sconcat(_ first: Self, _ rest: [Self]) -> Self
+}
+
+public extension Semigroup {
+    /// Default `sconcat`: left fold via ``combine(_:_:)``. O(n) calls to `combine`.
+    static func sconcat(_ first: Self, _ rest: [Self]) -> Self {
+        rest.reduce(first, combine)
+    }
 }

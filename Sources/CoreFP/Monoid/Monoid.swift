@@ -46,4 +46,22 @@ public protocol Monoid: Semigroup {
     /// - `combine(identity, x) == x` (left identity)
     /// - `combine(x, identity) == x` (right identity)
     static var identity: Self { get }
+
+    /// Folds any (possibly empty) array of values into one, returning ``identity`` for `[]`.
+    ///
+    /// A **customization point** mirroring ``Semigroup/sconcat(_:_:)``. The default returns
+    /// `identity` for the empty array and otherwise delegates to `sconcat` — so a type that
+    /// overrides only `sconcat` gets an improved `mconcat` for free (the delegation dispatches
+    /// dynamically through the witness table). Override directly only when a type has a faster
+    /// whole-array fold that isn't naturally expressed via `sconcat`.
+    static func mconcat(_ values: [Self]) -> Self
+}
+
+public extension Monoid {
+    /// Default `mconcat`: ``identity`` for `[]`, else ``Semigroup/sconcat(_:_:)`` of head + tail.
+    static func mconcat(_ values: [Self]) -> Self {
+        guard let first = values.first else { return identity }
+        // `Self.sconcat` (the requirement) so a type's `sconcat` override drives `mconcat` too.
+        return Self.sconcat(first, Array(values.dropFirst()))
+    }
 }
