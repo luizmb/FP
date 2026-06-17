@@ -62,3 +62,19 @@ jobs:
 
       - name: Test
         run: swift test 2>&1
+
+  test-android:
+    name: Build & Test (Android)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      # Cross-compiles with the Swift Android SDK and runs the suite on an emulator the action
+      # provisions. The action caches the downloaded SDK/toolchain internally, so only the first
+      # run pays the full download. --no-parallel keeps the suite reliable on the constrained
+      # emulator (its single/dual-core CPU can starve parallel test tasks).
+      - name: Test Swift Package on Android
+        uses: skiptools/swift-android-action@v2
+        with:
+          swift-test-flags: --no-parallel
+          free-disk-space: true
