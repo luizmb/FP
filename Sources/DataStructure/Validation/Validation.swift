@@ -66,7 +66,6 @@ import CoreFP
 /// names. See `Validation+Prism.swift`.
 ///
 /// - SeeAlso: ``Either``, ``NonEmpty``, ``Semigroup``
-@dynamicMemberLookup
 public enum Validation<E: Semigroup, A> {
     /// A failed validation with accumulated error(s).
     case failure(E)

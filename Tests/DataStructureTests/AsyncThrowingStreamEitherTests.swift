@@ -23,9 +23,9 @@ import Testing
         }
 
         #expect(results.count == 3)
-        #expect(results[0].right == 1)
-        #expect(results[1].right == 2)
-        #expect(results[2].right == 3)
+        #expect(Either<any Error, Int>.prism.right.preview(results[0]) == 1)
+        #expect(Either<any Error, Int>.prism.right.preview(results[1]) == 2)
+        #expect(Either<any Error, Int>.prism.right.preview(results[2]) == 3)
     }
 
     @Test func toEitherStreamWithError() async {
@@ -40,7 +40,7 @@ import Testing
         }
 
         #expect(results.count == 2)
-        #expect(results[0].right == 1)
+        #expect(Either<any Error, Int>.prism.right.preview(results[0]) == 1)
         guard case .left(let error) = results[1] else {
             Issue.record("Expected .left error")
             return

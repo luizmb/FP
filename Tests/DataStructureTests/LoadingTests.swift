@@ -132,17 +132,10 @@ struct LoadingPrismTests {
         #expect(doubled == .loaded(10))
     }
 
-    @Test func computedProperties_mirrorPrismPreview() {
-        let loaded: Sut = .loaded(42)
-        #expect(loaded.loaded == 42)
-        #expect(loaded.idle == nil)
-
-        let loading: Sut = .loading(previous: 7)
-        #expect(loading.loading == .some(.some(7)))
-
-        let failed: Sut = .failed(error: .network, previous: 3)
-        #expect(failed.failed?.0 == .network)
-        #expect(failed.failed?.1 == 3)
+    @Test func caseKeyPath_recoversPrism() {
+        let prism = Prism(\.loaded as PrismKeyPath<Sut, Int>)
+        #expect(prism.preview(.loaded(42)) == 42)
+        #expect(prism.preview(.idle) == nil)
     }
 }
 

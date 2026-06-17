@@ -6,14 +6,11 @@ import SwiftSyntaxMacros
 
 struct PrismsEmitFlags {
     var prisms: Bool
-    var properties: Bool
     var cases: Bool
 
-    static var all: PrismsEmitFlags { PrismsEmitFlags(prisms: true, properties: true, cases: true) }
+    static var all: PrismsEmitFlags { PrismsEmitFlags(prisms: true, cases: true) }
 
-    /// `.properties` requires `.prisms` (the per-case accessor or DML subscript reads
-    /// from `Self.prism`), so we auto-promote silently.
-    var emitsPrismStruct: Bool { prisms || properties }
+    var emitsPrismStruct: Bool { prisms }
 }
 
 private func parseOptions(from node: AttributeSyntax) -> PrismsEmitFlags {
@@ -32,7 +29,6 @@ private func parseOptions(from node: AttributeSyntax) -> PrismsEmitFlags {
 
     return PrismsEmitFlags(
         prisms: names.contains("prisms"),
-        properties: names.contains("properties"),
         cases: names.contains("cases")
     )
 }
@@ -127,7 +123,6 @@ public struct PrismsMacro: MemberMacro {
 
         let enumName = enumDecl.name.trimmed.text
         let isGeneric = enumDecl.genericParameterClause != nil
-        let hasDynamicMemberLookup = hasDynamicMemberLookupAttribute(on: enumDecl)
         let cases = collectCases(from: enumDecl)
         let flags = parseOptions(from: node)
 
@@ -136,20 +131,6 @@ public struct PrismsMacro: MemberMacro {
         if flags.emitsPrismStruct {
             members.append(makePrismsStruct(enumName: enumName, access: access, cases: cases))
             members.append(makeStaticPrism(enumName: enumName, access: access, isGeneric: isGeneric))
-        }
-
-        if flags.properties {
-            if hasDynamicMemberLookup {
-                members.append(makeDynamicSubscript(enumName: enumName, access: access))
-            } else {
-                if !cases.isEmpty {
-                    context.diagnose(Diagnostic(
-                        node: node,
-                        message: PrismsDiagnostic.missingDynamicMemberLookup
-                    ))
-                }
-                members.append(contentsOf: cases.map { makeComputedProperty(info: $0, access: access) })
-            }
         }
 
         if flags.cases {
@@ -218,13 +199,6 @@ private func accessPrefix(_ access: String) -> String {
     access.isEmpty ? "" : "\(access) "
 }
 
-private func hasDynamicMemberLookupAttribute(on enumDecl: EnumDeclSyntax) -> Bool {
-    enumDecl.attributes.contains { attr in
-        guard case let .attribute(attribute) = attr else { return false }
-        return attribute.attributeName.trimmedDescription == "dynamicMemberLookup"
-    }
-}
-
 // MARK: - Code generation
 
 /// The `Prisms` struct holds one `Prism` per case as a stored property with a default
@@ -255,29 +229,6 @@ private func makeStaticPrism(enumName: String, access: String, isGeneric: Bool) 
         return DeclSyntax(stringLiteral: "\(prefix)static var prism: Prisms { Prisms() }")
     }
     return DeclSyntax(stringLiteral: "\(prefix)static let prism = Prisms()")
-}
-
-/// The dynamic-member subscript lights up when the user adds `@dynamicMemberLookup` to
-/// the host enum. Each `\\Prisms.caseName` keypath has type `KeyPath<Prisms, Prism<Self, PrismFocus>>`
-/// for the concrete focus type of that case, so Swift binds `PrismFocus` correctly per
-/// call site.
-///
-/// We use the unusual name `PrismFocus` rather than a one-letter name so the generic
-/// parameter never shadows a host enum's own generic parameter.
-private func makeDynamicSubscript(enumName: String, access: String) -> DeclSyntax {
-    let prefix = accessPrefix(access)
-    let body = "Self.prism[keyPath: keyPath].preview(self)"
-    let kpType = "KeyPath<Prisms, CoreFP.Prism<\(enumName), PrismFocus>>"
-    return DeclSyntax(stringLiteral:
-        "\(prefix)subscript<PrismFocus>(dynamicMember keyPath: \(kpType)) -> PrismFocus? { \(body) }"
-    )
-}
-
-private func makeComputedProperty(info: CaseInfo, access: String) -> DeclSyntax {
-    let prefix = accessPrefix(access)
-    return DeclSyntax(stringLiteral:
-        "\(prefix)var \(info.name): \(info.focusType)? { Self.prism.\(info.name).preview(self) }"
-    )
 }
 
 private func makeIsFunc(access: String, hasCases: Bool) -> DeclSyntax {
@@ -318,7 +269,6 @@ private func makeCasesEnum(enumName: String, access: String, cases: [CaseInfo]) 
 private enum PrismsDiagnostic: DiagnosticMessage {
     case notAnEnum
     case privateHostUnsupported
-    case missingDynamicMemberLookup
 
     var message: String {
         switch self {
@@ -328,9 +278,6 @@ private enum PrismsDiagnostic: DiagnosticMessage {
             "@Prisms cannot be applied to `private` enums. Change the declaration to `fileprivate`, "
                 + "`internal`, or higher. (`private` is the only access level whose type-scope semantics "
                 + "block the generated namespace; `fileprivate` is functionally identical at file scope.)"
-        case .missingDynamicMemberLookup:
-            "@Prisms is emitting one computed property per case. To collapse them into a single "
-                + "subscript, add `@dynamicMemberLookup` to this enum's declaration."
         }
     }
 
@@ -339,7 +286,6 @@ private enum PrismsDiagnostic: DiagnosticMessage {
     var severity: DiagnosticSeverity {
         switch self {
         case .notAnEnum, .privateHostUnsupported: .error
-        case .missingDynamicMemberLookup:         .warning
         }
     }
 }

@@ -5,9 +5,8 @@ import Foundation
 //
 // Because `Loading` is generic, Swift forbids `static let` in its scope, so the static
 // `prism` accessor is a computed `static var` returning a fresh `Prisms()` per access —
-// matching what the macro emits for any generic host. The dynamic-member subscript is
-// present so `loading.idle`, `loading.loaded`, etc. resolve through a single subscript
-// rather than per-case computed properties.
+// matching what the macro emits for any generic host. `Prismatic` conformance unlocks
+// `\.case` key paths; payload extraction goes through the prism or `\.case`.
 
 public extension Loading {
     struct Prisms: Sendable {
@@ -31,12 +30,6 @@ public extension Loading {
 
     static var prism: Prisms { Prisms() }
 
-    subscript<PrismFocus>(
-        dynamicMember keyPath: KeyPath<Prisms, CoreFP.Prism<Loading, PrismFocus>>
-    ) -> PrismFocus? {
-        Self.prism[keyPath: keyPath].preview(self)
-    }
-
     enum Cases: CoreFP.CaseMatchable {
         public typealias Subject = Loading
         case idle, loading, loaded, failed
@@ -56,3 +49,4 @@ public extension Loading {
 }
 
 extension Loading: CoreFP.HasCases {}
+extension Loading: CoreFP.Prismatic {}

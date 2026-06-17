@@ -43,13 +43,11 @@ import Foundation
 /// ## Prisms
 ///
 /// Each case exposes a `CoreFP.Prism` via the nested `Prisms` struct (`Loading.prism.idle`,
-/// `.loading`, `.loaded`, `.failed`) and per-case accessors via `@dynamicMemberLookup`
-/// (`state.loaded`, `state.failed`, etc.). An `is(_:)` predicate over the nested
-/// `Cases: CaseMatchable` enum is also provided — mirroring what FP's `@Prisms` macro
-/// generates for a non-generic enum.
+/// `.loading`, `.loaded`, `.failed`), `Prismatic` conformance for `\.case` key paths, and an
+/// `is(_:)` predicate over the nested `Cases: CaseMatchable` enum — mirroring what FP's
+/// `@Prisms` macro generates.
 ///
 /// - SeeAlso: ``map(_:)``, ``zip(_:_:)``, ``flatMap(_:)``, ``catch(_:)``, ``startLoading()``
-@dynamicMemberLookup
 public enum Loading<Success: Sendable, Failure: Error & Sendable>: Sendable {
     /// No fetch has been initiated yet.
     case idle
