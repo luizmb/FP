@@ -11,8 +11,8 @@ import Testing
         let rf: Result<Writer<[String], @Sendable (Int) -> String>, TestError> = .success(Writer({ @Sendable in "\($0)" }, ["fn"]))
         let ra: Result<Writer<[String], Int>, TestError> = .success(Writer(7, ["val"]))
         let result = applyResultWriter(rf, ra)
-        #expect(result.success?.value == "7")
-        #expect(result.success?.log == ["fn", "val"])
+        #expect(Result.prism.success.preview(result)?.value == "7")
+        #expect(Result.prism.success.preview(result)?.log == ["fn", "val"])
     }
 
     @Test func applyFailureFn() {
@@ -33,8 +33,8 @@ import Testing
         let lhs: Result<Writer<[String], Int>, TestError> = .success(Writer(1, ["a"]))
         let rhs: Result<Writer<[String], String>, TestError> = .success(Writer("hello", ["b"]))
         let result = seqRightResultWriter(lhs, rhs)
-        #expect(result.success?.value == "hello")
-        #expect(result.success?.log == ["a", "b"])
+        #expect(Result.prism.success.preview(result)?.value == "hello")
+        #expect(Result.prism.success.preview(result)?.log == ["a", "b"])
     }
 
     @Test func seqRightFailure() {
@@ -48,8 +48,8 @@ import Testing
         let lhs: Result<Writer<[String], Int>, TestError> = .success(Writer(99, ["a"]))
         let rhs: Result<Writer<[String], String>, TestError> = .success(Writer("ignored", ["b"]))
         let result = seqLeftResultWriter(lhs, rhs)
-        #expect(result.success?.value == 99)
-        #expect(result.success?.log == ["a", "b"])
+        #expect(Result.prism.success.preview(result)?.value == 99)
+        #expect(Result.prism.success.preview(result)?.log == ["a", "b"])
     }
 
     @Test func seqLeftFailureRight() {

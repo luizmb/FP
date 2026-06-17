@@ -241,16 +241,16 @@ import Testing
 
     @Test func prismSuccess() {
         let v: Validation<String, Int> = .success(42)
-        #expect(v.success == 42)
-        #expect(v.failure == nil)
+        #expect(Validation<String, Int>.prism.success.preview(v) == 42)
+        #expect(Validation<String, Int>.prism.failure.preview(v) == nil)
         #expect(v.is(.success))
         #expect(!v.is(.failure))
     }
 
     @Test func prismFailure() {
         let v: Validation<String, Int> = .failure("err")
-        #expect(v.failure == "err")
-        #expect(v.success == nil)
+        #expect(Validation<String, Int>.prism.failure.preview(v) == "err")
+        #expect(Validation<String, Int>.prism.success.preview(v) == nil)
         #expect(v.is(.failure))
         #expect(!v.is(.success))
     }

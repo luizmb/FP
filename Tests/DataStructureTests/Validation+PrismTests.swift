@@ -2,7 +2,7 @@ import CoreFP
 import DataStructure
 import Testing
 
-@Suite("Validation — prism + HasCases + DML")
+@Suite("Validation — prism + HasCases + case key paths")
 struct ValidationPrismTests {
     @Test func prism_success_preview_hit() {
         let v: Validation<String, Int> = .success(42)
@@ -26,16 +26,10 @@ struct ValidationPrismTests {
         #expect(f == .failure("x"))
     }
 
-    @Test func dynamic_member_lookup_success() {
-        let v: Validation<String, Int> = .success(42)
-        #expect(v.success == 42)
-        #expect(v.failure == nil)
-    }
-
-    @Test func dynamic_member_lookup_failure() {
-        let v: Validation<String, Int> = .failure("err")
-        #expect(v.failure == "err")
-        #expect(v.success == nil)
+    @Test func caseKeyPath_recoversPrism() {
+        let prism = Prism(\.success as PrismKeyPath<Validation<String, Int>, Int>)
+        #expect(prism.preview(.success(42)) == 42)
+        #expect(prism.preview(.failure("err")) == nil)
     }
 
     @Test func cases_isCaseIterable() {

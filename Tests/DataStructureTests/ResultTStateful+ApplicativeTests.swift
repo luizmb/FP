@@ -11,7 +11,7 @@ import Testing
         let rf: Result<Stateful<Int, @Sendable (Int) -> String>, TestError> = .success(.pure({ "\($0)" }))
         let ra: Result<Stateful<Int, Int>, TestError> = .success(.get)
         let result = applyResultStateful(rf, ra)
-        #expect(result.success?.eval(5) == "5")
+        #expect(Result.prism.success.preview(result)?.eval(5) == "5")
     }
 
     @Test func applyFailureFn() {
@@ -32,7 +32,7 @@ import Testing
         let lhs: Result<Stateful<Int, Int>, TestError> = .success(.pure(1))
         let rhs: Result<Stateful<Int, String>, TestError> = .success(.pure("hello"))
         let result = seqRightResultStateful(lhs, rhs)
-        #expect(result.success?.eval(0) == "hello")
+        #expect(Result.prism.success.preview(result)?.eval(0) == "hello")
     }
 
     @Test func seqRightFailure() {
@@ -46,7 +46,7 @@ import Testing
         let lhs: Result<Stateful<Int, Int>, TestError> = .success(.pure(99))
         let rhs: Result<Stateful<Int, String>, TestError> = .success(.pure("ignored"))
         let result = seqLeftResultStateful(lhs, rhs)
-        #expect(result.success?.eval(0) == 99)
+        #expect(Result.prism.success.preview(result)?.eval(0) == 99)
     }
 
     @Test func seqLeftFailureRight() {

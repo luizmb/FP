@@ -2,7 +2,7 @@ import CoreFP
 import DataStructure
 import Testing
 
-@Suite("Either — prism + HasCases + DML")
+@Suite("Either — prism + HasCases + case key paths")
 struct EitherPrismTests {
     @Test func prism_left_preview_hit() {
         let e: Either<String, Int> = .left("oops")
@@ -26,16 +26,10 @@ struct EitherPrismTests {
         #expect(r == .right(9))
     }
 
-    @Test func dynamic_member_lookup_left() {
-        let e: Either<String, Int> = .left("oops")
-        #expect(e.left == "oops")
-        #expect(e.right == nil)
-    }
-
-    @Test func dynamic_member_lookup_right() {
-        let e: Either<String, Int> = .right(42)
-        #expect(e.right == 42)
-        #expect(e.left == nil)
+    @Test func caseKeyPath_recoversPrism() {
+        let prism = Prism(\.left as PrismKeyPath<Either<String, Int>, String>)
+        #expect(prism.preview(.left("oops")) == "oops")
+        #expect(prism.preview(.right(42)) == nil)
     }
 
     @Test func cases_isCaseIterable() {
