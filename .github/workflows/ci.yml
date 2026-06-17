@@ -71,10 +71,10 @@ jobs:
 
       # Cross-compiles with the Swift Android SDK and runs the suite on an emulator the action
       # provisions. The action caches the downloaded SDK/toolchain internally, so only the first
-      # run pays the full download. --no-parallel keeps the suite reliable on the constrained
-      # emulator (its single/dual-core CPU can starve parallel test tasks).
+      # run pays the full download. Tests run in parallel: the action invokes the on-device binary
+      # as both XCTest and swift-testing, and the XCTest pass rejects swift test's --no-parallel,
+      # so serial execution can't be forced here (FP's tests are parallel-safe regardless).
       - name: Test Swift Package on Android
         uses: skiptools/swift-android-action@v2
         with:
-          swift-test-flags: --no-parallel
           free-disk-space: true
