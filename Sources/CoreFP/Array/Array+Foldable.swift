@@ -24,6 +24,8 @@ public extension Array {
     static func foldMap<M: Monoid>(
         _ f: @escaping @Sendable (Element) -> M
     ) -> ([Element]) -> M {
-        { mconcat($0.map(f)) }
+        // Module-qualified: inside `extension Array` the bare name now binds to the
+        // `Array.mconcat` member (which expects `[[Element]]`), not this free function.
+        { CoreFP.mconcat($0.map(f)) }
     }
 }

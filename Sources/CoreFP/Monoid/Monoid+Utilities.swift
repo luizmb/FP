@@ -14,7 +14,7 @@
 /// - Returns: The result of combining all elements left-to-right.
 /// - SeeAlso: ``mconcat(_:)``, ``Semigroup``
 public func sconcat<S: Semigroup>(_ first: S, _ rest: [S]) -> S {
-    rest.reduce(first, S.combine)
+    S.sconcat(first, rest)
 }
 
 /// Reduces a sequence using the ``Monoid``, returning ``Monoid/identity`` for empty input.
@@ -32,5 +32,5 @@ public func sconcat<S: Semigroup>(_ first: S, _ rest: [S]) -> S {
 /// - Returns: The result of combining all values, or ``Monoid/identity`` if empty.
 /// - SeeAlso: ``sconcat(_:_:)``, ``Monoid``
 public func mconcat<M: Monoid>(_ values: [M]) -> M {
-    values.reduce(M.identity, M.combine)
+    M.mconcat(values)
 }
