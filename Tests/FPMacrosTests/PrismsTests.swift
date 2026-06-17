@@ -36,41 +36,6 @@ private enum Reducer {
     }
 }
 
-// MARK: - Computed property extraction
-
-@Suite("@Prisms — computed property extraction")
-struct PrismsExtractionTests {
-    @Test func extracts_matching_single_case() {
-        #expect(Shape.circle(3.14).circle == 3.14)
-    }
-
-    @Test func returns_nil_for_non_matching_case() {
-        #expect(Shape.circle(3.14).empty == nil)
-    }
-
-    @Test func extracts_tuple_case_components() {
-        let s = Shape.rectangle(2.0, 4.0)
-        #expect(s.rectangle?.0 == 2.0)
-        #expect(s.rectangle?.1 == 4.0)
-    }
-
-    @Test func extracts_void_case() {
-        #expect(Shape.empty.empty != nil)
-    }
-
-    @Test func extracts_labeled_tuple_case() {
-        let b = Box.labeled(x: 1, y: 2)
-        #expect(b.labeled?.0 == 1)
-        #expect(b.labeled?.1 == 2)
-    }
-
-    @Test func works_for_nested_enum() {
-        #expect(Reducer.Action.increment.increment != nil)
-        #expect(Reducer.Action.setName("hi").setName == "hi")
-        #expect(Reducer.Action.increment.setName == nil)
-    }
-}
-
 // MARK: - Prism namespace
 
 @Suite("@Prisms — prism namespace")
@@ -91,20 +56,20 @@ struct PrismsNamespaceTests {
     }
 
     @Test func set_changes_associated_value() {
-        #expect(Shape.prism.circle.set(.circle(3.14), 5.0).circle == 5.0)
+        #expect(Shape.prism.circle.preview(Shape.prism.circle.set(.circle(3.14), 5.0)) == 5.0)
     }
 
     @Test func set_on_wrong_case_is_noop() {
         let updated = Shape.prism.circle.set(.rectangle(1, 2), 5.0)
-        #expect(updated.rectangle?.0 == 1.0)
+        #expect(Shape.prism.rectangle.preview(updated)?.0 == 1.0)
     }
 
     @Test func over_transforms_matching_case() {
-        #expect(Shape.prism.circle.over({ $0 * 2 })(.circle(3.14)).circle == 6.28)
+        #expect(Shape.prism.circle.preview(Shape.prism.circle.over({ $0 * 2 })(.circle(3.14))) == 6.28)
     }
 
     @Test func over_is_noop_on_wrong_case() {
-        #expect(Shape.prism.circle.over({ $0 * 2 })(.empty).empty != nil)
+        #expect(Shape.prism.circle.over({ $0 * 2 })(.empty).is(.empty))
     }
 
     @Test func namespace_works_for_nested_enum() {
@@ -130,9 +95,9 @@ struct PrismsLawTests {
     @Test("set-set: last set wins")
     func law_setSet() {
         let s = Shape.circle(1.0)
-        let once  = Shape.prism.circle.set(Shape.prism.circle.set(s, 2.0), 3.0)
+        let once = Shape.prism.circle.set(Shape.prism.circle.set(s, 2.0), 3.0)
         let twice = Shape.prism.circle.set(s, 3.0)
-        #expect(once.circle == twice.circle)
+        #expect(Shape.prism.circle.preview(once) == Shape.prism.circle.preview(twice))
     }
 }
 
@@ -161,7 +126,7 @@ struct PrismsCompositionTests {
     @Test func prism_composed_with_lens_over() {
         let optic = Response.prism.ok >>> Config.lens.port
         let updated = optic.over({ $0 + 1 })(.ok(Config(host: "localhost", port: 8_080)))
-        #expect(updated.ok?.port == 8_081)
+        #expect(Response.prism.ok.preview(updated)?.port == 8_081)
     }
 }
 
@@ -228,12 +193,6 @@ fileprivate enum OnlyPrisms {
     case green(String)
 }
 
-@Prisms([.prisms, .properties])
-fileprivate enum PrismsAndProps {
-    case wrapped(Int)
-    case empty
-}
-
 @Prisms(.cases)
 fileprivate enum OnlyCases {
     case alpha
@@ -254,9 +213,6 @@ enum PublicableEnum {
 // Swift infers the conformance without an explicit typealias.
 extension PublicableEnum: CoreFP.HasCases {}
 
-// Fixture with @dynamicMemberLookup — the macro detects the attribute and emits a single
-// subscript instead of one computed property per case.
-@dynamicMemberLookup
 @Prisms
 fileprivate enum Pixel {
     case rgb(red: Int, green: Int, blue: Int)
@@ -265,7 +221,6 @@ fileprivate enum Pixel {
 }
 
 // Generic fixture — verifies `static var prism` fallback works.
-@dynamicMemberLookup
 @Prisms
 fileprivate enum Wrapped<A> {
     case some(A)
@@ -275,16 +230,8 @@ fileprivate enum Wrapped<A> {
 @Suite("@Prisms — options slicing")
 struct PrismsOptionsTests {
     @Test func prisms_only_emits_namespace() {
-        // .prism namespace exists and works
         #expect(OnlyPrisms.prism.red.preview(.red(7)) == 7)
         #expect(OnlyPrisms.prism.green.preview(.green("hi")) == "hi")
-    }
-
-    @Test func properties_alone_promotes_prisms() {
-        // [.prisms, .properties] gives both — verify .properties depends on .prisms
-        #expect(PrismsAndProps.prism.wrapped.preview(.wrapped(3)) == 3)
-        #expect(PrismsAndProps.wrapped(3).wrapped == 3)
-        #expect(PrismsAndProps.empty.empty != nil)
     }
 
     @Test func cases_only_emits_cases_enum_and_is() {
@@ -296,10 +243,16 @@ struct PrismsOptionsTests {
     }
 
     @Test func prism_namespace_is_struct_value_keypath_accessible() {
-        // The new struct-based shape lets you write a KeyPath into Prisms — impossible
-        // with the old `enum prism` namespace.
+        // The struct-based shape lets you write a KeyPath into Prisms.
         let kp: KeyPath<Pixel.Prisms, CoreFP.Prism<Pixel, Int>> = \.gray
         #expect(Pixel.prism[keyPath: kp].preview(.gray(7)) == 7)
+    }
+
+    @Test func generic_host_uses_static_var_prism() {
+        // A generic enum uses a computed `static var prism` (since `static let` is forbidden
+        // in generic contexts).
+        #expect(Wrapped<String>.prism.some.preview(.some("hi")) == "hi")
+        #expect(Wrapped<String>.prism.some.preview(.none) == nil)
     }
 
     @Test func hasCases_protocol_can_be_adopted_manually() {
@@ -310,42 +263,6 @@ struct PrismsOptionsTests {
         }
         #expect(firstIsHit(PublicableEnum.foo) == true)
         #expect(firstIsHit(PublicableEnum.bar(1)) == false)
-    }
-}
-
-// MARK: - Dynamic member lookup
-
-@Suite("@Prisms — @dynamicMemberLookup integration")
-struct PrismsDynamicMemberTests {
-    @Test func subscript_resolves_single_argument_case() {
-        let p = Pixel.gray(7)
-        let value: Int? = p.gray
-        #expect(value == 7)
-    }
-
-    @Test func subscript_resolves_multi_argument_case_as_tuple() {
-        let p = Pixel.rgb(red: 1, green: 2, blue: 3)
-        let rgb: (Int, Int, Int)? = p.rgb
-        #expect(rgb?.0 == 1)
-        #expect(rgb?.1 == 2)
-        #expect(rgb?.2 == 3)
-    }
-
-    @Test func subscript_returns_nil_for_other_case() {
-        let p = Pixel.transparent
-        #expect(p.gray == nil)
-        #expect(p.rgb == nil)
-        #expect(p.transparent != nil)
-    }
-
-    @Test func generic_host_uses_static_var_and_subscript() {
-        // Loading is a generic enum that uses the same struct-based shape via a computed
-        // `static var prism` (since `static let` is forbidden in generic contexts).
-        let some: Wrapped<String> = .some("hi")
-        #expect(some.some == "hi")
-        let none: Wrapped<String> = .none
-        #expect(none.some == nil)
-        #expect(none.none != nil)
     }
 }
 
