@@ -123,11 +123,11 @@ public struct Iso<S, A>: Sendable {
     }
 }
 
-extension Iso where S == A {
+public extension Iso where S == A {
     /// The identity `Iso`: both directions are the identity function.
     /// This is the strongest identity optic; use `.asLens`, `.asPrism`, or `.asAffineTraversal`
     /// to obtain weaker forms.
-    public static var id: Iso<S, S> {
+    static var id: Iso<S, S> {
         Iso(get: { $0 }, reverseGet: { $0 })
     }
 }

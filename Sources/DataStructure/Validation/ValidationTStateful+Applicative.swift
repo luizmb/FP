@@ -24,7 +24,7 @@ public func seqRightValidationStateful<E: Semigroup, S, A, B>(
     _ lhs: Validation<E, Stateful<S, A>>,
     _ rhs: Validation<E, Stateful<S, B>>
 ) -> Validation<E, Stateful<S, B>> {
-    Validation.liftA2({ (sa: Stateful<S, A>, sb: Stateful<S, B>) in sa.seqRight(sb) })(lhs, rhs)
+    Validation.liftA2 { (sa: Stateful<S, A>, sb: Stateful<S, B>) in sa.seqRight(sb) }(lhs, rhs)
 }
 
 /// `seqLeftValidationStateful`.
@@ -32,5 +32,5 @@ public func seqLeftValidationStateful<E: Semigroup, S, A, B>(
     _ lhs: Validation<E, Stateful<S, A>>,
     _ rhs: Validation<E, Stateful<S, B>>
 ) -> Validation<E, Stateful<S, A>> {
-    Validation.liftA2({ (sa: Stateful<S, A>, sb: Stateful<S, B>) in sa.seqLeft(sb) })(lhs, rhs)
+    Validation.liftA2 { (sa: Stateful<S, A>, sb: Stateful<S, B>) in sa.seqLeft(sb) }(lhs, rhs)
 }

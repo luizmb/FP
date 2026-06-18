@@ -14,11 +14,11 @@ import Foundation
 public extension Either {
     struct Prisms: Sendable {
         public let left: CoreFP.Prism<Either, A> = CoreFP.prism(
-            preview: { (s: Either) in guard case .left(let a) = s else { return nil }; return a },
+            preview: { (s: Either) in guard case let .left(a) = s else { return nil }; return a },
             review: Either.left
         )
         public let right: CoreFP.Prism<Either, B> = CoreFP.prism(
-            preview: { (s: Either) in guard case .right(let b) = s else { return nil }; return b },
+            preview: { (s: Either) in guard case let .right(b) = s else { return nil }; return b },
             review: Either.right
         )
     }

@@ -10,26 +10,26 @@ import Testing
     @Test func failureConstruction() {
         let v: Validation<String, Int> = .failure("error")
         #expect(v.is(.failure), "Expected failure")
-        if case .failure(let e) = v { #expect(e == "error") }
+        if case let .failure(e) = v { #expect(e == "error") }
     }
 
     @Test func successConstruction() {
         let v: Validation<String, Int> = .success(42)
         #expect(v.is(.success), "Expected success")
-        if case .success(let s) = v { #expect(s == 42) }
+        if case let .success(s) = v { #expect(s == 42) }
     }
 
     // MARK: - Functor
 
     @Test func fmapSuccess() {
         let v: Validation<String, Int> = .success(5)
-        let result = Validation<String, Int>.fmap({ $0 * 2 })(v)
+        let result = Validation<String, Int>.fmap { $0 * 2 }(v)
         #expect(result == .success(10))
     }
 
     @Test func fmapFailure() {
         let v: Validation<String, Int> = .failure("err")
-        let result = Validation<String, Int>.fmap({ $0 * 2 })(v)
+        let result = Validation<String, Int>.fmap { $0 * 2 }(v)
         #expect(result == .failure("err"))
     }
 
@@ -79,7 +79,7 @@ import Testing
         let v: Validation<String, Int> = .failure("msg")
         let voided = v.void()
         #expect(voided.is(.failure), "Expected .failure")
-        if case .failure(let e) = voided { #expect(e == "msg") }
+        if case let .failure(e) = voided { #expect(e == "msg") }
     }
 
     // MARK: - Applicative — the key behaviour
@@ -112,7 +112,7 @@ import Testing
     @Test func liftA2AccumulatesErrors() {
         let v1: Validation<[String], Int> = .failure(["name too short"])
         let v2: Validation<[String], Int> = .failure(["age invalid"])
-        let result = Validation<[String], String>.liftA2({ "\($0)-\($1)" })(v1, v2)
+        let result = Validation<[String], String>.liftA2 { "\($0)-\($1)" }(v1, v2)
         #expect(result == .failure(["name too short", "age invalid"]))
     }
 
@@ -149,7 +149,7 @@ import Testing
         let v2: Validation<[String], String> = .success("a")
         let result = Validation<[String], (Int, String)>.zip(v1, v2)
         #expect(result.is(.success), "Expected success")
-        if case .success(let value) = result { #expect(value == (1, "a")) }
+        if case let .success(value) = result { #expect(value == (1, "a")) }
     }
 
     @Test func zipFirstFailure() {
@@ -157,7 +157,7 @@ import Testing
         let v2: Validation<[String], String> = .success("a")
         let result = Validation<[String], (Int, String)>.zip(v1, v2)
         #expect(result.is(.failure), "Expected failure")
-        if case .failure(let e) = result { #expect(e == ["e1"]) }
+        if case let .failure(e) = result { #expect(e == ["e1"]) }
     }
 
     @Test func zipSecondFailure() {
@@ -165,7 +165,7 @@ import Testing
         let v2: Validation<[String], String> = .failure(["e2"])
         let result = Validation<[String], (Int, String)>.zip(v1, v2)
         #expect(result.is(.failure), "Expected failure")
-        if case .failure(let e) = result { #expect(e == ["e2"]) }
+        if case let .failure(e) = result { #expect(e == ["e2"]) }
     }
 
     @Test func zipAccumulatesBothFailures() {
@@ -173,7 +173,7 @@ import Testing
         let v2: Validation<[String], String> = .failure(["e2"])
         let result = Validation<[String], (Int, String)>.zip(v1, v2)
         #expect(result.is(.failure), "Expected failure")
-        if case .failure(let e) = result { #expect(e == ["e1", "e2"]) }
+        if case let .failure(e) = result { #expect(e == ["e1", "e2"]) }
     }
 
     @Test func zip3AllSuccess() {
@@ -182,7 +182,7 @@ import Testing
         let v3: Validation<[String], Bool> = .success(true)
         let result = Validation<[String], (Int, String, Bool)>.zip3(v1, v2, v3)
         #expect(result.is(.success), "Expected success")
-        if case .success(let value) = result { #expect(value == (1, "a", true)) }
+        if case let .success(value) = result { #expect(value == (1, "a", true)) }
     }
 
     @Test func zip3AccumulatesAllThreeFailures() {
@@ -191,7 +191,7 @@ import Testing
         let v3: Validation<[String], Bool> = .failure(["e3"])
         let result = Validation<[String], (Int, String, Bool)>.zip3(v1, v2, v3)
         #expect(result.is(.failure), "Expected failure")
-        if case .failure(let e) = result { #expect(e == ["e1", "e2", "e3"]) }
+        if case let .failure(e) = result { #expect(e == ["e1", "e2", "e3"]) }
     }
 
     @Test func zip3AccumulatesPartialFailures() {
@@ -201,7 +201,7 @@ import Testing
         let v3: Validation<[String], Bool> = .failure(["e3"])
         let result = Validation<[String], (Int, String, Bool)>.zip3(v1, v2, v3)
         #expect(result.is(.failure), "Expected failure")
-        if case .failure(let e) = result { #expect(e == ["e1", "e3"]) }
+        if case let .failure(e) = result { #expect(e == ["e1", "e3"]) }
     }
 
     @Test func zip4AllSuccess() {
@@ -211,7 +211,7 @@ import Testing
         let v4: Validation<[String], Double> = .success(3.14)
         let result = Validation<[String], (Int, String, Bool, Double)>.zip4(v1, v2, v3, v4)
         #expect(result.is(.success), "Expected success")
-        if case .success(let value) = result { #expect(value == (1, "a", true, 3.14)) }
+        if case let .success(value) = result { #expect(value == (1, "a", true, 3.14)) }
     }
 
     @Test func zip4AccumulatesAllFourFailures() {
@@ -221,7 +221,7 @@ import Testing
         let v4: Validation<[String], Double> = .failure(["e4"])
         let result = Validation<[String], (Int, String, Bool, Double)>.zip4(v1, v2, v3, v4)
         #expect(result.is(.failure), "Expected failure")
-        if case .failure(let e) = result { #expect(e == ["e1", "e2", "e3", "e4"]) }
+        if case let .failure(e) = result { #expect(e == ["e1", "e2", "e3", "e4"]) }
     }
 
     // MARK: - Prism
@@ -268,7 +268,7 @@ import Testing
 
     @Test func validationTOptionalFunctor() {
         let v: Validation<[String], Int?> = .success(.some(5))
-        let result = fmapTValidationOptional({ $0 * 2 })(v)
+        let result = fmapTValidationOptional { $0 * 2 }(v)
         #expect(result == .success(.some(10)))
     }
 
@@ -282,7 +282,7 @@ import Testing
 
     @Test func validationTArrayFunctor() {
         let v: Validation<[String], [Int]> = .success([1, 2, 3])
-        let result = fmapTValidationArray({ $0 * 2 })(v)
+        let result = fmapTValidationArray { $0 * 2 }(v)
         #expect(result == .success([2, 4, 6]))
     }
 
@@ -421,16 +421,16 @@ import Testing
 
     @Test func foldMapSuccess() {
         let v: Validation<String, Int> = .success(5)
-        #expect(v.foldMap({ "\($0)" }) == "5")
+        #expect(v.foldMap { "\($0)" } == "5")
     }
 
     @Test func foldMapFailureReturnsIdentity() {
         let v: Validation<String, Int> = .failure("err")
-        #expect(v.foldMap({ "\($0)" }) == "")
+        #expect(v.foldMap { "\($0)" } == "")
     }
 
     @Test func foldMapCurried() {
-        let fn = Validation<String, Int>.foldMap({ "\($0)" })
+        let fn = Validation<String, Int>.foldMap { "\($0)" }
         #expect(fn(.success(3)) == "3")
         #expect(fn(.failure("x")) == "")
     }

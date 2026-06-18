@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
+
 // MARK: - Prism<S, A>
+
 //
 // A `Prism` focuses on zero or one value of type `A` inside `S` — typically
 // one case of an enum. `preview` extracts the focused value if present;
@@ -105,7 +107,7 @@ public struct Prism<S, A>: Sendable {
     public init(preview: @escaping @Sendable (S) -> A?, review: @escaping @Sendable (A) -> S) {
         self.preview = preview
         self.review = review
-        self.tryModifyMut = { s, f in
+        tryModifyMut = { s, f in
             guard var part = preview(s) else { return }
             f(&part)
             s = review(part)
@@ -143,9 +145,9 @@ public struct Prism<S, A>: Sendable {
     }
 }
 
-extension Prism where S == A {
+public extension Prism where S == A {
     /// The `id` property.
-    public static var id: Prism<S, S> {
+    static var id: Prism<S, S> {
         Prism(preview: { .some($0) }, review: { $0 }, tryModifyMut: { s, f in f(&s) })
     }
 }

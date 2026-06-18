@@ -47,10 +47,10 @@ public extension AsyncStream {
             Task {
                 for await element in self {
                     switch element {
-                    case .right(let value):
+                    case let .right(value):
                         continuation.yield(value)
 
-                    case .left(let error):
+                    case let .left(error):
                         continuation.finish(throwing: error)
                         return
                     }

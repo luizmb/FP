@@ -193,53 +193,53 @@ import Testing
     @Test func eitherTStatefulMapTRight() {
         let either: Either<L, Stateful<Int, Int>> = .right(Stateful<Int, Int>.get)
         let result = { $0 * 2 } <£^> either
-        if case .right(let s) = result { #expect(s.eval(5) == 10) } else { Issue.record("Expected .right") }
+        if case let .right(s) = result { #expect(s.eval(5) == 10) } else { Issue.record("Expected .right") }
     }
 
     @Test func eitherTStatefulMapTLeft() {
         let either: Either<L, Stateful<Int, Int>> = .left(.err)
         let result: Either<L, Stateful<Int, Int>> = { $0 * 2 } <£^> either
-        if case .left(let l) = result { #expect(l == .err) } else { Issue.record("Expected .left") }
+        if case let .left(l) = result { #expect(l == .err) } else { Issue.record("Expected .left") }
     }
 
     @Test func eitherTStatefulFlatMapTRight() {
         let either: Either<L, Stateful<Int, Int>> = .right(Stateful<Int, Int>.get)
         let result = either >>- { n in Stateful<Int, String>.pure("\(n)") }
-        if case .right(let s) = result { #expect(s.eval(7) == "7") } else { Issue.record("Expected .right") }
+        if case let .right(s) = result { #expect(s.eval(7) == "7") } else { Issue.record("Expected .right") }
     }
 
     @Test func eitherTStatefulFlatMapTLeft() {
         let either: Either<L, Stateful<Int, Int>> = .left(.err)
         let result = either >>- { n in Stateful<Int, String>.pure("\(n)") }
-        if case .left(let l) = result { #expect(l == .err) } else { Issue.record("Expected .left") }
+        if case let .left(l) = result { #expect(l == .err) } else { Issue.record("Expected .left") }
     }
 
     @Test func eitherTStatefulKleisli() {
         let f: @Sendable (Int) -> Either<L, Stateful<Int, Int>> = { n in .right(Stateful<Int, Int>.pure(n + 1)) }
         let g: @Sendable (Int) -> Stateful<Int, String> = { n in Stateful<Int, String>.pure("\(n)") }
         let result = (f >=> g)(4)
-        if case .right(let s) = result { #expect(s.eval(0) == "5") } else { Issue.record("Expected .right") }
+        if case let .right(s) = result { #expect(s.eval(0) == "5") } else { Issue.record("Expected .right") }
     }
 
     @Test func eitherTStatefulApply() {
-        let eithF: Either<L, Stateful<Int, @Sendable (Int) -> String>> = .right(.pure({ "\($0)" }))
+        let eithF: Either<L, Stateful<Int, @Sendable (Int) -> String>> = .right(.pure { "\($0)" })
         let eithA: Either<L, Stateful<Int, Int>> = .right(.get)
         let result = eithF <*> eithA
-        if case .right(let s) = result { #expect(s.eval(5) == "5") } else { Issue.record("Expected .right") }
+        if case let .right(s) = result { #expect(s.eval(5) == "5") } else { Issue.record("Expected .right") }
     }
 
     @Test func eitherTStatefulSeqRight() {
         let lhs: Either<L, Stateful<Int, Int>> = .right(.pure(1))
         let rhs: Either<L, Stateful<Int, String>> = .right(.pure("hello"))
         let result = lhs *> rhs
-        if case .right(let s) = result { #expect(s.eval(0) == "hello") } else { Issue.record("Expected .right") }
+        if case let .right(s) = result { #expect(s.eval(0) == "hello") } else { Issue.record("Expected .right") }
     }
 
     @Test func eitherTStatefulSeqLeft() {
         let lhs: Either<L, Stateful<Int, Int>> = .right(.pure(99))
         let rhs: Either<L, Stateful<Int, String>> = .right(.pure("ignored"))
         let result = lhs <* rhs
-        if case .right(let s) = result { #expect(s.eval(0) == 99) } else { Issue.record("Expected .right") }
+        if case let .right(s) = result { #expect(s.eval(0) == 99) } else { Issue.record("Expected .right") }
     }
 
     // MARK: - EitherTWriter
@@ -247,7 +247,7 @@ import Testing
     @Test func eitherTWriterMapTRight() {
         let either: Either<L, Writer<[String], Int>> = .right(Writer(5, ["log"]))
         let result = { $0 * 2 } <£^> either
-        if case .right(let w) = result {
+        if case let .right(w) = result {
             #expect(w.value == 10)
             #expect(w.log == ["log"])
         } else { Issue.record("Expected .right") }
@@ -262,7 +262,7 @@ import Testing
     @Test func eitherTWriterFlatMapTRight() {
         let either: Either<L, Writer<[String], Int>> = .right(Writer(5, ["outer"]))
         let result = either >>- { n in Writer<[String], String>("\(n)", ["inner"]) }
-        if case .right(let w) = result {
+        if case let .right(w) = result {
             #expect(w.value == "5")
             #expect(w.log == ["outer", "inner"])
         } else { Issue.record("Expected .right") }
@@ -278,7 +278,7 @@ import Testing
         let f: @Sendable (Int) -> Either<L, Writer<[String], Int>> = { n in .right(Writer(n + 1, ["f"])) }
         let g: @Sendable (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["g"]) }
         let result = (f >=> g)(4)
-        if case .right(let w) = result {
+        if case let .right(w) = result {
             #expect(w.value == "5")
             #expect(w.log == ["f", "g"])
         } else { Issue.record("Expected .right") }

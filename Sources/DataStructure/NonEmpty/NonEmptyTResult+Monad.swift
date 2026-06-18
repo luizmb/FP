@@ -13,10 +13,10 @@ public extension NonEmpty {
         let t: [Result<Inner, E>] = tail
         func step(_ element: Result<Inner, E>) -> NonEmpty<Result<Output, E>> {
             switch element {
-            case .failure(let e):
+            case let .failure(e):
                 NonEmpty<Result<Output, E>>(head: .failure(e))
 
-            case .success(let a):
+            case let .success(a):
                 fn(a)
             }
         }

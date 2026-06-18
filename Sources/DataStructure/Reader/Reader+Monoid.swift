@@ -2,6 +2,7 @@
 import CoreFP
 
 // MARK: - Reader: Semigroup / Monoid
+
 //
 // A `Reader<Environment, Output>` whose `Output` is a `Semigroup` or `Monoid` is itself
 // a `Semigroup` or `Monoid` under pointwise combination — a standard result from

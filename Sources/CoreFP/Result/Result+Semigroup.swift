@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-extension Result {
+public extension Result {
     /// Namespace for `Result` ``Semigroup`` and ``Monoid`` instances.
     ///
     /// Because `Result` can express multiple reasonable combining strategies,
@@ -24,7 +24,7 @@ extension Result {
     /// ```
     ///
     /// - SeeAlso: ``Semigroup``, ``Monoid``
-    public enum Monoids {
+    enum Monoids {
         /// Semigroup: success wins over failure; combines two successes;
         /// picks the left for two failures (Failure need not be Semigroup).
         public struct Optimistic: RawRepresentable {

@@ -13,10 +13,10 @@ public extension NonEmpty {
         let t: [Either<L, Inner>] = tail
         func step(_ element: Either<L, Inner>) -> NonEmpty<Either<L, B>> {
             switch element {
-            case .left(let l):
+            case let .left(l):
                 NonEmpty<Either<L, B>>(head: .left(l))
 
-            case .right(let a):
+            case let .right(a):
                 fn(a)
             }
         }

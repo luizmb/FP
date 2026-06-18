@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-extension Array {
+public extension Array {
     /// Returns the Cartesian product of two arrays — every element from `first` paired with every
     /// element from `second`, ordered by the outer-then-inner iteration.
     ///
@@ -16,7 +16,7 @@ extension Array {
     /// Functionally equivalent to the list-applicative `liftA2(fn)` on two arrays when `fn` is
     /// tuple construction — provided here as a dedicated overload for clarity and to keep the
     /// tuple output without going through a closure.
-    public static func cartesian<A, B>(_ first: [A], _ second: [B]) -> [(A, B)] where Element == (A, B) {
+    static func cartesian<A, B>(_ first: [A], _ second: [B]) -> [(A, B)] where Element == (A, B) {
         first.flatMap { a in second.map { b in (a, b) } }
     }
 
@@ -27,7 +27,7 @@ extension Array {
     /// // [(1, "a", true), (1, "a", false),
     /// //  (2, "a", true), (2, "a", false)]
     /// ```
-    public static func cartesian<A, B, C>(
+    static func cartesian<A, B, C>(
         _ first: [A],
         _ second: [B],
         _ third: [C]
@@ -40,7 +40,7 @@ extension Array {
     }
 
     /// Returns the 4-ary Cartesian product of four arrays.
-    public static func cartesian<A, B, C, D>(
+    static func cartesian<A, B, C, D>(
         _ first: [A],
         _ second: [B],
         _ third: [C],

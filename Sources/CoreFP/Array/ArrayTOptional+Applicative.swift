@@ -15,17 +15,17 @@ public func liftA2ArrayOptional<A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> ([A?], [B?]) -> [C?] {
     { arrA, arrB in
-        Array.liftA2({ @Sendable a, b in Optional.liftA2(fn)(a, b) })(arrA, arrB)
+        Array.liftA2 { @Sendable a, b in Optional.liftA2(fn)(a, b) }(arrA, arrB)
     }
 }
 
 /// seqRight for ArrayTOptional: [A?] -> [B?] -> [B?]
 /// Cartesian product keeping right values (threading Optional through)
 public func seqRightArrayOptional<A, B>(_ lhs: [A?], _ rhs: [B?]) -> [B?] {
-    Array.liftA2({ (a: A?, b: B?) in a.seqRight(b) })(lhs, rhs)
+    Array.liftA2 { (a: A?, b: B?) in a.seqRight(b) }(lhs, rhs)
 }
 
 /// seqLeft for ArrayTOptional: [A?] -> [B?] -> [A?]
 public func seqLeftArrayOptional<A, B>(_ lhs: [A?], _ rhs: [B?]) -> [A?] {
-    Array.liftA2({ (a: A?, b: B?) in a.seqLeft(b) })(lhs, rhs)
+    Array.liftA2 { (a: A?, b: B?) in a.seqLeft(b) }(lhs, rhs)
 }

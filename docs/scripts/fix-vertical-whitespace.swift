@@ -36,7 +36,7 @@ func getViolations(rule: String) -> [String: Set<Int>] {
 func fixFile(_ filepath: String, violatingLines: Set<Int>) -> Int {
     guard let content = try? String(contentsOfFile: filepath, encoding: .utf8) else { return 0 }
     var lines = content.components(separatedBy: "\n").map { $0 + "\n" }
-    if lines.last == "\n" && content.hasSuffix("\n") { lines.removeLast() }
+    if lines.last == "\n", content.hasSuffix("\n") { lines.removeLast() }
 
     var result = lines
     var offset = 0
@@ -65,4 +65,5 @@ for (file, lines) in violations.sorted(by: { $0.key < $1.key }) {
         total += fixed
     }
 }
+
 print("\nTotal blank lines inserted: \(total)")

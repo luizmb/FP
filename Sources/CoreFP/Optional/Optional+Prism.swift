@@ -16,7 +16,7 @@ public extension Optional {
             review: Optional.some
         )
         public let none: CoreFP.Prism<Wrapped?, Void> = CoreFP.prism(
-            preview: { (s: Wrapped?) in if case .none = s { return () } else { return nil } },
+            preview: { (s: Wrapped?) in if case .none = s { () } else { nil } },
             review: { (_: Void) in .none }
         )
     }

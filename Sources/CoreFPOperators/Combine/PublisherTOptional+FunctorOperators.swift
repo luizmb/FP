@@ -1,21 +1,21 @@
 // SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
-import Combine
-import CoreFP
+    import Combine
+    import CoreFP
 
-// PublisherTOptional: AnyPublisher<A?, E>
+    // PublisherTOptional: AnyPublisher<A?, E>
 
-// (<£^>) :: (a -> b) -> AnyPublisher<a?,e> -> AnyPublisher<b?,e>
-/// `func`.
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func <£^> <A, B, E: Error>(_ fn: @escaping @Sendable (A) -> B, _ pub: AnyPublisher<A?, E>) -> AnyPublisher<B?, E> {
-    mapTPublisherOptional(fn, pub)
-}
+    // (<£^>) :: (a -> b) -> AnyPublisher<a?,e> -> AnyPublisher<b?,e>
+    /// `func`.
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+    public func <£^> <A, B, E: Error>(_ fn: @escaping @Sendable (A) -> B, _ pub: AnyPublisher<A?, E>) -> AnyPublisher<B?, E> {
+        mapTPublisherOptional(fn, pub)
+    }
 
-// (<&^>) :: AnyPublisher<a?,e> -> (a -> b) -> AnyPublisher<b?,e>
-/// `func`.
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func <&^> <A, B, E: Error>(_ pub: AnyPublisher<A?, E>, _ fn: @escaping @Sendable (A) -> B) -> AnyPublisher<B?, E> {
-    mapTPublisherOptional(fn, pub)
-}
+    // (<&^>) :: AnyPublisher<a?,e> -> (a -> b) -> AnyPublisher<b?,e>
+    /// `func`.
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+    public func <&^> <A, B, E: Error>(_ pub: AnyPublisher<A?, E>, _ fn: @escaping @Sendable (A) -> B) -> AnyPublisher<B?, E> {
+        mapTPublisherOptional(fn, pub)
+    }
 #endif

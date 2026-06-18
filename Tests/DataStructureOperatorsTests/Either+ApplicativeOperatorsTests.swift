@@ -9,7 +9,7 @@ import Testing
     // MARK: - Basic Applicative Tests
 
     @Test func apply() {
-        let fn: Either<String, @Sendable (Int) -> Int> = .right({ $0 * 2 })
+        let fn: Either<String, @Sendable (Int) -> Int> = .right { $0 * 2 }
         let value: Either<String, Int> = .right(5)
         let result = fn <*> value
         #expect(result == .right(10))
@@ -46,7 +46,7 @@ import Testing
         let value2: Either<String, String> = .right("test")
         let result = Either<String, (Int, String)>.zip(value1, value2)
 
-        if case .right(let tuple) = result {
+        if case let .right(tuple) = result {
             #expect(tuple.0 == 5)
             #expect(tuple.1 == "test")
         } else {
@@ -55,7 +55,7 @@ import Testing
 
         let left1: Either<String, Int> = .left("error")
         let leftResult = Either<String, (Int, String)>.zip(left1, value2)
-        if case .left(let error) = leftResult {
+        if case let .left(error) = leftResult {
             #expect(error == "error")
         } else {
             Issue.record("Expected left value")
@@ -74,8 +74,8 @@ import Testing
 
     @Test func applicativeCompositionLaw() {
         // pure (.) <*> u <*> v <*> w = u <*> (v <*> w)
-        let u: Either<String, @Sendable (Int) -> String> = .right({ "\($0)" })
-        let v: Either<String, @Sendable (Int) -> Int> = .right({ $0 * 2 })
+        let u: Either<String, @Sendable (Int) -> String> = .right { "\($0)" }
+        let v: Either<String, @Sendable (Int) -> Int> = .right { $0 * 2 }
         let w: Either<String, Int> = .right(5)
 
         // Left side: compose functions then apply to w
@@ -109,7 +109,7 @@ import Testing
 
     @Test func applicativeInterchangeLaw() {
         // u <*> pure y = pure ($ y) <*> u
-        let u: Either<String, @Sendable (Int) -> Int> = .right({ $0 * 2 })
+        let u: Either<String, @Sendable (Int) -> Int> = .right { $0 * 2 }
         let y = 5
 
         let pureY: Either<String, Int> = .right(y)
@@ -125,7 +125,7 @@ import Testing
     // MARK: - Applicative Operators
 
     @Test func applyOperator() {
-        let fn: Either<String, @Sendable (Int) -> Int> = .right({ $0 * 2 })
+        let fn: Either<String, @Sendable (Int) -> Int> = .right { $0 * 2 }
         let value: Either<String, Int> = .right(5)
         let result = fn <*> value
         #expect(result == .right(10))

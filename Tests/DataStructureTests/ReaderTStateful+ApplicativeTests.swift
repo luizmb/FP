@@ -9,7 +9,7 @@ import Testing
     // MARK: - Reader<Env, Stateful<S, A>> — Reader as outer, Stateful as inner
 
     @Test func apply() {
-        let rf: Reader<Env, Stateful<Int, @Sendable (Int) -> String>> = Reader(const(.pure({ "\($0)" })))
+        let rf: Reader<Env, Stateful<Int, @Sendable (Int) -> String>> = Reader(const(.pure { "\($0)" }))
         let ra: Reader<Env, Stateful<Int, Int>> = Reader { env in .pure(env.multiplier) }
         let result = applyReaderStateful(rf, ra)
         let env = Env(multiplier: 5)
@@ -17,7 +17,7 @@ import Testing
     }
 
     @Test func applyUsesEnv() {
-        let rf: Reader<Env, Stateful<Int, @Sendable (Int) -> Int>> = Reader { env in .pure({ $0 + env.multiplier }) }
+        let rf: Reader<Env, Stateful<Int, @Sendable (Int) -> Int>> = Reader { env in .pure { $0 + env.multiplier } }
         let ra: Reader<Env, Stateful<Int, Int>> = Reader(const(.get))
         let result = applyReaderStateful(rf, ra)
         let env = Env(multiplier: 10)

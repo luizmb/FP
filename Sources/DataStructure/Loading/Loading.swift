@@ -68,13 +68,13 @@ public extension Loading {
         case .idle:
             nil
 
-        case .loading(let prev):
+        case let .loading(prev):
             prev
 
-        case .loaded(let value):
+        case let .loaded(value):
             value
 
-        case .failed(_, let prev):
+        case let .failed(_, prev):
             prev
         }
     }

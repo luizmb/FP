@@ -76,7 +76,7 @@ import Testing
     }
 
     @Test func rangeMatchWithSymmetricRange() {
-        let range = symmetricRange(250, delta: 50)   // 200...300
+        let range = symmetricRange(250, delta: 50) // 200...300
         #expect(rangeMatch(250, in: range) == true)
         #expect(rangeMatch(200, in: range) == true)
         #expect(rangeMatch(300, in: range) == true)

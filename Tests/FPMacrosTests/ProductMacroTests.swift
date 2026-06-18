@@ -23,8 +23,8 @@ struct DeriveMonoidTests {
             Stats(clicks: .init(2), ok: .init(true)),
             Stats(clicks: .init(3), ok: .init(false))
         )
-        #expect(combined.clicks.rawValue == 5)     // summed
-        #expect(combined.ok.rawValue == false)     // AND-ed
+        #expect(combined.clicks.rawValue == 5) // summed
+        #expect(combined.ok.rawValue == false) // AND-ed
     }
 
     @Test func foldsViaMconcat() {
@@ -66,7 +66,7 @@ struct IsoMacroTests {
     }
 
     @Test func namedTypeIso() {
-        let dto = LabeledPoint.iso.get(LabeledPoint(x: 5, y: 6))   // PointDTO
+        let dto = LabeledPoint.iso.get(LabeledPoint(x: 5, y: 6)) // PointDTO
         #expect(dto.x == 5 && dto.y == 6)
         let back = LabeledPoint.iso.reverseGet(PointDTO(x: 7, y: 8))
         #expect(back.x == 7 && back.y == 8)

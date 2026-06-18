@@ -76,7 +76,7 @@ public struct Newtype<Tag, RawValue> {
 
     /// Initializer.
     public init(wrappedValue: RawValue) {
-        self.rawValue = wrappedValue
+        rawValue = wrappedValue
     }
 
     /// The `wrappedValue` property.
@@ -121,7 +121,7 @@ extension Newtype: Comparable where RawValue: Comparable {
 
 extension Newtype: Encodable where RawValue: Encodable {
     // swiftlint:disable:next throws_instead_result
-    public func encode(to encoder: Encoder) throws {  // Encodable protocol mandates throws
+    public func encode(to encoder: Encoder) throws { // Encodable protocol mandates throws
         var container = encoder.singleValueContainer()
         try container.encode(rawValue)
     }

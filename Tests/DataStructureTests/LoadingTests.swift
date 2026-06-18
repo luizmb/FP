@@ -279,7 +279,7 @@ struct LoadingApplicativeTests {
         let left: L<Int> = .loaded(1)
         let right: L<String> = .loaded("a")
         let result = L<(Int, String)>.zip(left, right)
-        guard case .loaded(let pair) = result else {
+        guard case let .loaded(pair) = result else {
             Issue.record("Expected .loaded"); return
         }
         #expect(pair.0 == 1)
@@ -300,7 +300,7 @@ struct LoadingApplicativeTests {
         let right: L<String> = .failed(error: .network, previous: "stale")
         let result = L<(Int, String)>.zip(left, right)
         // Failed always wins; previous pair is nil because left has none.
-        guard case .failed(let err, let prev) = result else {
+        guard case let .failed(err, prev) = result else {
             Issue.record("Expected .failed"); return
         }
         #expect(err == .network)
@@ -311,7 +311,7 @@ struct LoadingApplicativeTests {
         let left: L<Int> = .loading(previous: 1)
         let right: L<String> = .loaded("a")
         let result = L<(Int, String)>.zip(left, right)
-        guard case .loading(let prev) = result else {
+        guard case let .loading(prev) = result else {
             Issue.record("Expected .loading"); return
         }
         #expect(prev?.0 == 1)
@@ -322,7 +322,7 @@ struct LoadingApplicativeTests {
         let left: L<Int> = .failed(error: .network, previous: 1)
         let right: L<String> = .loaded("a")
         let result = L<(Int, String)>.zip(left, right)
-        guard case .failed(let err, let prev) = result else {
+        guard case let .failed(err, prev) = result else {
             Issue.record("Expected .failed"); return
         }
         #expect(err == .network)
@@ -363,7 +363,7 @@ struct LoadingMonadTests {
     @Test func flatMap_failedPreservesError() {
         let sut: Sut = .failed(error: .network, previous: 4)
         let result = sut.flatMap { Sut.loaded($0 * 2) }
-        guard case .failed(let err, let prev) = result else {
+        guard case let .failed(err, prev) = result else {
             Issue.record("Expected .failed"); return
         }
         #expect(err == .network)

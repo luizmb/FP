@@ -21,17 +21,17 @@ private enum Shape {
     case rectangle(Double, Double)
 
     var circleRadius: Double? {
-        guard case .circle(let r) = self else { return nil }
+        guard case let .circle(r) = self else { return nil }
         return r
     }
 }
 
-private let ageLens     = lens(\Person.age)
+private let ageLens = lens(\Person.age)
 private let addressLens = lens(\Person.address)
-private let streetLens  = lens(\Address.street)
-private let cityLens    = lens(\Address.city) { (a: Address, c) in Address(street: a.street, city: c) }
+private let streetLens = lens(\Address.street)
+private let cityLens = lens(\Address.city) { (a: Address, c) in Address(street: a.street, city: c) }
 private let circlePrism = prism(\Shape.circleRadius, review: Shape.circle)
-private let alice       = Person(age: 30, name: "Alice", address: Address(street: "1st Ave", city: "NY"))
+private let alice = Person(age: 30, name: "Alice", address: Address(street: "1st Ave", city: "NY"))
 
 // MARK: - ^ operator
 
@@ -67,7 +67,7 @@ struct LensLensCompositionTests {
     }
 
     @Test func over() {
-        let updated = personStreetLens.over({ $0.uppercased() })(alice)
+        let updated = personStreetLens.over { $0.uppercased() }(alice)
         #expect(updated.address.street == "1ST AVE")
     }
 }
@@ -93,7 +93,7 @@ struct LensPrismCompositionTests {
 
     @Test func set_hit() {
         let updated = circleInWorld.set(World(shape: .circle(3.0)), 9.0)
-        guard case .circle(let r) = updated.shape else {
+        guard case let .circle(r) = updated.shape else {
             Issue.record("Expected .circle")
             return
         }
@@ -102,8 +102,8 @@ struct LensPrismCompositionTests {
 
     @Test func over_miss_leavesSUnchanged() {
         let w = World(shape: .rectangle(1.0, 2.0))
-        let updated = circleInWorld.over({ $0 * 2 })(w)
-        guard case .rectangle(let a, let b) = updated.shape else {
+        let updated = circleInWorld.over { $0 * 2 }(w)
+        guard case let .rectangle(a, b) = updated.shape else {
             Issue.record("Expected .rectangle")
             return
         }
@@ -126,7 +126,7 @@ struct PrismLensCompositionTests {
         case other
 
         var circle: Circle? {
-            guard case .circle(let c) = self else { return nil }
+            guard case let .circle(c) = self else { return nil }
             return c
         }
     }
@@ -144,8 +144,8 @@ struct PrismLensCompositionTests {
     }
 
     @Test func over_hit() {
-        let updated = drawingRadius.over({ $0 + 1 })(.circle(Circle(radius: 3.0, lineWidth: 1.0)))
-        guard case .circle(let c) = updated else {
+        let updated = drawingRadius.over { $0 + 1 }(.circle(Circle(radius: 3.0, lineWidth: 1.0)))
+        guard case let .circle(c) = updated else {
             Issue.record("Expected .circle")
             return
         }
@@ -154,7 +154,7 @@ struct PrismLensCompositionTests {
     }
 
     @Test func over_miss_unchanged() {
-        let result = drawingRadius.over({ $0 * 99 })(.other)
+        let result = drawingRadius.over { $0 * 99 }(.other)
         guard case .other = result else {
             Issue.record("Expected .other")
             return
@@ -171,7 +171,7 @@ struct PrismPrismCompositionTests {
         case other
 
         var inner: Shape? {
-            guard case .inner(let s) = self else { return nil }
+            guard case let .inner(s) = self else { return nil }
             return s
         }
     }
@@ -193,7 +193,7 @@ struct PrismPrismCompositionTests {
 
     @Test func review() {
         let result = deepCircle.review(4.0)
-        guard case .inner(let shape) = result, case .circle(let r) = shape else {
+        guard case let .inner(shape) = result, case let .circle(r) = shape else {
             Issue.record("Expected .inner(.circle)")
             return
         }
@@ -221,14 +221,14 @@ struct LiftCompositionTests {
     @Test func lensPrism_lift_hit_mutatesFocus() {
         var world = World(shape: .circle(3.0))
         (shapeLens >>> circlePrism).lift(EndoMut { $0 *= 2 })(&world)
-        guard case .circle(let r) = world.shape else { Issue.record("Expected .circle"); return }
+        guard case let .circle(r) = world.shape else { Issue.record("Expected .circle"); return }
         #expect(r == 6.0)
     }
 
     @Test func lensPrism_lift_miss_isNoOp() {
         var world = World(shape: .rectangle(1.0, 2.0))
         (shapeLens >>> circlePrism).lift(EndoMut { $0 *= 2 })(&world)
-        guard case .rectangle(let w, let h) = world.shape else { Issue.record("Expected .rectangle"); return }
+        guard case let .rectangle(w, h) = world.shape else { Issue.record("Expected .rectangle"); return }
         #expect(w == 1.0)
         #expect(h == 2.0)
     }
@@ -264,8 +264,8 @@ struct ThreeLevelCompositionTests {
 
     @Test func over_hit() {
         let c = Container(person: alice, shape: .circle(2.0))
-        let updated = containerCircle.over({ $0 * 3 })(c)
-        guard case .circle(let r) = updated.shape else {
+        let updated = containerCircle.over { $0 * 3 }(c)
+        guard case let .circle(r) = updated.shape else {
             Issue.record("Expected .circle")
             return
         }
@@ -274,7 +274,7 @@ struct ThreeLevelCompositionTests {
 
     @Test func over_miss_personUnchanged() {
         let c = Container(person: alice, shape: .rectangle(1.0, 2.0))
-        let updated = containerCircle.over({ $0 * 3 })(c)
+        let updated = containerCircle.over { $0 * 3 }(c)
         #expect(updated.person.age == alice.age)
     }
 }

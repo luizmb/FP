@@ -15,10 +15,10 @@ public extension Loading {
         case .idle:
             .idle
 
-        case .loading(let prev):
+        case let .loading(prev):
             .loading(previous: prev.flatMap { f($0).loadedOrPrevious })
 
-        case .loaded(let value):
+        case let .loaded(value):
             f(value)
 
         case let .failed(err, prev):

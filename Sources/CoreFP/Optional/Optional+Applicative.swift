@@ -35,7 +35,7 @@ public extension Optional {
     ) -> A?
     where A == (A1, A2, repeat each Ax) {
         // swiftlint:disable:next throws_instead_result
-        func unwrap<T>(_ t: T?) throws -> T {  // throws for do/catch zip, returns Optional at boundary
+        func unwrap<T>(_ t: T?) throws -> T { // throws for do/catch zip, returns Optional at boundary
             guard let t else { throw UnwrapError() }
             return t
         }

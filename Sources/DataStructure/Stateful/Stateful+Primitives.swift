@@ -5,7 +5,7 @@ public extension Stateful {
     /// The `get` property.
     static var get: Stateful<S, S> {
         // swiftlint:disable:next unnecessary_single_param_closure
-        Stateful<S, S> { s in s }  // `s` is inout — cannot use `id`, which takes (T) -> T not (inout T) -> T
+        Stateful<S, S> { s in s } // `s` is inout — cannot use `id`, which takes (T) -> T not (inout T) -> T
     }
 
     /// The `property` property.
@@ -31,6 +31,6 @@ public extension Stateful {
     /// The `property` property.
     static func pure(_ value: A) -> Stateful<S, A> where A: Sendable {
         // swiftlint:disable:next closure_ignoring_args unnecessary_single_param_closure
-        Stateful<S, A> { _ in value }  // `_` is inout S — `const` takes (T)->A not (inout T)->A
+        Stateful<S, A> { _ in value } // `_` is inout S — `const` takes (T)->A not (inout T)->A
     }
 }

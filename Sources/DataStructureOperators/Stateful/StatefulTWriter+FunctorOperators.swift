@@ -14,6 +14,7 @@ public func <£^> <S, W: Monoid, A, B>(
 /// (<&^>) :: Stateful<s, Writer<w, a>> -> (a -> b) -> Stateful<s, Writer<w, b>>
 public func <&^> <S, W: Monoid, A, B>(
     _ stateful: Stateful<S, Writer<W, A>>,
-    _ fn: @escaping @Sendable (A) -> B) -> Stateful<S, Writer<W, B>> {
+    _ fn: @escaping @Sendable (A) -> B
+) -> Stateful<S, Writer<W, B>> {
     stateful.mapT(fn)
 }

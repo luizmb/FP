@@ -14,10 +14,10 @@ public extension Loading {
     /// `loadedOrPrevious` as the previous value on failure.
     func applying(_ result: Result<Success, Failure>) -> Self {
         switch result {
-        case .success(let value):
+        case let .success(value):
             .loaded(value)
 
-        case .failure(let error):
+        case let .failure(error):
             .failed(error: error, previous: loadedOrPrevious)
         }
     }
@@ -25,10 +25,10 @@ public extension Loading {
     /// Wraps a `Result` as a fresh `Loading` with no prior context.
     static func from(_ result: Result<Success, Failure>) -> Self {
         switch result {
-        case .success(let value):
+        case let .success(value):
             .loaded(value)
 
-        case .failure(let error):
+        case let .failure(error):
             .failed(error: error, previous: nil)
         }
     }

@@ -32,16 +32,16 @@ struct LensLawTests {
     private let lens = CoreFP.lens(\Pair.first)
 
     @Test func getSet() { // setting what you got changes nothing
-        forAll(pairGen) { s in self.lens.set(s, self.lens.get(s)) == s }
+        forAll(pairGen) { s in lens.set(s, lens.get(s)) == s }
     }
 
     @Test func setGet() { // getting after setting returns what you set
-        forAll(pairGen, intGen) { s, a in self.lens.get(self.lens.set(s, a)) == a }
+        forAll(pairGen, intGen) { s, a in lens.get(lens.set(s, a)) == a }
     }
 
     @Test func setSet() { // last set wins
         forAll(pairGen, intGen, intGen) { s, a1, a2 in
-            self.lens.set(self.lens.set(s, a1), a2) == self.lens.set(s, a2)
+            lens.set(lens.set(s, a1), a2) == lens.set(s, a2)
         }
     }
 }
@@ -51,13 +51,13 @@ struct PrismLawTests {
     private let prism = Either<Int, String>.prism.left
 
     @Test func reviewThenPreviewRoundTrips() {
-        forAll(intGen) { a in self.prism.preview(self.prism.review(a)) == a }
+        forAll(intGen) { a in prism.preview(prism.review(a)) == a }
     }
 
     @Test func previewThenReviewReconstructs() { // when it matches, review rebuilds the original
         forAll(eitherGen) { s in
-            guard let a = self.prism.preview(s) else { return true }
-            return self.prism.review(a) == s
+            guard let a = prism.preview(s) else { return true }
+            return prism.review(a) == s
         }
     }
 }
@@ -67,25 +67,25 @@ struct AffineTraversalLawTests {
     private let affine = affineTraversal(\Box.maybe)
 
     @Test func setThenPreview() { // set writes the focus (unconditionally for an optional key path)
-        forAll(boxGen, intGen) { s, a in self.affine.preview(self.affine.set(s, a)) == a }
+        forAll(boxGen, intGen) { s, a in affine.preview(affine.set(s, a)) == a }
     }
 
     @Test func setWhatYouPreview() { // setting back the previewed value is identity
         forAll(boxGen) { s in
-            guard let a = self.affine.preview(s) else { return true }
-            return self.affine.set(s, a) == s
+            guard let a = affine.preview(s) else { return true }
+            return affine.set(s, a) == s
         }
     }
 
     @Test func setSet() {
         forAll(boxGen, intGen, intGen) { s, a1, a2 in
-            self.affine.set(self.affine.set(s, a1), a2) == self.affine.set(s, a2)
+            affine.set(affine.set(s, a1), a2) == affine.set(s, a2)
         }
     }
 
     @Test func overIsNoOpWhenFocusAbsent() { // the "affine" part: no focus → over leaves S unchanged
         forAll(boxGen, intFuncGen) { s, f in
-            self.affine.preview(s) != nil || self.affine.over(f)(s) == s
+            affine.preview(s) != nil || affine.over(f)(s) == s
         }
     }
 }
@@ -95,10 +95,10 @@ struct IsoLawTests {
     private let iso = Iso<Int, Int>(get: { -$0 }, reverseGet: { -$0 })
 
     @Test func getThenReverseGet() {
-        forAll(intGen) { s in self.iso.reverseGet(self.iso.get(s)) == s }
+        forAll(intGen) { s in iso.reverseGet(iso.get(s)) == s }
     }
 
     @Test func reverseGetThenGet() {
-        forAll(intGen) { a in self.iso.get(self.iso.reverseGet(a)) == a }
+        forAll(intGen) { a in iso.get(iso.reverseGet(a)) == a }
     }
 }

@@ -2,7 +2,7 @@
 import CoreFP
 
 /// (<$>) :: Functor f => (a -> b) -> f a -> f b
-public func <£> <A1, A>(_ transform: @escaping @Sendable (A) -> A1, _ optional: A?) -> A1? {A?.fmap(transform)(optional)
+public func <£> <A1, A>(_ transform: @escaping @Sendable (A) -> A1, _ optional: A?) -> A1? { A?.fmap(transform)(optional)
 }
 
 /// ($>) :: Optional<A> -> b -> Optional<b>

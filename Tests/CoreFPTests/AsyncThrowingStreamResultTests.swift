@@ -43,7 +43,7 @@ import Testing
         #expect(results.count == 2)
         #expect((try? results[0].get()) == 1)
         switch results[1] {
-        case .failure(let error):
+        case let .failure(error):
             #expect(error as? TestError == .fail)
 
         case .success:

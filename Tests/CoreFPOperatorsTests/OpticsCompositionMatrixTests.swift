@@ -4,6 +4,7 @@ import CoreFP
 import Testing
 
 // MARK: - Optic composition completeness matrix
+
 //
 // Every ordered pair of the five optics — Iso, Lens, Prism, AffineTraversal,
 // Traversal — must compose, in all three forms (`.compose`, `>>>`, `<<<`), and

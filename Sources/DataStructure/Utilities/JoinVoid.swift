@@ -2,6 +2,7 @@
 import CoreFP
 
 // MARK: - join / void free functions for DataStructure types
+
 //
 // These free functions mirror the join/void free functions in CoreFP/Utilities/JoinVoid.swift
 // but target the DataStructure monad types: Either, Reader, Stateful, Writer.

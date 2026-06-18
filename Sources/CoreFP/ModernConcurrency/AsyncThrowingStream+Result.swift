@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
+
 // MARK: - AsyncThrowingStream <-> Result bridges
+
 //
 // A throwing async stream is structurally equivalent to a non-throwing stream
 // of Result values — errors are just failures, elements are successes.
@@ -53,10 +55,10 @@ public extension AsyncStream {
             Task {
                 for await element in self {
                     switch element {
-                    case .success(let value):
+                    case let .success(value):
                         continuation.yield(value)
 
-                    case .failure(let error):
+                    case let .failure(error):
                         continuation.finish(throwing: error)
                         return
                     }

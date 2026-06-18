@@ -14,10 +14,10 @@ public extension Optional {
     func flatMapT<A, B, E: Error>(_ fn: @escaping @Sendable (A) -> Result<B, E>?) -> Result<B, E>? where Wrapped == Result<A, E> {
         flatMap { result in
             switch result {
-            case .failure(let e):
+            case let .failure(e):
                 .some(.failure(e))
 
-            case .success(let a):
+            case let .success(a):
                 fn(a)
             }
         }

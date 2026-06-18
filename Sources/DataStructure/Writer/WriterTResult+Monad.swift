@@ -12,10 +12,10 @@ public extension Writer {
         _ fn: (Inner) -> Writer<W, Result<B, E>>
     ) -> Writer<W, Result<B, E>> where A == Result<Inner, E> {
         switch value {
-        case .failure(let e):
+        case let .failure(e):
             return Writer<W, Result<B, E>>(.failure(e), log)
 
-        case .success(let a):
+        case let .success(a):
             let wb = fn(a)
             return Writer<W, Result<B, E>>(wb.value, W.combine(log, wb.log))
         }

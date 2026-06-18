@@ -39,7 +39,7 @@ import Testing
 
     @Test func applicative() {
         let wf = Writer<[String], Either<String, @Sendable (Int) -> String>>(
-            .right({ "\($0)" }),
+            .right { "\($0)" },
             ["fn"]
         )
         let wa = Writer<[String], Either<String, Int>>(.right(7), ["val"])

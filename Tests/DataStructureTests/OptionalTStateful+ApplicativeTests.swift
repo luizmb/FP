@@ -6,7 +6,7 @@ import Testing
     // MARK: - Stateful<S, A>? — Optional as outer, Stateful as inner
 
     @Test func applyBothSome() {
-        let sf: Stateful<Int, @Sendable (Int) -> String>? = .pure({ "\($0)" })
+        let sf: Stateful<Int, @Sendable (Int) -> String>? = .pure { "\($0)" }
         let sa: Stateful<Int, Int>? = .get
         let result = applyOptionalStateful(sf, sa)
         #expect(result?.eval(5) == "5")
@@ -20,7 +20,7 @@ import Testing
     }
 
     @Test func applyNilVal() {
-        let sf: Stateful<Int, @Sendable (Int) -> String>? = .pure({ "\($0)" })
+        let sf: Stateful<Int, @Sendable (Int) -> String>? = .pure { "\($0)" }
         let sa: Stateful<Int, Int>? = nil
         let result = applyOptionalStateful(sf, sa)
         #expect(result == nil)

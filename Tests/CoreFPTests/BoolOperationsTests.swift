@@ -6,7 +6,7 @@ import Testing
     private struct User { let name: String; let age: Int; let isAdmin: Bool }
 
     private let alice = User(name: "Alice", age: 30, isAdmin: false)
-    private let bob   = User(name: "Bob", age: 16, isAdmin: true)
+    private let bob = User(name: "Bob", age: 16, isAdmin: true)
 
     // MARK: - equals / notEquals
 
@@ -76,14 +76,14 @@ import Testing
         let isAdmin: @Sendable (User) -> Bool = get(\.isAdmin)
         let nameIsAlice = compose(get(\User.name), equals("Alice"))
         let aliceOrAdmin = or(nameIsAlice, isAdmin)
-        #expect(aliceOrAdmin(alice) == true)   // name matches
-        #expect(aliceOrAdmin(bob) == true)   // isAdmin
+        #expect(aliceOrAdmin(alice) == true) // name matches
+        #expect(aliceOrAdmin(bob) == true) // isAdmin
     }
 
     @Test func orPredicatesFilter() {
         let users = [alice, bob]
         let nameIsAlice = compose(get(\User.name), equals("Alice"))
-        let nameIsBob   = compose(get(\User.name), equals("Bob"))
+        let nameIsBob = compose(get(\User.name), equals("Bob"))
         let result = users.filter(or(nameIsAlice, nameIsBob))
         #expect(result.count == 2)
     }

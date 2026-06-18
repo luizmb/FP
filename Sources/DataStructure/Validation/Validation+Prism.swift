@@ -13,11 +13,11 @@ import CoreFP
 public extension Validation {
     struct Prisms: Sendable {
         public let failure: CoreFP.Prism<Validation, E> = CoreFP.prism(
-            preview: { (s: Validation) in guard case .failure(let e) = s else { return nil }; return e },
+            preview: { (s: Validation) in guard case let .failure(e) = s else { return nil }; return e },
             review: Validation.failure
         )
         public let success: CoreFP.Prism<Validation, A> = CoreFP.prism(
-            preview: { (s: Validation) in guard case .success(let a) = s else { return nil }; return a },
+            preview: { (s: Validation) in guard case let .success(a) = s else { return nil }; return a },
             review: Validation.success
         )
     }

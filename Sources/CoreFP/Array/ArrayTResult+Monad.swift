@@ -13,10 +13,10 @@ public extension Array {
     where Element == Result<A, E> {
         flatMap { result -> [Result<B, E>] in
             switch result {
-            case .failure(let e):
+            case let .failure(e):
                 [.failure(e)]
 
-            case .success(let a):
+            case let .success(a):
                 fn(a)
             }
         }

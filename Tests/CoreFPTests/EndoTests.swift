@@ -26,14 +26,14 @@ import Testing
         let addOne = Endo<Int> { $0 + 1 }
         let double = Endo<Int> { $0 * 2 }
         let combined = Endo.combine(addOne, double)
-        #expect(combined.runEndo(3) == 8)   // (3+1)*2
+        #expect(combined.runEndo(3) == 8) // (3+1)*2
     }
 
     @Test func combine_associativity() {
         let addOne = Endo<Int> { $0 + 1 }
         let double = Endo<Int> { $0 * 2 }
         let addTen = Endo<Int> { $0 + 10 }
-        let left  = Endo.combine(Endo.combine(addOne, double), addTen)
+        let left = Endo.combine(Endo.combine(addOne, double), addTen)
         let right = Endo.combine(addOne, Endo.combine(double, addTen))
         #expect(left.runEndo(3) == right.runEndo(3))
     }
@@ -53,8 +53,8 @@ import Testing
     }
 
     @Test func mconcat_pipelineAppliesInOrder() {
-        let trim    = Endo<String> { $0.trimmingCharacters(in: .whitespaces) }
-        let lower   = Endo<String> { $0.lowercased() }
+        let trim = Endo<String> { $0.trimmingCharacters(in: .whitespaces) }
+        let lower = Endo<String> { $0.lowercased() }
         let exclaim = Endo<String> { $0 + "!" }
         let pipeline = mconcat([trim, lower, exclaim])
         #expect(pipeline.runEndo("  HELLO  ") == "hello!")

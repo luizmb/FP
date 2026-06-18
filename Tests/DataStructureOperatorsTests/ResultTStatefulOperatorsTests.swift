@@ -23,7 +23,7 @@ import Testing
     @Test func fmapFailure() {
         let result: Result<Stateful<Int, Int>, TestError> = .failure(.failure)
         let mapped: Result<Stateful<Int, Int>, TestError> = { $0 * 2 } <£^> result
-        if case .failure(let e) = mapped { #expect(e == .failure) } else { Issue.record("Expected .failure") }
+        if case let .failure(e) = mapped { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func bindSuccess() {
@@ -35,7 +35,7 @@ import Testing
     @Test func bindFailure() {
         let result: Result<Stateful<Int, Int>, TestError> = .failure(.failure)
         let bound = result >>- { n in Stateful<Int, String>.pure("\(n)") }
-        if case .failure(let e) = bound { #expect(e == .failure) } else { Issue.record("Expected .failure") }
+        if case let .failure(e) = bound { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func kleisli() {
@@ -46,7 +46,7 @@ import Testing
     }
 
     @Test func apply() {
-        let rf: Result<Stateful<Int, @Sendable (Int) -> String>, TestError> = .success(.pure({ "\($0)" }))
+        let rf: Result<Stateful<Int, @Sendable (Int) -> String>, TestError> = .success(.pure { "\($0)" })
         let ra: Result<Stateful<Int, Int>, TestError> = .success(.get)
         let result = rf <*> ra
         #expect(Result.prism.success.preview(result)?.eval(5) == "5")
@@ -56,7 +56,7 @@ import Testing
         let rf: Result<Stateful<Int, @Sendable (Int) -> String>, TestError> = .failure(.failure)
         let ra: Result<Stateful<Int, Int>, TestError> = .success(.pure(5))
         let result = rf <*> ra
-        if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
+        if case let .failure(e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func seqRight() {

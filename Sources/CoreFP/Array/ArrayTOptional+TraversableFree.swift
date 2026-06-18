@@ -13,4 +13,5 @@ public func traverse<A, B>(_ fn: @escaping @Sendable (A) -> B?) -> ([A]) -> [B]?
         array.traverse(fn)
     }
 }
+
 // swiftlint:enable discouraged_optional_collection

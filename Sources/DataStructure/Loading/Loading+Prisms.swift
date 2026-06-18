@@ -16,15 +16,15 @@ public extension Loading {
             review: { (_: Void) in Loading.idle }
         )
         public let loading: CoreFP.Prism<Loading, Success?> = CoreFP.prism(
-            preview: { (s: Loading) in guard case .loading(let a) = s else { return nil }; return a },
+            preview: { (s: Loading) in guard case let .loading(a) = s else { return nil }; return a },
             review: Loading.loading
         )
         public let loaded: CoreFP.Prism<Loading, Success> = CoreFP.prism(
-            preview: { (s: Loading) in guard case .loaded(let a) = s else { return nil }; return a },
+            preview: { (s: Loading) in guard case let .loaded(a) = s else { return nil }; return a },
             review: Loading.loaded
         )
         public let failed: CoreFP.Prism<Loading, (Failure, Success?)> = CoreFP.prism(
-            preview: { (s: Loading) in guard case .failed(let v0, let v1) = s else { return nil }; return (v0, v1) },
+            preview: { (s: Loading) in guard case let .failed(v0, v1) = s else { return nil }; return (v0, v1) },
             review: { (t: (Failure, Success?)) in Loading.failed(error: t.0, previous: t.1) }
         )
     }

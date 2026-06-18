@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
+
 // MARK: - AffineTraversal<S, A>
+
 //
 // An `AffineTraversal` focuses on zero or one value of type `A` inside `S`.
 // It is the result of composing a `Lens` with a `Prism` (in either order):
@@ -113,7 +115,7 @@ public struct AffineTraversal<S, A>: Sendable {
     public init(preview: @escaping @Sendable (S) -> A?, set: @escaping @Sendable (S, A) -> S) {
         self.preview = preview
         self.set = set
-        self.tryModifyMut = { s, f in
+        tryModifyMut = { s, f in
             guard var part = preview(s) else { return }
             f(&part)
             s = set(s, part)
@@ -148,11 +150,11 @@ public struct AffineTraversal<S, A>: Sendable {
     /// ```
     public init(preview: @escaping @Sendable (S) -> A?, setMut: @escaping @Sendable (inout S, A) -> Void) {
         self.preview = preview
-        self.set = { s, a in
+        set = { s, a in
             guard preview(s) != nil else { return s }
             var c = s; setMut(&c, a); return c
         }
-        self.tryModifyMut = { s, f in
+        tryModifyMut = { s, f in
             guard var part = preview(s) else { return }
             f(&part)
             setMut(&s, part)
@@ -174,9 +176,9 @@ public struct AffineTraversal<S, A>: Sendable {
     }
 }
 
-extension AffineTraversal where S == A {
+public extension AffineTraversal where S == A {
     /// The `id` property.
-    public static var id: AffineTraversal<S, S> {
+    static var id: AffineTraversal<S, S> {
         AffineTraversal(preview: { .some($0) }, set: { _, a in a }, tryModifyMut: { s, f in f(&s) })
     }
 }

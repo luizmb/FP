@@ -105,6 +105,7 @@ extension Validation: Comparable where E: Comparable, A: Comparable {
         }
     }
 }
+
 extension Validation: Hashable where E: Hashable, A: Hashable {}
 extension Validation: Sendable where E: Sendable, A: Sendable {}
 extension Validation: Decodable where E: Decodable, A: Decodable {}

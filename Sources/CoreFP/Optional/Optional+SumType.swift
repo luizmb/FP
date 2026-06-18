@@ -2,6 +2,7 @@
 import Foundation
 
 // MARK: - Optional as SumType2
+
 //
 // Optional<A> is isomorphic to Either<A, Void>:
 //   .some(a) ≅ .left(a)    (SumType2.A = Wrapped)
@@ -18,7 +19,7 @@ extension Optional: SumType2 {
         .some(a)
     }
 
-    public static func right(_ b: Void) -> Wrapped? {
+    public static func right(_: Void) -> Wrapped? {
         .none
     }
 

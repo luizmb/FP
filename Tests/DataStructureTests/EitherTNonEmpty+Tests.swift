@@ -19,7 +19,7 @@ import Testing
 
     @Test func fmapT_curried() {
         let either: Either<String, NonEmpty<Int>> = .right(NonEmpty(head: 5))
-        let mapped = fmapTEitherNonEmpty({ $0 + 1 })(either)
+        let mapped = fmapTEitherNonEmpty { $0 + 1 }(either)
         #expect(mapped == .right(NonEmpty(head: 6)))
     }
 
@@ -59,7 +59,7 @@ import Testing
 
     @Test func bindT_curried() {
         let either: Either<String, NonEmpty<Int>> = .right(NonEmpty(head: 3))
-        let bound = bindTEitherNonEmpty({ n in Either<String, NonEmpty<Int>?>.right(NonEmpty(head: n + 1)) })(either)
+        let bound = bindTEitherNonEmpty { n in Either<String, NonEmpty<Int>?>.right(NonEmpty(head: n + 1)) }(either)
         #expect(bound == .right(NonEmpty(head: 4)))
     }
 }

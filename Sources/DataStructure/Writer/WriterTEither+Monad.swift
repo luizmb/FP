@@ -12,10 +12,10 @@ public extension Writer {
         _ fn: @escaping @Sendable (Inner) -> Writer<W, Either<L, B>>
     ) -> Writer<W, Either<L, B>> where A == Either<L, Inner> {
         switch value {
-        case .left(let l):
+        case let .left(l):
             return Writer<W, Either<L, B>>(.left(l), log)
 
-        case .right(let a):
+        case let .right(a):
             let wb = fn(a)
             return Writer<W, Either<L, B>>(wb.value, W.combine(log, wb.log))
         }

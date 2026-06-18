@@ -53,7 +53,7 @@ public protocol SumType2<A, B>: Sendable {
 public extension SumType2 {
     /// The `property` property.
     static func from(_ another: any SumType2<A, B>) -> Self {
-        another.match(caseLeft: Self.left, caseRight: Self.right)
+        another.match(caseLeft: left, caseRight: right)
     }
 }
 

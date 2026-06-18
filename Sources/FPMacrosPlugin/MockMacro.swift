@@ -177,8 +177,8 @@ private func mockMethod(
 
 private func mockProperty(_ variable: VariableDeclSyntax, access: AccessLevel) -> MockMember? {
     guard let binding = variable.bindings.first,
-        let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
-        let type = binding.typeAnnotation?.type.trimmedDescription
+          let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
+          let type = binding.typeAnnotation?.type.trimmedDescription
     else { return nil }
 
     var isSettable = false
@@ -213,7 +213,9 @@ private func mockProperty(_ variable: VariableDeclSyntax, access: AccessLevel) -
 
 private func baseNameCollisions(_ functions: [FunctionDeclSyntax]) -> Set<String> {
     var counts: [String: Int] = [:]
-    for function in functions { counts[function.name.text, default: 0] += 1 }
+    for function in functions {
+        counts[function.name.text, default: 0] += 1
+    }
     return Set(counts.filter { $0.value > 1 }.keys)
 }
 

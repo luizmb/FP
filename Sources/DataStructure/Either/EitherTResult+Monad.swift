@@ -15,10 +15,10 @@ public func flatMapTEitherResult<L, A, B, E: Error>(
 ) -> Either<L, Result<B, E>> {
     either.flatMap { result in
         switch result {
-        case .failure(let e):
+        case let .failure(e):
             .right(.failure(e))
 
-        case .success(let a):
+        case let .success(a):
             fn(a)
         }
     }

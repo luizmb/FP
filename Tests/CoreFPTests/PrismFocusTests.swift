@@ -13,14 +13,15 @@ private enum Sign: Equatable, Sendable {
 extension Sign: Prismatic {
     struct Prisms: Sendable {
         let positive = Prism<Sign, Int>(
-            preview: { if case .positive(let value) = $0 { value } else { nil } },
+            preview: { if case let .positive(value) = $0 { value } else { nil } },
             review: Sign.positive
         )
         let negative = Prism<Sign, String>(
-            preview: { if case .negative(let value) = $0 { value } else { nil } },
+            preview: { if case let .negative(value) = $0 { value } else { nil } },
             review: Sign.negative
         )
     }
+
     static let prism = Prisms()
 }
 
@@ -32,14 +33,15 @@ private enum Outer: Equatable, Sendable {
 extension Outer: Prismatic {
     struct Prisms: Sendable {
         let sign = Prism<Outer, Sign>(
-            preview: { if case .sign(let value) = $0 { value } else { nil } },
+            preview: { if case let .sign(value) = $0 { value } else { nil } },
             review: Outer.sign
         )
         let flag = Prism<Outer, Bool>(
-            preview: { if case .flag(let value) = $0 { value } else { nil } },
+            preview: { if case let .flag(value) = $0 { value } else { nil } },
             review: Outer.flag
         )
     }
+
     static let prism = Prisms()
 }
 

@@ -45,13 +45,13 @@ import Testing
 
     @Test func eitherBitraverseOptionalLeftAbsent() {
         let e: Either<String, Int> = .left("hi")
-        let result = e.bitraverse(const(nil as String?), { Optional($0) })
+        let result = e.bitraverse(const(nil as String?)) { Optional($0) }
         #expect(result == .none)
     }
 
     @Test func eitherBitraverseOptionalRightPresent() {
         let e: Either<String, Int> = .right(5)
-        let result = e.bitraverse(const(nil as String?), { Optional($0 * 2) })
+        let result = e.bitraverse(const(nil as String?)) { Optional($0 * 2) }
         #expect(result == .some(.right(10)))
     }
 
@@ -156,13 +156,13 @@ import Testing
 
     @Test func validationBitraverseOptionalFailureAbsent() {
         let v: Validation<String, Int> = .failure("err")
-        let result = v.bitraverse(const(nil as String?), { Optional($0) })
+        let result = v.bitraverse(const(nil as String?)) { Optional($0) }
         #expect(result == .none)
     }
 
     @Test func validationBitraverseOptionalSuccessPresent() {
         let v: Validation<String, Int> = .success(5)
-        let result = v.bitraverse(const(nil as String?), { Optional($0 * 2) })
+        let result = v.bitraverse(const(nil as String?)) { Optional($0 * 2) }
         #expect(result == .some(.success(10)))
     }
 

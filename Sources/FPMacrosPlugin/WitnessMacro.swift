@@ -6,14 +6,14 @@ import SwiftSyntaxMacros
 // MARK: - Parsed model
 
 private struct WitnessParam {
-    let label: String?     // nil when the parameter label is `_`
+    let label: String? // nil when the parameter label is `_`
     let type: String
 }
 
 private struct WitnessMethod {
     let baseName: String
     let params: [WitnessParam]
-    let returnType: String   // "Void" when absent
+    let returnType: String // "Void" when absent
     let isAsync: Bool
     let isThrows: Bool
 
@@ -47,7 +47,7 @@ private struct WitnessModel {
     let methods: [WitnessMethod]
     let properties: [WitnessProperty]
     let associatedTypes: [(name: String, constraint: String?)]
-    let inheritedWitnesses: [String]   // parent protocol names (already filtered of markers)
+    let inheritedWitnesses: [String] // parent protocol names (already filtered of markers)
 
     var hasSettable: Bool { properties.contains(where: \.isSettable) }
 }
@@ -102,7 +102,7 @@ extension WitnessMacro: ExtensionMacro {
         in context: some MacroExpansionContext
     ) throws -> [ExtensionDeclSyntax] {
         guard let proto = declaration.as(ProtocolDeclSyntax.self),
-            let model = parseModel(proto, node: node, in: context)
+              let model = parseModel(proto, node: node, in: context)
         else { return [] }
 
         let access = witnessAccess(proto.modifiers)
@@ -213,8 +213,8 @@ private func parseProperty(
         abort(.staticRequirement, variable); return nil
     }
     guard let binding = variable.bindings.first,
-        let identifier = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
-        let type = binding.typeAnnotation?.type.trimmedDescription
+          let identifier = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
+          let type = binding.typeAnnotation?.type.trimmedDescription
     else { return nil }
 
     var isSettable = false
@@ -318,7 +318,9 @@ private func initFieldNames(_ model: WitnessModel) -> [String] {
 
 private func disambiguatedNames(_ methods: [WitnessMethod]) -> [String] {
     var counts: [String: Int] = [:]
-    for method in methods { counts[method.baseName, default: 0] += 1 }
+    for method in methods {
+        counts[method.baseName, default: 0] += 1
+    }
 
     return methods.map { method in
         guard counts[method.baseName, default: 0] > 1 else { return method.baseName }
@@ -335,8 +337,8 @@ func typeToken(_ type: String) -> String {
 // MARK: - Generics
 
 struct GenericClause {
-    let declaration: String   // e.g. "<Item, Failure: Error>" or ""
-    let usage: String         // e.g. "<Item, Failure>" or ""
+    let declaration: String // e.g. "<Item, Failure: Error>" or ""
+    let usage: String // e.g. "<Item, Failure>" or ""
 }
 
 func genericClause(_ associatedTypes: [(name: String, constraint: String?)]) -> GenericClause {
@@ -356,7 +358,7 @@ func witnessAccess(_ modifiers: DeclModifierListSyntax) -> AccessLevel {
     for modifier in modifiers {
         switch modifier.name.text {
         case "open",
-            "public":
+             "public":
             return .public // `open` structs are illegal → public witness
 
         case "package":
@@ -407,7 +409,9 @@ func substitute(_ name: String, with replacement: String, in text: String) -> St
 func matches(_ name: String, in chars: [Character], at index: Int) -> Bool {
     let target = Array(name)
     guard index + target.count <= chars.count else { return false }
-    for offset in 0..<target.count where chars[index + offset] != target[offset] { return false }
+    for offset in 0..<target.count where chars[index + offset] != target[offset] {
+        return false
+    }
     return true
 }
 

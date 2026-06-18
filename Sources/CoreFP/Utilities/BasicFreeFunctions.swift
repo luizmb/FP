@@ -39,10 +39,10 @@ public enum Of3<T, U, V> {}
 ///     }
 /// }
 /// ```
-public func absurd<T>(_: Never) -> T { }
+public func absurd<T>(_: Never) -> T {}
 public extension Of {
     /// The `property` property.
-    static func absurd(_: Never) -> T { }
+    static func absurd(_: Never) -> T {}
 }
 
 // Removed due to crashing compiler bug in Swift 6.2
@@ -166,6 +166,7 @@ public func const<I1, I2, I3, I4, each I, Return: Sendable>(
 ) -> @Sendable (I1, I2, I3, I4, repeat each I) -> Return {
     { (_: I1, _: I2, _: I3, _: I4, _: repeat each I) in returnValue }
 }
+
 public extension Of {
     /// The `property` property.
     static func const<Return>(_ returnValue: Return) -> (T) -> Return {
@@ -186,6 +187,7 @@ public extension Of3 {
         { _, _ in returnValue }
     }
 }
+
 // swiftlint:enable closure_ignoring_args unnecessary_single_param_closure
 
 /// Identify function of a value, returning the unmodified value
@@ -482,4 +484,5 @@ public func fail<T, U, V, W, X, each Y>(
 ) -> (U, V, W, X, repeat each Y) -> T {
     { (_: U, _: V, _: W, _: X, _: repeat each Y) in fatalError(message, file: file, line: line) }
 }
+
 // swiftlint:enable closure_ignoring_args

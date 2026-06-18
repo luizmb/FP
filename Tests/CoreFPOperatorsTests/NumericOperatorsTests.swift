@@ -69,13 +69,13 @@ import Testing
 
     @Test func patternMatchingWithPlusMinus() {
         let statusCode = 250
-        #expect((250 ± 50).contains(statusCode))   // 200...300
-        #expect((250 ± 10).contains(statusCode))   // 240...260
-        #expect(!(200 ± 10).contains(statusCode))  // 190...210
+        #expect((250 ± 50).contains(statusCode)) // 200...300
+        #expect((250 ± 10).contains(statusCode)) // 240...260
+        #expect(!(200 ± 10).contains(statusCode)) // 190...210
 
         let temperature = 22.5
-        #expect((20.0 ± 5.0).contains(temperature))   // 15.0...25.0
-        #expect(!(20.0 ± 1.0).contains(temperature))  // 19.0...21.0
+        #expect((20.0 ± 5.0).contains(temperature)) // 15.0...25.0
+        #expect(!(20.0 ± 1.0).contains(temperature)) // 19.0...21.0
     }
 
     @Test func patternMatchingRange() {
@@ -119,14 +119,15 @@ import Testing
     }
 
     // MARK: - Power
+
     // ^ is limited to BinaryFloatingPoint to avoid conflict with Swift's built-in
     // XOR operator on BinaryInteger types. Use power(_:_:) for integers.
 
     @Test func powerFloatOperator() {
-        let a: Double = 2.0 ^ 10
-        let b: Double = 3.0 ^ 3
-        let c: Double = 5.0 ^ 0
-        let d: Double = 7.0 ^ 1
+        let a = 2.0 ^ 10
+        let b = 3.0 ^ 3
+        let c = 5.0 ^ 0
+        let d = 7.0 ^ 1
         #expect(a == 1_024.0)
         #expect(b == 27.0)
         #expect(c == 1.0)
@@ -134,8 +135,8 @@ import Testing
     }
 
     @Test func powerOperatorMatchesNamedFunction() {
-        let r1: Double = 2.0 ^ 8
-        let r2: Double = 3.0 ^ 4
+        let r1 = 2.0 ^ 8
+        let r2 = 3.0 ^ 4
         #expect(r1 == power(2.0, 8))
         #expect(r2 == power(3.0, 4))
     }

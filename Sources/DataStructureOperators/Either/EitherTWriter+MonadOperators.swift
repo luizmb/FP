@@ -9,7 +9,8 @@ import DataStructure
 /// (>>-) :: Either<l, Writer<w, a>> -> (a -> Writer<w, b>) -> Either<l, Writer<w, b>>
 public func >>- <L, W: Monoid, A, B>(
     _ either: Either<L, Writer<W, A>>,
-    _ fn: @escaping @Sendable (A) -> Writer<W, B>) -> Either<L, Writer<W, B>> {
+    _ fn: @escaping @Sendable (A) -> Writer<W, B>
+) -> Either<L, Writer<W, B>> {
     either.flatMapT(fn)
 }
 

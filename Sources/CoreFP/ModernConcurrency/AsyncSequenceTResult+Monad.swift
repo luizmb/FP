@@ -17,10 +17,10 @@ public func flatMapTAsyncStreamResult<A, B, E: Error>(
         let task = Task { @Sendable in
             for await result in stream {
                 switch result {
-                case .failure(let e):
+                case let .failure(e):
                     continuation.yield(.failure(e))
 
-                case .success(let a):
+                case let .success(a):
                     for await b in fn(a) {
                         continuation.yield(b)
                     }

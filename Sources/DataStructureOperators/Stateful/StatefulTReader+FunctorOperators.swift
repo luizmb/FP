@@ -13,6 +13,7 @@ public func <£^> <S, Env, A, B>(
 /// (<&^>) :: Stateful<s, Reader<env, a>> -> (a -> b) -> Stateful<s, Reader<env, b>>
 public func <&^> <S, Env, A, B>(
     _ stateful: Stateful<S, Reader<Env, A>>,
-    _ fn: @escaping @Sendable (A) -> B) -> Stateful<S, Reader<Env, B>> {
+    _ fn: @escaping @Sendable (A) -> B
+) -> Stateful<S, Reader<Env, B>> {
     stateful.mapT(fn)
 }

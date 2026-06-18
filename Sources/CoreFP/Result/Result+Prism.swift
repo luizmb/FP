@@ -12,11 +12,11 @@ import Foundation
 public extension Result {
     struct Prisms: Sendable {
         public let success: CoreFP.Prism<Result, Success> = CoreFP.prism(
-            preview: { (s: Result) in if case .success(let v) = s { v } else { nil } },
+            preview: { (s: Result) in if case let .success(v) = s { v } else { nil } },
             review: Result.success
         )
         public let failure: CoreFP.Prism<Result, Failure> = CoreFP.prism(
-            preview: { (s: Result) in if case .failure(let e) = s { e } else { nil } },
+            preview: { (s: Result) in if case let .failure(e) = s { e } else { nil } },
             review: Result.failure
         )
     }

@@ -68,9 +68,12 @@ func splitCaseBody(_ line: String) -> (String, String)? {
             if c == stringChar { inString = false }
         } else {
             switch c {
-            case "\"", "'": inString = true; stringChar = c
-            case "(", "[": depth += 1
-            case ")", "]": depth -= 1
+            case "\"",
+                 "'": inString = true; stringChar = c
+            case "(",
+                 "[": depth += 1
+            case ")",
+                 "]": depth -= 1
             case ":" where depth == 0:
                 let afterColon = trimmed[trimmed.index(after: i)...]
                 let bodyPart = afterColon.drop(while: { $0 == " " })
@@ -93,7 +96,7 @@ func fixFile(_ filepath: String, violatingLines: Set<Int>) -> Int {
     guard let content = try? String(contentsOfFile: filepath, encoding: .utf8) else { return 0 }
     var lines = content.components(separatedBy: "\n").map { $0 + "\n" }
     // Last element is "" after splitting on trailing newline
-    if lines.last == "\n" && content.hasSuffix("\n") {
+    if lines.last == "\n", content.hasSuffix("\n") {
         lines.removeLast()
     }
 
@@ -131,4 +134,5 @@ for (file, lines) in violations.sorted(by: { $0.key < $1.key }) {
         total += fixed
     }
 }
+
 print("\nTotal fixed: \(total)")

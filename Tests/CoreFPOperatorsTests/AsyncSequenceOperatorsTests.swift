@@ -2,6 +2,7 @@
 @testable import CoreFP
 @testable import CoreFPOperators
 import Testing
+
 @Suite struct AsyncSequenceTests {
     // MARK: - Functor Tests
 

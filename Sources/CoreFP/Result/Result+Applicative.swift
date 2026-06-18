@@ -36,7 +36,7 @@ public extension Result {
     ) -> Result<A, B>
     where A == (A1, A2, repeat each Ax) {
         // swiftlint:disable:next throws_instead_result
-        func unwrap<T, E: Error>(_ t: Result<T, E>) throws(E) -> T {  // typed throws for do/catch zip, returns Result at boundary
+        func unwrap<T, E: Error>(_ t: Result<T, E>) throws(E) -> T { // typed throws for do/catch zip, returns Result at boundary
             try t.get()
         }
 

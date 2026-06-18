@@ -118,7 +118,9 @@ func insertPosition(in lines: [String], before idx: Int) -> Int {
 /// Checks if lines immediately before `before` (ignoring blanks) are non-MARK // comments.
 func precedingPlainComment(in lines: [String], before idx: Int) -> (start: Int, end: Int)? {
     var i = idx - 1
-    while i >= 0, lines[i].trimmingCharacters(in: .whitespaces).isEmpty { i -= 1 }
+    while i >= 0, lines[i].trimmingCharacters(in: .whitespaces).isEmpty {
+        i -= 1
+    }
     var end = i
     var start = i
     while start >= 0 {
@@ -135,7 +137,7 @@ func precedingPlainComment(in lines: [String], before idx: Int) -> (start: Int, 
 func fixFile(_ filepath: String, violatingLines: Set<Int>) -> Int {
     guard let content = try? String(contentsOfFile: filepath, encoding: .utf8) else { return 0 }
     var lines = content.components(separatedBy: "\n").map { $0 + "\n" }
-    if lines.last == "\n" && content.hasSuffix("\n") { lines.removeLast() }
+    if lines.last == "\n", content.hasSuffix("\n") { lines.removeLast() }
 
     var result = lines
     var offset = 0
@@ -153,7 +155,9 @@ func fixFile(_ filepath: String, violatingLines: Set<Int>) -> Int {
 
         // Check if there's already a doc comment just before insertAt
         var checkIdx = insertAt - 1
-        while checkIdx >= 0, result[checkIdx].trimmingCharacters(in: .whitespaces).isEmpty { checkIdx -= 1 }
+        while checkIdx >= 0, result[checkIdx].trimmingCharacters(in: .whitespaces).isEmpty {
+            checkIdx -= 1
+        }
         if checkIdx >= 0, result[checkIdx].trimmingCharacters(in: .whitespaces).hasPrefix("///") {
             // Doc exists but may be misplaced (between @available and public func)
             // Find the doc block
@@ -212,4 +216,5 @@ for (file, lines) in violations.sorted(by: { $0.key < $1.key }) {
         total += fixed
     }
 }
+
 print("\nTotal: \(total) docs added/converted")

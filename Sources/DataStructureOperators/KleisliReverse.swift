@@ -4,6 +4,7 @@ import CoreFPOperators
 import DataStructure
 
 // MARK: - Reverse Kleisli composition (<=<) for DataStructure types
+
 //
 // This file provides <=< overloads for all DataStructure monad types:
 // Either, Reader, Stateful, Writer.
@@ -129,14 +130,14 @@ public func <=< <Env: Sendable, S: Sendable, A: Sendable, B: Sendable, C: Sendab
 ) -> (A) -> Reader<Env, Stateful<S, C>> { fn1 >=> fn2 }
 
 #if canImport(Combine)
-import Combine
+    import Combine
 
-/// `func` for `Reader`.
-@available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
-public func <=< <Env: Sendable, A: Sendable, B: Sendable, C: Sendable, E: Error>(
-    _ fn2: @escaping @Sendable (B) -> Reader<Env, any Publisher<C, E>>,
-    _ fn1: @escaping @Sendable (A) -> Reader<Env, any Publisher<B, E>>
-) -> (A) -> Reader<Env, any Publisher<C, E>> { fn1 >=> fn2 }
+    /// `func` for `Reader`.
+    @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
+    public func <=< <Env: Sendable, A: Sendable, B: Sendable, C: Sendable, E: Error>(
+        _ fn2: @escaping @Sendable (B) -> Reader<Env, any Publisher<C, E>>,
+        _ fn1: @escaping @Sendable (A) -> Reader<Env, any Publisher<B, E>>
+    ) -> (A) -> Reader<Env, any Publisher<C, E>> { fn1 >=> fn2 }
 
 #endif
 
@@ -247,15 +248,15 @@ public func <=< <W: Monoid, Env: Sendable, A: Sendable, B: Sendable, C: Sendable
 ) -> (A) -> Writer<W, Reader<Env, C>> { fn1 >=> fn2 }
 
 #if canImport(Combine)
-import Combine
-import CoreFPOperators
+    import Combine
+    import CoreFPOperators
 
-/// `func` for `Writer`.
-@available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
-public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable, E: Error>(
-    _ fn2: @escaping @Sendable (B) -> Writer<W, any Publisher<C, E>>,
-    _ fn1: @escaping @Sendable (A) -> Writer<W, any Publisher<B, E>>
-) -> (A) -> Writer<W, any Publisher<C, E>> { fn1 >=> fn2 }
+    /// `func` for `Writer`.
+    @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
+    public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable, E: Error>(
+        _ fn2: @escaping @Sendable (B) -> Writer<W, any Publisher<C, E>>,
+        _ fn1: @escaping @Sendable (A) -> Writer<W, any Publisher<B, E>>
+    ) -> (A) -> Writer<W, any Publisher<C, E>> { fn1 >=> fn2 }
 
 #endif
 

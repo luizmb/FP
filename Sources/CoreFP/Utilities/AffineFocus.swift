@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+
 // MARK: - AffineFocus
 
 /// A scaffolding wrapper that exists **only** so mixed `\.field.case.field` key paths can be
@@ -67,13 +68,13 @@ public typealias AffineKeyPath<Root, Value> = KeyPath<AffineFocus<Root, Root>, A
 
 // MARK: - Recovery
 
-extension AffineTraversal {
+public extension AffineTraversal {
     /// Recovers the concrete affine traversal denoted by a `\.a.b.c` mixed key path.
     ///
     /// Seeds an ``AffineFocus`` with the identity traversal and applies the key path, threading
     /// each step's lens/prism through the dynamic-member subscripts; the result's `traversal` is
     /// the composition from `S` down to the focused `A`.
-    public init(_ keyPath: AffineKeyPath<S, A>) {
+    init(_ keyPath: AffineKeyPath<S, A>) {
         self = AffineFocus<S, S>(traversal: .id)[keyPath: keyPath].traversal
     }
 }

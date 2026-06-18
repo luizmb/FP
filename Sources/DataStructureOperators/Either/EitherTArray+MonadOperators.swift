@@ -8,7 +8,8 @@ import DataStructure
 /// (>>-) :: Either<l,[a]> -> (a -> Either<l,[b]>) -> Either<l,[b]>
 public func >>- <L: Sendable, A: Sendable, B: Sendable>(
     _ either: Either<L, [A]>,
-    _ fn: @escaping @Sendable (A) -> Either<L, [B]>) -> Either<L, [B]> {
+    _ fn: @escaping @Sendable (A) -> Either<L, [B]>
+) -> Either<L, [B]> {
     flatMapTEitherArray(either, fn)
 }
 

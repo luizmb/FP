@@ -23,7 +23,7 @@ public func seqRightValidationResult<E: Semigroup, A, B, Err: Error>(
     _ lhs: Validation<E, Result<A, Err>>,
     _ rhs: Validation<E, Result<B, Err>>
 ) -> Validation<E, Result<B, Err>> {
-    Validation.liftA2({ (a: Result<A, Err>, b: Result<B, Err>) in a.seqRight(b) })(lhs, rhs)
+    Validation.liftA2 { (a: Result<A, Err>, b: Result<B, Err>) in a.seqRight(b) }(lhs, rhs)
 }
 
 /// `seqLeftValidationResult`.
@@ -31,5 +31,5 @@ public func seqLeftValidationResult<E: Semigroup, A, B, Err: Error>(
     _ lhs: Validation<E, Result<A, Err>>,
     _ rhs: Validation<E, Result<B, Err>>
 ) -> Validation<E, Result<A, Err>> {
-    Validation.liftA2({ (a: Result<A, Err>, b: Result<B, Err>) in a.seqLeft(b) })(lhs, rhs)
+    Validation.liftA2 { (a: Result<A, Err>, b: Result<B, Err>) in a.seqLeft(b) }(lhs, rhs)
 }

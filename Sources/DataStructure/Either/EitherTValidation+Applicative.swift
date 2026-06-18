@@ -24,7 +24,7 @@ public func seqRightEitherValidation<L, E: Semigroup, A, B>(
     _ lhs: Either<L, Validation<E, A>>,
     _ rhs: Either<L, Validation<E, B>>
 ) -> Either<L, Validation<E, B>> {
-    Either.liftA2({ (va: Validation<E, A>, vb: Validation<E, B>) in va.seqRight(vb) })(lhs, rhs)
+    Either.liftA2 { (va: Validation<E, A>, vb: Validation<E, B>) in va.seqRight(vb) }(lhs, rhs)
 }
 
 /// `seqLeftEitherValidation`.
@@ -32,5 +32,5 @@ public func seqLeftEitherValidation<L, E: Semigroup, A, B>(
     _ lhs: Either<L, Validation<E, A>>,
     _ rhs: Either<L, Validation<E, B>>
 ) -> Either<L, Validation<E, A>> {
-    Either.liftA2({ (va: Validation<E, A>, vb: Validation<E, B>) in va.seqLeft(vb) })(lhs, rhs)
+    Either.liftA2 { (va: Validation<E, A>, vb: Validation<E, B>) in va.seqLeft(vb) }(lhs, rhs)
 }

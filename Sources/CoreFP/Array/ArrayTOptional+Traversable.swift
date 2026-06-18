@@ -16,4 +16,5 @@ public extension Array {
         traverse(CoreFP.id)
     }
 }
+
 // swiftlint:enable discouraged_optional_collection

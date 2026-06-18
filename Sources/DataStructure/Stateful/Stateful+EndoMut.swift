@@ -2,6 +2,7 @@
 import CoreFP
 
 // MARK: - Bridges between Stateful<S, Void> and EndoMut<S>
+
 //
 // `Stateful<S, Void>` and `EndoMut<S>` are the same type under different names:
 // both wrap `(inout S) -> Void`. They differ only in intent:
@@ -14,19 +15,19 @@ import CoreFP
 // Conversion in either direction is free: no allocation, no copy, just
 // rewrapping the same closure.
 
-extension Stateful where A == Void {
+public extension Stateful where A == Void {
     /// Converts to an `EndoMut` wrapping the same closure. Free — no copy.
     ///
     /// Use this to pass a stateful action into an optic `lift` or `mconcat`:
     /// ```swift
     /// let reducer: EndoMut<AppState> = stateLens.lift(statefulAction.toEndoMut())
     /// ```
-    public func toEndoMut() -> EndoMut<S> {
+    func toEndoMut() -> EndoMut<S> {
         EndoMut(run)
     }
 }
 
-extension EndoMut {
+public extension EndoMut {
     /// Converts to a `Stateful<A, Void>` wrapping the same closure. Free — no copy.
     ///
     /// Use this to sequence an `EndoMut` inside a `flatMap` chain:
@@ -34,7 +35,7 @@ extension EndoMut {
     /// Stateful<AppState, Void>.get
     ///     .flatMap(const(myEndoMut.toStateful()))
     /// ```
-    public func toStateful() -> Stateful<A, Void> {
+    func toStateful() -> Stateful<A, Void> {
         Stateful(runEndoMut)
     }
 }

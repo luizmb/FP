@@ -45,7 +45,7 @@ import Testing
 
     @Test func freeMconcatDispatchesToTypeOverride() {
         let result = mconcat([MconcatDirect(parts: ["a"]), MconcatDirect(parts: ["b"])])
-        #expect(result.viaCustomMconcat)   // the free function reached the type's override
+        #expect(result.viaCustomMconcat) // the free function reached the type's override
         #expect(result.parts == ["a", "b"])
     }
 
@@ -65,7 +65,7 @@ import Testing
     @Test func emptyMconcatReturnsIdentityWithoutFolding() {
         let result = mconcat([SconcatOnly]())
         #expect(result == SconcatOnly.identity)
-        #expect(result.viaCustomSconcat == false)   // sconcat is never invoked for []
+        #expect(result.viaCustomSconcat == false) // sconcat is never invoked for []
     }
 
     @Test func arrayAndStringRouteThroughSinglePassOverrides() {
@@ -87,6 +87,7 @@ private struct SconcatOnly: Monoid, Equatable {
     static func combine(_ lhs: SconcatOnly, _ rhs: SconcatOnly) -> SconcatOnly {
         SconcatOnly(parts: lhs.parts + rhs.parts)
     }
+
     static func sconcat(_ first: SconcatOnly, _ rest: [SconcatOnly]) -> SconcatOnly {
         SconcatOnly(parts: rest.reduce(first.parts) { $0 + $1.parts }, viaCustomSconcat: true)
     }
@@ -100,6 +101,7 @@ private struct MconcatDirect: Monoid, Equatable {
     static func combine(_ lhs: MconcatDirect, _ rhs: MconcatDirect) -> MconcatDirect {
         MconcatDirect(parts: lhs.parts + rhs.parts)
     }
+
     static func mconcat(_ values: [MconcatDirect]) -> MconcatDirect {
         MconcatDirect(parts: values.flatMap(\.parts), viaCustomMconcat: true)
     }

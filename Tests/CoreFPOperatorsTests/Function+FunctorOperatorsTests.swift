@@ -53,8 +53,8 @@ import Testing
         // Right side: (fmap g) . (fmap f)
         // fmap f applied to base gives us (Int) -> Int
         // then we need to apply fmap g to that
-        let step1 = fmap(f, base)  // (Int) -> Int
-        let right = fmap(g, step1)  // (Int) -> String
+        let step1 = fmap(f, base) // (Int) -> Int
+        let right = fmap(g, step1) // (Int) -> String
 
         #expect(left(5) == right(5))
         #expect(left(10) == right(10))
@@ -80,7 +80,7 @@ import Testing
 
         let composed = toString <£> double <£> addOne
 
-        #expect(composed(5) == "12")  // (5 + 1) * 2 = 12
+        #expect(composed(5) == "12") // (5 + 1) * 2 = 12
     }
 
     @Test func mapReplaceOperator() {

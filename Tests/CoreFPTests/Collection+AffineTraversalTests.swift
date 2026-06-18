@@ -32,11 +32,11 @@ struct IxIndexTests {
     }
 
     @Test func over_hit() {
-        #expect([Int].ix(0).over({ $0 * 2 })(xs) == [20, 20, 30])
+        #expect([Int].ix(0).over { $0 * 2 }(xs) == [20, 20, 30])
     }
 
     @Test func over_miss() {
-        #expect([Int].ix(9).over({ $0 * 2 })(xs) == xs)
+        #expect([Int].ix(9).over { $0 * 2 }(xs) == xs)
     }
 
     @Test("preview-set: setting at an in-bounds index returns the new value on preview")
@@ -107,12 +107,12 @@ struct IxCustomIdentifierTests {
     }
 
     @Test func over_hit() {
-        let updated = [Project].ix(id: "auth", by: \.slug).over({ Project(slug: $0.slug, title: $0.title.uppercased()) })(projects)
+        let updated = [Project].ix(id: "auth", by: \.slug).over { Project(slug: $0.slug, title: $0.title.uppercased()) }(projects)
         #expect(updated.map(\.title) == ["AUTH", "Profile", "Feed"])
     }
 
     @Test func over_miss() {
-        let updated = [Project].ix(id: "gone", by: \.slug).over({ Project(slug: $0.slug, title: $0.title.uppercased()) })(projects)
+        let updated = [Project].ix(id: "gone", by: \.slug).over { Project(slug: $0.slug, title: $0.title.uppercased()) }(projects)
         #expect(updated == projects)
     }
 
@@ -182,13 +182,13 @@ struct IxCustomIdentifierClosureTests {
 
     @Test func over_hit() {
         let updated = [Project].ix(id: "auth", by: bySlug)
-            .over({ Project(slug: $0.slug, title: $0.title.uppercased()) })(projects)
+            .over { Project(slug: $0.slug, title: $0.title.uppercased()) }(projects)
         #expect(updated.map(\.title) == ["AUTH", "Profile", "Feed"])
     }
 
     @Test func over_miss() {
         let updated = [Project].ix(id: "gone", by: bySlug)
-            .over({ Project(slug: $0.slug, title: $0.title.uppercased()) })(projects)
+            .over { Project(slug: $0.slug, title: $0.title.uppercased()) }(projects)
         #expect(updated == projects)
     }
 
@@ -258,12 +258,12 @@ struct IxIDTests {
     }
 
     @Test func over_hit() {
-        let updated = [Item].ix(id: 3).over({ Item(id: $0.id, name: $0.name.lowercased()) })(items)
+        let updated = [Item].ix(id: 3).over { Item(id: $0.id, name: $0.name.lowercased()) }(items)
         #expect(updated.map(\.name) == ["A", "B", "c"])
     }
 
     @Test func over_miss() {
-        let updated = [Item].ix(id: 99).over({ Item(id: $0.id, name: $0.name.lowercased()) })(items)
+        let updated = [Item].ix(id: 99).over { Item(id: $0.id, name: $0.name.lowercased()) }(items)
         #expect(updated == items)
     }
 
@@ -319,11 +319,11 @@ struct IxDictionaryTests {
     }
 
     @Test func over_hit() {
-        #expect([String: Int].ix(key: "a").over({ $0 * 10 })(dict) == ["a": 10, "b": 2, "c": 3])
+        #expect([String: Int].ix(key: "a").over { $0 * 10 }(dict) == ["a": 10, "b": 2, "c": 3])
     }
 
     @Test func over_miss() {
-        #expect([String: Int].ix(key: "z").over({ $0 * 10 })(dict) == dict)
+        #expect([String: Int].ix(key: "z").over { $0 * 10 }(dict) == dict)
     }
 
     @Test("preview-set: setting a known key returns the new value on preview")

@@ -1,5 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
+
 // MARK: - IndexedTraversal<S, I, A>
+
 //
 // An `IndexedTraversal` is a `Traversal` whose every focus is tagged with an
 // *index* `I` — an array position, a dictionary key, an element id. The index
@@ -57,15 +59,16 @@ public struct IndexedTraversal<S, I, A>: Sendable {
 }
 
 // MARK: - Indexed composition (index-preserving)
+
 //
 // Composing an indexed traversal with any plain optic keeps the *outer* index
 // and deepens the focus. The result is always an `IndexedTraversal` carrying the
 // same `I`. (Composing two indexed traversals would nest indices and is out of
 // scope — drop one to a plain `Traversal` via `.traversal` first.)
 
-extension IndexedTraversal {
+public extension IndexedTraversal {
     /// Deepens the focus through `other` while preserving each focus's index.
-    public func compose<B>(_ other: Traversal<A, B>) -> IndexedTraversal<S, I, B> {
+    func compose<B>(_ other: Traversal<A, B>) -> IndexedTraversal<S, I, B> {
         IndexedTraversal<S, I, B>(
             getAll: { s in getAll(s).flatMap { idx, a in other.getAll(a).map { (idx, $0) } } },
             modifyMut: { s, f in modifyMut(&s) { idx, a in other.modifyMut(&a) { b in f(idx, &b) } } }
@@ -73,11 +76,11 @@ extension IndexedTraversal {
     }
 
     /// Deepens the focus through an iso, preserving the index.
-    public func compose<B>(_ other: Iso<A, B>) -> IndexedTraversal<S, I, B> { compose(other.traversal) }
+    func compose<B>(_ other: Iso<A, B>) -> IndexedTraversal<S, I, B> { compose(other.traversal) }
     /// Deepens the focus through a lens, preserving the index.
-    public func compose<B>(_ other: Lens<A, B>) -> IndexedTraversal<S, I, B> { compose(other.traversal) }
+    func compose<B>(_ other: Lens<A, B>) -> IndexedTraversal<S, I, B> { compose(other.traversal) }
     /// Deepens the focus through a prism, preserving the index.
-    public func compose<B>(_ other: Prism<A, B>) -> IndexedTraversal<S, I, B> { compose(other.traversal) }
+    func compose<B>(_ other: Prism<A, B>) -> IndexedTraversal<S, I, B> { compose(other.traversal) }
     /// Deepens the focus through an affine traversal, preserving the index.
-    public func compose<B>(_ other: AffineTraversal<A, B>) -> IndexedTraversal<S, I, B> { compose(other.traversal) }
+    func compose<B>(_ other: AffineTraversal<A, B>) -> IndexedTraversal<S, I, B> { compose(other.traversal) }
 }

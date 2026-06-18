@@ -52,7 +52,7 @@ struct GenTests {
         for uuid in uuids {
             let v = uuid.uuid.6 & 0xF0
             let variant = uuid.uuid.8 & 0xC0
-            #expect(v == 0x40)      // version 4
+            #expect(v == 0x40) // version 4
             #expect(variant == 0x80) // RFC 4122 variant
         }
     }

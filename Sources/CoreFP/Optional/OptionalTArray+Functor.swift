@@ -17,4 +17,5 @@ public extension Optional {
         { opt in opt.mapT(fn) }
     }
 }
+
 // swiftlint:enable discouraged_optional_collection

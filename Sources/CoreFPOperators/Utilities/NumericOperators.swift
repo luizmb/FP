@@ -65,6 +65,7 @@ public func +/- <T: Strideable>(_ center: T, _ delta: T.Stride) -> ClosedRange<T
 }
 
 // MARK: - Power
+
 //
 // Note: `^` cannot be defined for types conforming to `BinaryInteger` because
 // Swift already defines `^` as bitwise XOR on those types, creating an

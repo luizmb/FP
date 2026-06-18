@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-extension Collection where Element: Identifiable {
+public extension Collection where Element: Identifiable {
     /// Returns the first element whose `id` equals `id`, or `nil` if none exists.
     ///
     /// This is the `Identifiable`-aware counterpart to ``Collection/subscript(safe:)``:
@@ -15,12 +15,12 @@ extension Collection where Element: Identifiable {
     /// Lookup is linear (`first(where:)`).
     ///
     /// - SeeAlso: ``RangeReplaceableCollection/subscript(id:)``
-    public subscript(id id: Element.ID) -> Element? {
+    subscript(id id: Element.ID) -> Element? {
         first { $0.id == id }
     }
 }
 
-extension RangeReplaceableCollection where Element: Identifiable {
+public extension RangeReplaceableCollection where Element: Identifiable {
     /// Get-or-set an element by its `id`, with `Dictionary`-like add/remove semantics.
     ///
     /// Getter: returns the first element whose `id` equals `id`, or `nil`.
@@ -50,7 +50,7 @@ extension RangeReplaceableCollection where Element: Identifiable {
     /// Lookup is linear (`firstIndex(where:)`).
     ///
     /// - SeeAlso: ``Collection/subscript(id:)``
-    public subscript(id id: Element.ID) -> Element? {
+    subscript(id id: Element.ID) -> Element? {
         get { first { $0.id == id } }
         set {
             let existing = firstIndex { $0.id == id }

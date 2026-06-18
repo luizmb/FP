@@ -6,8 +6,8 @@ import Testing
 
 // MARK: - Fixtures
 
-private let one   = NonEmpty(head: 1)
-private let two   = NonEmpty(head: 1, tail: [2])
+private let one = NonEmpty(head: 1)
+private let two = NonEmpty(head: 1, tail: [2])
 private let three = NonEmpty(head: 1, tail: [2, 3])
 
 private enum TestError: Error, Equatable { case bad(String) }
@@ -117,7 +117,7 @@ private enum TestError: Error, Equatable { case bad(String) }
         let a = NonEmpty(head: 1)
         let b = NonEmpty(head: 2)
         let c = NonEmpty(head: 3)
-        let left  = NonEmpty.combine(NonEmpty.combine(a, b), c)
+        let left = NonEmpty.combine(NonEmpty.combine(a, b), c)
         let right = NonEmpty.combine(a, NonEmpty.combine(b, c))
         #expect(left == right)
     }
@@ -221,7 +221,7 @@ private enum TestError: Error, Equatable { case bad(String) }
         let f: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 + 1) }
         let g: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
         let fg = NonEmpty<Int>.kleisli(f, g)
-        #expect(fg(3).toArray == [8])   // (3+1)*2
+        #expect(fg(3).toArray == [8]) // (3+1)*2
     }
 
     @Test func join_flattens() {

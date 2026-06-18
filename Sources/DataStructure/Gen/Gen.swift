@@ -92,15 +92,15 @@ public struct SplitMix64: RandomNumberGenerator, Sendable {
 
 // MARK: - Running a Gen
 
-extension Stateful where S == AnyRandomNumberGenerator {
+public extension Stateful where S == AnyRandomNumberGenerator {
     /// Generates one value from a fresh ``SplitMix64`` seeded with `seed` — reproducible.
-    public func generate(seed: UInt64) -> A {
+    func generate(seed: UInt64) -> A {
         var rng = AnyRandomNumberGenerator(SplitMix64(seed: seed))
         return self(&rng)
     }
 
     /// Generates one value from the system random number generator — not reproducible.
-    public func generate() -> A {
+    func generate() -> A {
         var rng = AnyRandomNumberGenerator(SystemRandomNumberGenerator())
         return self(&rng)
     }
@@ -109,9 +109,9 @@ extension Stateful where S == AnyRandomNumberGenerator {
     ///
     /// The whole sequence is reproducible from `seed`, which makes a failing property-test case
     /// replayable: rerun with the same seed to get the same inputs.
-    public func samples(seed: UInt64, count: Int) -> [A] {
+    func samples(seed: UInt64, count: Int) -> [A] {
         var rng = AnyRandomNumberGenerator(SplitMix64(seed: seed))
         // swiftlint:disable:next closure_ignoring_args
-        return (0..<max(0, count)).map { _ in self(&rng) }  // side effect — rng is mutated; cannot use const()
+        return (0..<max(0, count)).map { _ in self(&rng) } // side effect — rng is mutated; cannot use const()
     }
 }

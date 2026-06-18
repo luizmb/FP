@@ -12,7 +12,7 @@ public extension Either {
     /// Either<DBError, User>.right(user).result()              // .success(user)
     /// ```
     func result() -> Result<B, A> where A: Error {
-        Result.from(self.inverted())
+        Result.from(inverted())
     }
 }
 

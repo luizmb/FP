@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+
 // MARK: - Semigroup / Monoid for EndoMut<A>
 
 // In-place endomorphisms form a Monoid under sequential application:

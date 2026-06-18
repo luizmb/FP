@@ -174,11 +174,11 @@ private func accessKeyword(from modifiers: DeclModifierListSyntax) -> String {
         let text = modifier.name.text
         switch text {
         case "open",
-            "public",
-            "package",
-            "internal",
-            "fileprivate",
-            "private":
+             "public",
+             "package",
+             "internal",
+             "fileprivate",
+             "private":
             return text
 
         default:
@@ -237,11 +237,11 @@ private func makeCasesEnum(enumName: String, access: String, cases: [CaseInfo]) 
 
     guard !cases.isEmpty else {
         return DeclSyntax(stringLiteral: """
-            \(prefix)enum Cases: CoreFP.CaseMatchable { \
-            \(prefix)typealias Subject = \(enumName) \
-            \(prefix)func matches(_ value: \(enumName)) -> Bool { false } \
-            }
-            """)
+        \(prefix)enum Cases: CoreFP.CaseMatchable { \
+        \(prefix)typealias Subject = \(enumName) \
+        \(prefix)func matches(_ value: \(enumName)) -> Bool { false } \
+        }
+        """)
     }
     let caseDeclarations = "case " + cases.map(\.name).joined(separator: ", ")
     let matchClauses = cases
@@ -249,12 +249,12 @@ private func makeCasesEnum(enumName: String, access: String, cases: [CaseInfo]) 
         .joined(separator: "; ")
     let defaultClause = cases.count == 1 ? "" : "; default: return false"
     return DeclSyntax(stringLiteral: """
-        \(prefix)enum Cases: CoreFP.CaseMatchable { \
-        \(prefix)typealias Subject = \(enumName); \
-        \(caseDeclarations); \
-        \(prefix)func matches(_ value: \(enumName)) -> Bool { switch (self, value) { \(matchClauses)\(defaultClause) } } \
-        }
-        """)
+    \(prefix)enum Cases: CoreFP.CaseMatchable { \
+    \(prefix)typealias Subject = \(enumName); \
+    \(caseDeclarations); \
+    \(prefix)func matches(_ value: \(enumName)) -> Bool { switch (self, value) { \(matchClauses)\(defaultClause) } } \
+    }
+    """)
 }
 
 // MARK: - Diagnostics
@@ -280,7 +280,7 @@ private enum PrismsDiagnostic: DiagnosticMessage {
     var severity: DiagnosticSeverity {
         switch self {
         case .notAnEnum,
-            .privateHostUnsupported:
+             .privateHostUnsupported:
             .error
         }
     }

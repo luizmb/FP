@@ -9,7 +9,7 @@ public func applyValidationEither<E: Semigroup, L: Sendable, A: Sendable, B: Sen
     _ vf: Validation<E, Either<L, @Sendable (A) -> B>>,
     _ va: Validation<E, Either<L, A>>
 ) -> Validation<E, Either<L, B>> {
-    Validation.liftA2({ @Sendable f, a in Either.apply(f, a) })(vf, va)
+    Validation.liftA2 { @Sendable f, a in Either.apply(f, a) }(vf, va)
 }
 
 /// `liftA2ValidationEither`.
@@ -24,7 +24,7 @@ public func seqRightValidationEither<E: Semigroup, L: Sendable, A: Sendable, B: 
     _ lhs: Validation<E, Either<L, A>>,
     _ rhs: Validation<E, Either<L, B>>
 ) -> Validation<E, Either<L, B>> {
-    Validation.liftA2({ (a: Either<L, A>, b: Either<L, B>) in a.seqRight(b) })(lhs, rhs)
+    Validation.liftA2 { (a: Either<L, A>, b: Either<L, B>) in a.seqRight(b) }(lhs, rhs)
 }
 
 /// `seqLeftValidationEither`.
@@ -32,5 +32,5 @@ public func seqLeftValidationEither<E: Semigroup, L: Sendable, A: Sendable, B: S
     _ lhs: Validation<E, Either<L, A>>,
     _ rhs: Validation<E, Either<L, B>>
 ) -> Validation<E, Either<L, A>> {
-    Validation.liftA2({ (a: Either<L, A>, b: Either<L, B>) in a.seqLeft(b) })(lhs, rhs)
+    Validation.liftA2 { (a: Either<L, A>, b: Either<L, B>) in a.seqLeft(b) }(lhs, rhs)
 }

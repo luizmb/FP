@@ -25,12 +25,12 @@ struct OptionalPrismTests {
     }
 
     @Test func prism_some_review() {
-        let constructed: Int? = Int?.prism.some.review(7)
+        let constructed = Int?.prism.some.review(7)
         #expect(constructed == 7)
     }
 
     @Test func prism_none_review() {
-        let constructed: Int? = Int?.prism.none.review(())
+        let constructed = Int?.prism.none.review(())
         #expect(constructed == nil)
     }
 

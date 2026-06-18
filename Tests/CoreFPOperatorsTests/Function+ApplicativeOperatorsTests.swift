@@ -16,7 +16,7 @@ import Testing
         // For input 5: f(5) = { y in 5 + y }, g(5) = 10
         // So f(5)(g(5)) = { y in 5 + y }(10) = 15
         #expect(result(5) == 15)
-        #expect(result(3) == 9)  // f(3)(g(3)) = 3 + 6 = 9
+        #expect(result(3) == 9) // f(3)(g(3)) = 3 + 6 = 9
     }
 
     @Test func curriedApply() {
@@ -45,8 +45,8 @@ import Testing
 
         let lifted: @Sendable (String) -> Int = liftA2(add, f, g)
 
-        #expect(lifted("hello") == 15)  // 5 + 10
-        #expect(lifted("ab") == 12)     // 2 + 10
+        #expect(lifted("hello") == 15) // 5 + 10
+        #expect(lifted("ab") == 12) // 2 + 10
     }
 
     @Test func curriedLiftA2() {

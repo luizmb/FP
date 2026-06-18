@@ -2,6 +2,7 @@
 import Foundation
 
 // MARK: - Result as SumType2
+
 //
 // Result<Success, Failure> is isomorphic to Either<Success, Failure>:
 //   .success(a) ≅ .left(a)   (SumType2.A = Success)

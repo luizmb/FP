@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+
 // MARK: - Function Composition
 
 /// Left-to-right function composition.

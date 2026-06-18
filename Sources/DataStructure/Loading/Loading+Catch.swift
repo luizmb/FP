@@ -10,13 +10,13 @@ public extension Loading {
         case .idle:
             .idle
 
-        case .loading(let prev):
+        case let .loading(prev):
             .loading(previous: prev)
 
-        case .loaded(let value):
+        case let .loaded(value):
             .loaded(value)
 
-        case .failed(let err, _):
+        case let .failed(err, _):
             transform(err)
         }
     }

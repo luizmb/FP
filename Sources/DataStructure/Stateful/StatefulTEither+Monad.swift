@@ -12,10 +12,10 @@ public extension Stateful {
     ) -> Stateful<S, Either<L, B>> where A == Either<L, Inner> {
         Stateful<S, Either<L, B>> { s in
             switch self.run(&s) {
-            case .left(let l):
+            case let .left(l):
                 .left(l)
 
-            case .right(let a):
+            case let .right(a):
                 fn(a).run(&s)
             }
         }

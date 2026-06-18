@@ -7,7 +7,7 @@ import SwiftSyntaxMacros
 // MARK: - Access levels
 
 enum AccessLevel: Int, Comparable {
-    case `private` = 0, `fileprivate`, `internal`, `package`, `public`, open
+    case `private` = 0, `fileprivate`, `internal`, package, `public`, open
 
     var keyword: String {
         switch self {
@@ -201,7 +201,7 @@ public struct LensesMacro: MemberMacro {
         var members: [DeclSyntax] = []
 
         if flags.emitInit,
-            !hasConflictingInit(in: structDecl, params: initParams) {
+           !hasConflictingInit(in: structDecl, params: initParams) {
             members.append(makeInit(access: initAccess, structAccess: structAccess, params: initParams))
         }
 
@@ -265,14 +265,14 @@ private func collectProperties(
             let defaultValue = binding.initializer?.value.trimmedDescription
 
             // `let x = v` with no explicit type annotation → immutable constant, skip
-            if isLet && defaultValue != nil && binding.typeAnnotation == nil { return nil }
+            if isLet, defaultValue != nil, binding.typeAnnotation == nil { return nil }
 
             // Resolve type: explicit annotation, or inferred from a simple literal default
             let type: String
             if let annotated = binding.typeAnnotation?.type.trimmedDescription {
                 type = annotated
             } else if let initializer = binding.initializer?.value,
-                let inferred = inferLiteralType(from: initializer) {
+                      let inferred = inferLiteralType(from: initializer) {
                 type = inferred
             } else {
                 if defaultValue != nil {
@@ -432,8 +432,7 @@ private func makeWithFunc(
         : "\(localBindings); return \(structName)(\(callArgs))"
 
     return DeclSyntax(stringLiteral:
-        "\(prefix)func with(\(params)) -> \(structName) { \(body) }"
-    )
+        "\(prefix)func with(\(params)) -> \(structName) { \(body) }")
 }
 
 // MARK: - Diagnostics
@@ -468,7 +467,7 @@ private enum LensesDiagnostic: DiagnosticMessage {
     var severity: DiagnosticSeverity {
         switch self {
         case .notAStruct,
-            .privateHostUnsupported:
+             .privateHostUnsupported:
             .error
 
         case .cannotInferType:

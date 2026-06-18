@@ -19,7 +19,7 @@ import Testing
 
     @Test func fmapT_curried() {
         let reader = Reader<Env, NonEmpty<Int>> { env in NonEmpty(head: env.factor) }
-        let mapped = Reader<Env, NonEmpty<Int>>.fmapT({ $0 * 2 })(reader)
+        let mapped = Reader<Env, NonEmpty<Int>>.fmapT { $0 * 2 }(reader)
         #expect(mapped.runReader(Env(factor: 5)) == NonEmpty(head: 10))
     }
 
@@ -52,9 +52,9 @@ import Testing
 
     @Test func bindT_curried() {
         let reader = Reader<Env, NonEmpty<Int>> { env in NonEmpty(head: env.factor) }
-        let bound = Reader<Env, NonEmpty<Int>>.bindT({ n -> Reader<Env, NonEmpty<Int>?> in
+        let bound = Reader<Env, NonEmpty<Int>>.bindT { n -> Reader<Env, NonEmpty<Int>?> in
             Reader(const(NonEmpty(head: n + 1)))
-        })(reader)
+        }(reader)
         #expect(bound.runReader(Env(factor: 4)) == NonEmpty(head: 5))
     }
 }

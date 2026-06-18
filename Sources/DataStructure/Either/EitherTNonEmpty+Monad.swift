@@ -13,10 +13,10 @@ public func flatMapTEitherNonEmpty<L, A, B>(
         var accumulated: NonEmpty<B>?
         for element in ne.toArray {
             switch fn(element) {
-            case .left(let l):
+            case let .left(l):
                 return .left(l)
 
-            case .right(let nbOpt):
+            case let .right(nbOpt):
                 if let nb = nbOpt {
                     accumulated = accumulated.map { NonEmpty.combine($0, nb) } ?? nb
                 }

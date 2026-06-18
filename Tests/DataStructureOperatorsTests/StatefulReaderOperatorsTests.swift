@@ -9,7 +9,7 @@ import Testing
     // MARK: - Reader<Env, Stateful<S, A>> applicative operators
 
     @Test func readerTStatefulApply() {
-        let rf: Reader<Int, Stateful<Int, @Sendable (Int) -> String>> = Reader(const(.pure({ "\($0)" })))
+        let rf: Reader<Int, Stateful<Int, @Sendable (Int) -> String>> = Reader(const(.pure { "\($0)" }))
         let ra: Reader<Int, Stateful<Int, Int>> = Reader { env in .pure(env) }
         let result = rf <*> ra
         #expect(result.runReader(5).eval(0) == "5")

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+
 // MARK: - EndoMut<A>
 
 // EndoMut wraps an in-place endomorphism — `(inout A) -> Void`.

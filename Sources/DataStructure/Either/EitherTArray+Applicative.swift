@@ -25,7 +25,7 @@ public func seqRightEitherArray<L, A, B>(
     _ lhs: Either<L, [A]>,
     _ rhs: Either<L, [B]>
 ) -> Either<L, [B]> {
-    Either.liftA2({ (a: [A], b: [B]) in a.seqRight(b) })(lhs, rhs)
+    Either.liftA2 { (a: [A], b: [B]) in a.seqRight(b) }(lhs, rhs)
 }
 
 /// seqLeft for EitherTArray
@@ -33,5 +33,5 @@ public func seqLeftEitherArray<L, A, B>(
     _ lhs: Either<L, [A]>,
     _ rhs: Either<L, [B]>
 ) -> Either<L, [A]> {
-    Either.liftA2({ (a: [A], b: [B]) in a.seqLeft(b) })(lhs, rhs)
+    Either.liftA2 { (a: [A], b: [B]) in a.seqLeft(b) }(lhs, rhs)
 }

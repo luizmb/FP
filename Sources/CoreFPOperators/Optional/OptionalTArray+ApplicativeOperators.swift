@@ -19,4 +19,5 @@ public func *> <A, B>(_ lhs: [A]?, _ rhs: [B]?) -> [B]? {
 public func <* <A, B>(_ lhs: [A]?, _ rhs: [B]?) -> [A]? {
     seqLeftOptionalArray(lhs, rhs)
 }
+
 // swiftlint:enable discouraged_optional_collection

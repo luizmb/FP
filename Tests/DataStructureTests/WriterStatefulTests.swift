@@ -17,7 +17,7 @@ import Testing
 
     @Test func applicativeLogsAccumulate() {
         let wf = Writer<[String], Stateful<Int, @Sendable (Int) -> String>>(
-            Stateful.pure({ "\($0)" }),
+            Stateful.pure { "\($0)" },
             ["fn"]
         )
         let wa = Writer<[String], Stateful<Int, Int>>(

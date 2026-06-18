@@ -49,7 +49,7 @@ import Testing
 
     @Test func applicativeOperatorApply() {
         let readerFn = Reader<Environment, Either<String, @Sendable (Int) -> Int>> { env in
-            .right({ $0 + env.multiplier })
+            .right { $0 + env.multiplier }
         }
 
         let readerValue = Reader<Environment, Either<String, Int>>(const(.right(10)))

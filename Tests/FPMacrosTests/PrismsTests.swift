@@ -5,6 +5,7 @@ import FPMacros
 import Testing
 
 // MARK: - Fixtures
+
 // @attached(member) works at any nesting level
 
 @Prisms
@@ -50,7 +51,7 @@ struct PrismsNamespaceTests {
     }
 
     @Test func review_reconstructs() {
-        guard case .circle(let r) = Shape.prism.circle.review(5.0) else {
+        guard case let .circle(r) = Shape.prism.circle.review(5.0) else {
             Issue.record("Expected .circle"); return
         }
         #expect(r == 5.0)
@@ -66,11 +67,11 @@ struct PrismsNamespaceTests {
     }
 
     @Test func over_transforms_matching_case() {
-        #expect(Shape.prism.circle.preview(Shape.prism.circle.over({ $0 * 2 })(.circle(3.14))) == 6.28)
+        #expect(Shape.prism.circle.preview(Shape.prism.circle.over { $0 * 2 }(.circle(3.14))) == 6.28)
     }
 
     @Test func over_is_noop_on_wrong_case() {
-        #expect(Shape.prism.circle.over({ $0 * 2 })(.empty).is(.empty))
+        #expect(Shape.prism.circle.over { $0 * 2 }(.empty).is(.empty))
     }
 
     @Test func namespace_works_for_nested_enum() {
@@ -126,7 +127,7 @@ struct PrismsCompositionTests {
 
     @Test func prism_composed_with_lens_over() {
         let optic = Response.prism.ok >>> Config.lens.port
-        let updated = optic.over({ $0 + 1 })(.ok(Config(host: "localhost", port: 8_080)))
+        let updated = optic.over { $0 + 1 }(.ok(Config(host: "localhost", port: 8_080)))
         #expect(Response.prism.ok.preview(updated)?.port == 8_081)
     }
 }
@@ -269,7 +270,7 @@ struct PrismsOptionsTests {
 
 // MARK: - Prismatic conformance & \.case key paths
 
-private func requirePrismatic<T: Prismatic>(_ type: T.Type) {}
+private func requirePrismatic<T: Prismatic>(_: T.Type) {}
 
 @Suite("@Prisms — Prismatic case key paths")
 struct PrismsCaseKeyPathTests {
@@ -282,7 +283,7 @@ struct PrismsCaseKeyPathTests {
         let prism = Prism(\.circle as PrismKeyPath<Shape, Double>)
         #expect(prism.preview(.circle(3.14)) == 3.14)
         #expect(prism.preview(.empty) == nil)
-        if case .circle(let value) = prism.review(2.0) {
+        if case let .circle(value) = prism.review(2.0) {
             #expect(value == 2.0)
         } else {
             Issue.record("review should build .circle")

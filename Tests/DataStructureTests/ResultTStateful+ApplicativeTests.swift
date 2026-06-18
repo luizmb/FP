@@ -9,7 +9,7 @@ import Testing
     // MARK: - Result<Stateful<S, A>, E> — Result as outer, Stateful as inner
 
     @Test func applyBothSuccess() {
-        let rf: Result<Stateful<Int, @Sendable (Int) -> String>, TestError> = .success(.pure({ "\($0)" }))
+        let rf: Result<Stateful<Int, @Sendable (Int) -> String>, TestError> = .success(.pure { "\($0)" })
         let ra: Result<Stateful<Int, Int>, TestError> = .success(.get)
         let result = applyResultStateful(rf, ra)
         #expect(Result.prism.success.preview(result)?.eval(5) == "5")
@@ -19,14 +19,14 @@ import Testing
         let rf: Result<Stateful<Int, @Sendable (Int) -> String>, TestError> = .failure(.failure)
         let ra: Result<Stateful<Int, Int>, TestError> = .success(.pure(5))
         let result = applyResultStateful(rf, ra)
-        if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
+        if case let .failure(e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func applyFailureVal() {
-        let rf: Result<Stateful<Int, @Sendable (Int) -> String>, TestError> = .success(.pure({ "\($0)" }))
+        let rf: Result<Stateful<Int, @Sendable (Int) -> String>, TestError> = .success(.pure { "\($0)" })
         let ra: Result<Stateful<Int, Int>, TestError> = .failure(.failure)
         let result = applyResultStateful(rf, ra)
-        if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
+        if case let .failure(e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func seqRightBothSuccess() {
@@ -40,7 +40,7 @@ import Testing
         let lhs: Result<Stateful<Int, Int>, TestError> = .failure(.failure)
         let rhs: Result<Stateful<Int, String>, TestError> = .success(.pure("hello"))
         let result = seqRightResultStateful(lhs, rhs)
-        if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
+        if case let .failure(e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func seqLeftBothSuccess() {
@@ -54,6 +54,6 @@ import Testing
         let lhs: Result<Stateful<Int, Int>, TestError> = .success(.pure(99))
         let rhs: Result<Stateful<Int, String>, TestError> = .failure(.failure)
         let result = seqLeftResultStateful(lhs, rhs)
-        if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
+        if case let .failure(e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 }

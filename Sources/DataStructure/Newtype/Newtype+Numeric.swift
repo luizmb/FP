@@ -233,6 +233,7 @@ extension Newtype: UnsignedInteger where RawValue: UnsignedInteger {}
 extension Newtype: SignedInteger where RawValue: SignedInteger {}
 
 // MARK: - LosslessStringConvertible
+
 //
 // Required by FixedWidthInteger. Note: when `RawValue == String` this `init?(_:)` overload
 // coexists with the main `init(_ rawValue: RawValue)`. They differ by return type
@@ -246,6 +247,7 @@ extension Newtype: LosslessStringConvertible where RawValue: LosslessStringConve
 }
 
 // MARK: - Floating-point operators (without FloatingPoint conformance)
+
 //
 // `FloatingPoint` itself can't be conformed to: its declaration requires
 // `Magnitude == Self`, but the `Numeric` conformance above binds
@@ -258,55 +260,55 @@ extension Newtype: LosslessStringConvertible where RawValue: LosslessStringConve
 // the FloatingPoint operators; you just can't pass the newtype to a generic
 // `FloatingPoint` API. For that, project to `rawValue`.
 
-extension Newtype where RawValue: FloatingPoint {
+public extension Newtype where RawValue: FloatingPoint {
     /// The `property` property.
-    public static func / (lhs: Self, rhs: Self) -> Self {
+    static func / (lhs: Self, rhs: Self) -> Self {
         Self(lhs.rawValue / rhs.rawValue)
     }
 
     /// The `property` property.
-    public static func /= (lhs: inout Self, rhs: Self) {
+    static func /= (lhs: inout Self, rhs: Self) {
         lhs.rawValue /= rhs.rawValue
     }
 
     /// `squareRoot` for `Floating-point operators (without FloatingPoint conformance)`.
-    public func squareRoot() -> Self {
+    func squareRoot() -> Self {
         Self(rawValue.squareRoot())
     }
 
     /// Declaration for `Floating-point operators (without FloatingPoint conformance)`.
-    public mutating func formSquareRoot() {
+    mutating func formSquareRoot() {
         rawValue.formSquareRoot()
     }
 
     /// `remainder` for `Floating-point operators (without FloatingPoint conformance)`.
-    public func remainder(dividingBy other: Self) -> Self {
+    func remainder(dividingBy other: Self) -> Self {
         Self(rawValue.remainder(dividingBy: other.rawValue))
     }
 
     /// `truncatingRemainder` for `Floating-point operators (without FloatingPoint conformance)`.
-    public func truncatingRemainder(dividingBy other: Self) -> Self {
+    func truncatingRemainder(dividingBy other: Self) -> Self {
         Self(rawValue.truncatingRemainder(dividingBy: other.rawValue))
     }
 
     /// Declaration for `Floating-point operators (without FloatingPoint conformance)`.
-    public mutating func round(_ rule: FloatingPointRoundingRule = .toNearestOrEven) {
+    mutating func round(_ rule: FloatingPointRoundingRule = .toNearestOrEven) {
         rawValue.round(rule)
     }
 
     /// `rounded` for `Floating-point operators (without FloatingPoint conformance)`.
-    public func rounded(_ rule: FloatingPointRoundingRule = .toNearestOrEven) -> Self {
+    func rounded(_ rule: FloatingPointRoundingRule = .toNearestOrEven) -> Self {
         Self(rawValue.rounded(rule))
     }
 
     /// The `isFinite` property.
-    public var isFinite: Bool { rawValue.isFinite }
+    var isFinite: Bool { rawValue.isFinite }
     /// The `isInfinite` property.
-    public var isInfinite: Bool { rawValue.isInfinite }
+    var isInfinite: Bool { rawValue.isInfinite }
     /// The `isNaN` property.
-    public var isNaN: Bool { rawValue.isNaN }
+    var isNaN: Bool { rawValue.isNaN }
     /// The `isZero` property.
-    public var isZero: Bool { rawValue.isZero }
+    var isZero: Bool { rawValue.isZero }
     /// The `sign` property.
-    public var sign: FloatingPointSign { rawValue.sign }
+    var sign: FloatingPointSign { rawValue.sign }
 }

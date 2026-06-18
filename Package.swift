@@ -1,6 +1,7 @@
+import CompilerPluginSupport
+
 // swift-tools-version: 6.2
 import PackageDescription
-import CompilerPluginSupport
 
 let package = Package(
     name: "FP",

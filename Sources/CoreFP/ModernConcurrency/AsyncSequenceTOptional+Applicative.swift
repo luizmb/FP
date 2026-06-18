@@ -22,7 +22,7 @@ where A: Sendable, B: Sendable, C: Sendable {
             }
             // swiftlint:disable:next closure_ignoring_args
             // swiftlint:disable:next closure_ignoring_args
-        continuation.onTermination = { _ in task.cancel() }
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }

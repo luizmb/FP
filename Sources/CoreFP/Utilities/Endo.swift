@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+
 // MARK: - Endo<A>
 
 // Endo wraps an endomorphism — a function from a type to itself, `(A) -> A`.

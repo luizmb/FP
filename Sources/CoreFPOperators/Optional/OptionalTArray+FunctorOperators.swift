@@ -24,4 +24,5 @@ public func <£ <A, B: Sendable>(_ value: B, _ opt: [A]?) -> [B]? {
 public func <&^> <A, B>(_ opt: [A]?, _ fn: @escaping @Sendable (A) -> B) -> [B]? {
     opt.mapT(fn)
 }
+
 // swiftlint:enable discouraged_optional_collection

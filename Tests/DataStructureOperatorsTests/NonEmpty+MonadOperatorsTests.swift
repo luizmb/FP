@@ -27,7 +27,7 @@ import Testing
         let f: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 + 1) }
         let g: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
         let fg = f >=> g
-        #expect(fg(3).toArray == [8])   // (3+1)*2
+        #expect(fg(3).toArray == [8]) // (3+1)*2
     }
 
     // MARK: - <=< kleisli (right-to-left)
@@ -36,7 +36,7 @@ import Testing
         let f: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 + 1) }
         let g: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
         let gf = g <=< f
-        #expect(gf(3).toArray == [8])   // same as f >=> g
+        #expect(gf(3).toArray == [8]) // same as f >=> g
     }
 
     // MARK: - Monad laws via operators

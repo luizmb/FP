@@ -24,7 +24,7 @@ public func seqRightValidationReader<E: Semigroup, Env, A, B>(
     _ lhs: Validation<E, Reader<Env, A>>,
     _ rhs: Validation<E, Reader<Env, B>>
 ) -> Validation<E, Reader<Env, B>> {
-    Validation.liftA2({ (ra: Reader<Env, A>, rb: Reader<Env, B>) in ra.seqRight(rb) })(lhs, rhs)
+    Validation.liftA2 { (ra: Reader<Env, A>, rb: Reader<Env, B>) in ra.seqRight(rb) }(lhs, rhs)
 }
 
 /// `seqLeftValidationReader`.
@@ -32,5 +32,5 @@ public func seqLeftValidationReader<E: Semigroup, Env, A, B>(
     _ lhs: Validation<E, Reader<Env, A>>,
     _ rhs: Validation<E, Reader<Env, B>>
 ) -> Validation<E, Reader<Env, A>> {
-    Validation.liftA2({ (ra: Reader<Env, A>, rb: Reader<Env, B>) in ra.seqLeft(rb) })(lhs, rhs)
+    Validation.liftA2 { (ra: Reader<Env, A>, rb: Reader<Env, B>) in ra.seqLeft(rb) }(lhs, rhs)
 }

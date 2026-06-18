@@ -23,7 +23,7 @@ public func seqRightValidationArray<E: Semigroup, A, B>(
     _ lhs: Validation<E, [A]>,
     _ rhs: Validation<E, [B]>
 ) -> Validation<E, [B]> {
-    Validation.liftA2({ (a: [A], b: [B]) in a.seqRight(b) })(lhs, rhs)
+    Validation.liftA2 { (a: [A], b: [B]) in a.seqRight(b) }(lhs, rhs)
 }
 
 /// `seqLeftValidationArray`.
@@ -31,5 +31,5 @@ public func seqLeftValidationArray<E: Semigroup, A, B>(
     _ lhs: Validation<E, [A]>,
     _ rhs: Validation<E, [B]>
 ) -> Validation<E, [A]> {
-    Validation.liftA2({ (a: [A], b: [B]) in a.seqLeft(b) })(lhs, rhs)
+    Validation.liftA2 { (a: [A], b: [B]) in a.seqLeft(b) }(lhs, rhs)
 }

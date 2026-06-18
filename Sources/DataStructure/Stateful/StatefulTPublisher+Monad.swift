@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
-import Combine
-import Foundation
+    import Combine
+    import Foundation
 
-// StatefulT + Publisher — Stateful<S, any Publisher<A, E>>
+    // StatefulT + Publisher — Stateful<S, any Publisher<A, E>>
 //
-// flatMapT is not implementable for this transformer stack: Combine's flatMap
-// takes an @escaping closure, which cannot capture an `inout` parameter.
-// Mutable state also cannot safely be shared across concurrent publisher events.
-// Use Stateful<S, [A]> or Stateful<S, Result<A, E>> for monad sequencing.
+    // flatMapT is not implementable for this transformer stack: Combine's flatMap
+    // takes an @escaping closure, which cannot capture an `inout` parameter.
+    // Mutable state also cannot safely be shared across concurrent publisher events.
+    // Use Stateful<S, [A]> or Stateful<S, Result<A, E>> for monad sequencing.
 
 #endif
