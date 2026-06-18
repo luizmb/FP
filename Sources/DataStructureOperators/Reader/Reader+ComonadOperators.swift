@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import CoreFPOperators
 import DataStructure
 
-// r ->> f  =  extend f r  (infixl 1, requires Env: Monoid)
+/// r ->> f  =  extend f r  (infixl 1, requires Env: Monoid)
 public func ->> <Env: Monoid & Sendable, A: Sendable, B: Sendable>(
     _ r: Reader<Env, A>,
     _ f: @escaping @Sendable (Reader<Env, A>) -> B
@@ -10,7 +11,7 @@ public func ->> <Env: Monoid & Sendable, A: Sendable, B: Sendable>(
     r.extend(f)
 }
 
-// f <<- r  =  extend f r  (infixr 1, requires Env: Monoid)
+/// f <<- r  =  extend f r  (infixr 1, requires Env: Monoid)
 public func <<- <Env: Monoid & Sendable, A: Sendable, B: Sendable>(
     _ f: @escaping @Sendable (Reader<Env, A>) -> B,
     _ r: Reader<Env, A>
@@ -18,7 +19,7 @@ public func <<- <Env: Monoid & Sendable, A: Sendable, B: Sendable>(
     r.extend(f)
 }
 
-// f <<= r  =  extend f r  (infixr 1, requires Env: Monoid)
+/// f <<= r  =  extend f r  (infixr 1, requires Env: Monoid)
 public func <<= <Env: Monoid & Sendable, A: Sendable, B: Sendable>(
     _ f: @escaping @Sendable (Reader<Env, A>) -> B,
     _ r: Reader<Env, A>

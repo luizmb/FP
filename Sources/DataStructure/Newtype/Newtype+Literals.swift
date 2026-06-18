@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // Literal-expressible conformances. Each delegates to RawValue's literal init.
 
 extension Newtype: ExpressibleByNilLiteral where RawValue: ExpressibleByNilLiteral {

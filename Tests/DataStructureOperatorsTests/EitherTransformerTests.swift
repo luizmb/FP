@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+import CoreFP
 import CoreFPOperators
 import DataStructure
 import DataStructureOperators
@@ -189,7 +191,7 @@ import Testing
     // MARK: - EitherTStateful
 
     @Test func eitherTStatefulMapTRight() {
-        let either: Either<L, Stateful<Int, Int>> = .right(Stateful { s in s })
+        let either: Either<L, Stateful<Int, Int>> = .right(Stateful<Int, Int>.get)
         let result = { $0 * 2 } <£^> either
         if case .right(let s) = result { #expect(s.eval(5) == 10) } else { Issue.record("Expected .right") }
     }
@@ -201,20 +203,20 @@ import Testing
     }
 
     @Test func eitherTStatefulFlatMapTRight() {
-        let either: Either<L, Stateful<Int, Int>> = .right(Stateful { s in s })
-        let result = either >>- { n in Stateful<Int, String> { _ in "\(n)" } }
+        let either: Either<L, Stateful<Int, Int>> = .right(Stateful<Int, Int>.get)
+        let result = either >>- { n in Stateful<Int, String>.pure("\(n)") }
         if case .right(let s) = result { #expect(s.eval(7) == "7") } else { Issue.record("Expected .right") }
     }
 
     @Test func eitherTStatefulFlatMapTLeft() {
         let either: Either<L, Stateful<Int, Int>> = .left(.err)
-        let result = either >>- { n in Stateful<Int, String> { _ in "\(n)" } }
+        let result = either >>- { n in Stateful<Int, String>.pure("\(n)") }
         if case .left(let l) = result { #expect(l == .err) } else { Issue.record("Expected .left") }
     }
 
     @Test func eitherTStatefulKleisli() {
-        let f: @Sendable (Int) -> Either<L, Stateful<Int, Int>> = { n in .right(Stateful { _ in n + 1 }) }
-        let g: @Sendable (Int) -> Stateful<Int, String> = { n in Stateful { _ in "\(n)" } }
+        let f: @Sendable (Int) -> Either<L, Stateful<Int, Int>> = { n in .right(Stateful<Int, Int>.pure(n + 1)) }
+        let g: @Sendable (Int) -> Stateful<Int, String> = { n in Stateful<Int, String>.pure("\(n)") }
         let result = (f >=> g)(4)
         if case .right(let s) = result { #expect(s.eval(0) == "5") } else { Issue.record("Expected .right") }
     }

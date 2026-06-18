@@ -1,13 +1,15 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
 public extension Stateful {
-    // StatefulT + Array — Stateful<S, [A]>
+    /// StatefulT + Array — Stateful<S, [A]>
 
     func mapT<Inner, B>(_ fn: @escaping @Sendable (Inner) -> B) -> Stateful<S, [B]> where A == [Inner] {
         mapStateful([Inner].fmap(fn))
     }
 
+    /// The `property` property.
     static func fmapT<Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> B
     ) -> @Sendable (Stateful<S, [Inner]>) -> Stateful<S, [B]> where A == [Inner] {

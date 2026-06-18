@@ -1,7 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
 // (<*>) :: f (a -> b) -> f a -> f b
+/// `func`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func <*> <A: Sendable, B: Sendable>(
     _ functions: AsyncStream<@Sendable (A) -> B>,
@@ -11,6 +13,7 @@ public func <*> <A: Sendable, B: Sendable>(
 }
 
 // (*>) :: f a -> f b -> f b
+/// `*>` overload.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func *> <A: Sendable, B: Sendable>(
     _ lhs: AsyncStream<A>,
@@ -20,6 +23,7 @@ public func *> <A: Sendable, B: Sendable>(
 }
 
 // (<*) :: f a -> f b -> f a
+/// `func`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func <* <A: Sendable, B: Sendable>(
     _ lhs: AsyncStream<A>,

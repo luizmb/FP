@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Testing
 
@@ -37,7 +38,7 @@ import Testing
     // MARK: - not (predicate lifting)
 
     @Test func notPredicate() {
-        let isAdmin: @Sendable (User) -> Bool = { $0.isAdmin }
+        let isAdmin: @Sendable (User) -> Bool = get(\.isAdmin)
         let nonAdmin = not(isAdmin)
         #expect(nonAdmin(alice) == true)
         #expect(nonAdmin(bob) == false)
@@ -53,7 +54,7 @@ import Testing
     // MARK: - and (predicate combining)
 
     @Test func andPredicates() {
-        let isAdmin: @Sendable (User) -> Bool = { $0.isAdmin }
+        let isAdmin: @Sendable (User) -> Bool = get(\.isAdmin)
         let isAdult: @Sendable (User) -> Bool = compose(get(\User.age), flip(>=)(18))
         let adultNonAdmin = and(not(isAdmin), isAdult)
         #expect(adultNonAdmin(alice) == true)
@@ -62,7 +63,7 @@ import Testing
 
     @Test func andPredicatesFilter() {
         let users = [alice, bob]
-        let isAdmin: @Sendable (User) -> Bool = { $0.isAdmin }
+        let isAdmin: @Sendable (User) -> Bool = get(\.isAdmin)
         let isAdult: @Sendable (User) -> Bool = compose(get(\User.age), flip(>=)(18))
         let result = users.filter(and(not(isAdmin), isAdult))
         #expect(result.count == 1)
@@ -72,7 +73,7 @@ import Testing
     // MARK: - or (predicate combining)
 
     @Test func orPredicates() {
-        let isAdmin: @Sendable (User) -> Bool = { $0.isAdmin }
+        let isAdmin: @Sendable (User) -> Bool = get(\.isAdmin)
         let nameIsAlice = compose(get(\User.name), equals("Alice"))
         let aliceOrAdmin = or(nameIsAlice, isAdmin)
         #expect(aliceOrAdmin(alice) == true)   // name matches

@@ -1,0 +1,30 @@
+# Indentation
+--indent 4
+--tabwidth 4
+
+# Line length (matching SwiftLint)
+--maxwidth 150
+
+# Imports — keep alpha order, no testable separation
+--importgrouping alpha
+
+# Braces / else placement
+--elseposition same-line
+
+# Switch/case: case at same column, contents indented one level
+--indentcase false
+
+# Wrap switch case bodies to a new line (required by switch_case_on_newline SwiftLint rule)
+--enable wrapSwitchCases
+
+# Unused closure args: unnamed-only (leave named args alone)
+--stripunusedargs unnamed-only
+
+# Void return type representation
+--voidtype void
+
+# Explicit self: remove
+--self remove
+
+# Trailing commas: disabled (project style)
+--disable trailingCommas

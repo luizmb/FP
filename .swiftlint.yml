@@ -14,6 +14,7 @@ opt_in_rules:
   - contains_over_filter_is_empty
   - contains_over_first_not_nil
   - convenience_type
+  - discouraged_assert
   - discouraged_object_literal
   - discouraged_optional_boolean
   - discouraged_optional_collection
@@ -24,22 +25,24 @@ opt_in_rules:
   - explicit_init
   - fallthrough
   - fatal_error_message
+  - file_header
   - first_where
   - force_unwrapping
   - identical_operands
   - implicit_return
+  - indentation_width
   - joined_default_parameter
   - last_where
   - legacy_multiple
   - legacy_random
   - literal_expression_end_indentation
   - lower_acl_than_parent
+  - missing_docs
   - modifier_order
   - multiline_arguments
   - multiline_function_chains
   - multiline_literal_brackets
   - multiline_parameters
-  # no_extension_access_modifier — disabled: visibility modifier belongs on the extension
   - nslocalizedstring_key
   - number_separator
   - object_literal
@@ -47,6 +50,7 @@ opt_in_rules:
   - overridden_super_call
   - override_in_extension
   - pattern_matching_keywords
+  - prefer_key_path
   - prefer_self_type_over_type_of_self
   - private_action
   - private_outlet
@@ -56,21 +60,28 @@ opt_in_rules:
   - sorted_first_last
   - sorted_imports
   - strong_iboutlet
+  - switch_case_on_newline
   - toggle_bool
+  - trailing_comma
   - unavailable_function
   - unneeded_parentheses_in_closure_argument
-  - unused_import
   - vertical_parameter_alignment_on_call
+  - vertical_whitespace_between_cases
   - vertical_whitespace_closing_braces
   - vertical_whitespace_opening_braces
   - xct_specific_matcher
   - yoda_condition
 
+analyzer_rules:
+  - unused_import           # requires `swiftlint analyze`; not run by `lint`
+
 disabled_rules:
-  - trailing_comma         # not idiomatic in FP-style tuple/arg lists
   - todo                   # TODOs allowed during development
-  - large_tuple            # zip4/zip5/liftA2 combinators require tuples with >2 members
-  - file_length            # documentation comments count toward file length; well-documented files should not be penalised
+  - large_tuple            # zip combinators require tuples with >2 members
+  - file_length            # documentation comments don't count as bloat
+
+indentation_width:
+  indentation_width: 4
 
 identifier_name:
   min_length: 1            # FP uses single-letter names: f, g, a, b, s, etc.
@@ -83,16 +94,19 @@ identifier_name:
 
 type_name:
   min_length: 1
-  max_length: 60             # test suite names follow TypeNameOperationTests convention
+  max_length: 60
 
 generic_type_name:
   max_length: 30
 
 line_length:
   warning: 140
-  error: 150               # stricter than SwiftRex's 200
+  error: 150
   ignores_comments: true
   ignores_urls: true
+
+file_header:
+  required_string: "// SPDX-License-Identifier: Apache-2.0"
 
 function_body_length:
   warning: 60
@@ -100,15 +114,15 @@ function_body_length:
 
 type_body_length:
   warning: 300
-  error: 350               # stricter than FP's previous 500
+  error: 350
 
 function_parameter_count:
-  warning: 6               # zip4 and liftA2* combinators use up to 5 params
+  warning: 6
   error: 8
 
 cyclomatic_complexity:
-  warning: 12              # stricter than FP's previous 15
-  error: 14                # stricter than FP's previous 25
+  warning: 12
+  error: 14
 
 nesting:
   type_level:
@@ -116,13 +130,63 @@ nesting:
   function_level:
     warning: 3
 
-force_cast: error
-force_try: error
-force_unwrapping: error
+trailing_comma:
+  severity: error
+
+missing_docs:
+  severity: warning
+
+switch_case_on_newline:
+  severity: error
+
+vertical_whitespace_between_cases:
+  severity: warning
+
+force_cast: error              # as!
+force_try: error               # try!
+force_unwrapping: error        # optional!
 
 custom_rules:
+  # Self-import guards. `included` in custom rules is a REGEX matched against the full
+  # file path (not a glob). Use a trailing slash to avoid matching sibling modules
+  # (e.g. "Sources/CoreFP/" won't match "Sources/CoreFPOperators/").
+  self_import_corefp:
+    included: "Sources/CoreFP/"
+    name: "Self-Import (CoreFP)"
+    regex: '^import CoreFP$'
+    message: "Files inside Sources/CoreFP/ cannot import CoreFP — self-import is silently ignored."
+    severity: error
+  self_import_corefpoperators:
+    included: "Sources/CoreFPOperators/"
+    name: "Self-Import (CoreFPOperators)"
+    regex: '^import CoreFPOperators$'
+    message: "Files inside Sources/CoreFPOperators/ cannot import CoreFPOperators — self-import."
+    severity: error
+  self_import_datastructure:
+    included: "Sources/DataStructure/"
+    name: "Self-Import (DataStructure)"
+    regex: '^import DataStructure$'
+    message: "Files inside Sources/DataStructure/ cannot import DataStructure — self-import."
+    severity: error
+  self_import_datastructureoperators:
+    included: "Sources/DataStructureOperators/"
+    name: "Self-Import (DataStructureOperators)"
+    regex: '^import DataStructureOperators$'
+    message: "Files inside Sources/DataStructureOperators/ cannot import DataStructureOperators — self-import."
+    severity: error
+  self_import_fp:
+    included: "Sources/FP/"
+    name: "Self-Import (FP)"
+    regex: '^import FP$'
+    message: "Files inside Sources/FP/ cannot import FP — self-import."
+    severity: error
+  self_import_fpmacros:
+    included: "Sources/FPMacros/"
+    name: "Self-Import (FPMacros)"
+    regex: '^import FPMacros$'
+    message: "Files inside Sources/FPMacros/ cannot import FPMacros — self-import."
+    severity: error
   double_space:
-    include: "*.swift"
     name: "Double space"
     regex: '([a-z,A-Z] \s+)'
     message: "Double space between keywords"
@@ -138,3 +202,88 @@ custom_rules:
     regex: '[ a-zA-Z0-9]*(?:let|var) [ a-zA-Z0-9]*: ([a-zA-Z0-9]*)[ ]*= \1'
     message: "Type Definition Not Needed"
     severity: error
+  direct_date_call:
+    included: "Sources/"
+    name: "Direct Date() Call"
+    regex: 'Date\(\)'
+    message: "Avoid Date() directly; inject Date or () -> Date as parameter for purity"
+    severity: warning
+  direct_uuid_call:
+    included: "Sources/"
+    name: "Direct UUID() Call"
+    regex: 'UUID\(\)'
+    message: "Avoid UUID() directly; inject UUID or () -> UUID as parameter for purity"
+    severity: warning
+  singleton_calendar:
+    included: "Sources/"
+    name: "Singleton Calendar.current"
+    regex: 'Calendar\.current'
+    message: "Inject Calendar as parameter; avoid Calendar.current."
+    severity: warning
+  singleton_locale:
+    included: "Sources/"
+    name: "Singleton Locale.current"
+    regex: 'Locale\.current'
+    message: "Inject Locale as parameter; avoid Locale.current."
+    severity: warning
+  singleton_timezone:
+    included: "Sources/"
+    name: "Singleton TimeZone.current"
+    regex: 'TimeZone\.current'
+    message: "Inject TimeZone as parameter; avoid TimeZone.current."
+    severity: warning
+  singleton_userdefaults:
+    included: "Sources/"
+    name: "Singleton UserDefaults.standard"
+    regex: 'UserDefaults\.standard'
+    message: "Inject UserDefaults as parameter; avoid UserDefaults.standard (global state)."
+    severity: error
+  singleton_shared:
+    included: "Sources/"
+    name: "Generic Singleton .shared"
+    regex: '\.\s*shared\b'
+    message: "Avoid .shared singleton; inject as parameter (indicates global state/coupling)."
+    severity: error
+  fatal_error_call:
+    included: "Sources/"
+    excluded: "BasicFreeFunctions"   # `fail` overloads ARE fatalError — definitional
+    name: "fatalError() Call"
+    regex: 'fatalError\s*\('
+    message: "Never use fatalError(). Return Result/Optional instead."
+    severity: error
+  precondition_failure:
+    included: "Sources/"
+    name: "preconditionFailure() Call"
+    regex: 'preconditionFailure\s*\('
+    message: "Never use preconditionFailure(). Return Result/Optional instead."
+    severity: error
+  assertion_failure:
+    included: "Sources/"
+    name: "assertionFailure() Call"
+    regex: 'assertionFailure\s*\('
+    message: "Never use assertionFailure(). Return Result/Optional instead."
+    severity: error
+  crash_functions:
+    included: "Sources/"
+    excluded: "(FPMacros|ExpandOptic)"  # FPMacros: local func named `abort`; ExpandOptic: CLI uses exit()
+    name: "Other Crash Functions"
+    regex: '\b(exit|abort|trap)\s*\('
+    message: "Never use crash functions (exit, abort, trap). Return error values instead."
+    severity: error
+  throws_instead_result:
+    included: "Sources/"
+    excluded: "FPMacros"   # macro protocols (PeerMacro, ExtensionMacro, MemberMacro) mandate throws
+    name: "Throws Instead of Result"
+    regex: 'func\s+\w+[^\n]*throws'   # [^\n]* prevents DOTALL cross-line matching into comments
+    message: "Prefer Result<Success, Failure> over throws for library code. Use monadic composition."
+    severity: warning
+  closure_ignoring_args:
+    name: "Closure Ignoring Arguments (Use const/ignore/absurd)"
+    regex: '\{\s*_(?:\s*,\s*_)*\s+in\s+[^}]+\}'
+    message: "Use const/ignore/absurd instead of { _ in ... } closures."
+    severity: warning
+  unnecessary_single_param_closure:
+    name: "Single Parameter Closure (Use Point-Free)"
+    regex: '\{\s*\w+\s+in\s+\w+\s*\}'
+    message: "Simple pass-through closure; use point-free (pass the function directly) or curry/flip."
+    severity: warning

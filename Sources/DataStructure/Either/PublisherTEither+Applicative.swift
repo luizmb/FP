@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import Foundation
@@ -5,6 +6,7 @@ import Foundation
 // PublisherTEither: outer = AnyPublisher, inner = Either
 // Type: AnyPublisher<Either<L,A>, E>
 
+/// `liftA2PublisherEither`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func liftA2PublisherEither<L: Sendable, A: Sendable, B: Sendable, C: Sendable, E: Error>(
     _ fn: @escaping @Sendable (A, B) -> C
@@ -16,6 +18,7 @@ public func liftA2PublisherEither<L: Sendable, A: Sendable, B: Sendable, C: Send
     }
 }
 
+/// `seqRightPublisherEither`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func seqRightPublisherEither<L: Sendable, A: Sendable, B: Sendable, E: Error>(
     _ lhs: AnyPublisher<Either<L, A>, E>,
@@ -26,6 +29,7 @@ public func seqRightPublisherEither<L: Sendable, A: Sendable, B: Sendable, E: Er
         .eraseToAnyPublisher()
 }
 
+/// `seqLeftPublisherEither`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func seqLeftPublisherEither<L: Sendable, A: Sendable, B: Sendable, E: Error>(
     _ lhs: AnyPublisher<Either<L, A>, E>,

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 // MARK: - Bridges between Stateful<S, Void> and EndoMut<S>
@@ -31,7 +32,7 @@ extension EndoMut {
     /// Use this to sequence an `EndoMut` inside a `flatMap` chain:
     /// ```swift
     /// Stateful<AppState, Void>.get
-    ///     .flatMap { _ in myEndoMut.toStateful() }
+    ///     .flatMap(const(myEndoMut.toStateful()))
     /// ```
     public func toStateful() -> Stateful<A, Void> {
         Stateful(runEndoMut)

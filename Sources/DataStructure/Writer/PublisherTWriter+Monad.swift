@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import CoreFP
@@ -14,6 +15,7 @@ public extension Publisher {
         map { writer in writer.flatMap(fn) }.eraseToAnyPublisher()
     }
 
+    /// The `property` property.
     static func bindT<W: Monoid, A, B>(
         _ fn: @escaping @Sendable (A) -> Writer<W, B>
     ) -> (AnyPublisher<Writer<W, A>, Failure>) -> AnyPublisher<Writer<W, B>, Failure> {

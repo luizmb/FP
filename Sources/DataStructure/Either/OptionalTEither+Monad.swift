@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // OptionalTEither: outer = Optional, inner = Either
@@ -18,6 +19,7 @@ public extension Optional {
         }
     }
 
+    /// The `property` property.
     static func bindT<L, A, B>(_ fn: @escaping @Sendable (A) -> Either<L, B>?) -> @Sendable (Either<L, A>?) -> Either<L, B>? {
         { opt in opt.flatMapT(fn) }
     }

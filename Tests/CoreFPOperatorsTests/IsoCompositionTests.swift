@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 @testable import CoreFPOperators
 import Testing
@@ -53,8 +54,10 @@ private let taggedAT: AffineTraversal<Tag, Int> = AffineTraversal(
 // MARK: - Iso >>> Lens
 
 @Suite struct IsoLensCompositionTests {
-    private let doubleBoxIso = iso(get: { Box(value: $0.value * 2) },
-                                   reverseGet: { Box(value: $0.value / 2) })
+    private let doubleBoxIso = iso(
+        get: { Box(value: $0.value * 2) },
+        reverseGet: { Box(value: $0.value / 2) }
+    )
 
     @Test func isoThenLens_get() {
         let composed: Lens<Box, Int> = doubleBoxIso >>> boxValueLens

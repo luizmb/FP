@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 extension Result {
     /// Namespace for `Result` ``Semigroup`` and ``Monoid`` instances.
     ///
@@ -65,10 +66,17 @@ extension Result.Monoids.Optimistic: Sendable where Success: Sendable, Failure: 
 extension Result.Monoids.Optimistic: Semigroup where Success: Semigroup, Failure: Sendable {
     public static func combine(_ lhs: Self, _ rhs: Self) -> Self {
         switch (lhs.rawValue, rhs.rawValue) {
-        case let (.success(a), .success(b)): Self(.success(Success.combine(a, b)))
-        case (.success, .failure): lhs
-        case (.failure, .success): rhs
-        case (.failure, .failure): lhs
+        case let (.success(a), .success(b)):
+            Self(.success(Success.combine(a, b)))
+
+        case (.success, .failure):
+            lhs
+
+        case (.failure, .success):
+            rhs
+
+        case (.failure, .failure):
+            lhs
         }
     }
 }
@@ -78,10 +86,17 @@ extension Result.Monoids.OptimisticCombining: Sendable where Success: Sendable, 
 extension Result.Monoids.OptimisticCombining: Semigroup where Success: Semigroup, Failure: Semigroup {
     public static func combine(_ lhs: Self, _ rhs: Self) -> Self {
         switch (lhs.rawValue, rhs.rawValue) {
-        case let (.success(a), .success(b)): Self(.success(Success.combine(a, b)))
-        case (.success, .failure): lhs
-        case (.failure, .success): rhs
-        case let (.failure(e1), .failure(e2)): Self(.failure(Failure.combine(e1, e2)))
+        case let (.success(a), .success(b)):
+            Self(.success(Success.combine(a, b)))
+
+        case (.success, .failure):
+            lhs
+
+        case (.failure, .success):
+            rhs
+
+        case let (.failure(e1), .failure(e2)):
+            Self(.failure(Failure.combine(e1, e2)))
         }
     }
 }
@@ -91,10 +106,17 @@ extension Result.Monoids.Pessimistic: Sendable where Success: Sendable, Failure:
 extension Result.Monoids.Pessimistic: Semigroup where Failure: Semigroup {
     public static func combine(_ lhs: Self, _ rhs: Self) -> Self {
         switch (lhs.rawValue, rhs.rawValue) {
-        case (.success, .failure): rhs
-        case (.failure, .success): lhs
-        case let (.failure(e1), .failure(e2)): Self(.failure(Failure.combine(e1, e2)))
-        case (.success, .success): lhs
+        case (.success, .failure):
+            rhs
+
+        case (.failure, .success):
+            lhs
+
+        case let (.failure(e1), .failure(e2)):
+            Self(.failure(Failure.combine(e1, e2)))
+
+        case (.success, .success):
+            lhs
         }
     }
 }
@@ -104,10 +126,17 @@ extension Result.Monoids.PessimisticCombining: Sendable where Success: Sendable,
 extension Result.Monoids.PessimisticCombining: Semigroup where Success: Semigroup, Failure: Semigroup {
     public static func combine(_ lhs: Self, _ rhs: Self) -> Self {
         switch (lhs.rawValue, rhs.rawValue) {
-        case (.success, .failure): rhs
-        case (.failure, .success): lhs
-        case let (.failure(e1), .failure(e2)): Self(.failure(Failure.combine(e1, e2)))
-        case let (.success(a), .success(b)): Self(.success(Success.combine(a, b)))
+        case (.success, .failure):
+            rhs
+
+        case (.failure, .success):
+            lhs
+
+        case let (.failure(e1), .failure(e2)):
+            Self(.failure(Failure.combine(e1, e2)))
+
+        case let (.success(a), .success(b)):
+            Self(.success(Success.combine(a, b)))
         }
     }
 }

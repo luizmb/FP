@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+import CoreFP
 import CoreFPOperators
 import DataStructure
 import DataStructureOperators
@@ -115,13 +117,12 @@ import Testing
     // MARK: - Applicative Operators
 
     @Test func applicativeOperatorSequenceRight() async throws {
-        let readerA = Reader<Environment, AsyncStream<Int>> { _ in
-            AsyncStream { continuation in
-                continuation.yield(1)
-                continuation.yield(2)
-                continuation.finish()
-            }
+        let streamA = AsyncStream<Int> { continuation in
+            continuation.yield(1)
+            continuation.yield(2)
+            continuation.finish()
         }
+        let readerA = Reader<Environment, AsyncStream<Int>>(const(streamA))
 
         let readerB = Reader<Environment, AsyncStream<Int>> { env in
             AsyncStream { continuation in
@@ -153,13 +154,12 @@ import Testing
             }
         }
 
-        let readerB = Reader<Environment, AsyncStream<Int>> { _ in
-            AsyncStream { continuation in
-                continuation.yield(1)
-                continuation.yield(2)
-                continuation.finish()
-            }
+        let streamB = AsyncStream<Int> { continuation in
+            continuation.yield(1)
+            continuation.yield(2)
+            continuation.finish()
         }
+        let readerB = Reader<Environment, AsyncStream<Int>>(const(streamB))
 
         let result = readerA <* readerB
 

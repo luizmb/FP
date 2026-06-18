@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // Hand-written equivalent of what FP's `@Prisms` macro would generate for `Optional`.
@@ -20,6 +21,7 @@ public extension Optional {
         )
     }
 
+    /// The `prism` property.
     static var prism: Prisms { Prisms() }
 
     enum Cases: CoreFP.CaseMatchable {
@@ -28,13 +30,19 @@ public extension Optional {
 
         public func matches(_ value: Wrapped?) -> Bool {
             switch (self, value) {
-            case (.some, .some): true
-            case (.none, .none): true
-            default:             false
+            case (.some, .some):
+                true
+
+            case (.none, .none):
+                true
+
+            default:
+                false
             }
         }
     }
 
+    /// Declaration.
     func `is`(_ c: Cases) -> Bool { c.matches(self) }
 }
 

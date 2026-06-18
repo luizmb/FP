@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 // MARK: - Pattern Matching (Flipped)
@@ -14,18 +15,22 @@ public func ≅ <T: Comparable>(_ value: T, _ range: ClosedRange<T>) -> Bool {
     rangeMatch(value, in: range)
 }
 
+/// `≅` overload for `Pattern Matching (Flipped)`.
 public func ≅ <T: Comparable>(_ value: T, _ range: Range<T>) -> Bool {
     rangeMatch(value, in: range)
 }
 
+/// `≅` overload for `Pattern Matching (Flipped)`.
 public func ≅ <T: Comparable>(_ value: T, _ range: PartialRangeFrom<T>) -> Bool {
     rangeMatch(value, in: range)
 }
 
+/// `≅` overload for `Pattern Matching (Flipped)`.
 public func ≅ <T: Comparable>(_ value: T, _ range: PartialRangeThrough<T>) -> Bool {
     rangeMatch(value, in: range)
 }
 
+/// `≅` overload for `Pattern Matching (Flipped)`.
 public func ≅ <T: Comparable>(_ value: T, _ range: PartialRangeUpTo<T>) -> Bool {
     rangeMatch(value, in: range)
 }

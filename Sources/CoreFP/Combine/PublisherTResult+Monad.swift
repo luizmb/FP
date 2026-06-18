@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import Foundation
@@ -18,6 +19,7 @@ public func flatMapTPublisherResult<A, B, E: Error, E2: Error>(
             switch result {
             case .failure(let e2):
                 return Just(.failure(e2)).setFailureType(to: E.self).eraseToAnyPublisher()
+
             case .success(let a):
                 return fn(a)
             }
@@ -25,6 +27,7 @@ public func flatMapTPublisherResult<A, B, E: Error, E2: Error>(
         .eraseToAnyPublisher()
 }
 
+/// `bindTPublisherResult`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func bindTPublisherResult<A, B, E: Error, E2: Error>(
     _ fn: @escaping @Sendable (A) -> AnyPublisher<Result<B, E2>, E>

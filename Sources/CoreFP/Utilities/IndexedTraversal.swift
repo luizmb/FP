@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // MARK: - IndexedTraversal<S, I, A>
 //
 // An `IndexedTraversal` is a `Traversal` whose every focus is tagged with an

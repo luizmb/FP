@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import CoreFPOperators
 import DataStructure
 
-// (<*>) :: Validation<e, Result<(a->b), err>> -> Validation<e, Result<a, err>> -> Validation<e, Result<b, err>>
+/// (<*>) :: Validation<e, Result<(a->b), err>> -> Validation<e, Result<a, err>> -> Validation<e, Result<b, err>>
 public func <*> <E: Semigroup, A, B, Err: Error>(
     _ fns: Validation<E, Result<@Sendable (A) -> B, Err>>,
     _ values: Validation<E, Result<A, Err>>
@@ -10,7 +11,7 @@ public func <*> <E: Semigroup, A, B, Err: Error>(
     applyValidationResult(fns, values)
 }
 
-// (*>) :: Validation<e, Result<a, err>> -> Validation<e, Result<b, err>> -> Validation<e, Result<b, err>>
+/// (*>) :: Validation<e, Result<a, err>> -> Validation<e, Result<b, err>> -> Validation<e, Result<b, err>>
 public func *> <E: Semigroup, A, B, Err: Error>(
     _ lhs: Validation<E, Result<A, Err>>,
     _ rhs: Validation<E, Result<B, Err>>
@@ -18,7 +19,7 @@ public func *> <E: Semigroup, A, B, Err: Error>(
     seqRightValidationResult(lhs, rhs)
 }
 
-// (<*) :: Validation<e, Result<a, err>> -> Validation<e, Result<b, err>> -> Validation<e, Result<a, err>>
+/// (<*) :: Validation<e, Result<a, err>> -> Validation<e, Result<b, err>> -> Validation<e, Result<a, err>>
 public func <* <E: Semigroup, A, B, Err: Error>(
     _ lhs: Validation<E, Result<A, Err>>,
     _ rhs: Validation<E, Result<B, Err>>

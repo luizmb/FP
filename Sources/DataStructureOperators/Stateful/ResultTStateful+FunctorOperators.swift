@@ -1,12 +1,13 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 
-// (<£^>) :: (a -> b) -> Result<Stateful<s, a>, e> -> Result<Stateful<s, b>, e>
+/// (<£^>) :: (a -> b) -> Result<Stateful<s, a>, e> -> Result<Stateful<s, b>, e>
 public func <£^> <S, A, B, E: Error>(_ fn: @escaping @Sendable (A) -> B, _ result: Result<Stateful<S, A>, E>) -> Result<Stateful<S, B>, E> {
     result.mapT(fn)
 }
 
-// (<&^>) :: Result<Stateful<s, a>, e> -> (a -> b) -> Result<Stateful<s, b>, e>
+/// (<&^>) :: Result<Stateful<s, a>, e> -> (a -> b) -> Result<Stateful<s, b>, e>
 public func <&^> <S, A, B, E: Error>(_ result: Result<Stateful<S, A>, E>, _ fn: @escaping @Sendable (A) -> B) -> Result<Stateful<S, B>, E> {
     result.mapT(fn)
 }

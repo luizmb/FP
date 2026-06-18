@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import CoreFP
@@ -50,6 +51,7 @@ import Testing
                 .eraseToAnyPublisher()
         }
 
+        // swiftlint:disable:next closure_ignoring_args
         let readerValue = Reader<Environment, any Publisher<Int, TestError>> { _ in
             Just(10)
                 .setFailureType(to: TestError.self)

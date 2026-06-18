@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // EitherTResult: outer = Either, inner = Result
@@ -14,8 +15,11 @@ public func flatMapTEitherResult<L, A, B, E: Error>(
 ) -> Either<L, Result<B, E>> {
     either.flatMap { result in
         switch result {
-        case .failure(let e): .right(.failure(e))
-        case .success(let a): fn(a)
+        case .failure(let e):
+            .right(.failure(e))
+
+        case .success(let a):
+            fn(a)
         }
     }
 }

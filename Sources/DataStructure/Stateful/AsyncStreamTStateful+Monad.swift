@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // AsyncStreamTStateful: outer = AsyncStream, inner = Stateful
@@ -11,6 +12,7 @@ public extension AsyncStream {
         map { stateful in stateful.flatMap(fn) }
     }
 
+    /// The `property` property.
     static func bindT<S, A, B>(
         _ fn: @escaping @Sendable (A) -> Stateful<S, B>
     ) -> (AsyncStream<Stateful<S, A>>) -> AsyncMapSequence<AsyncStream<Stateful<S, A>>, Stateful<S, B>> {

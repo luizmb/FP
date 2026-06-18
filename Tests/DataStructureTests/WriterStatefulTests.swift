@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import DataStructure
 import Testing
 
@@ -6,7 +7,7 @@ import Testing
 
     @Test func mapT() {
         let w = Writer<[String], Stateful<Int, Int>>(
-            Stateful { s in s },
+            Stateful<Int, Int>.get,
             ["log"]
         )
         let mapped = w.mapT { $0 * 2 }
@@ -16,11 +17,11 @@ import Testing
 
     @Test func applicativeLogsAccumulate() {
         let wf = Writer<[String], Stateful<Int, @Sendable (Int) -> String>>(
-            Stateful { _ in { "\($0)" } },
+            Stateful.pure({ "\($0)" }),
             ["fn"]
         )
         let wa = Writer<[String], Stateful<Int, Int>>(
-            Stateful { s in s },
+            Stateful<Int, Int>.get,
             ["val"]
         )
         let result = applyWriterStateful(wf, wa)
@@ -29,8 +30,8 @@ import Testing
     }
 
     @Test func seqRightWriterStatefulLogsAccumulate() {
-        let lhs = Writer<[String], Stateful<Int, Int>>(Stateful { s in s }, ["a"])
-        let rhs = Writer<[String], Stateful<Int, String>>(Stateful { _ in "done" }, ["b"])
+        let lhs = Writer<[String], Stateful<Int, Int>>(Stateful<Int, Int>.get, ["a"])
+        let rhs = Writer<[String], Stateful<Int, String>>(Stateful<Int, String>.pure("done"), ["b"])
         let result = seqRightWriterStateful(lhs, rhs)
         #expect(result.value.eval(0) == "done")
         #expect(result.log == ["a", "b"])
@@ -38,7 +39,7 @@ import Testing
 
     @Test func flatMapTKeepsOuterLog() {
         let w = Writer<[String], Stateful<Int, Int>>(
-            Stateful { s in s },
+            Stateful<Int, Int>.get,
             ["outer"]
         )
         let result = w.flatMapT { n in
@@ -100,7 +101,7 @@ import Testing
 
     @Test func statefulTWriterSeqRight() {
         let lhs = Stateful<Int, Writer<[String], Int>> { state in Writer(state, ["a"]) }
-        let rhs = Stateful<Int, Writer<[String], String>> { _ in Writer("done", ["b"]) }
+        let rhs = Stateful<Int, Writer<[String], String>>.pure(Writer("done", ["b"]))
         let result = seqRightStatefulWriter(lhs, rhs)
         let w = result.eval(0)
         #expect(w.value == "done")
@@ -108,8 +109,8 @@ import Testing
     }
 
     @Test func statefulTWriterSeqLeft() {
-        let lhs = Stateful<Int, Writer<[String], Int>> { _ in Writer(42, ["a"]) }
-        let rhs = Stateful<Int, Writer<[String], String>> { _ in Writer("ignored", ["b"]) }
+        let lhs = Stateful<Int, Writer<[String], Int>>.pure(Writer(42, ["a"]))
+        let rhs = Stateful<Int, Writer<[String], String>>.pure(Writer("ignored", ["b"]))
         let result = seqLeftStatefulWriter(lhs, rhs)
         let w = result.eval(0)
         #expect(w.value == 42)

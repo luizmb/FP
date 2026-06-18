@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // Sequence / Collection stack — every conformance delegates to RawValue.
 
 // MARK: - Sequence

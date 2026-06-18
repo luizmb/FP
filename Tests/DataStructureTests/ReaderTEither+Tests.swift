@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+import CoreFP
 import DataStructure
 import Testing
 
@@ -20,9 +22,7 @@ import Testing
     }
 
     @Test func mapTLeft() {
-        let reader = Reader<Environment, Either<String, Int>> { _ in
-            .left("error")
-        }
+        let reader = Reader<Environment, Either<String, Int>>(const(.left("error")))
 
         let mapped = reader.mapT { $0 * 2 }
 
@@ -37,9 +37,7 @@ import Testing
             .right({ $0 + env.multiplier })
         }
 
-        let readerValue = Reader<Environment, Either<String, Int>> { _ in
-            .right(10)
-        }
+        let readerValue = Reader<Environment, Either<String, Int>>(const(.right(10)))
 
         let result = applyReaderEither(readerFn, readerValue)
 
@@ -52,9 +50,7 @@ import Testing
             .right(env.multiplier)
         }
 
-        let reader2 = Reader<Environment, Either<String, Int>> { _ in
-            .right(10)
-        }
+        let reader2 = Reader<Environment, Either<String, Int>>(const(.right(10)))
 
         let add: @Sendable (Int, Int) -> Int = { $0 + $1 }
         let combined = liftA2ReaderEither(add)(reader1, reader2)

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // MARK: - AffineFocus
 
 /// A scaffolding wrapper that exists **only** so mixed `\.field.case.field` key paths can be

@@ -13,3 +13,5 @@ builder:
     - platform: watchos
     - platform: visionos
     - platform: linux
+    - platform: windows
+    - platform: android

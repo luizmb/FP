@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // ArrayTEither: outer = Array, inner = Either
@@ -9,6 +10,7 @@ public extension Array {
         map { either in either.mapRight(fn) }
     }
 
+    /// The `property` property.
     static func fmapT<L, A, B>(_ fn: @escaping @Sendable (A) -> B) -> @Sendable ([Either<L, A>]) -> [Either<L, B>] {
         { arr in arr.mapT(fn) }
     }

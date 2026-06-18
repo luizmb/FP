@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros
@@ -18,8 +19,8 @@ func storedFields(of structDecl: StructDeclSyntax) -> [StoredField] {
         if modifiers.contains("static") || modifiers.contains("lazy") { return [] }
         return varDecl.bindings.compactMap { binding -> StoredField? in
             guard binding.accessorBlock == nil,
-                  let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
-                  let type = binding.typeAnnotation?.type.trimmedDescription
+                let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
+                let type = binding.typeAnnotation?.type.trimmedDescription
             else { return nil }
             return StoredField(name: name, type: type)
         }
@@ -80,15 +81,21 @@ enum ProductMacroDiagnostic: DiagnosticMessage {
 
     var message: String {
         switch self {
-        case .notAStruct(let macro):    "\(macro) can only be applied to structs"
-        case .noStoredFields(let macro): "\(macro) needs at least one stored property with an explicit type"
+        case .notAStruct(let macro):
+            "\(macro) can only be applied to structs"
+
+        case .noStoredFields(let macro):
+            "\(macro) needs at least one stored property with an explicit type"
         }
     }
 
     var diagnosticID: MessageID {
         switch self {
-        case .notAStruct:     .init(domain: "FPMacrosPlugin", id: "Product.notAStruct")
-        case .noStoredFields: .init(domain: "FPMacrosPlugin", id: "Product.noStoredFields")
+        case .notAStruct:
+            .init(domain: "FPMacrosPlugin", id: "Product.notAStruct")
+
+        case .noStoredFields:
+            .init(domain: "FPMacrosPlugin", id: "Product.noStoredFields")
         }
     }
 

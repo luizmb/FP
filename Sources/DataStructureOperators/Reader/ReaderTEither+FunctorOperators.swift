@@ -1,10 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 import Foundation
 
 // ReaderT + Either
 
-// (<$>) :: Functor f => (a -> b) -> f a -> f b
+/// (<$>) :: Functor f => (a -> b) -> f a -> f b
 public func <£^> <A: Sendable, B: Sendable, L: Sendable, Env: Sendable>(
     _ transform: @escaping @Sendable (A) -> B,
     _ reader: Reader<Env, Either<L, A>>
@@ -12,7 +13,7 @@ public func <£^> <A: Sendable, B: Sendable, L: Sendable, Env: Sendable>(
     reader.mapT(transform)
 }
 
-// ($>) :: Either a b -> a0 -> Either a a0
+/// ($>) :: Either a b -> a0 -> Either a a0
 public func £> <B1: Sendable, A: Sendable, B: Sendable, Env: Sendable>(
     _ reader: Reader<Env, Either<A, B>>,
     _ value: B1
@@ -24,7 +25,7 @@ public func £> <B1: Sendable, A: Sendable, B: Sendable, Env: Sendable>(
     }
 }
 
-// (<$) :: a0 -> Either a b -> Either a a0
+/// (<$) :: a0 -> Either a b -> Either a a0
 public func <£ <B1: Sendable, A: Sendable, B: Sendable, Env: Sendable>(
     _ value: B1,
     _ reader: Reader<Env, Either<A, B>>
@@ -32,7 +33,7 @@ public func <£ <B1: Sendable, A: Sendable, B: Sendable, Env: Sendable>(
     reader £> value
 }
 
-// (<&^>) :: f (g a) -> (a -> b) -> f (g b)
+/// (<&^>) :: f (g a) -> (a -> b) -> f (g b)
 public func <&^> <A: Sendable, B: Sendable, L: Sendable, Env: Sendable>(
     _ reader: Reader<Env, Either<L, A>>,
     _ transform: @escaping @Sendable (A) -> B

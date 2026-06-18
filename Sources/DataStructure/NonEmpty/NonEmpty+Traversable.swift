@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 // MARK: - Traversable
@@ -26,13 +27,18 @@ public extension NonEmpty {
     /// Map each element to a `Result`; return the first failure encountered.
     func traverse<B, E>(_ fn: (A) -> Result<B, E>) -> Result<NonEmpty<B>, E> {
         switch fn(head) {
-        case .failure(let e): return .failure(e)
+        case .failure(let e):
+            return .failure(e)
+
         case .success(let h):
             var t: [B] = []
             for element in tail {
                 switch fn(element) {
-                case .failure(let e): return .failure(e)
-                case .success(let b): t.append(b)
+                case .failure(let e):
+                    return .failure(e)
+
+                case .success(let b):
+                    t.append(b)
                 }
             }
             return .success(NonEmpty<B>(head: h, tail: t))
@@ -49,13 +55,18 @@ public extension NonEmpty {
     /// Map each element to an `Either`; return the first `.left` encountered.
     func traverse<L, B>(_ fn: (A) -> Either<L, B>) -> Either<L, NonEmpty<B>> {
         switch fn(head) {
-        case .left(let l): return .left(l)
+        case .left(let l):
+            return .left(l)
+
         case .right(let h):
             var t: [B] = []
             for element in tail {
                 switch fn(element) {
-                case .left(let l): return .left(l)
-                case .right(let b): t.append(b)
+                case .left(let l):
+                    return .left(l)
+
+                case .right(let b):
+                    t.append(b)
                 }
             }
             return .right(NonEmpty<B>(head: h, tail: t))
@@ -73,15 +84,25 @@ public extension NonEmpty {
     func traverse<E: Semigroup, B>(_ fn: (A) -> Validation<E, B>) -> Validation<E, NonEmpty<B>> {
         let headResult: Validation<E, NonEmpty<B>>
         switch fn(head) {
-        case .failure(let e): headResult = .failure(e)
-        case .success(let b): headResult = .success(NonEmpty<B>(head: b))
+        case .failure(let e):
+            headResult = .failure(e)
+
+        case .success(let b):
+            headResult = .success(NonEmpty<B>(head: b))
         }
         return tail.map(fn).reduce(headResult) { acc, next in
             switch (acc, next) {
-            case let (.success(ne), .success(b)): .success(ne.append(b))
-            case let (.failure(e1), .failure(e2)): .failure(E.combine(e1, e2))
-            case (.success, .failure(let e)): .failure(e)
-            case (.failure(let e), .success): .failure(e)
+            case let (.success(ne), .success(b)):
+                .success(ne.append(b))
+
+            case let (.failure(e1), .failure(e2)):
+                .failure(E.combine(e1, e2))
+
+            case (.success, .failure(let e)):
+                .failure(e)
+
+            case (.failure(let e), .success):
+                .failure(e)
             }
         }
     }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @_exported import CoreFP
 
 /// Generates a total `Iso` between a struct and a structural representation of its stored fields.

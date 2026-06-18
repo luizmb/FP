@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // MARK: - Iso composition — named functions
 //
 // `Iso` is the strongest optic, so composing it with anything yields the

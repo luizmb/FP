@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @testable import CoreFP
 import Testing
 
@@ -44,6 +45,7 @@ import Testing
         switch results[1] {
         case .failure(let error):
             #expect(error as? TestError == .fail)
+
         case .success:
             Issue.record("Expected .failure")
         }

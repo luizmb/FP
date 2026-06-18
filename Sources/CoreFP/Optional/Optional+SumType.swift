@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // MARK: - Optional as SumType2
@@ -23,8 +24,11 @@ extension Optional: SumType2 {
 
     public func match<C>(caseLeft: (Wrapped) -> C, caseRight: (()) -> C) -> C {
         switch self {
-        case let value?: caseLeft(value)
-        case nil: caseRight(())
+        case let value?:
+            caseLeft(value)
+
+        case nil:
+            caseRight(())
         }
     }
 }

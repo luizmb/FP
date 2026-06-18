@@ -1,9 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import CoreFPOperators
 import DataStructure
 
 // (<*>) :: Stateful<s, any Publisher<(a -> b), e>> -> Stateful<s, any Publisher<a, e>> -> Stateful<s, any Publisher<b, e>>
+/// `func`.
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func <*> <S, A, B, E: Error>(
     _ sf: Stateful<S, any Publisher<(A) -> B, E>>,
@@ -13,6 +15,7 @@ public func <*> <S, A, B, E: Error>(
 }
 
 // (*>) :: Stateful<s, any Publisher<a, e>> -> Stateful<s, any Publisher<b, e>> -> Stateful<s, any Publisher<b, e>>
+/// `*>` overload.
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func *> <S, A, B, E: Error>(
     _ lhs: Stateful<S, any Publisher<A, E>>,
@@ -22,6 +25,7 @@ public func *> <S, A, B, E: Error>(
 }
 
 // (<*) :: Stateful<s, any Publisher<a, e>> -> Stateful<s, any Publisher<b, e>> -> Stateful<s, any Publisher<a, e>>
+/// `func`.
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func <* <S, A, B, E: Error>(
     _ lhs: Stateful<S, any Publisher<A, E>>,

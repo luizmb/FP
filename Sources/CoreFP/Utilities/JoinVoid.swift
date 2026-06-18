@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // join :: Monad m => m (m a) -> m a
 // Top-level free function versions of the static join/void methods.
 
@@ -28,20 +29,24 @@ public func void<A>(_ fa: [A]) -> [Void] {
 
 // MARK: - Optional
 
+/// `join` for `Optional`.
 public func join<A>(_ nested: A??) -> A? {
     nested.flatMap(CoreFP.id)
 }
 
+/// `void` for `Optional`.
 public func void<A>(_ fa: A?) -> Void? {
     fa.void()
 }
 
 // MARK: - Result
 
+/// `join` for `Result`.
 public func join<A, E: Error>(_ nested: Result<Result<A, E>, E>) -> Result<A, E> {
     nested.flatMap(CoreFP.id)
 }
 
+/// `void` for `Result`.
 public func void<A, E: Error>(_ fa: Result<A, E>) -> Result<Void, E> {
     fa.void()
 }

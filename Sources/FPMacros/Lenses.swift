@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @_exported import CoreFP
 
 /// Generates a memberwise initializer, a `lens` namespace, and a `with(...)` helper for

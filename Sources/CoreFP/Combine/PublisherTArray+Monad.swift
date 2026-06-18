@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import Foundation
@@ -27,6 +28,7 @@ public func flatMapTPublisherArray<A, B, E: Error>(
         .eraseToAnyPublisher()
 }
 
+/// `bindTPublisherArray`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func bindTPublisherArray<A, B, E: Error>(
     _ fn: @escaping @Sendable (A) -> AnyPublisher<[B], E>

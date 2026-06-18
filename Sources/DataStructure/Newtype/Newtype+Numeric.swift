@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // Numeric stack — all conformances delegate to RawValue. Operators like +, -, *, /, %, <<,
 // >>, &, |, ^ come for free via these protocols, so this lives in DataStructure (not in
 // DataStructureOperators) because they are native operators rather than custom symbols.
@@ -258,41 +259,54 @@ extension Newtype: LosslessStringConvertible where RawValue: LosslessStringConve
 // `FloatingPoint` API. For that, project to `rawValue`.
 
 extension Newtype where RawValue: FloatingPoint {
+    /// The `property` property.
     public static func / (lhs: Self, rhs: Self) -> Self {
         Self(lhs.rawValue / rhs.rawValue)
     }
 
+    /// The `property` property.
     public static func /= (lhs: inout Self, rhs: Self) {
         lhs.rawValue /= rhs.rawValue
     }
 
+    /// `squareRoot` for `Floating-point operators (without FloatingPoint conformance)`.
     public func squareRoot() -> Self {
         Self(rawValue.squareRoot())
     }
 
+    /// Declaration for `Floating-point operators (without FloatingPoint conformance)`.
     public mutating func formSquareRoot() {
         rawValue.formSquareRoot()
     }
 
+    /// `remainder` for `Floating-point operators (without FloatingPoint conformance)`.
     public func remainder(dividingBy other: Self) -> Self {
         Self(rawValue.remainder(dividingBy: other.rawValue))
     }
 
+    /// `truncatingRemainder` for `Floating-point operators (without FloatingPoint conformance)`.
     public func truncatingRemainder(dividingBy other: Self) -> Self {
         Self(rawValue.truncatingRemainder(dividingBy: other.rawValue))
     }
 
+    /// Declaration for `Floating-point operators (without FloatingPoint conformance)`.
     public mutating func round(_ rule: FloatingPointRoundingRule = .toNearestOrEven) {
         rawValue.round(rule)
     }
 
+    /// `rounded` for `Floating-point operators (without FloatingPoint conformance)`.
     public func rounded(_ rule: FloatingPointRoundingRule = .toNearestOrEven) -> Self {
         Self(rawValue.rounded(rule))
     }
 
+    /// The `isFinite` property.
     public var isFinite: Bool { rawValue.isFinite }
+    /// The `isInfinite` property.
     public var isInfinite: Bool { rawValue.isInfinite }
+    /// The `isNaN` property.
     public var isNaN: Bool { rawValue.isNaN }
+    /// The `isZero` property.
     public var isZero: Bool { rawValue.isZero }
+    /// The `sign` property.
     public var sign: FloatingPointSign { rawValue.sign }
 }

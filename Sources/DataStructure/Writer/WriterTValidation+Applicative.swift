@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
-// WriterTValidation: outer = Writer, inner = Validation
-// Type: Writer<W, Validation<E, A>>
-// Combines logs left-to-right; accumulates Validation errors.
+/// WriterTValidation: outer = Writer, inner = Validation
+/// Type: Writer<W, Validation<E, A>>
+/// Combines logs left-to-right; accumulates Validation errors.
 
 public func applyWriterValidation<W: Monoid, E: Semigroup, A, B>(
     _ wf: Writer<W, Validation<E, @Sendable (A) -> B>>,
@@ -14,6 +15,7 @@ public func applyWriterValidation<W: Monoid, E: Semigroup, A, B>(
     )
 }
 
+/// `liftA2WriterValidation`.
 public func liftA2WriterValidation<W: Monoid, E: Semigroup, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Writer<W, Validation<E, A>>, Writer<W, Validation<E, B>>) -> Writer<W, Validation<E, C>> {
@@ -25,6 +27,7 @@ public func liftA2WriterValidation<W: Monoid, E: Semigroup, A, B, C>(
     }
 }
 
+/// `seqRightWriterValidation`.
 public func seqRightWriterValidation<W: Monoid, E: Semigroup, A, B>(
     _ lhs: Writer<W, Validation<E, A>>,
     _ rhs: Writer<W, Validation<E, B>>
@@ -32,6 +35,7 @@ public func seqRightWriterValidation<W: Monoid, E: Semigroup, A, B>(
     Writer<W, Validation<E, B>>(lhs.value.seqRight(rhs.value), W.combine(lhs.log, rhs.log))
 }
 
+/// `seqLeftWriterValidation`.
 public func seqLeftWriterValidation<W: Monoid, E: Semigroup, A, B>(
     _ lhs: Writer<W, Validation<E, A>>,
     _ rhs: Writer<W, Validation<E, B>>

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -14,6 +15,7 @@ public extension Stateful {
         mapStateful { writer in writer.flatMap(fn) }
     }
 
+    /// The `property` property.
     static func bindT<W: Monoid, Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> Writer<W, B>
     ) -> (Stateful<S, Writer<W, Inner>>) -> Stateful<S, Writer<W, B>>

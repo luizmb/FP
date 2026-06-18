@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 public extension Result {
@@ -37,8 +38,11 @@ public extension Result {
     /// (<|>) :: m a -> m a -> m a
     static func alt(_ lhs: Result<Success, Failure>, _ rhs: @autoclosure () -> Result<Success, Failure>) -> Result<Success, Failure> {
         switch lhs {
-        case .success: lhs
-        case .failure: rhs()
+        case .success:
+            lhs
+
+        case .failure:
+            rhs()
         }
     }
 

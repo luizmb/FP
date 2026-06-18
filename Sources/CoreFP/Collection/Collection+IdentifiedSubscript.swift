@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 extension Collection where Element: Identifiable {
     /// Returns the first element whose `id` equals `id`, or `nil` if none exists.
     ///
@@ -57,11 +58,14 @@ extension RangeReplaceableCollection where Element: Identifiable {
             case let (value?, index?):
                 guard value.id == id else { return }
                 replaceSubrange(index..<self.index(after: index), with: CollectionOfOne(value))
+
             case let (value?, nil):
                 guard value.id == id else { return }
                 append(value)
+
             case let (nil, index?):
                 remove(at: index)
+
             case (nil, nil):
                 return
             }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import CoreFP
@@ -8,11 +9,13 @@ import Foundation
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public extension Publisher {
+    /// Declaration.
     func mapT<W: Monoid, A, B>(_ fn: @escaping @Sendable (A) -> B) -> AnyPublisher<Writer<W, B>, Failure>
     where Output == Writer<W, A> {
         map { writer in writer.map(fn) }.eraseToAnyPublisher()
     }
 
+    /// The `property` property.
     static func fmapT<W: Monoid, A, B>(
         _ fn: @escaping @Sendable (A) -> B
     ) -> @Sendable (AnyPublisher<Writer<W, A>, Failure>) -> AnyPublisher<Writer<W, B>, Failure> {

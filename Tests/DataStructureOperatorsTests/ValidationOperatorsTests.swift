@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+import CoreFP
 import CoreFPOperators
 import DataStructure
 import DataStructureOperators
@@ -98,8 +100,8 @@ import Testing
     // MARK: - StatefulTValidation operators
 
     @Test func statefulTValidationApplyOperator() {
-        let sf = Stateful<Int, Validation<[String], @Sendable (Int) -> Int>> { _ in .failure(["sf"]) }
-        let sa = Stateful<Int, Validation<[String], Int>> { _ in .failure(["sa"]) }
+        let sf = Stateful<Int, Validation<[String], @Sendable (Int) -> Int>>.pure(.failure(["sf"]))
+        let sa = Stateful<Int, Validation<[String], Int>>.pure(.failure(["sa"]))
         var state = 0
         let result = (sf <*> sa).run(&state)
         #expect(result == .failure(["sf", "sa"]))
@@ -107,7 +109,7 @@ import Testing
 
     @Test func statefulTValidationBindOperator() {
         let s = Stateful<Int, Validation<[String], Int>> { s in s += 1; return .success(s) }
-        let result = s >>- { (n: Int) in Stateful<Int, Validation<[String], String>> { _ in .success("n=\(n)") } }
+        let result = s >>- { (n: Int) in Stateful<Int, Validation<[String], String>>.pure(.success("n=\(n)")) }
         var state = 0
         #expect(result.run(&state) == .success("n=1"))
     }
@@ -115,15 +117,15 @@ import Testing
     // MARK: - ReaderTValidation operators
 
     @Test func readerTValidationApplyOperator() {
-        let rf = Reader<String, Validation<[Int], @Sendable (Int) -> Int>> { _ in .failure([1]) }
-        let ra = Reader<String, Validation<[Int], Int>> { _ in .failure([2]) }
+        let rf = Reader<String, Validation<[Int], @Sendable (Int) -> Int>>(const(.failure([1])))
+        let ra = Reader<String, Validation<[Int], Int>>(const(.failure([2])))
         let result = (rf <*> ra)("env")
         #expect(result == .failure([1, 2]))
     }
 
     @Test func readerTValidationBindOperator() {
         let r = Reader<String, Validation<[Int], Int>> { env in .success(env.count) }
-        let result = r >>- { (n: Int) in Reader<String, Validation<[Int], String>> { _ in .success("n=\(n)") } }
+        let result = r >>- { (n: Int) in Reader<String, Validation<[Int], String>>(const(.success("n=\(n)"))) }
         #expect(result("hello") == .success("n=5"))
     }
 }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // MARK: - Function as Applicative
@@ -6,7 +7,7 @@ import Foundation
 /// For functions, pure is const - it creates a function that ignores its input
 /// pure :: a -> (r -> a)
 public func pure<R, A: Sendable>(_ value: A) -> @Sendable (R) -> A {
-    { _ in value }
+    const(value)
 }
 
 /// Applicative apply for functions

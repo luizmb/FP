@@ -1,5 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
-import DataStructure
 
 /// Sequence a Writer of a Result into a Result of Writer.
 /// sequence :: Writer w (Result<b, e>) -> Result<Writer w b, e>

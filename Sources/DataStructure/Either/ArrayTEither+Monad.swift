@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // ArrayTEither: outer = Array, inner = Either
@@ -18,6 +19,7 @@ public extension Array {
         }
     }
 
+    /// The `property` property.
     static func bindT<L, A, B>(
         _ fn: @escaping @Sendable (A) -> [Either<L, B>]
     ) -> ([Either<L, A>]) -> [Either<L, B>] {

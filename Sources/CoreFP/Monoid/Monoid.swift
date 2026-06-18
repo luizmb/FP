@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// A ``Semigroup`` with an identity element.
 ///
 /// A `Monoid` extends ``Semigroup`` by providing an identity element, ``identity``,

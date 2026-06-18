@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 extension Dictionary: Semigroup {
     /// Combines two dictionaries, preferring values from the right side on key conflicts.
     public static func combine(_ lhs: [Key: Value], _ rhs: [Key: Value]) -> [Key: Value] {

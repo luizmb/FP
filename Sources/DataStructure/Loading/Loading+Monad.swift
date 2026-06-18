@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -13,10 +14,13 @@ public extension Loading {
         switch self {
         case .idle:
             .idle
+
         case .loading(let prev):
             .loading(previous: prev.flatMap { f($0).loadedOrPrevious })
+
         case .loaded(let value):
             f(value)
+
         case let .failed(err, prev):
             .failed(error: err, previous: prev.flatMap { f($0).loadedOrPrevious })
         }

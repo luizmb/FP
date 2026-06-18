@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// A bidirectional, lossless conversion between `S` and `A`.
 ///
 /// An `Iso<S, A>` captures a total bijection: `get` converts `S → A` and

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @_exported import CoreFP
 
 /// Generates a **witness** struct for a protocol — its requirements as `@Sendable` closure

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 import FPMacrosExpander
 import SwiftDiagnostics
@@ -31,11 +32,16 @@ func expand(lenses structDecl: StructDeclSyntax, attribute: AttributeSyntax) -> 
         return "// @Lenses expansion error: \(error)"
     }
     for d in ctx.diagnostics where d.diagMessage.severity == .error {
-        fputs("error: \(d.message)\n", stderr)
+        fputs("error: \(d.message)
+", stderr)
     }
     let name = structDecl.name.trimmedDescription
-    let body = members.map { "    \($0.trimmedDescription)" }.joined(separator: "\n\n")
-    return "extension \(name) {\n\(body)\n}"
+    let body = members.map { "    \($0.trimmedDescription)" }.joined(separator: "
+
+")
+    return "extension \(name) {
+\(body)
+}"
 }
 
 func expand(prisms enumDecl: EnumDeclSyntax, attribute: AttributeSyntax) -> String {
@@ -47,11 +53,16 @@ func expand(prisms enumDecl: EnumDeclSyntax, attribute: AttributeSyntax) -> Stri
         return "// @Prisms expansion error: \(error)"
     }
     for d in ctx.diagnostics where d.diagMessage.severity == .error {
-        fputs("error: \(d.message)\n", stderr)
+        fputs("error: \(d.message)
+", stderr)
     }
     let name = enumDecl.name.trimmedDescription
-    let body = members.map { "    \($0.trimmedDescription)" }.joined(separator: "\n\n")
-    return "extension \(name) {\n\(body)\n}"
+    let body = members.map { "    \($0.trimmedDescription)" }.joined(separator: "
+
+")
+    return "extension \(name) {
+\(body)
+}"
 }
 
 // MARK: - Syntax walker
@@ -62,7 +73,7 @@ final class OpticWalker: SyntaxVisitor {
     override func visit(_ node: StructDeclSyntax) -> SyntaxVisitorContinueKind {
         for attr in node.attributes {
             guard let a = attr.as(AttributeSyntax.self),
-                  a.attributeName.trimmedDescription == "Lenses" else { continue }
+                a.attributeName.trimmedDescription == "Lenses" else { continue }
             outputs.append("// MARK: - @Lenses → \(node.name.trimmedDescription)\n")
             outputs.append(expand(lenses: node, attribute: a))
         }
@@ -72,7 +83,7 @@ final class OpticWalker: SyntaxVisitor {
     override func visit(_ node: EnumDeclSyntax) -> SyntaxVisitorContinueKind {
         for attr in node.attributes {
             guard let a = attr.as(AttributeSyntax.self),
-                  a.attributeName.trimmedDescription == "Prisms" else { continue }
+                a.attributeName.trimmedDescription == "Prisms" else { continue }
             outputs.append("// MARK: - @Prisms → \(node.name.trimmedDescription)\n")
             outputs.append(expand(prisms: node, attribute: a))
         }
@@ -83,8 +94,10 @@ final class OpticWalker: SyntaxVisitor {
 // MARK: - Entry point
 
 guard CommandLine.arguments.count > 1 else {
-    fputs("Usage: swift run ExpandOptic <file.swift> [file2.swift ...]\n", stderr)
-    fputs("  Prints the manual equivalents of @Lenses/@Prisms expansions.\n", stderr)
+    fputs("Usage: swift run ExpandOptic <file.swift> [file2.swift ...]
+", stderr)
+    fputs("  Prints the manual equivalents of @Lenses/@Prisms expansions.
+", stderr)
     exit(1)
 }
 
@@ -102,8 +115,11 @@ for path in CommandLine.arguments.dropFirst() {
 }
 
 if allOutputs.isEmpty {
-    fputs("No @Lenses or @Prisms annotations found.\n", stderr)
+    fputs("No @Lenses or @Prisms annotations found.
+", stderr)
     exit(1)
 }
 
-print(allOutputs.joined(separator: "\n\n"))
+print(allOutputs.joined(separator: "
+
+"))

@@ -1,9 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import Foundation
 
 // ReaderT + Publisher
 
+/// `applyReaderPublisher`.
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func applyReaderPublisher<Env, A, B, E: Error>(
     _ readerF: Reader<Env, any Publisher<(A) -> B, E>>,

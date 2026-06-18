@@ -1,10 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 import Foundation
 
 // ReaderT + Optional
 
-// (<*>) :: Reader e (Optional<(a -> b)>) -> Reader e (Optional<a>) -> Reader e (Optional<b>)
+/// (<*>) :: Reader e (Optional<(a -> b)>) -> Reader e (Optional<a>) -> Reader e (Optional<b>)
 public func <*> <Env, A, B>(
     _ readerF: Reader<Env, (@Sendable (A) -> B)?>,
     _ readerA: Reader<Env, A?>
@@ -12,7 +13,7 @@ public func <*> <Env, A, B>(
     applyReaderOptional(readerF, readerA)
 }
 
-// (*>) :: Reader e (Optional<a>) -> Reader e (Optional<b>) -> Reader e (Optional<b>)
+/// (*>) :: Reader e (Optional<a>) -> Reader e (Optional<b>) -> Reader e (Optional<b>)
 public func *> <Env, A, B>(
     _ lhs: Reader<Env, A?>,
     _ rhs: Reader<Env, B?>
@@ -20,7 +21,7 @@ public func *> <Env, A, B>(
     seqRightReaderOptional(lhs, rhs)
 }
 
-// (<*) :: Reader e (Optional<a>) -> Reader e (Optional<b>) -> Reader e (Optional<a>)
+/// (<*) :: Reader e (Optional<a>) -> Reader e (Optional<b>) -> Reader e (Optional<a>)
 public func <* <Env, A, B>(
     _ lhs: Reader<Env, A?>,
     _ rhs: Reader<Env, B?>

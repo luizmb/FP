@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // MARK: - Bridges between Endo<A> and EndoMut<A>
 //
 // The two types are isomorphic as Monoids. Converting Endo → EndoMut is free

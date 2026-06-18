@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // MARK: - Traversal<S, A>
 //
 // A `Traversal` focuses on zero, one, or many values of type `A` inside `S`.

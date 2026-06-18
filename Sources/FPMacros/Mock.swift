@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @_exported import CoreFP
 
 /// Generates a configurable test mock for a protocol, wrapped in `#if DEBUG`.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -6,10 +7,17 @@ public extension Loading {
     /// `(.idle)` and the `Failure` channel pass through unchanged.
     func map<B: Sendable>(_ f: (Success) -> B) -> Loading<B, Failure> {
         switch self {
-        case .idle:                    .idle
-        case .loading(let prev):       .loading(previous: prev.map(f))
-        case .loaded(let value):       .loaded(f(value))
-        case let .failed(err, prev):   .failed(error: err, previous: prev.map(f))
+        case .idle:
+            .idle
+
+        case .loading(let prev):
+            .loading(previous: prev.map(f))
+
+        case .loaded(let value):
+            .loaded(f(value))
+
+        case let .failed(err, prev):
+            .failed(error: err, previous: prev.map(f))
         }
     }
 

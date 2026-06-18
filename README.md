@@ -2,11 +2,18 @@
 
 FP is a Swift library that brings functional programming patterns to your codebase in a composable, type-safe way. It extends Swift's built-in types (`Optional`, `Result`, `Array`, `Publisher`, async/await `Task`, `AsyncSequence`) and introduces new data structures that make common patterns — error handling, dependency injection, state threading, validation — explicit, predictable, and easy to test.
 
+[![Tests](https://github.com/luizmb/FP/actions/workflows/ci.yml/badge.svg)](https://github.com/luizmb/FP/actions)
+[![Documentation](https://img.shields.io/badge/docs-online-blue)](https://ios.lu/FP)
+[![Swift 6.2+](https://img.shields.io/badge/swift-6.2%2B-orange)](https://swift.org)
+
+**[→ Full API Documentation](https://ios.lu/FP)** · [Learning Resources](#learning-resources) · [Installation](#installation)
+
 The library draws from Haskell and Scala Cats conventions and is designed to be used incrementally: start with just the core extensions and adopt more as your comfort grows.
 
 ## Contents
 
 - [Learning Resources](#learning-resources)
+- [API Documentation](#api-documentation)
 - [Installation](#installation)
   - [Modules](#modules)
     - [`CoreFP` — the foundation](#corefp--the-foundation)
@@ -77,6 +84,11 @@ To open it:
 
 Each page contains ready-to-run functions with inline result comments. Uncomment one `learn(…)` call at a time to see its output in the console or inline results sidebar.
 
+## API Documentation
+
+**[→ Full API Reference at ios.lu/FP](https://ios.lu/FP)**
+
+Browse the complete API documentation with examples and tutorials for every type and function in FP, CoreFP, DataStructure, and all operator modules.
 
 ## Installation
 

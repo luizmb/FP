@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
-// ValidationTOptional: outer = Validation, inner = Optional
-// Type: Validation<E, A?>
+/// ValidationTOptional: outer = Validation, inner = Optional
+/// Type: Validation<E, A?>
 
 public func fmapTValidationOptional<E: Semigroup, A, B>(
     _ fn: @escaping @Sendable (A) -> B

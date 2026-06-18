@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import Foundation
@@ -14,6 +15,7 @@ public func mapTPublisherEither<L, A, B, E: Error>(
     publisher.map { either in either.mapRight(fn) }.eraseToAnyPublisher()
 }
 
+/// `fmapTPublisherEither`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func fmapTPublisherEither<L, A, B, E: Error>(
     _ fn: @escaping @Sendable (A) -> B

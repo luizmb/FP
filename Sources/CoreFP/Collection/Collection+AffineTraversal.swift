@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 extension MutableCollection where Index: Sendable {
     /// Returns an `AffineTraversal` focusing on the element at `index`.
     /// Preview returns `nil` when `index` is out of bounds; set is a no-op in that case.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // WriterT + Stateful — Writer<W, Stateful<S, A>>
@@ -8,6 +9,7 @@ import Foundation
 // Writer<W, A?> when inner logs must be preserved.
 
 public extension Writer {
+    /// Declaration.
     func flatMapT<S, Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> Writer<W, Stateful<S, B>>
     ) -> Writer<W, Stateful<S, B>> where A == Stateful<S, Inner> {
@@ -17,6 +19,7 @@ public extension Writer {
         )
     }
 
+    /// The `property` property.
     static func bindT<S, Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> Writer<W, Stateful<S, B>>
     ) -> (Writer<W, Stateful<S, Inner>>) -> Writer<W, Stateful<S, B>>

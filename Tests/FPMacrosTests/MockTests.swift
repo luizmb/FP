@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import FPMacros
 import Testing
@@ -67,7 +68,7 @@ struct MockTests {
     }
 
     @Test func associatedTypes() {
-        let mock = Store2Mock<Int>(get: { _ in 42 }, all: { [1, 2, 3] })
+        let mock = Store2Mock<Int>(get: const(42), all: { [1, 2, 3] })
         #expect(mock.get("x") == 42)
         #expect(mock.all == [1, 2, 3])
     }

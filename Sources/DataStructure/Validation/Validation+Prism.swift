@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 // Hand-written equivalent of what FP's `@Prisms` macro would generate for `Validation`.
@@ -21,6 +22,7 @@ public extension Validation {
         )
     }
 
+    /// The `prism` property.
     static var prism: Prisms { Prisms() }
 
     enum Cases: CoreFP.CaseMatchable {
@@ -29,13 +31,19 @@ public extension Validation {
 
         public func matches(_ value: Validation) -> Bool {
             switch (self, value) {
-            case (.failure, .failure): true
-            case (.success, .success): true
-            default:                   false
+            case (.failure, .failure):
+                true
+
+            case (.success, .success):
+                true
+
+            default:
+                false
             }
         }
     }
 
+    /// Declaration.
     func `is`(_ c: Cases) -> Bool { c.matches(self) }
 }
 

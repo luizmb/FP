@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // NonEmptyTEither: outer = NonEmpty, inner = Either
 // Type: NonEmpty<Either<L, A>>
 
@@ -12,8 +13,11 @@ public extension NonEmpty {
         let t: [Either<L, Inner>] = tail
         func step(_ element: Either<L, Inner>) -> NonEmpty<Either<L, B>> {
             switch element {
-            case .left(let l): NonEmpty<Either<L, B>>(head: .left(l))
-            case .right(let a): fn(a)
+            case .left(let l):
+                NonEmpty<Either<L, B>>(head: .left(l))
+
+            case .right(let a):
+                fn(a)
             }
         }
         let headResult = step(h)
@@ -21,6 +25,7 @@ public extension NonEmpty {
         return NonEmpty<Either<L, B>>(head: headResult.head, tail: headResult.tail + tailResults)
     }
 
+    /// The `property` property.
     static func bindT<L, Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> NonEmpty<Either<L, B>>
     ) -> (NonEmpty<Either<L, Inner>>) -> NonEmpty<Either<L, B>> {

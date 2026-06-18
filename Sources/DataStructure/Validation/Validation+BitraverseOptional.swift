@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 public extension Validation {
-    // bitraverse :: (e -> e1?) -> (a -> b?) -> Validation e a -> Validation e1 b?
-    // bitraverse ef _  (Failure e) = fmap Failure (ef e)
-    // bitraverse _  af (Success a) = fmap Success (af a)
+    /// bitraverse :: (e -> e1?) -> (a -> b?) -> Validation e a -> Validation e1 b?
+    /// bitraverse ef _  (Failure e) = fmap Failure (ef e)
+    /// bitraverse _  af (Success a) = fmap Success (af a)
     func bitraverse<E1: Semigroup, B>(_ ef: (E) -> E1?, _ af: (A) -> B?) -> Validation<E1, B>? {
         match(
             caseFailure: { ef($0).map(Validation<E1, B>.failure) },
@@ -11,7 +12,7 @@ public extension Validation {
         )
     }
 
-    // bisequence :: Validation e1? b? -> Validation e1 b?
+    /// bisequence :: Validation e1? b? -> Validation e1 b?
     func bisequence<E1: Semigroup, B>() -> Validation<E1, B>? where E == E1?, A == B? {
         bitraverse(CoreFP.id, CoreFP.id)
     }

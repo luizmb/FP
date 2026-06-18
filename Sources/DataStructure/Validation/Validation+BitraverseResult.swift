@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 public extension Validation {
-    // bitraverse :: (e -> Result<e1,err>) -> (a -> Result<b,err>) -> Validation e a -> Result<Validation e1 b, err>
-    // bitraverse ef _  (Failure e) = fmap Failure (ef e)
-    // bitraverse _  af (Success a) = fmap Success (af a)
+    /// bitraverse :: (e -> Result<e1,err>) -> (a -> Result<b,err>) -> Validation e a -> Result<Validation e1 b, err>
+    /// bitraverse ef _  (Failure e) = fmap Failure (ef e)
+    /// bitraverse _  af (Success a) = fmap Success (af a)
     func bitraverse<E1: Semigroup, B, Err: Error>(
         _ ef: (E) -> Result<E1, Err>,
         _ af: (A) -> Result<B, Err>

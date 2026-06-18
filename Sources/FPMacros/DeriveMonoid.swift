@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @_exported import CoreFP
 
 /// Derives `Semigroup` + `Monoid` for a struct as the **product** of its stored properties.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -16,6 +17,7 @@ public extension Either {
         mapRight { writer in writer.flatMap(fn) }
     }
 
+    /// The `property` property.
     static func bindT<W: Monoid, Inner, C>(
         _ fn: @escaping @Sendable (Inner) -> Writer<W, C>
     ) -> (Either<A, Writer<W, Inner>>) -> Either<A, Writer<W, C>> {

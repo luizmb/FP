@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Testing
 
@@ -42,7 +43,7 @@ extension Outer: Prismatic {
     static let prism = Prisms()
 }
 
-@Suite("PrismFocus / \\.case key paths")
+@Suite(#"PrismFocus / \.case key paths"#)
 struct PrismFocusTests {
     @Test func caseKeyPathRecoversPrismPreview() {
         let prism = Prism(\.positive as PrismKeyPath<Sign, Int>)

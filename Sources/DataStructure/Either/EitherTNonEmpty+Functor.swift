@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // EitherTNonEmpty: outer = Either, inner = NonEmpty
 // Type: Either<L, NonEmpty<A>>
 

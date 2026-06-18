@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 extension Collection {
     /// Returns the element at `index`, or `nil` if `index` is out of bounds.
     ///

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros
@@ -101,7 +102,7 @@ extension WitnessMacro: ExtensionMacro {
         in context: some MacroExpansionContext
     ) throws -> [ExtensionDeclSyntax] {
         guard let proto = declaration.as(ProtocolDeclSyntax.self),
-              let model = parseModel(proto, node: node, in: context)
+            let model = parseModel(proto, node: node, in: context)
         else { return [] }
 
         let access = witnessAccess(proto.modifiers)
@@ -141,7 +142,7 @@ private func parseModel(
         let decl = member.decl
         if let assoc = decl.as(AssociatedTypeDeclSyntax.self) {
             let constraint = assoc.inheritanceClause?.inheritedTypes
-                .map { $0.type.trimmedDescription }.joined(separator: " & ")
+                .map(\.type.trimmedDescription).joined(separator: " & ")
             associatedTypes.append((assoc.name.text, constraint))
         } else if let function = decl.as(FunctionDeclSyntax.self) {
             if let method = parseMethod(function, abort: abort) { methods.append(method) }
@@ -155,7 +156,7 @@ private func parseModel(
     }
 
     let inherited = (proto.inheritanceClause?.inheritedTypes ?? [])
-        .map { $0.type.trimmedDescription }
+        .map(\.type.trimmedDescription)
         .filter { !markerProtocols.contains($0) }
 
     return aborted ? nil : WitnessModel(
@@ -212,8 +213,8 @@ private func parseProperty(
         abort(.staticRequirement, variable); return nil
     }
     guard let binding = variable.bindings.first,
-          let identifier = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
-          let type = binding.typeAnnotation?.type.trimmedDescription
+        let identifier = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
+        let type = binding.typeAnnotation?.type.trimmedDescription
     else { return nil }
 
     var isSettable = false
@@ -354,12 +355,24 @@ let markerProtocols: Set<String> = ["Sendable", "AnyObject", "Any"]
 func witnessAccess(_ modifiers: DeclModifierListSyntax) -> AccessLevel {
     for modifier in modifiers {
         switch modifier.name.text {
-        case "open", "public": return .public   // `open` structs are illegal → public witness
-        case "package":        return .package
-        case "internal":       return .internal
-        case "fileprivate":    return .fileprivate
-        case "private":        return .private
-        default:               continue
+        case "open",
+            "public":
+            return .public // `open` structs are illegal → public witness
+
+        case "package":
+            return .package
+
+        case "internal":
+            return .internal
+
+        case "fileprivate":
+            return .fileprivate
+
+        case "private":
+            return .private
+
+        default:
+            continue
         }
     }
     return .internal
@@ -367,7 +380,7 @@ func witnessAccess(_ modifiers: DeclModifierListSyntax) -> AccessLevel {
 
 /// Whole-identifier check: does `name` appear as a standalone token in `text`?
 func appears(_ name: String, in text: String) -> Bool {
-    substitute(name, with: "\u{0}", in: text).contains("\u{0}")
+    substitute(name, with: " {0}", in: text).contains(" {0}")
 }
 
 /// Replace standalone occurrences of identifier `name` with `replacement`, respecting
@@ -416,14 +429,25 @@ private enum WitnessDiagnostic: DiagnosticMessage {
 
     var message: String {
         switch self {
-        case .notAProtocol:        "@Witness can only be applied to protocols"
-        case .staticRequirement:   "@Witness can't witness `static` requirements (a value witness has no Self)"
-        case .mutatingRequirement: "@Witness can't witness `mutating` requirements in a value witness"
-        case .initRequirement:     "@Witness can't witness `init` requirements"
-        case .subscriptRequirement: "@Witness can't witness `subscript` requirements"
+        case .notAProtocol:
+            "@Witness can only be applied to protocols"
+
+        case .staticRequirement:
+            "@Witness can't witness `static` requirements (a value witness has no Self)"
+
+        case .mutatingRequirement:
+            "@Witness can't witness `mutating` requirements in a value witness"
+
+        case .initRequirement:
+            "@Witness can't witness `init` requirements"
+
+        case .subscriptRequirement:
+            "@Witness can't witness `subscript` requirements"
+
         case .unconstrainedGeneric:
             "@Witness can't witness a method with an unconstrained generic parameter "
                 + "(no protocol/class constraint to erase to `any`). Add a constraint or remove the requirement."
+
         case .genericInReturn:
             "@Witness can't witness a method whose generic parameter appears in the return type "
                 + "(e.g. `decode<T>(_: T.Type) -> T`) — it can't be lowered to an existential."

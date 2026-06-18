@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import CoreFPOperators
 import DataStructure
 import Foundation
 
-// (<$>) :: Functor f => (a -> b) -> f a -> f b
+/// (<$>) :: Functor f => (a -> b) -> f a -> f b
 public func <£> <S, F, B>(
     _ transform: @escaping @Sendable (S) -> B,
     _ loading: Loading<S, F>
@@ -11,7 +12,7 @@ public func <£> <S, F, B>(
     Loading<S, F>.fmap(transform)(loading)
 }
 
-// (<&>) :: Functor f => f a -> (a -> b) -> f b
+/// (<&>) :: Functor f => f a -> (a -> b) -> f b
 public func <&> <S, F, B>(
     _ loading: Loading<S, F>,
     _ transform: @escaping @Sendable (S) -> B
@@ -19,12 +20,12 @@ public func <&> <S, F, B>(
     loading.map(transform)
 }
 
-// ($>) :: f a -> b -> f b
+/// ($>) :: f a -> b -> f b
 public func £> <S, F, B>(_ loading: Loading<S, F>, _ value: B) -> Loading<B, F> {
-    loading.map { _ in value }
+    loading.map(const(value))
 }
 
-// (<$) :: b -> f a -> f b
+/// (<$) :: b -> f a -> f b
 public func <£ <S, F, B>(_ value: B, _ loading: Loading<S, F>) -> Loading<B, F> {
     loading £> value
 }

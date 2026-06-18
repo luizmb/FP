@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @testable import CoreFP
 import Testing
 
@@ -295,7 +296,8 @@ struct AffineTraversalTests {
     @Test func setMut_lift_miss_is_noOp() {
         // preview returns nil → setMut is never called
         let at = AffineTraversal<Person, String>(
-            preview: { _ in nil },
+            preview: const(nil),
+            // swiftlint:disable:next closure_ignoring_args
             setMut: { _, _ in Issue.record("setMut must not be called when focus is absent") }
         )
         var person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))

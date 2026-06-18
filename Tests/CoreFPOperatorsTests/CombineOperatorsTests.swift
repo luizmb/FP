@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 @testable import CoreFP
@@ -472,7 +473,7 @@ import Testing
         let f: @Sendable (Int) -> AnyPublisher<Int, Never> = { [$0 * 2].publisher.eraseToAnyPublisher() }
         let g: @Sendable (Int) -> AnyPublisher<Int, Never> = { [$0 + 10].publisher.eraseToAnyPublisher() }
 
-        // (m >>= f) >>= g == m >>= (\x -> f x >>= g)
+        // (m >>= f) >>= g == m >>= ( > f x >>= g)
         let left = (publisher >>- f) >>- g
         let right = publisher >>- { x in
             f(x).eraseToAnyPublisher().flatMap(g).eraseToAnyPublisher()

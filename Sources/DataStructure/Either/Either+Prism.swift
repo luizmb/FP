@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -22,6 +23,7 @@ public extension Either {
         )
     }
 
+    /// The `prism` property.
     static var prism: Prisms { Prisms() }
 
     enum Cases: CoreFP.CaseMatchable {
@@ -30,13 +32,19 @@ public extension Either {
 
         public func matches(_ value: Either) -> Bool {
             switch (self, value) {
-            case (.left, .left):   true
-            case (.right, .right): true
-            default:               false
+            case (.left, .left):
+                true
+
+            case (.right, .right):
+                true
+
+            default:
+                false
             }
         }
     }
 
+    /// Declaration.
     func `is`(_ c: Cases) -> Bool { c.matches(self) }
 }
 

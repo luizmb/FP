@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import DataStructure
 import Testing
@@ -253,8 +254,7 @@ struct LoadingFunctorTests {
         // fmap id == id
         let values: [Sut] = [.idle, .loading(previous: 1), .loaded(2), .failed(error: .network, previous: 3)]
         for v in values {
-            // swiftlint:disable:next array_init
-            #expect(v.map { $0 } == v)
+            #expect(v.map(\.self) == v)
         }
     }
 
@@ -343,13 +343,13 @@ struct LoadingMonadTests {
 
     @Test func flatMap_idle_passesThrough() {
         let sut: Sut = .idle
-        let result: Sut = sut.flatMap { _ in .loaded(99) }
+        let result: Sut = sut.flatMap(const(.loaded(99)))
         #expect(result == .idle)
     }
 
     @Test func flatMap_loaded_intoFailure() {
         let sut: Sut = .loaded(5)
-        let result: Sut = sut.flatMap { _ in .failed(error: .network, previous: nil) }
+        let result: Sut = sut.flatMap(const(.failed(error: .network, previous: nil)))
         #expect(result == .failed(error: .network, previous: nil))
     }
 
@@ -385,7 +385,7 @@ struct LoadingMonadTests {
     }
 
     @Test func associativity() {
-        // (m >>= f) >>= g == m >>= (\x -> f x >>= g)
+        // (m >>= f) >>= g == m >>= ( > f x >>= g)
         let m: Sut = .loaded(2)
         let f: @Sendable (Int) -> Sut = { .loaded($0 + 1) }
         let g: @Sendable (Int) -> Sut = { .loaded($0 * 10) }
@@ -413,31 +413,31 @@ struct LoadingMonadTests {
 struct LoadingCatchTests {
     @Test func catch_failed_appliesTransform() {
         let sut: Sut = .failed(error: .network, previous: nil)
-        let recovered = sut.catch { _ in .loaded(99) }
+        let recovered = sut.catch(const(.loaded(99)))
         #expect(recovered == .loaded(99))
     }
 
     @Test func catch_loaded_passesThrough() {
         let sut: Sut = .loaded(5)
-        let recovered = sut.catch { _ in .loaded(99) }
+        let recovered = sut.catch(const(.loaded(99)))
         #expect(recovered == .loaded(5))
     }
 
     @Test func catch_idle_passesThrough() {
         let sut: Sut = .idle
-        let recovered = sut.catch { _ in .loaded(99) }
+        let recovered = sut.catch(const(.loaded(99)))
         #expect(recovered == .idle)
     }
 
     @Test func catch_loading_passesThrough() {
         let sut: Sut = .loading(previous: 1)
-        let recovered = sut.catch { _ in .loaded(99) }
+        let recovered = sut.catch(const(.loaded(99)))
         #expect(recovered == .loading(previous: 1))
     }
 
     @Test func catch_canMapErrorToAnotherFailure() {
         let sut: Sut = .failed(error: .network, previous: 7)
-        let recovered = sut.catch { _ in .failed(error: .decoding, previous: nil) }
+        let recovered = sut.catch(const(.failed(error: .decoding, previous: nil)))
         #expect(recovered == .failed(error: .decoding, previous: nil))
     }
 }

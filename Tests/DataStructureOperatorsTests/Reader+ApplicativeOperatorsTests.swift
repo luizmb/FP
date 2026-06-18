@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @testable import CoreFP
 import CoreFPOperators
 import DataStructure
@@ -48,7 +49,8 @@ import Testing
 
     @Test func applicativeCompositionLaw() {
         // pure (.) <*> u <*> v <*> w = u <*> (v <*> w)
-        let u = Reader<Environment, @Sendable (Int) -> String> { _ in { "\($0)" } }
+        let strFn: @Sendable (Int) -> String = { "\($0)" }
+        let u = Reader<Environment, @Sendable (Int) -> String>(const(strFn))
         let v = Reader<Environment, @Sendable (Int) -> Int> { env in { $0 * env.multiplier } }
         let w = Reader<Environment, Int> { env in env.addend }
 
@@ -74,11 +76,11 @@ import Testing
         let f: @Sendable (Int) -> Int = { $0 * 2 }
         let x = 5
 
-        let readerF = Reader<Environment, @Sendable (Int) -> Int> { _ in f }
-        let readerX = Reader<Environment, Int> { _ in x }
+        let readerF = Reader<Environment, @Sendable (Int) -> Int>(const(f))
+        let readerX = Reader<Environment, Int>(const(x))
         let left = readerF <*> readerX
 
-        let right = Reader<Environment, Int> { _ in f(x) }
+        let right = Reader<Environment, Int>(const(f(x)))
 
         let env = Environment(multiplier: 1, addend: 1)
         #expect(left(env) == right(env))
@@ -89,11 +91,11 @@ import Testing
         let u = Reader<Environment, @Sendable (Int) -> Int> { env in { $0 * env.multiplier } }
         let y = 5
 
-        let pureY = Reader<Environment, Int> { _ in y }
+        let pureY = Reader<Environment, Int>(const(y))
         let left = u <*> pureY
 
         let applyTo: @Sendable (@escaping @Sendable (Int) -> Int) -> Int = { fn in fn(y) }
-        let pureApply = Reader<Environment, @Sendable (@escaping @Sendable (Int) -> Int) -> Int> { _ in applyTo }
+        let pureApply = Reader<Environment, @Sendable (@escaping @Sendable (Int) -> Int) -> Int>(const(applyTo))
         let right = pureApply <*> u
 
         let env = Environment(multiplier: 2, addend: 3)
@@ -103,7 +105,8 @@ import Testing
     // MARK: - Applicative Operators
 
     @Test func applyOperator() {
-        let readerFn = Reader<Environment, @Sendable (Int) -> Int> { _ in { $0 * 2 } }
+        let doubleFn: @Sendable (Int) -> Int = { $0 * 2 }
+        let readerFn = Reader<Environment, @Sendable (Int) -> Int>(const(doubleFn))
         let readerValue = Reader<Environment, Int> { env in env.multiplier }
 
         let result = readerFn <*> readerValue

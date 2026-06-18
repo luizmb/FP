@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import CoreFP
@@ -5,6 +6,7 @@ import CoreFP
 // PublisherTResult: AnyPublisher<Result<A,E2>, E>
 
 // (<£^>) :: (a -> b) -> AnyPublisher<Result<a,e2>,e> -> AnyPublisher<Result<b,e2>,e>
+/// `func`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func <£^> <A, B, E: Error, E2: Error>(
     _ fn: @escaping @Sendable (A) -> B,
@@ -14,6 +16,7 @@ public func <£^> <A, B, E: Error, E2: Error>(
 }
 
 // (<&^>) :: AnyPublisher<Result<a,e2>,e> -> (a -> b) -> AnyPublisher<Result<b,e2>,e>
+/// `func`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func <&^> <A, B, E: Error, E2: Error>(
     _ pub: AnyPublisher<Result<A, E2>, E>,

@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import CoreFPOperators
 import DataStructure
 import Foundation
 
-// (<$>) :: (a -> b) -> Writer<w, a> -> Writer<w, b>
+/// (<$>) :: (a -> b) -> Writer<w, a> -> Writer<w, b>
 public func <£> <W: Monoid, A, B>(
     _ transform: @escaping @Sendable (A) -> B,
     _ writer: Writer<W, A>
@@ -11,7 +12,7 @@ public func <£> <W: Monoid, A, B>(
     writer.map(transform)
 }
 
-// ($>) :: Writer<w, a> -> b -> Writer<w, b>
+/// ($>) :: Writer<w, a> -> b -> Writer<w, b>
 public func £> <W: Monoid, A, B>(
     _ writer: Writer<W, A>,
     _ value: B
@@ -19,7 +20,7 @@ public func £> <W: Monoid, A, B>(
     writer.map(const(value))
 }
 
-// (<$) :: b -> Writer<w, a> -> Writer<w, b>
+/// (<$) :: b -> Writer<w, a> -> Writer<w, b>
 public func <£ <W: Monoid, A, B>(
     _ value: B,
     _ writer: Writer<W, A>
@@ -27,7 +28,7 @@ public func <£ <W: Monoid, A, B>(
     writer £> value
 }
 
-// (<&>) :: Writer<w, a> -> (a -> b) -> Writer<w, b>
+/// (<&>) :: Writer<w, a> -> (a -> b) -> Writer<w, b>
 public func <&> <W: Monoid, A, B>(
     _ writer: Writer<W, A>,
     _ transform: @escaping @Sendable (A) -> B

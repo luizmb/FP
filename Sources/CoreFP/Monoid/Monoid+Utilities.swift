@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// Reduces a non-empty sequence using the ``Semigroup`` operation.
 ///
 /// ```swift

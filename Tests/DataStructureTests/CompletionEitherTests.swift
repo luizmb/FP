@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 @testable import CoreFP
@@ -119,8 +120,8 @@ import Testing
     @Test func completionAsSumTypeFinished() {
         let completion: Subscribers.Completion<TestError> = .finished
         let result = completion.match(
-            caseLeft: { _ in "finished" },
-            caseRight: { _ in "failed" }
+            caseLeft: const("finished"),
+            caseRight: const("failed")
         )
 
         #expect(result == "finished")
@@ -129,7 +130,7 @@ import Testing
     @Test func completionAsSumTypeFailure() {
         let completion: Subscribers.Completion<TestError> = .failure(.test)
         let result = completion.match(
-            caseLeft: { _ in "finished" },
+            caseLeft: const("finished"),
             caseRight: { error in "failed: \(error)" }
         )
 

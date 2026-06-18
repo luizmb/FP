@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // EitherTStateful: outer = Either, inner = Stateful
@@ -15,6 +16,7 @@ public extension Either {
         mapRight { stateful in stateful.flatMap(fn) }
     }
 
+    /// The `property` property.
     static func bindT<S, Inner, C>(
         _ fn: @escaping @Sendable (Inner) -> Stateful<S, C>
     ) -> (Either<A, Stateful<S, Inner>>) -> Either<A, Stateful<S, C>> {

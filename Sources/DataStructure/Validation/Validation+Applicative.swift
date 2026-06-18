@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 public extension Validation {
@@ -5,10 +6,17 @@ public extension Validation {
     /// THE key operation — accumulates errors via Semigroup.combine instead of short-circuiting.
     static func apply<A0>(_ fns: Validation<E, @Sendable (A0) -> A>, _ values: Validation<E, A0>) -> Validation<E, A> {
         switch (fns, values) {
-        case let (.success(f), .success(a)): .success(f(a))
-        case let (.failure(e), .success):    .failure(e)
-        case let (.success, .failure(e)):    .failure(e)
-        case let (.failure(e1), .failure(e2)): .failure(E.combine(e1, e2))
+        case let (.success(f), .success(a)):
+            .success(f(a))
+
+        case let (.failure(e), .success):
+            .failure(e)
+
+        case let (.success, .failure(e)):
+            .failure(e)
+
+        case let (.failure(e1), .failure(e2)):
+            .failure(E.combine(e1, e2))
         }
     }
 
@@ -18,10 +26,17 @@ public extension Validation {
     ) -> @Sendable (Validation<E, A0>, Validation<E, A1>) -> Validation<E, A> {
         { va0, va1 in
             switch (va0, va1) {
-            case let (.success(a0), .success(a1)):   .success(fn(a0, a1))
-            case let (.failure(e), .success):        .failure(e)
-            case let (.success, .failure(e)):        .failure(e)
-            case let (.failure(e1), .failure(e2)):   .failure(E.combine(e1, e2))
+            case let (.success(a0), .success(a1)):
+                .success(fn(a0, a1))
+
+            case let (.failure(e), .success):
+                .failure(e)
+
+            case let (.success, .failure(e)):
+                .failure(e)
+
+            case let (.failure(e1), .failure(e2)):
+                .failure(E.combine(e1, e2))
             }
         }
     }

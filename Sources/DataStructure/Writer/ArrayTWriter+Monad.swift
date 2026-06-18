@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -11,6 +12,7 @@ public extension Array {
         map { writer in writer.flatMap(fn) }
     }
 
+    /// The `property` property.
     static func bindT<W: Monoid, A, B>(_ fn: @escaping @Sendable (A) -> Writer<W, B>) -> ([Writer<W, A>]) -> [Writer<W, B>] {
         { arr in arr.flatMapT(fn) }
     }

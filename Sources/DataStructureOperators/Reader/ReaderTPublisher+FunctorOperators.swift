@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import DataStructure
 #if canImport(Combine)
 import Combine
@@ -7,6 +8,7 @@ import Foundation
 // ReaderT + Publisher
 
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
+/// `func`.
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func <£^> <A: Sendable, B: Sendable, E: Error, Env: Sendable>(
     _ transform: @escaping @Sendable (A) -> B,
@@ -16,6 +18,7 @@ public func <£^> <A: Sendable, B: Sendable, E: Error, Env: Sendable>(
 }
 
 // ($>) :: Either a b -> a0 -> Either a a0
+/// `£>` overload.
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func £> <A1: Sendable, A: Sendable, B: Error, Env: Sendable>(
     _ reader: Reader<Env, any Publisher<A, B>>,
@@ -25,6 +28,7 @@ public func £> <A1: Sendable, A: Sendable, B: Error, Env: Sendable>(
 }
 
 // (<$) :: a0 -> Either a b -> Either a a0
+/// `func`.
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func <£ <A1: Sendable, A: Sendable, B: Error, Env: Sendable>(
     _ value: A1,
@@ -34,6 +38,7 @@ public func <£ <A1: Sendable, A: Sendable, B: Error, Env: Sendable>(
 }
 
 // (<&^>) :: f (g a) -> (a -> b) -> f (g b)
+/// `func`.
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func <&^> <A: Sendable, B: Sendable, E: Error, Env: Sendable>(
     _ reader: Reader<Env, any Publisher<A, E>>,

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import DataStructure
 import Foundation
@@ -8,20 +9,14 @@ import Testing
 
     @Test func leftConstruction() {
         let either: Either<String, Int> = .left("error")
-
-        either.match(
-            caseLeft: { error in #expect(error == "error") },
-            caseRight: { _ in Issue.record("Expected left") }
-        )
+        #expect(either.is(.left), "Expected left")
+        if case .left(let e) = either { #expect(e == "error") }
     }
 
     @Test func rightConstruction() {
         let either: Either<String, Int> = .right(42)
-
-        either.match(
-            caseLeft: { _ in Issue.record("Expected right") },
-            caseRight: { value in #expect(value == 42) }
-        )
+        #expect(either.is(.right), "Expected right")
+        if case .right(let v) = either { #expect(v == 42) }
     }
 
     // MARK: - Pattern Matching
@@ -143,9 +138,7 @@ import Testing
 
     @Test func flatMapLeftToRight() {
         let right: Either<String, Int> = .right(5)
-        let result = right.flatMap { _ in
-            Either<String, Int>.left("new error")
-        }
+        let result = right.flatMap(const(Either<String, Int>.left("new error")))
         #expect(result == .left("new error"))
     }
 

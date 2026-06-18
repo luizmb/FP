@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 extension Comparable {
     /// Constrains `self` to fall inside `range`, clamping to the nearest endpoint when it falls outside.
     ///

@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
-// ValidationTWriter: outer = Validation, inner = Writer
-// Type: Validation<E, Writer<W, A>>
+/// ValidationTWriter: outer = Validation, inner = Writer
+/// Type: Validation<E, Writer<W, A>>
 
 public func fmapTValidationWriter<E: Semigroup, W: Monoid, A, B>(
     _ fn: @escaping @Sendable (A) -> B

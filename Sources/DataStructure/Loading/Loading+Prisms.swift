@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -28,6 +29,7 @@ public extension Loading {
         )
     }
 
+    /// The `prism` property.
     static var prism: Prisms { Prisms() }
 
     enum Cases: CoreFP.CaseMatchable {
@@ -36,15 +38,25 @@ public extension Loading {
 
         public func matches(_ value: Loading) -> Bool {
             switch (self, value) {
-            case (.idle, .idle):       true
-            case (.loading, .loading): true
-            case (.loaded, .loaded):   true
-            case (.failed, .failed):   true
-            default:                   false
+            case (.idle, .idle):
+                true
+
+            case (.loading, .loading):
+                true
+
+            case (.loaded, .loaded):
+                true
+
+            case (.failed, .failed):
+                true
+
+            default:
+                false
             }
         }
     }
 
+    /// Declaration.
     func `is`(_ c: Cases) -> Bool { c.matches(self) }
 }
 

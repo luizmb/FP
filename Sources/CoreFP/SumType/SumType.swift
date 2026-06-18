@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// A two-case sum type (coproduct) that can be eliminated via pattern matching.
 ///
 /// `SumType2` is the abstract interface shared by ``Either``, `Optional` (implicitly),
@@ -50,12 +51,14 @@ public protocol SumType2<A, B>: Sendable {
 }
 
 public extension SumType2 {
+    /// The `property` property.
     static func from(_ another: any SumType2<A, B>) -> Self {
         another.match(caseLeft: Self.left, caseRight: Self.right)
     }
 }
 
 public extension SumType2 {
+    /// The `property` property.
     static func match<ST1: SumType2, ST2: SumType2, C>(
         _ st1: ST1,
         _ st2: ST2,
@@ -81,9 +84,13 @@ public extension SumType2 {
 }
 
 public extension SumType2 {
+    /// Declaration.
     var a: A? { match(caseLeft: Optional.some, caseRight: const(nil)) }
+    /// Declaration.
     var b: B? { match(caseLeft: const(nil), caseRight: Optional.some) }
 
+    /// Declaration.
     var isA: Bool { match(caseLeft: const(true), caseRight: const(false)) }
+    /// Declaration.
     var isB: Bool { match(caseLeft: const(false), caseRight: const(true)) }
 }

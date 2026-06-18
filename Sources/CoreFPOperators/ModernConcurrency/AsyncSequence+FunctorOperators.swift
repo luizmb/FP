@@ -1,7 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
 // (<$>) :: Functor f => (a -> b) -> f a -> f b
+/// `func`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func <£> <S: AsyncSequence, T>(
     _ transform: @escaping @Sendable (S.Element) async throws -> T,
@@ -11,6 +13,7 @@ public func <£> <S: AsyncSequence, T>(
 }
 
 // ($>) :: f a -> b -> f b
+/// `£>` overload.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func £> <S: AsyncSequence, T: Sendable>(
     _ sequence: S,
@@ -20,6 +23,7 @@ public func £> <S: AsyncSequence, T: Sendable>(
 }
 
 // (<$) :: b -> f a -> f b
+/// `func`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func <£ <S: AsyncSequence, T: Sendable>(
     _ value: T,

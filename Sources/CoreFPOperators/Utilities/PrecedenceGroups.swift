@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // https://rosettacode.org/wiki/Operator_precedence
 // https://developer.apple.com/documentation/swift/operator-declarations
 

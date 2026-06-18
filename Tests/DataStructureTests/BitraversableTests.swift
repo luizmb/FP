@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+import CoreFP
 import DataStructure
 import Testing
 
@@ -37,25 +39,25 @@ import Testing
 
     @Test func eitherBitraverseOptionalLeftPresent() {
         let e: Either<String, Int> = .left("hi")
-        let result = e.bitraverse({ Optional($0.uppercased()) }, { _ in nil as Int? })
+        let result = e.bitraverse({ Optional($0.uppercased()) }, const(nil as Int?))
         #expect(result == .some(.left("HI")))
     }
 
     @Test func eitherBitraverseOptionalLeftAbsent() {
         let e: Either<String, Int> = .left("hi")
-        let result = e.bitraverse({ _ in nil as String? }, { Optional($0) })
+        let result = e.bitraverse(const(nil as String?), { Optional($0) })
         #expect(result == .none)
     }
 
     @Test func eitherBitraverseOptionalRightPresent() {
         let e: Either<String, Int> = .right(5)
-        let result = e.bitraverse({ _ in nil as String? }, { Optional($0 * 2) })
+        let result = e.bitraverse(const(nil as String?), { Optional($0 * 2) })
         #expect(result == .some(.right(10)))
     }
 
     @Test func eitherBitraverseOptionalRightAbsent() {
         let e: Either<String, Int> = .right(5)
-        let result = e.bitraverse({ Optional($0) }, { _ in nil as Int? })
+        let result = e.bitraverse({ Optional($0) }, const(nil as Int?))
         #expect(result == .none)
     }
 
@@ -79,7 +81,7 @@ import Testing
         let e: Either<String, Int> = .left("hi")
         let result = e.bitraverse(
             { Result<String, TestError>.success($0.uppercased()) },
-            { _ in Result<Int, TestError>.failure(.fail) }
+            const(Result<Int, TestError>.failure(.fail))
         )
         #expect(result == .success(.left("HI")))
     }
@@ -87,7 +89,7 @@ import Testing
     @Test func eitherBitraverseResultLeftFailure() {
         let e: Either<String, Int> = .left("hi")
         let result = e.bitraverse(
-            { _ in Result<String, TestError>.failure(.fail) },
+            const(Result<String, TestError>.failure(.fail)),
             { Result<Int, TestError>.success($0) }
         )
         #expect(result == .failure(.fail))
@@ -96,7 +98,7 @@ import Testing
     @Test func eitherBitraverseResultRightSuccess() {
         let e: Either<String, Int> = .right(3)
         let result = e.bitraverse(
-            { _ in Result<String, TestError>.failure(.fail) },
+            const(Result<String, TestError>.failure(.fail)),
             { Result<Int, TestError>.success($0 * 2) }
         )
         #expect(result == .success(.right(6)))
@@ -106,7 +108,7 @@ import Testing
         let e: Either<String, Int> = .right(3)
         let result = e.bitraverse(
             { Result<String, TestError>.success($0) },
-            { _ in Result<Int, TestError>.failure(.fail) }
+            const(Result<Int, TestError>.failure(.fail))
         )
         #expect(result == .failure(.fail))
     }
@@ -148,25 +150,25 @@ import Testing
 
     @Test func validationBitraverseOptionalFailurePresent() {
         let v: Validation<String, Int> = .failure("err")
-        let result = v.bitraverse({ Optional($0.uppercased()) }, { _ in nil as Int? })
+        let result = v.bitraverse({ Optional($0.uppercased()) }, const(nil as Int?))
         #expect(result == .some(.failure("ERR")))
     }
 
     @Test func validationBitraverseOptionalFailureAbsent() {
         let v: Validation<String, Int> = .failure("err")
-        let result = v.bitraverse({ _ in nil as String? }, { Optional($0) })
+        let result = v.bitraverse(const(nil as String?), { Optional($0) })
         #expect(result == .none)
     }
 
     @Test func validationBitraverseOptionalSuccessPresent() {
         let v: Validation<String, Int> = .success(5)
-        let result = v.bitraverse({ _ in nil as String? }, { Optional($0 * 2) })
+        let result = v.bitraverse(const(nil as String?), { Optional($0 * 2) })
         #expect(result == .some(.success(10)))
     }
 
     @Test func validationBitraverseOptionalSuccessAbsent() {
         let v: Validation<String, Int> = .success(5)
-        let result = v.bitraverse({ Optional($0) }, { _ in nil as Int? })
+        let result = v.bitraverse({ Optional($0) }, const(nil as Int?))
         #expect(result == .none)
     }
 
@@ -190,7 +192,7 @@ import Testing
         let v: Validation<String, Int> = .failure("err")
         let result = v.bitraverse(
             { Result<String, TestError>.success($0.uppercased()) },
-            { _ in Result<Int, TestError>.failure(.fail) }
+            const(Result<Int, TestError>.failure(.fail))
         )
         #expect(result == .success(.failure("ERR")))
     }
@@ -198,7 +200,7 @@ import Testing
     @Test func validationBitraverseResultFailureFailure() {
         let v: Validation<String, Int> = .failure("err")
         let result = v.bitraverse(
-            { _ in Result<String, TestError>.failure(.fail) },
+            const(Result<String, TestError>.failure(.fail)),
             { Result<Int, TestError>.success($0) }
         )
         #expect(result == .failure(.fail))
@@ -207,7 +209,7 @@ import Testing
     @Test func validationBitraverseResultSuccessSuccess() {
         let v: Validation<String, Int> = .success(3)
         let result = v.bitraverse(
-            { _ in Result<String, TestError>.failure(.fail) },
+            const(Result<String, TestError>.failure(.fail)),
             { Result<Int, TestError>.success($0 * 2) }
         )
         #expect(result == .success(.success(6)))
@@ -217,7 +219,7 @@ import Testing
         let v: Validation<String, Int> = .success(3)
         let result = v.bitraverse(
             { Result<String, TestError>.success($0) },
-            { _ in Result<Int, TestError>.failure(.fail) }
+            const(Result<Int, TestError>.failure(.fail))
         )
         #expect(result == .failure(.fail))
     }

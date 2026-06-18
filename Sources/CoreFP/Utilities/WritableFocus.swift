@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // MARK: - WritableFocus<Value>
 
 /// A two-way reference to a mutable value — a platform-neutral analogue of SwiftUI's `Binding`

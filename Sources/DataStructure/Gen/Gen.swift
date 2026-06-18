@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 /// A composable, seedable generator of random `Value`s.
@@ -110,6 +111,7 @@ extension Stateful where S == AnyRandomNumberGenerator {
     /// replayable: rerun with the same seed to get the same inputs.
     public func samples(seed: UInt64, count: Int) -> [A] {
         var rng = AnyRandomNumberGenerator(SplitMix64(seed: seed))
-        return (0..<max(0, count)).map { _ in self(&rng) }
+        // swiftlint:disable:next closure_ignoring_args
+        return (0..<max(0, count)).map { _ in self(&rng) }  // side effect — rng is mutated; cannot use const()
     }
 }

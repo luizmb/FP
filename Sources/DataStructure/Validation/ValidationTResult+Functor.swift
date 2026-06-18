@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
-// ValidationTResult: outer = Validation, inner = Result
-// Type: Validation<E, Result<A, Err>>
+/// ValidationTResult: outer = Validation, inner = Result
+/// Type: Validation<E, Result<A, Err>>
 
 public func fmapTValidationResult<E: Semigroup, A, B, Err: Error>(
     _ fn: @escaping @Sendable (A) -> B

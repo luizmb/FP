@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // Primitive generators. Each fixed-output factory carries a per-member `where A == <output>`
@@ -34,7 +35,7 @@ extension Stateful where S == AnyRandomNumberGenerator {
     /// A random version-4 `UUID`.
     ///
     /// Built from 16 generator bytes with the standard version/variant bits set, so the result is
-    /// a well-formed v4 UUID that is reproducible from the generator's seed (unlike `UUID()`).
+    /// a well-formed v4 UUID that is reproducible from the generator's seed (unlike the non-deterministic UUID initialiser).
     public static func uuid() -> Gen<UUID> where A == UUID {
         Gen<UUID> { rng in
             let hi = rng.next()

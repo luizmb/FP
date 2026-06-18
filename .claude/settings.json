@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(swift build*)",
+      "Bash(swift test*)",
+      "Bash(swift package*)",
+      "Bash(mint run swiftlint*)",
+      "Bash(mint run swiftformat*)",
+      "Bash(mint run periphery*)",
+      "Bash(mint bootstrap)",
+      "Bash(git status)",
+      "Bash(git diff*)",
+      "Bash(git log*)"
+    ]
+  }
+}

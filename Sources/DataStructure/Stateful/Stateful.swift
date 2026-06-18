@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 /// A computation that reads and modifies a mutable state `S`, producing a value `A`.

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @testable import CoreFP
 @testable import CoreFPOperators
 import Testing
@@ -39,8 +40,8 @@ import Testing
 
     @Test func basicLiftA2() {
         let add: @Sendable (Int) -> @Sendable (Int) -> Int = { x in { y in x + y } }
-        let f: @Sendable (String) -> Int = { $0.count }
-        let g: @Sendable (String) -> Int = { _ in 10 }
+        let f: @Sendable (String) -> Int = get(\.count)
+        let g: @Sendable (String) -> Int = const(10)
 
         let lifted: @Sendable (String) -> Int = liftA2(add, f, g)
 
@@ -201,8 +202,8 @@ import Testing
             let offset: Int
         }
 
-        let getMultiplier: @Sendable (Config) -> Int = { $0.multiplier }
-        let getOffset: @Sendable (Config) -> Int = { $0.offset }
+        let getMultiplier: @Sendable (Config) -> Int = get(\.multiplier)
+        let getOffset: @Sendable (Config) -> Int = get(\.offset)
 
         let combine: @Sendable (Int, Int) -> Int = { $0 + $1 }
         let combineCurried: @Sendable (Int) -> @Sendable (Int) -> Int = { x in { y in combine(x, y) } }
@@ -220,8 +221,8 @@ import Testing
             let age: Int
         }
 
-        let getName: @Sendable (Environment) -> String = { $0.name }
-        let getAge: @Sendable (Environment) -> Int = { $0.age }
+        let getName: @Sendable (Environment) -> String = get(\.name)
+        let getAge: @Sendable (Environment) -> Int = get(\.age)
 
         let greet: @Sendable (String, Int) -> String = { name, age in
             "Hello \(name), you are \(age) years old"

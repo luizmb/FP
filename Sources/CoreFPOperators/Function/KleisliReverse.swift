@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 // MARK: - Reverse Kleisli composition (<=<) for standard monads
@@ -28,6 +29,7 @@ public func <=< <A0, A, A1>(
 
 // MARK: - Array
 
+/// `func` for `Array`.
 public func <=< <A0, A, A1>(
     _ fn2: @escaping @Sendable (A) -> [A1],
     _ fn1: @escaping @Sendable (A0) -> [A]
@@ -35,6 +37,7 @@ public func <=< <A0, A, A1>(
 
 // MARK: - Result
 
+/// `func` for `Result`.
 public func <=< <A0, A, A1, B>(
     _ fn2: @escaping @Sendable (A) -> Result<A1, B>,
     _ fn1: @escaping @Sendable (A0) -> Result<A, B>
@@ -45,6 +48,7 @@ public func <=< <A0, A, A1, B>(
 #if canImport(Combine)
 import Combine
 
+/// `func` for `Publisher`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func <=< <A0, A, A1, B: Error, P1: Publisher, P2: Publisher>(
     _ fn2: @escaping @Sendable (A) -> P2,
@@ -56,6 +60,7 @@ where P1.Output == A, P1.Failure == B, P2.Output == A1, P2.Failure == B { fn1 >=
 
 // MARK: - AsyncSequence
 
+/// `func` for `AsyncSequence`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func <=< <A, B: AsyncSequence, C: AsyncSequence>(
     _ fn2: @escaping @Sendable (B.Element) async throws -> C,

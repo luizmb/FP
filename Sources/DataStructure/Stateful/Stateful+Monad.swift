@@ -1,7 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
 public extension Stateful {
+    /// Declaration.
     func flatMap<B>(_ fn: @escaping @Sendable (A) -> Stateful<S, B>) -> Stateful<S, B> {
         Stateful<S, B> { s in
             let a = self.run(&s)
@@ -9,12 +11,14 @@ public extension Stateful {
         }
     }
 
+    /// The `property` property.
     static func bind<B>(
         _ fn: @escaping @Sendable (A) -> Stateful<S, B>
     ) -> (Stateful<S, A>) -> Stateful<S, B> {
         { $0.flatMap(fn) }
     }
 
+    /// The `property` property.
     static func kleisli<O0, B>(
         _ fn1: @escaping @Sendable (O0) -> Stateful<S, A>,
         _ fn2: @escaping @Sendable (A) -> Stateful<S, B>
@@ -22,6 +26,7 @@ public extension Stateful {
         { o0 in fn1(o0).flatMap(fn2) }
     }
 
+    /// The `property` property.
     static func kleisliBack<O0, B>(
         _ fn2: @escaping @Sendable (A) -> Stateful<S, B>,
         _ fn1: @escaping @Sendable (O0) -> Stateful<S, A>
@@ -29,12 +34,14 @@ public extension Stateful {
         { o0 in fn1(o0).flatMap(fn2) }
     }
 
+    /// The `property` property.
     static func join<O>(
         _ nested: Stateful<S, Stateful<S, O>>
     ) -> Stateful<S, O> where A == Stateful<S, O> {
         nested.flatMap(CoreFP.id)
     }
 
+    /// Declaration.
     func void() -> Stateful<S, Void> {
         map(ignore)
     }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// Namespace for numeric ``Monoid`` instances.
 ///
 /// `NumericMonoid<T>` provides four named newtypes for the common monoid structures

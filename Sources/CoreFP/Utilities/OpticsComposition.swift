@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // MARK: - Optic composition — named functions
 //
 // These `compose` methods are the semantic layer for optic composition.
@@ -116,7 +117,7 @@ extension AffineTraversal {
     public func compose<B>(_ other: Prism<A, B>) -> AffineTraversal<S, B> {
         AffineTraversal<S, B>(
             preview: { @Sendable s in preview(s).flatMap(other.preview) },
-            set: { @Sendable s, b in preview(s).map { _ in set(s, other.review(b)) } ?? s },
+            set: { @Sendable s, b in preview(s).map(const(set(s, other.review(b)))) ?? s },
             tryModifyMut: { @Sendable s, f in tryModifyMut(&s) { a in other.tryModifyMut(&a, f) } }
         )
     }

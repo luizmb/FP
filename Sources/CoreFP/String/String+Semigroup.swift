@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 extension String: Semigroup {
     public static func combine(_ lhs: String, _ rhs: String) -> String {
         lhs + rhs

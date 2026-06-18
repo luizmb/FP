@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // ReaderTStateful: outer = Reader, inner = Stateful
@@ -10,6 +11,7 @@ public extension Reader {
         mapReader { stateful in stateful.flatMap(fn) }
     }
 
+    /// The `property` property.
     static func bindT<S, A, B>(
         _ fn: @escaping @Sendable (A) -> Stateful<S, B>
     ) -> (Reader<Environment, Stateful<S, A>>) -> Reader<Environment, Stateful<S, B>>

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// A `CaseIterable` enum whose values can be compared against instances of `Subject`,
 /// ignoring associated values.
 ///

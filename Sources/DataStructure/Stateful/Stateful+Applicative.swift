@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 public extension Stateful {
@@ -12,6 +13,7 @@ public extension Stateful {
         }
     }
 
+    /// Declaration.
     func seqRight<B>(_ other: Stateful<S, B>) -> Stateful<S, B> {
         Stateful<S, B> { s in
             _ = self.run(&s)
@@ -19,6 +21,7 @@ public extension Stateful {
         }
     }
 
+    /// Declaration.
     func seqLeft<B>(_ other: Stateful<S, B>) -> Stateful<S, A> {
         Stateful<S, A> { s in
             let a = self.run(&s)
@@ -27,6 +30,7 @@ public extension Stateful {
         }
     }
 
+    /// The `property` property.
     static func liftA2<B, C>(
         _ fn: @escaping @Sendable (A, B) -> C
     ) -> @Sendable (Stateful<S, A>, Stateful<S, B>) -> Stateful<S, C> {

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Testing
 
@@ -17,7 +18,7 @@ extension Role: Prismatic {
         )
         let guest = Prism<Role, Void>(
             preview: { if case .guest = $0 { () } else { nil } },
-            review: { _ in .guest }
+            review: const(Role.guest)
         )
     }
     static let prism = Prisms()
@@ -32,7 +33,7 @@ private struct App: Equatable, Sendable {
     var user: User
 }
 
-@Suite("AffineFocus / mixed \\.field.case key paths")
+@Suite(#"AffineFocus / mixed \.field.case key paths"#)
 struct AffineFocusTests {
     private let app = App(user: User(name: "Alice", role: .admin(3)))
     private let guestApp = App(user: User(name: "Bob", role: .guest))

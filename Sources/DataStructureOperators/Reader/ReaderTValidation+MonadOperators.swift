@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import CoreFPOperators
 import DataStructure
 
-// (>>-) :: Reader<env, Validation<e, a>> -> (a -> Reader<env, Validation<e, b>>) -> Reader<env, Validation<e, b>>
+/// (>>-) :: Reader<env, Validation<e, a>> -> (a -> Reader<env, Validation<e, b>>) -> Reader<env, Validation<e, b>>
 public func >>- <Env, E: Semigroup, A, B>(
     _ reader: Reader<Env, Validation<E, A>>,
     _ fn: @escaping @Sendable (A) -> Reader<Env, Validation<E, B>>
@@ -10,7 +11,7 @@ public func >>- <Env, E: Semigroup, A, B>(
     reader.flatMapT(fn)
 }
 
-// (-<<) :: (a -> Reader<env, Validation<e, b>>) -> Reader<env, Validation<e, a>> -> Reader<env, Validation<e, b>>
+/// (-<<) :: (a -> Reader<env, Validation<e, b>>) -> Reader<env, Validation<e, a>> -> Reader<env, Validation<e, b>>
 public func -<< <Env, E: Semigroup, A, B>(
     _ fn: @escaping @Sendable (A) -> Reader<Env, Validation<E, B>>,
     _ reader: Reader<Env, Validation<E, A>>
@@ -18,7 +19,7 @@ public func -<< <Env, E: Semigroup, A, B>(
     reader.flatMapT(fn)
 }
 
-// (>=>) :: (a -> Reader<env, Validation<e,b>>) -> (b -> Reader<env, Validation<e,c>>) -> a -> Reader<env, Validation<e,c>>
+/// (>=>) :: (a -> Reader<env, Validation<e,b>>) -> (b -> Reader<env, Validation<e,c>>) -> a -> Reader<env, Validation<e,c>>
 public func >=> <Env, E: Semigroup, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Reader<Env, Validation<E, B>>,
     _ fn2: @escaping @Sendable (B) -> Reader<Env, Validation<E, C>>

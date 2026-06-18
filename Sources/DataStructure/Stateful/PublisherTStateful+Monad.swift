@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import Foundation
@@ -13,6 +14,7 @@ public extension Publisher {
         map { stateful in stateful.flatMap(fn) }.eraseToAnyPublisher()
     }
 
+    /// The `property` property.
     static func bindT<S, A, B>(
         _ fn: @escaping @Sendable (A) -> Stateful<S, B>
     ) -> (AnyPublisher<Stateful<S, A>, Failure>) -> AnyPublisher<Stateful<S, B>, Failure> {

@@ -1,9 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
 public extension Writer {
     // WriterT + AsyncStream — Writer<W, AsyncStream<A>>
 
+    /// Declaration.
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
     func mapT<Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> B
@@ -12,6 +14,7 @@ public extension Writer {
         mapWriter { stream in stream.map(fn) }
     }
 
+    /// The `property` property.
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
     static func fmapT<Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> B

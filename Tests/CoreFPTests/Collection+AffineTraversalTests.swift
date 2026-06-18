@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @testable import CoreFP
 import Testing
 
@@ -159,7 +160,7 @@ struct IxCustomIdentifierClosureTests {
         Project(slug: "feed", title: "Feed")
     ]
 
-    private let bySlug: @Sendable (Project) -> String = { $0.slug }
+    private let bySlug: @Sendable (Project) -> String = get(\.slug)
 
     @Test func preview_hit() {
         #expect([Project].ix(id: "profile", by: bySlug).preview(projects)?.title == "Profile")
@@ -201,8 +202,10 @@ struct IxCustomIdentifierClosureTests {
     @Test("set-set: last set wins")
     func law_setSet() {
         let optic = [Project].ix(id: "profile", by: bySlug)
-        let result = optic.set(optic.set(projects, Project(slug: "profile", title: "X")),
-                               Project(slug: "profile", title: "Y"))
+        let result = optic.set(
+            optic.set(projects, Project(slug: "profile", title: "X")),
+            Project(slug: "profile", title: "Y")
+        )
         #expect(result == optic.set(projects, Project(slug: "profile", title: "Y")))
     }
 
@@ -399,7 +402,7 @@ struct AffineTraversalKeyPathTests {
         #expect(affineTraversal(\[Int][safe: 9]).set([10, 20, 30], 99) == [10, 20, 30])
     }
 
-    @Test("affineTraversal(\\[Int][safe: i]) is equivalent to [Int].ix(i)")
+    @Test(#"affineTraversal(\[Int][safe: i]) is equivalent to [Int].ix(i)"#)
     func equivalenceWithIx() {
         let xs = [10, 20, 30]
         let via = affineTraversal(\[Int][safe: 2])

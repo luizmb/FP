@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -11,13 +12,16 @@ public extension Writer {
         _ fn: (Inner) -> Writer<W, Result<B, E>>
     ) -> Writer<W, Result<B, E>> where A == Result<Inner, E> {
         switch value {
-        case .failure(let e): return Writer<W, Result<B, E>>(.failure(e), log)
+        case .failure(let e):
+            return Writer<W, Result<B, E>>(.failure(e), log)
+
         case .success(let a):
             let wb = fn(a)
             return Writer<W, Result<B, E>>(wb.value, W.combine(log, wb.log))
         }
     }
 
+    /// The `property` property.
     static func bindT<Inner, B, E: Error>(
         _ fn: @escaping @Sendable (Inner) -> Writer<W, Result<B, E>>
     ) -> (Writer<W, Result<Inner, E>>) -> Writer<W, Result<B, E>>

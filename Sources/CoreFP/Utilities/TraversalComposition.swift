@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // MARK: - Traversal composition — named functions
 //
 // `Traversal` is the weakest optic, so *every* composition that involves a

@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import CoreFPOperators
 import DataStructure
 
-// (<*>) :: Reader<env, Writer<w, (a -> b)>> -> Reader<env, Writer<w, a>> -> Reader<env, Writer<w, b>>
+/// (<*>) :: Reader<env, Writer<w, (a -> b)>> -> Reader<env, Writer<w, a>> -> Reader<env, Writer<w, b>>
 public func <*> <Env, W: Monoid, A, B>(
     _ rf: Reader<Env, Writer<W, @Sendable (A) -> B>>,
     _ ra: Reader<Env, Writer<W, A>>
@@ -10,12 +11,12 @@ public func <*> <Env, W: Monoid, A, B>(
     applyReaderWriter(rf, ra)
 }
 
-// (*>) :: Reader<env, Writer<w, a>> -> Reader<env, Writer<w, b>> -> Reader<env, Writer<w, b>>
+/// (*>) :: Reader<env, Writer<w, a>> -> Reader<env, Writer<w, b>> -> Reader<env, Writer<w, b>>
 public func *> <Env, W: Monoid, A, B>(_ lhs: Reader<Env, Writer<W, A>>, _ rhs: Reader<Env, Writer<W, B>>) -> Reader<Env, Writer<W, B>> {
     seqRightReaderWriter(lhs, rhs)
 }
 
-// (<*) :: Reader<env, Writer<w, a>> -> Reader<env, Writer<w, b>> -> Reader<env, Writer<w, a>>
+/// (<*) :: Reader<env, Writer<w, a>> -> Reader<env, Writer<w, b>> -> Reader<env, Writer<w, a>>
 public func <* <Env, W: Monoid, A, B>(_ lhs: Reader<Env, Writer<W, A>>, _ rhs: Reader<Env, Writer<W, B>>) -> Reader<Env, Writer<W, A>> {
     seqLeftReaderWriter(lhs, rhs)
 }

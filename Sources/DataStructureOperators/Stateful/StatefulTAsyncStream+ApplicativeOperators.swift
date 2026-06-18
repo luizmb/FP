@@ -1,9 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 
 // (*>) :: Stateful<s, AsyncStream<a>> -> Stateful<s, AsyncStream<b>> -> Stateful<s, AsyncMapSequence<...>>
 // Note: <*> is not available — AsyncStream has no apply free function due to its complex return type.
 // Use liftA2StatefulAsyncStream for general applicative lifting.
+/// `*>` overload.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func *> <S, A: Sendable, B: Sendable>(
     _ lhs: Stateful<S, AsyncStream<A>>,
@@ -13,6 +15,7 @@ public func *> <S, A: Sendable, B: Sendable>(
 }
 
 // (<*) :: Stateful<s, AsyncStream<a>> -> Stateful<s, AsyncStream<b>> -> Stateful<s, AsyncMapSequence<...>>
+/// `func`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func <* <S, A: Sendable, B: Sendable>(
     _ lhs: Stateful<S, AsyncStream<A>>,

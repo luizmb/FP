@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 // MARK: - join / void free functions for DataStructure types
@@ -22,46 +23,55 @@ import CoreFP
 
 // MARK: - Either
 
+/// `join` for `Either`.
 public func join<L, A>(_ nested: Either<L, Either<L, A>>) -> Either<L, A> {
     Either.join(nested)
 }
 
+/// `void` for `Either`.
 public func void<L, A>(_ fa: Either<L, A>) -> Either<L, Void> {
     fa.void()
 }
 
 // MARK: - Reader
 
+/// `join` for `Reader`.
 public func join<Env, A>(_ nested: Reader<Env, Reader<Env, A>>) -> Reader<Env, A> {
     Reader.join(nested)
 }
 
+/// `void` for `Reader`.
 public func void<Env, A>(_ fa: Reader<Env, A>) -> Reader<Env, Void> {
     fa.void()
 }
 
 // MARK: - Stateful
 
+/// `join` for `Stateful`.
 public func join<S, A>(_ nested: Stateful<S, Stateful<S, A>>) -> Stateful<S, A> {
     Stateful.join(nested)
 }
 
+/// `void` for `Stateful`.
 public func void<S, A>(_ fa: Stateful<S, A>) -> Stateful<S, Void> {
     fa.void()
 }
 
 // MARK: - Writer
 
+/// `join` for `Writer`.
 public func join<W: Monoid, A>(_ nested: Writer<W, Writer<W, A>>) -> Writer<W, A> {
     Writer.join(nested)
 }
 
+/// `void` for `Writer`.
 public func void<W: Monoid, A>(_ fa: Writer<W, A>) -> Writer<W, Void> {
     fa.void()
 }
 
 // MARK: - Validation (Functor only — no Monad join)
 
+/// `void` for `Validation (Functor only — no Monad join)`.
 public func void<E: Semigroup, A>(_ fa: Validation<E, A>) -> Validation<E, Void> {
     fa.void()
 }

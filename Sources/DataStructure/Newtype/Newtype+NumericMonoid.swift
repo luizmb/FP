@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 public extension Newtype where RawValue: Numeric & ExpressibleByIntegerLiteral & Sendable {

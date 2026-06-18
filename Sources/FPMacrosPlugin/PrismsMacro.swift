@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros
@@ -58,9 +59,14 @@ struct CaseInfo {
 
     var focusType: String {
         switch params.count {
-        case 0: "Void"
-        case 1: params[0].type
-        default: "(\(params.map(\.type).joined(separator: ", ")))"
+        case 0:
+            "Void"
+
+        case 1:
+            params[0].type
+
+        default:
+            "(\(params.map(\.type).joined(separator: ", ")))"
         }
     }
 
@@ -77,8 +83,10 @@ struct CaseInfo {
         switch params.count {
         case 0:
             "(_ s: \(enumName)) in guard case .\(name) = s else { return nil }; return ()"
+
         case 1:
             "(_ s: \(enumName)) in guard case .\(name)(let a) = s else { return nil }; return a"
+
         default:
             "(_ s: \(enumName)) in guard case .\(name)(\(bindings)) = s else { return nil }; return (\(tuple))"
         }
@@ -88,8 +96,10 @@ struct CaseInfo {
         switch params.count {
         case 0:
             "{ (_: Void) in \(enumName).\(name) }"
+
         case 1:
             "\(enumName).\(name)"
+
         default:
             "{ (t: \(focusType)) in \(enumName).\(name)(\(reviewArgs)) }"
         }
@@ -156,9 +166,9 @@ extension PrismsMacro: ExtensionMacro {
         // conformance witness), and only when the compiler actually asked for the conformance
         // (`protocols` is empty when the type already conforms).
         guard let enumDecl = declaration.as(EnumDeclSyntax.self),
-              accessKeyword(from: enumDecl.modifiers) != "private",
-              parseOptions(from: node).emitsPrismStruct,
-              !protocols.isEmpty
+            accessKeyword(from: enumDecl.modifiers) != "private",
+            parseOptions(from: node).emitsPrismStruct,
+            !protocols.isEmpty
         else { return [] }
 
         return [try ExtensionDeclSyntax("extension \(type.trimmed): Prismatic {}")]
@@ -186,8 +196,14 @@ private func accessKeyword(from modifiers: DeclModifierListSyntax) -> String {
     for modifier in modifiers {
         let text = modifier.name.text
         switch text {
-        case "open", "public", "package", "internal", "fileprivate", "private":
+        case "open",
+            "public",
+            "package",
+            "internal",
+            "fileprivate",
+            "private":
             return text
+
         default:
             continue
         }
@@ -274,6 +290,7 @@ private enum PrismsDiagnostic: DiagnosticMessage {
         switch self {
         case .notAnEnum:
             "@Prisms can only be applied to enums"
+
         case .privateHostUnsupported:
             "@Prisms cannot be applied to `private` enums. Change the declaration to `fileprivate`, "
                 + "`internal`, or higher. (`private` is the only access level whose type-scope semantics "
@@ -285,7 +302,9 @@ private enum PrismsDiagnostic: DiagnosticMessage {
 
     var severity: DiagnosticSeverity {
         switch self {
-        case .notAnEnum, .privateHostUnsupported: .error
+        case .notAnEnum,
+            .privateHostUnsupported:
+            .error
         }
     }
 }

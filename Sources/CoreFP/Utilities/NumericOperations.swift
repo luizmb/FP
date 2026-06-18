@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // MARK: - Symmetric Range
 
 /// Builds a `ClosedRange` centred on `center` extending `delta` in both directions.

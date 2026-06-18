@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import DataStructure
 import Foundation
 import Testing
@@ -115,6 +116,7 @@ struct GenTests {
         let g = Gen.string(of: .letter(), count: Gen.int(in: 5...5))
         let s = g.generate(seed: 1)
         #expect(s.count == 5)
+        // swiftlint:disable:next prefer_key_path
         #expect(s.allSatisfy { $0.isLetter })
     }
 }

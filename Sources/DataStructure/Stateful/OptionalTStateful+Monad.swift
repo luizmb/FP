@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // OptionalTStateful: outer = Optional, inner = Stateful
@@ -16,6 +17,7 @@ public extension Optional {
         map { stateful in stateful.flatMap(fn) }
     }
 
+    /// The `property` property.
     static func bindT<S, A, B>(_ fn: @escaping @Sendable (A) -> Stateful<S, B>) -> @Sendable (Stateful<S, A>?) -> Stateful<S, B>? {
         { opt in opt.flatMapT(fn) }
     }

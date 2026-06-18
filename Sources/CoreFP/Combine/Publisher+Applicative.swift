@@ -1,10 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import Foundation
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public extension Publisher {
-    // liftA2 :: (a1 -> a2 -> a) -> Publisher<a1, e> -> Publisher<a2, e> -> Publisher<a, e>
+    /// liftA2 :: (a1 -> a2 -> a) -> Publisher<a1, e> -> Publisher<a2, e> -> Publisher<a, e>
     static func liftA2<A1, A2>(_ fn: @escaping @Sendable (A1, A2) -> A) -> @Sendable (
         any Publisher<A1, B>, any Publisher<A2, B>
     ) -> any Publisher<A, B> {
@@ -37,6 +38,7 @@ public extension Publisher {
             .map(\.0)
     }
 
+    /// The `property` property.
     static func zip<A1, A2>(_ lhs: any Publisher<A1, B>, _ rhs: any Publisher<A2, B>) -> any Publisher<A, B>
     where A == (A1, A2) {
         Publishers.Zip(lhs.eraseToAnyPublisher(), rhs.eraseToAnyPublisher())

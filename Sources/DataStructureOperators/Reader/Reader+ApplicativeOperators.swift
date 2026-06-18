@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 import Foundation
 
-// (<*>) :: Reader<e, (a -> b)> -> Reader<e, a> -> Reader<e, b>
+/// (<*>) :: Reader<e, (a -> b)> -> Reader<e, a> -> Reader<e, b>
 public func <*> <Env, A, B>(
     _ readerF: Reader<Env, @Sendable (A) -> B>,
     _ readerA: Reader<Env, A>
@@ -10,7 +11,7 @@ public func <*> <Env, A, B>(
     Reader<Env, B>.apply(readerF, readerA)
 }
 
-// (*>) :: Reader<e, a> -> Reader<e, b> -> Reader<e, b>
+/// (*>) :: Reader<e, a> -> Reader<e, b> -> Reader<e, b>
 public func *> <Env, A, B>(
     _ lhs: Reader<Env, A>,
     _ rhs: Reader<Env, B>
@@ -18,7 +19,7 @@ public func *> <Env, A, B>(
     lhs.seqRight(rhs)
 }
 
-// (<*) :: Reader<e, a> -> Reader<e, b> -> Reader<e, a>
+/// (<*) :: Reader<e, a> -> Reader<e, b> -> Reader<e, a>
 public func <* <Env, A, B>(
     _ lhs: Reader<Env, A>,
     _ rhs: Reader<Env, B>

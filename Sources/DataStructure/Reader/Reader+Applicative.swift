@@ -1,12 +1,14 @@
+// SPDX-License-Identifier: Apache-2.0
+import CoreFP
 import Foundation
 
 public extension Reader {
-    // pure :: a -> Reader<env, a>  — constant reader, ignores the environment
+    /// pure :: a -> Reader<env, a>  — constant reader, ignores the environment
     static func pure(_ value: Output) -> Reader<Environment, Output> where Output: Sendable {
-        Reader { _ in value }
+        Reader(const(value))
     }
 
-    // liftA2 :: (b1 -> b2 -> b) -> Reader e b1 -> Reader e b2 -> Reader e b
+    /// liftA2 :: (b1 -> b2 -> b) -> Reader e b1 -> Reader e b2 -> Reader e b
     static func liftA2<B1, B2>(_ fn: @escaping @Sendable (B1, B2) -> Output) -> @Sendable (
         Reader<Environment, B1>, Reader<Environment, B2>
     ) -> Reader<Environment, Output> {
@@ -44,6 +46,7 @@ public extension Reader {
         }
     }
 
+    /// The `property` property.
     static func zip<B1, B2, each Bx>(
         _ first: Reader<Environment, B1>,
         _ second: Reader<Environment, B2>,

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import Foundation
@@ -5,6 +6,7 @@ import Foundation
 // PublisherTArray: outer = AnyPublisher, inner = Array
 // Type: AnyPublisher<[A], E>
 
+/// `liftA2PublisherArray`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func liftA2PublisherArray<A, B, C, E: Error>(
     _ fn: @escaping @Sendable (A, B) -> C
@@ -16,6 +18,7 @@ public func liftA2PublisherArray<A, B, C, E: Error>(
     }
 }
 
+/// `seqRightPublisherArray`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func seqRightPublisherArray<A, B, E: Error>(
     _ lhs: AnyPublisher<[A], E>,
@@ -26,6 +29,7 @@ public func seqRightPublisherArray<A, B, E: Error>(
         .eraseToAnyPublisher()
 }
 
+/// `seqLeftPublisherArray`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func seqLeftPublisherArray<A, B, E: Error>(
     _ lhs: AnyPublisher<[A], E>,

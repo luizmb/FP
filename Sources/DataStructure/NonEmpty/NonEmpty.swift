@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // MARK: - NonEmpty<A>
 
 /// A sequence guaranteed to contain at least one element.
@@ -65,9 +66,12 @@
 ///
 /// - SeeAlso: ``Validation``, ``Semigroup``, ``sconcat(_:_:)``
 public struct NonEmpty<A> {
+    /// The `head` property.
     public let head: A
+    /// The `tail` property.
     public let tail: [A]
 
+    /// Initializer for `NonEmpty<A>`.
     public init(head: A, tail: [A] = []) {
         self.head = head
         self.tail = tail

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import CoreFP
@@ -76,6 +77,7 @@ import Testing
                 .eraseToAnyPublisher()
         }
 
+        // swiftlint:disable:next closure_ignoring_args
         let readerValue = Reader<Environment, any Publisher<Int, TestError>> { _ in
             Just(10)
                 .setFailureType(to: TestError.self)
@@ -165,6 +167,7 @@ import Testing
     @Test func kleisliComposition() {
         guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
         let parse: @Sendable (String) -> Reader<Environment, any Publisher<Int, TestError>> = { s in
+            // swiftlint:disable:next closure_ignoring_args
             Reader { _ in
                 Just(Int(s) ?? 0)
                     .setFailureType(to: TestError.self)

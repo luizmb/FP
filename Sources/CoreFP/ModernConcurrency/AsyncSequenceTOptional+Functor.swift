@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // AsyncSequenceTOptional: outer = AsyncStream, inner = Optional
@@ -16,10 +17,12 @@ public func mapTAsyncStreamOptional<A, B: Sendable>(
             }
             continuation.finish()
         }
+        // swiftlint:disable:next closure_ignoring_args
         continuation.onTermination = { _ in task.cancel() }
     }
 }
 
+/// `fmapTAsyncStreamOptional`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func fmapTAsyncStreamOptional<A, B: Sendable>(
     _ fn: @escaping @Sendable (A) -> B

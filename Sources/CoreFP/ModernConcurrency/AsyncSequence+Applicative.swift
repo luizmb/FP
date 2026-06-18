@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
@@ -15,11 +16,12 @@ public extension AsyncStream where Element: Sendable {
                 var valueIterator = values.makeAsyncIterator()
 
                 while let fn = await funcIterator.next(),
-                      let value = await valueIterator.next() {
+                    let value = await valueIterator.next() {
                     continuation.yield(fn(value))
                 }
                 continuation.finish()
             }
+            // swiftlint:disable:next closure_ignoring_args
             continuation.onTermination = { _ in task.cancel() }
         }
     }
@@ -36,12 +38,13 @@ public extension AsyncStream where Element: Sendable {
                     var iterB = streamB.makeAsyncIterator()
 
                     while let a = await iterA.next(),
-                          let b = await iterB.next() {
+                        let b = await iterB.next() {
                         continuation.yield(fn(a, b))
                     }
                     continuation.finish()
                 }
-                continuation.onTermination = { _ in task.cancel() }
+                // swiftlint:disable:next closure_ignoring_args
+            continuation.onTermination = { _ in task.cancel() }
             }
         }
     }
@@ -58,11 +61,12 @@ public extension AsyncStream where Element: Sendable {
                 var rhsIter = rhs.makeAsyncIterator()
 
                 while await lhsIter.next() != nil,
-                      let b = await rhsIter.next() {
+                    let b = await rhsIter.next() {
                     continuation.yield(b)
                 }
                 continuation.finish()
             }
+            // swiftlint:disable:next closure_ignoring_args
             continuation.onTermination = { _ in task.cancel() }
         }
     }
@@ -78,11 +82,12 @@ public extension AsyncStream where Element: Sendable {
                 var iterB = streamB.makeAsyncIterator()
 
                 while let a = await iterA.next(),
-                      let b = await iterB.next() {
+                    let b = await iterB.next() {
                     continuation.yield((a, b))
                 }
                 continuation.finish()
             }
+            // swiftlint:disable:next closure_ignoring_args
             continuation.onTermination = { _ in task.cancel() }
         }
     }

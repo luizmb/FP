@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Testing
 
@@ -84,14 +85,16 @@ import Testing
     @Test func thenSomeRunsClosure() {
         nonisolated(unsafe) var ran = false
         let opt: Int? = 42
-        opt.then { _ in ran = true }
+        // swiftlint:disable:next closure_ignoring_args
+        opt.then { _ in ran = true }  // side effect: sets flag; value is irrelevant
         #expect(ran)
     }
 
     @Test func thenNoneSkipsClosure() {
         nonisolated(unsafe) var ran = false
         let opt: Int? = nil
-        opt.then { _ in ran = true }
+        // swiftlint:disable:next closure_ignoring_args
+        opt.then { _ in ran = true }  // side effect: sets flag; value is irrelevant
         #expect(!ran)
     }
 

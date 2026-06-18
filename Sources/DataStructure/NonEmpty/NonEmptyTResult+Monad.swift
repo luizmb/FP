@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // NonEmptyTResult: outer = NonEmpty, inner = Result
 // Type: NonEmpty<Result<A, E>>  (Success = A, Failure = E)
 
@@ -12,8 +13,11 @@ public extension NonEmpty {
         let t: [Result<Inner, E>] = tail
         func step(_ element: Result<Inner, E>) -> NonEmpty<Result<Output, E>> {
             switch element {
-            case .failure(let e): NonEmpty<Result<Output, E>>(head: .failure(e))
-            case .success(let a): fn(a)
+            case .failure(let e):
+                NonEmpty<Result<Output, E>>(head: .failure(e))
+
+            case .success(let a):
+                fn(a)
             }
         }
         let headResult = step(h)
@@ -21,6 +25,7 @@ public extension NonEmpty {
         return NonEmpty<Result<Output, E>>(head: headResult.head, tail: headResult.tail + tailResults)
     }
 
+    /// The `property` property.
     static func bindT<Inner, E, Output>(
         _ fn: @escaping @Sendable (Inner) -> NonEmpty<Result<Output, E>>
     ) -> (NonEmpty<Result<Inner, E>>) -> NonEmpty<Result<Output, E>> {

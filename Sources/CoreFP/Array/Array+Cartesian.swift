@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 extension Array {
     /// Returns the Cartesian product of two arrays — every element from `first` paired with every
     /// element from `second`, ordered by the outer-then-inner iteration.

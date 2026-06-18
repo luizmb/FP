@@ -1,8 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import CoreFPOperators
 import DataStructure
 
 // (<£^>) :: (a -> b) -> AsyncStream<Writer<w, a>> -> AsyncMapSequence<AsyncStream<Writer<w, a>>, Writer<w, b>>
+/// `func`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func <£^> <W: Monoid, A, B>(
     _ fn: @escaping @Sendable (A) -> B,
@@ -12,6 +14,7 @@ public func <£^> <W: Monoid, A, B>(
 }
 
 // (<&^>) :: AsyncStream<Writer<w, a>> -> (a -> b) -> AsyncMapSequence<AsyncStream<Writer<w, a>>, Writer<w, b>>
+/// `func`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func <&^> <W: Monoid, A, B>(
     _ stream: AsyncStream<Writer<W, A>>,

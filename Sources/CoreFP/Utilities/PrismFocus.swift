@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // MARK: - Prismatic
 
 /// A type whose enum cases are exposed as a `Prisms` namespace.

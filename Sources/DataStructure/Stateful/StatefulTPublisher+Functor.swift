@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import CoreFP
@@ -6,6 +7,7 @@ import Foundation
 public extension Stateful {
     // StatefulT + Publisher — Stateful<S, any Publisher<A, E>>
 
+    /// Declaration.
     @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
     func mapT<Inner, B, E: Error>(
         _ fn: @escaping @Sendable (Inner) -> B
@@ -14,6 +16,7 @@ public extension Stateful {
         mapStateful(AnyPublisher<Inner, E>.fmap(fn))
     }
 
+    /// The `property` property.
     @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
     static func fmapT<Inner, B, E: Error>(
         _ fn: @escaping @Sendable (Inner) -> B

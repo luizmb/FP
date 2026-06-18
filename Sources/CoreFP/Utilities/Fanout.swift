@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// Given an input, applies it into multiple functions that takes that same input type
 /// Examples:
 /// - If you want the lowest and greatest elements of a `[Int]`:

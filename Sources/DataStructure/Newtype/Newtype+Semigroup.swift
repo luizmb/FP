@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 // Semigroup / Monoid — delegate to RawValue. The `<>` operator (defined on Semigroup in CoreFP)

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// Opt-in protocol that provides a fluent `mutate` method for value types.
 ///
 /// Conforming types gain a `mutate` method that makes it easy to create modified

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import Foundation
@@ -10,6 +11,7 @@ public extension Writer {
     // sequential but fn's log contributions can't be eagerly accumulated across events.
     // For log-accumulating pipelines prefer Writer<W, [A]> or Writer<W, Result<A,E>>.
 
+    /// Declaration.
     @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
     func flatMapT<Inner, B, E: Error>(
         _ fn: @escaping @Sendable (Inner) -> Writer<W, any Publisher<B, E>>
@@ -26,6 +28,7 @@ public extension Writer {
         )
     }
 
+    /// The `property` property.
     @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
     static func bindT<Inner, B, E: Error>(
         _ fn: @escaping @Sendable (Inner) -> Writer<W, any Publisher<B, E>>

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import CoreFP
@@ -5,6 +6,7 @@ import CoreFPOperators
 import DataStructure
 
 // (>>-) :: Writer<w, any Publisher<a, e>> -> (a -> Writer<w, any Publisher<b, e>>) -> Writer<w, any Publisher<b, e>>
+/// `>>-` overload.
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func >>- <W: Monoid, A, B, E: Error>(
     _ writer: Writer<W, any Publisher<A, E>>,
@@ -14,6 +16,7 @@ public func >>- <W: Monoid, A, B, E: Error>(
 }
 
 // (-<<) :: (a -> Writer<w, any Publisher<b, e>>) -> Writer<w, any Publisher<a, e>> -> Writer<w, any Publisher<b, e>>
+/// `-` overload.
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func -<< <W: Monoid, A, B, E: Error>(
     _ fn: @escaping @Sendable (A) -> Writer<W, any Publisher<B, E>>,
@@ -23,6 +26,7 @@ public func -<< <W: Monoid, A, B, E: Error>(
 }
 
 // (>=>) :: (a -> Writer<w, any Publisher<b, e>>) -> (b -> Writer<w, any Publisher<c, e>>) -> a -> Writer<w, any Publisher<c, e>>
+/// `>=>` overload.
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func >=> <W: Monoid, A, B, C, E: Error>(
     _ fn1: @escaping @Sendable (A) -> Writer<W, any Publisher<B, E>>,

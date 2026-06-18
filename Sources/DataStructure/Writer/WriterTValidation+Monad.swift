@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 // WriterTValidation: outer = Writer, inner = Validation
@@ -5,6 +6,7 @@ import CoreFP
 // flatMapT: short-circuits on Validation failure, threads log on success.
 
 public extension Writer {
+    /// Declaration.
     func flatMapT<E: Semigroup, Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> Writer<W, Validation<E, B>>
     ) -> Writer<W, Validation<E, B>> where A == Validation<E, Inner> {
@@ -17,6 +19,7 @@ public extension Writer {
         )
     }
 
+    /// The `property` property.
     static func bindT<E: Semigroup, Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> Writer<W, Validation<E, B>>
     ) -> (Writer<W, Validation<E, Inner>>) -> Writer<W, Validation<E, B>>

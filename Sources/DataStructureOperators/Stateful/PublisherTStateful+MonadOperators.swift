@@ -1,9 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import CoreFPOperators
 import DataStructure
 
 // (>>-) :: AnyPublisher<Stateful<s, a>, e> -> (a -> Stateful<s, b>) -> AnyPublisher<Stateful<s, b>, e>
+/// `>>-` overload.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func >>- <S, A, B, E: Error>(
     _ publisher: AnyPublisher<Stateful<S, A>, E>,
@@ -13,6 +15,7 @@ public func >>- <S, A, B, E: Error>(
 }
 
 // (-<<) :: (a -> Stateful<s, b>) -> AnyPublisher<Stateful<s, a>, e> -> AnyPublisher<Stateful<s, b>, e>
+/// `-` overload.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func -<< <S, A, B, E: Error>(
     _ fn: @escaping @Sendable (A) -> Stateful<S, B>,

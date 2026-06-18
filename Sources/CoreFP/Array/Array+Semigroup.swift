@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 extension Array: Semigroup {
     public static func combine(_ lhs: [Element], _ rhs: [Element]) -> [Element] {
         lhs + rhs

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // MARK: - AffineTraversal<S, A>
 //
 // An `AffineTraversal` focuses on zero or one value of type `A` inside `S`.
@@ -174,6 +175,7 @@ public struct AffineTraversal<S, A>: Sendable {
 }
 
 extension AffineTraversal where S == A {
+    /// The `id` property.
     public static var id: AffineTraversal<S, S> {
         AffineTraversal(preview: { .some($0) }, set: { _, a in a }, tryModifyMut: { s, f in f(&s) })
     }

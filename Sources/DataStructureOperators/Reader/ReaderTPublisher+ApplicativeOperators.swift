@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import DataStructure
 #if canImport(Combine)
 import Combine
@@ -6,6 +7,7 @@ import Foundation
 
 // ReaderT + Publisher
 
+/// `func`.
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func <*> <Env, A, B, E: Error>(
     _ readerF: Reader<Env, any Publisher<(A) -> B, E>>,
@@ -14,6 +16,7 @@ public func <*> <Env, A, B, E: Error>(
     applyReaderPublisher(readerF, readerA)
 }
 
+/// `*>` overload.
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func *> <Env, A, B, E: Error>(
     _ lhs: Reader<Env, any Publisher<A, E>>,
@@ -22,6 +25,7 @@ public func *> <Env, A, B, E: Error>(
     seqRightReaderPublisher(lhs, rhs)
 }
 
+/// `func`.
 @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
 public func <* <Env, A, B, E: Error>(
     _ lhs: Reader<Env, any Publisher<A, E>>,

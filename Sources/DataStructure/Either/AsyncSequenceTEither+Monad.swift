@@ -1,9 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // AsyncSequenceTEither: outer = AsyncStream, inner = Either
 // Type: AsyncStream<Either<L,A>>
 // Haskell: ExceptT l AsyncStream
 
+/// `flatMapTAsyncStreamEither`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func flatMapTAsyncStreamEither<L, A, B>(
     _ stream: AsyncStream<Either<L, A>>,
@@ -15,6 +17,7 @@ public func flatMapTAsyncStreamEither<L, A, B>(
                 switch either {
                 case let .left(l):
                     continuation.yield(.left(l))
+
                 case let .right(a):
                     for await b in fn(a) {
                         continuation.yield(b)
@@ -23,10 +26,12 @@ public func flatMapTAsyncStreamEither<L, A, B>(
             }
             continuation.finish()
         }
+        // swiftlint:disable:next closure_ignoring_args
         continuation.onTermination = { _ in task.cancel() }
     }
 }
 
+/// `bindTAsyncStreamEither`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func bindTAsyncStreamEither<L, A, B>(
     _ fn: @escaping @Sendable (A) -> AsyncStream<Either<L, B>>

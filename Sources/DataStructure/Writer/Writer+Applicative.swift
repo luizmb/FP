@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -9,14 +10,17 @@ public extension Writer {
         Writer<W, A>(wf.value(wa.value), W.combine(wf.log, wa.log))
     }
 
+    /// Declaration.
     func seqRight<B>(_ other: Writer<W, B>) -> Writer<W, B> {
         Writer<W, B>(other.value, W.combine(log, other.log))
     }
 
+    /// Declaration.
     func seqLeft<B>(_ other: Writer<W, B>) -> Writer<W, A> {
         Writer<W, A>(value, W.combine(log, other.log))
     }
 
+    /// The `property` property.
     static func liftA2<B, C>(
         _ fn: @escaping @Sendable (A, B) -> C
     ) -> @Sendable (Writer<W, A>, Writer<W, B>) -> Writer<W, C> {

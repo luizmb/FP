@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+import CoreFP
 import DataStructure
 import Testing
 
@@ -44,7 +46,7 @@ import Testing
 
     @Test func eitherTraverseOptionalRightFailure() {
         let e: Either<String, Int> = .right(3)
-        let result = e.traverse { _ in nil as Int? }
+        let result = e.traverse(const(nil as Int?))
         #expect(result == .none)
     }
 
@@ -75,7 +77,7 @@ import Testing
 
     @Test func eitherTraverseResultRightFailure() {
         let e: Either<String, Int> = .right(3)
-        let result = e.traverse { _ in Result<Int, TestError>.failure(.fail) }
+        let result = e.traverse(const(Result<Int, TestError>.failure(.fail)))
         #expect(result == .failure(.fail))
     }
 
@@ -128,7 +130,7 @@ import Testing
 
     @Test func validationTraverseOptionalSuccessAbsent() {
         let v: Validation<String, Int> = .success(3)
-        let result = v.traverse { _ in nil as Int? }
+        let result = v.traverse(const(nil as Int?))
         #expect(result == .none)
     }
 
@@ -159,7 +161,7 @@ import Testing
 
     @Test func validationTraverseResultSuccessErr() {
         let v: Validation<String, Int> = .success(3)
-        let result = v.traverse { _ in Result<Int, TestError>.failure(.fail) }
+        let result = v.traverse(const(Result<Int, TestError>.failure(.fail)))
         #expect(result == .failure(.fail))
     }
 
@@ -213,7 +215,7 @@ import Testing
 
     @Test func writerTraverseOptionalAbsent() {
         let w = Writer<String, Int>(3, "log")
-        let result = w.traverse { _ in nil as Int? }
+        let result = w.traverse(const(nil as Int?))
         #expect(result == nil)
     }
 
@@ -237,7 +239,7 @@ import Testing
 
     @Test func writerTraverseResultFailure() {
         let w = Writer<String, Int>(3, "log")
-        let result = w.traverse { _ in Result<Int, TestError>.failure(.fail) }
+        let result = w.traverse(const(Result<Int, TestError>.failure(.fail)))
         #expect(result == .failure(.fail))
     }
 

@@ -1,7 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 // AsyncSequenceTResult: AsyncStream<Result<A,E>>
 
+/// `*>` overload.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func *> <A, B, E: Error>(
     _ lhs: AsyncStream<Result<A, E>>,
@@ -10,6 +12,7 @@ public func *> <A, B, E: Error>(
     seqRightAsyncStreamResult(lhs, rhs)
 }
 
+/// `func`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func <* <A, B, E: Error>(
     _ lhs: AsyncStream<Result<A, E>>,

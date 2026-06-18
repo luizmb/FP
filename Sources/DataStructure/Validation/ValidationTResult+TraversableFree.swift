@@ -1,5 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
-import DataStructure
 
 /// Sequence a Validation of a Result into a Result of Validation.
 /// sequence :: Validation e (Result<b, e2>) -> Result<Validation e b, e2>

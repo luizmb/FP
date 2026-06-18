@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // MARK: - Collection traversals (`each`)
 //
 // `each` is to `Traversal` what `ix` is to `AffineTraversal`: it focuses on

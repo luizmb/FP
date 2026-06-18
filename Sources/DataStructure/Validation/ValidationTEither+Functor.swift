@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
-// ValidationTEither: outer = Validation, inner = Either
-// Type: Validation<E, Either<L, A>>
+/// ValidationTEither: outer = Validation, inner = Either
+/// Type: Validation<E, Either<L, A>>
 
 public func fmapTValidationEither<E: Semigroup, L, A, B>(
     _ fn: @escaping @Sendable (A) -> B

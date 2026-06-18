@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
 import Combine
 import Foundation
@@ -26,8 +27,11 @@ extension Subscribers.Completion: SumType2 {
 
     public func match<C>(caseLeft: (A) -> C, caseRight: (B) -> C) -> C {
         switch self {
-        case .finished: caseLeft(())
-        case let .failure(right): caseRight(right)
+        case .finished:
+            caseLeft(())
+
+        case let .failure(right):
+            caseRight(right)
         }
     }
 }

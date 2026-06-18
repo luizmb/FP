@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // OptionalTResult: outer = Optional, inner = Result
@@ -13,8 +14,11 @@ public extension Optional {
     func flatMapT<A, B, E: Error>(_ fn: @escaping @Sendable (A) -> Result<B, E>?) -> Result<B, E>? where Wrapped == Result<A, E> {
         flatMap { result in
             switch result {
-            case .failure(let e): .some(.failure(e))
-            case .success(let a): fn(a)
+            case .failure(let e):
+                .some(.failure(e))
+
+            case .success(let a):
+                fn(a)
             }
         }
     }

@@ -1,8 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // AsyncSequenceTArray: outer = AsyncStream, inner = Array
 // Type: AsyncStream<[A]>
 
+/// `liftA2AsyncStreamArray`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func liftA2AsyncStreamArray<A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
@@ -18,11 +20,14 @@ where A: Sendable, B: Sendable, C: Sendable {
                 }
                 continuation.finish()
             }
-            continuation.onTermination = { _ in task.cancel() }
+            // swiftlint:disable:next closure_ignoring_args
+            // swiftlint:disable:next closure_ignoring_args
+        continuation.onTermination = { _ in task.cancel() }
         }
     }
 }
 
+/// `seqRightAsyncStreamArray`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func seqRightAsyncStreamArray<A, B>(
     _ lhs: AsyncStream<[A]>,
@@ -37,10 +42,12 @@ public func seqRightAsyncStreamArray<A, B>(
             }
             continuation.finish()
         }
+        // swiftlint:disable:next closure_ignoring_args
         continuation.onTermination = { _ in task.cancel() }
     }
 }
 
+/// `seqLeftAsyncStreamArray`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func seqLeftAsyncStreamArray<A, B>(
     _ lhs: AsyncStream<[A]>,
@@ -55,6 +62,7 @@ public func seqLeftAsyncStreamArray<A, B>(
             }
             continuation.finish()
         }
+        // swiftlint:disable:next closure_ignoring_args
         continuation.onTermination = { _ in task.cancel() }
     }
 }

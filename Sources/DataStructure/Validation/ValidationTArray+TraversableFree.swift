@@ -1,5 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
-import DataStructure
 
 /// Sequence a Validation of an Array into an Array of Validations.
 /// sequence :: Validation e [b] -> [Validation e b]
