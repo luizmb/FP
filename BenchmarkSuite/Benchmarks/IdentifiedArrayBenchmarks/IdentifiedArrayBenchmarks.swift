@@ -196,5 +196,14 @@ func buildBenchmarks() {
                 blackHole(dictionary.count)
             }
         }
+
+        // Known-count construction — exercises reserveCapacity (no incremental
+        // reallocation/rehash chain). The realistic `IdentifiedArray(array)` path.
+        let source = makeArray(size)
+        Benchmark("Build from array — IdentifiedArray (\(size))", configuration: config()) { benchmark in
+            for _ in benchmark.scaledIterations {
+                blackHole(IdentifiedArray(source).count)
+            }
+        }
     }
 }

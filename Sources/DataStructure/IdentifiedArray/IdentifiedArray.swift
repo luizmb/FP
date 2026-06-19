@@ -95,6 +95,7 @@ public struct IdentifiedArray<ID: Hashable, Element> {
         self.keys = []
         self.buckets = []
         self.id = id
+        reserveCapacity(elements.underestimatedCount)
         for element in elements { append(element) }
     }
 }
@@ -163,16 +164,39 @@ extension IdentifiedArray {
     }
 
     /// Rebuilds `buckets` at `capacity` (a power of two) from the current `keys`.
+    ///
+    /// The probe writes are random-access and dominate table growth, so they run
+    /// through an unsafe buffer pointer to drop per-write bounds and CoW-uniqueness
+    /// checks. `keys` is read through a local (CoW share) to avoid overlapping
+    /// access to `self` while `self.buckets` is exclusively borrowed.
     mutating func rebuildTable(capacity: Int) {
         buckets = [UInt32](repeating: Self.empty, count: capacity)
+        guard capacity > 0 else { return }
         let mask = capacity &- 1
-        var i = 0
-        while i < keys.count {
-            var slot = hashSlot(keys[i], mask)
-            while buckets[slot] != Self.empty { slot = (slot &+ 1) & mask }
-            buckets[slot] = UInt32(i)
-            i &+= 1
+        let localKeys = keys
+        localKeys.withUnsafeBufferPointer { keyBuffer in
+            buckets.withUnsafeMutableBufferPointer { bucketBuffer in
+                guard let keyBase = keyBuffer.baseAddress, let bucketBase = bucketBuffer.baseAddress else { return }
+                var i = 0
+                let count = keyBuffer.count
+                while i < count {
+                    var slot = Int(UInt(bitPattern: keyBase[i].hashValue) & UInt(bitPattern: mask))
+                    while bucketBase[slot] != Self.empty { slot = (slot &+ 1) & mask }
+                    bucketBase[slot] = UInt32(i)
+                    i &+= 1
+                }
+            }
         }
+    }
+
+    /// Pre-sizes the element/key buffers and the table for at least `minimumCapacity`
+    /// elements, so building a collection of known size avoids the incremental
+    /// reallocation-and-rehash chain. O(minimumCapacity); no-op for non-positive input.
+    public mutating func reserveCapacity(_ minimumCapacity: Int) {
+        guard minimumCapacity > 0 else { return }
+        storage.reserveCapacity(minimumCapacity)
+        keys.reserveCapacity(minimumCapacity)
+        reserveTable(forCount: minimumCapacity)
     }
 
     /// Removes the entry at bucket `slot`, restoring the probe invariant via
@@ -199,14 +223,17 @@ extension IdentifiedArray {
     /// Shifts every stored position `>= threshold` by `delta` (used after a
     /// positional insert/remove moves the tail). A flat scan of `buckets`.
     mutating func shiftPositions(threshold: Int, by delta: Int) {
-        let capacity = buckets.count
-        var slot = 0
-        while slot < capacity {
-            let value = buckets[slot]
-            if value != Self.empty && Int(value) >= threshold {
-                buckets[slot] = UInt32(Int(value) &+ delta)
+        buckets.withUnsafeMutableBufferPointer { bucketBuffer in
+            guard let base = bucketBuffer.baseAddress else { return }
+            let count = bucketBuffer.count
+            var slot = 0
+            while slot < count {
+                let value = base[slot]
+                if value != Self.empty && Int(value) >= threshold {
+                    base[slot] = UInt32(Int(value) &+ delta)
+                }
+                slot &+= 1
             }
-            slot &+= 1
         }
     }
 
