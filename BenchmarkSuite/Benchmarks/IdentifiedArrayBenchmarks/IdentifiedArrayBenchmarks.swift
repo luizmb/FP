@@ -40,6 +40,13 @@ func lookupBenchmarks() {
                 blackHole(array.first { $0.id == target }?.n)
             }
         }
+
+        let dictionary = makeDictionary(size)
+        Benchmark("Lookup by id — [ID: Element] dictionary (\(size))", configuration: config()) { benchmark in
+            for _ in benchmark.scaledIterations {
+                blackHole(dictionary[target]?.n)
+            }
+        }
     }
 }
 
@@ -63,6 +70,15 @@ func updateInPlaceBenchmarks() {
             for _ in benchmark.scaledIterations {
                 if let i = array.firstIndex(where: { $0.id == target }) { array[i].n = 1 }
                 blackHole(array[target].n)
+            }
+        }
+
+        Benchmark("Update by id — [ID: Element] dictionary (\(size))", configuration: config()) { benchmark in
+            var dictionary = makeDictionary(size)
+            benchmark.startMeasurement()
+            for _ in benchmark.scaledIterations {
+                dictionary[target] = BenchUser(id: target, n: 1)
+                blackHole(dictionary[target]?.n)
             }
         }
     }
@@ -170,6 +186,14 @@ func buildBenchmarks() {
                 var array: [BenchUser] = []
                 for i in 0..<size { array.append(BenchUser(id: i)) }
                 blackHole(array.count)
+            }
+        }
+
+        Benchmark("Build by insert — [ID: Element] dictionary (\(size))", configuration: config()) { benchmark in
+            for _ in benchmark.scaledIterations {
+                var dictionary: [Int: BenchUser] = [:]
+                for i in 0..<size { dictionary[i] = BenchUser(id: i) }
+                blackHole(dictionary.count)
             }
         }
     }

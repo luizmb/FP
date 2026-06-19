@@ -19,3 +19,12 @@ func makeArray(_ count: Int) -> [BenchUser] {
 func makeIdentified(_ count: Int) -> IdentifiedArrayOf<BenchUser> {
     IdentifiedArray(makeArray(count))
 }
+
+// Plain `[ID: Element]` — the O(1)-but-orderless contender. It wins on raw by-id
+// throughput precisely because it carries no order; the gap to IdentifiedArray is
+// the price of keeping order.
+func makeDictionary(_ count: Int) -> [Int: BenchUser] {
+    var dictionary = [Int: BenchUser](minimumCapacity: count)
+    for i in 0..<count { dictionary[i] = BenchUser(id: i) }
+    return dictionary
+}
