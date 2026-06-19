@@ -39,6 +39,7 @@ The library draws from Haskell and Scala Cats conventions and is designed to be 
   - [Assembling Optics (AffineTraversal)](#assembling-optics-affinetraversal)
   - [Identity Optic (.id)](#identity-optic-id)
   - [Safe Collection Access ([safe:], [id:], and ix)](#safe-collection-access-safe-id-and-ix)
+  - [IdentifiedArray — ordered collection with O(1) by-id access](#identifiedarray--ordered-collection-with-o1-by-id-access)
   - [Bidirectional Conversions (Iso)](#bidirectional-conversions-iso)
     - [Iso operators](#iso-operators-optional-requires-corefpoperators)
   - [Deriving Optics with Macros (@Lenses and @Prisms)](#deriving-optics-with-macros-lenses-and-prisms)
@@ -1209,7 +1210,7 @@ Setter dispatch table:
 | `v` where `v.id ==id`| no  | append to end             |
 | `v` where `v.id !=id`| —   | no-op (id-mismatch guard) |
 
-The id-mismatch guard protects against accidental swaps — assigning an element whose `id` doesn't match the subscript key is almost always a bug. Lookup is linear (`first(where:)` / `firstIndex(where:)`); for hot paths with large collections, consider keying by a `Dictionary`.
+The id-mismatch guard protects against accidental swaps — assigning an element whose `id` doesn't match the subscript key is almost always a bug. Lookup is linear (`first(where:)` / `firstIndex(where:)`); for hot paths with large collections, reach for [`IdentifiedArray`](#identifiedarray--ordered-collection-with-o1-by-id-access) (below), which keeps order *and* gives O(1) by-id access.
 
 The setter requires `RangeReplaceableCollection` because the add/remove cases must change the collection's count — `MutableCollection` alone can only replace in place. `Array` and its slice variants cover the practical targets.
 
@@ -1282,6 +1283,61 @@ teamReducer(&team)   // only the one Item is mutated; the [Item] buffer is not c
 **Subscripts vs `ix` — two faces of the same concept**
 
 For concrete collection types, `[Int].ix(2)` is equivalent to `affineTraversal(\[Int][safe: 2])`, and `[User].ix(id: 2)` mirrors `[User][id: 2]` for the replace-in-place case. Use the subscripts (`[safe:]`, `[id:]`) for direct element access; use `ix` when you need an optic you can compose. `ix(id:)` is limited to replace-in-place semantics — for the add-or-remove behaviour, use the `[id:]` subscript directly.
+
+---
+
+### IdentifiedArray — ordered collection with O(1) by-id access
+
+The `[id:]` subscript above is O(n): every lookup re-scans the array. `IdentifiedArray<ID, Element>` is a `Sendable`, value-type (copy-on-write) ordered collection that keeps a **user-defined order exactly like `Array`** while giving **O(1)** lookup and in-place update by a stable identifier. The order lives in the element buffer; a side index (a custom open-addressing hash table of `UInt32` offsets) maps id → position and never dictates order, so unsorted `UUID`s never reshuffle your data.
+
+```swift
+struct User: Identifiable { let id: Int; var name: String }
+
+var users: IdentifiedArrayOf<User> = IdentifiedArray([
+    User(id: 1, name: "Alice"),
+    User(id: 2, name: "Bob"),
+])
+
+users[id: 1]?.name                         // "Alice"  — O(1)
+users[id: 2] = User(id: 2, name: "Robert") // replace in place — O(1)
+users.append(User(id: 3, name: "Carol"))   // tail — O(1) amortised
+users.insert(User(id: 0, name: "Zed"), at: 0)
+users.elements                             // ordered [Element]; users.ids → [0, 1, 2, 3]
+```
+
+Elements need not be `Identifiable` — supply the id via a closure or key path (matching the `[id:]` / `ix(id:by:)` overloads):
+
+```swift
+struct Project { let slug: String; var title: String }
+var projects = IdentifiedArray(loaded, id: \.slug)   // keyed by \.slug
+projects[id: "auth"]?.title
+```
+
+Identifiers are unique: inserting an element whose id already exists replaces it in place (last-wins), keeping its position. The `[id:]` setter follows the same dispatch table as the collection subscript above, including the id-mismatch no-op guard.
+
+**Complexity** (vs. a plain `[Element]` with `first(where:)`):
+
+| Operation | `[Element]` | `IdentifiedArray` |
+|---|---|---|
+| lookup / update by id | O(n) | **O(1)** |
+| append | O(1) | O(1) amortised |
+| insert / remove at position | O(n) | O(n) (order preserved → tail reindex) |
+| ordered iteration | O(n) | O(n) |
+
+**First-class optics.** `IdentifiedArray` is an optical citizen — every optic composes with `>>>`:
+
+```swift
+IdentifiedArrayOf<User>.ix(id: 2)            // O(1) AffineTraversal, zero-copy in-place mutation
+IdentifiedArrayOf<User>.ix(id: 2) >>> ^\.name
+IdentifiedArrayOf<User>.traversed            // Traversal over every element
+IdentifiedArrayOf<User>.arrayIso             // lawful Iso  <-> [Element]
+IdentifiedArrayOf<User>.dedupPrism           // Prism [Element] -> IdentifiedArray (succeeds iff ids unique)
+IdentifiedArrayOf<User>.orderedDictionaryIso // lawful Iso <-> (ids, lookup) — the *honest* keyed iso
+```
+
+The `.dictionary` getter projects to `[ID: Element]` but is explicitly **lossy** (drops order) — a getter, not an iso. The lawful keyed iso is `orderedDictionaryIso`, which pairs the lookup with the order it would otherwise lose.
+
+**Algebra and the lawful surface.** `IdentifiedArray` is a `Semigroup` — `<>` appends with last-wins on duplicate ids (associative). It deliberately has **no `Functor`/`Applicative`/`Monad`/`Monoid`**: a uniqueness-collapsing, key-carrying container can't satisfy those laws (an id-changing `map` would change the collection's count; `<*>`/`flatMap` would need duplicates the type forbids; `identity` has no `id` closure). For value transforms that change the element type, bridge through `.elements` (the lawful `Array` functor/monad) and rebuild with `dedupPrism` (surfaces collisions) or `arrayIso` (last-wins normalise) — at a copy cost. In-place, same-identity edits stay on the type via `subscript(id:)`, `ix(id:)`, and `traversed`.
 
 ---
 
@@ -2023,6 +2079,7 @@ Each type in this library has a dedicated reference page with comprehensive exam
 | [Stateful](docs/types/Stateful.md) | State threading monad — wraps `(inout S) -> A` |
 | [Writer](docs/types/Writer.md) | Append-as-you-go monad — produces a value alongside an accumulated log |
 | [NonEmpty](docs/types/NonEmpty.md) | Statically guaranteed non-empty sequence — Semigroup (no Monoid), full FAM + Foldable + Traversable |
+| [IdentifiedArray](docs/types/IdentifiedArray.md) | Ordered, `Sendable` collection with O(1) by-id access via a custom open-addressing index — Semigroup, first-class optics (no Functor/Monad by design) |
 
 ---
 
