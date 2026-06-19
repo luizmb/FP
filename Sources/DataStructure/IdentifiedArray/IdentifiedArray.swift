@@ -78,6 +78,7 @@ public struct IdentifiedArray<ID: Hashable, Element> {
     public let id: @Sendable (Element) -> ID
 
     /// Creates an empty collection that derives identifiers via `id`.
+    @inlinable
     public init(id: @escaping @Sendable (Element) -> ID) {
         self.storage = []
         self.keys = []
@@ -90,13 +91,16 @@ public struct IdentifiedArray<ID: Hashable, Element> {
     /// Elements are inserted in order with last-wins semantics: if two elements
     /// share an identifier, the earlier one fixes the position and the later one
     /// supplies the value.
+    @inlinable
     public init<S: Sequence>(_ elements: S, id: @escaping @Sendable (Element) -> ID) where S.Element == Element {
-        self.storage = []
-        self.keys = []
-        self.buckets = []
-        self.id = id
-        reserveCapacity(elements.underestimatedCount)
-        for element in elements { append(element) }
+        // Build into a local value, then assign `self`. Appending directly to `self`
+        // inside this generic initializer defeats the optimizer's copy-on-write
+        // uniqueness analysis — every `append` then copies the buffers (O(n) extra
+        // allocations). A local `var` keeps the fast in-place path.
+        var result = IdentifiedArray(id: id)
+        result.reserveCapacity(elements.underestimatedCount)
+        for element in elements { result.append(element) }
+        self = result
     }
 }
 
@@ -104,11 +108,17 @@ public struct IdentifiedArray<ID: Hashable, Element> {
 
 extension IdentifiedArray where Element: Identifiable & Sendable, ID == Element.ID, ID: Sendable {
     /// Creates an empty collection keyed by `Element.id`.
+    @inlinable
     public init() {
         self.init(id: { $0.id })
     }
 
     /// Creates a collection from `elements`, keyed by `Element.id` (last-wins on duplicates).
+    ///
+    /// `@inlinable` so the construction loop specialises at the call site — without it,
+    /// the generic build path can't keep its copy-on-write buffers unique and allocates
+    /// O(n) extra buffers.
+    @inlinable
     public init<S: Sequence>(_ elements: S) where S.Element == Element {
         self.init(elements, id: { $0.id })
     }
@@ -122,6 +132,7 @@ public typealias IdentifiedArrayOf<Element: Identifiable> = IdentifiedArray<Elem
 extension IdentifiedArray {
     /// Bucket slot for a key under the current `mask`. `hashValue` is folded into
     /// the low bits of the power-of-two table.
+    @inlinable
     func hashSlot(_ key: ID, _ mask: Int) -> Int {
         Int(UInt(bitPattern: key.hashValue) & UInt(bitPattern: mask))
     }
@@ -147,6 +158,7 @@ extension IdentifiedArray {
 
     /// Inserts `position` for `key` into the table. The caller guarantees spare
     /// capacity (via ``reserveTable(forCount:)``) and that `key` is absent.
+    @inlinable
     mutating func tableInsert(_ key: ID, _ position: Int) {
         let mask = buckets.count &- 1
         var slot = hashSlot(key, mask)
@@ -155,6 +167,7 @@ extension IdentifiedArray {
     }
 
     /// Grows and rehashes the table if `count` would exceed the 0.75 load factor.
+    @inlinable
     mutating func reserveTable(forCount count: Int) {
         let capacity = buckets.count
         guard capacity == 0 || count &* 4 > capacity &* 3 else { return }
@@ -169,6 +182,7 @@ extension IdentifiedArray {
     /// through an unsafe buffer pointer to drop per-write bounds and CoW-uniqueness
     /// checks. `keys` is read through a local (CoW share) to avoid overlapping
     /// access to `self` while `self.buckets` is exclusively borrowed.
+    @inlinable
     mutating func rebuildTable(capacity: Int) {
         buckets = [UInt32](repeating: Self.empty, count: capacity)
         guard capacity > 0 else { return }
@@ -192,6 +206,7 @@ extension IdentifiedArray {
     /// Pre-sizes the element/key buffers and the table for at least `minimumCapacity`
     /// elements, so building a collection of known size avoids the incremental
     /// reallocation-and-rehash chain. O(minimumCapacity); no-op for non-positive input.
+    @inlinable
     public mutating func reserveCapacity(_ minimumCapacity: Int) {
         guard minimumCapacity > 0 else { return }
         storage.reserveCapacity(minimumCapacity)
@@ -311,6 +326,7 @@ extension IdentifiedArray {
     /// Single-probe find-or-insert: because backward-shift deletion leaves no
     /// tombstones, the first `empty` slot in the probe chain is exactly where a new
     /// key belongs, so one walk handles both the replace and the append case.
+    @inlinable
     public mutating func append(_ element: Element) {
         let key = id(element)
         reserveTable(forCount: storage.count &+ 1)
