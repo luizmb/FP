@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+import CoreFP
 import CoreFPOperators
 import DataStructure
 import DataStructureOperators
@@ -5,14 +7,14 @@ import Testing
 
 @Suite struct WriterStatefulOperatorsTests {
     @Test func writerMapTWithStatefulInner() {
-        let w = Writer<[String], Stateful<Int, Int>>(Stateful { s in s }, ["x"])
+        let w = Writer<[String], Stateful<Int, Int>>(Stateful<Int, Int>.get, ["x"])
         let result = { $0 * 4 } <£^> w
         #expect(result.value.eval(3) == 12)
         #expect(result.log == ["x"])
     }
 
     @Test func writerFlippedFmapWithStatefulInner() {
-        let w = Writer<[String], Stateful<Int, Int>>(Stateful { s in s }, ["x"])
+        let w = Writer<[String], Stateful<Int, Int>>(Stateful<Int, Int>.get, ["x"])
         let result = w <&^> { $0 * 4 }
         #expect(result.value.eval(3) == 12)
         #expect(result.log == ["x"])
@@ -40,7 +42,7 @@ import Testing
     }
 
     @Test func writerFlatMapTKeepsOuterLog() {
-        let w = Writer<[String], Stateful<Int, Int>>(Stateful { s in s }, ["outer"])
+        let w = Writer<[String], Stateful<Int, Int>>(Stateful<Int, Int>.get, ["outer"])
         let result = w >>- { n in
             Writer<[String], Stateful<Int, String>>(
                 Stateful { state in
@@ -57,8 +59,9 @@ import Testing
     }
 
     @Test func statefulTWriterApply() {
-        let sf = Stateful<Int, Writer<[String], @Sendable (Int) -> String>> { _ in Writer({ "\($0)" }, ["fn"]) }
-        let sa = Stateful<Int, Writer<[String], Int>> { _ in Writer(7, ["val"]) }
+        let fn: @Sendable (Int) -> String = { "\($0)" }
+        let sf = Stateful<Int, Writer<[String], @Sendable (Int) -> String>>.pure(Writer(fn, ["fn"]))
+        let sa = Stateful<Int, Writer<[String], Int>>.pure(Writer(7, ["val"]))
         let result = sf <*> sa
         let w = result.eval(0)
         #expect(w.value == "7")
@@ -66,8 +69,8 @@ import Testing
     }
 
     @Test func statefulTWriterSeqRight() {
-        let lhs = Stateful<Int, Writer<[String], Int>> { _ in Writer(1, ["a"]) }
-        let rhs = Stateful<Int, Writer<[String], String>> { _ in Writer("hello", ["b"]) }
+        let lhs = Stateful<Int, Writer<[String], Int>>.pure(Writer(1, ["a"]))
+        let rhs = Stateful<Int, Writer<[String], String>>.pure(Writer("hello", ["b"]))
         let result = lhs *> rhs
         let w = result.eval(0)
         #expect(w.value == "hello")
@@ -75,8 +78,8 @@ import Testing
     }
 
     @Test func statefulTWriterSeqLeft() {
-        let lhs = Stateful<Int, Writer<[String], Int>> { _ in Writer(99, ["a"]) }
-        let rhs = Stateful<Int, Writer<[String], String>> { _ in Writer("ignored", ["b"]) }
+        let lhs = Stateful<Int, Writer<[String], Int>>.pure(Writer(99, ["a"]))
+        let rhs = Stateful<Int, Writer<[String], String>>.pure(Writer("ignored", ["b"]))
         let result = lhs <* rhs
         let w = result.eval(0)
         #expect(w.value == 99)
@@ -84,27 +87,28 @@ import Testing
     }
 
     @Test func writerTStatefulApply() {
+        let innerFn: @Sendable (Int) -> String = { "\($0)" }
         let wf = Writer<[String], Stateful<Int, @Sendable (Int) -> String>>(
-            Stateful { _ in { "\($0)" } },
+            Stateful<Int, @Sendable (Int) -> String>.pure(innerFn),
             ["fn"]
         )
-        let wa = Writer<[String], Stateful<Int, Int>>(Stateful { s in s }, ["val"])
+        let wa = Writer<[String], Stateful<Int, Int>>(Stateful<Int, Int>.get, ["val"])
         let result = wf <*> wa
         #expect(result.value.eval(7) == "7")
         #expect(result.log == ["fn", "val"])
     }
 
     @Test func writerTStatefulSeqRight() {
-        let lhs = Writer<[String], Stateful<Int, Int>>(Stateful { s in s }, ["a"])
-        let rhs = Writer<[String], Stateful<Int, String>>(Stateful { _ in "done" }, ["b"])
+        let lhs = Writer<[String], Stateful<Int, Int>>(Stateful<Int, Int>.get, ["a"])
+        let rhs = Writer<[String], Stateful<Int, String>>(Stateful<Int, String>.pure("done"), ["b"])
         let result = lhs *> rhs
         #expect(result.value.eval(0) == "done")
         #expect(result.log == ["a", "b"])
     }
 
     @Test func writerTStatefulSeqLeft() {
-        let lhs = Writer<[String], Stateful<Int, Int>>(Stateful { _ in 42 }, ["a"])
-        let rhs = Writer<[String], Stateful<Int, String>>(Stateful { _ in "ignored" }, ["b"])
+        let lhs = Writer<[String], Stateful<Int, Int>>(Stateful<Int, Int>.pure(42), ["a"])
+        let rhs = Writer<[String], Stateful<Int, String>>(Stateful<Int, String>.pure("ignored"), ["b"])
         let result = lhs <* rhs
         #expect(result.value.eval(0) == 42)
         #expect(result.log == ["a", "b"])

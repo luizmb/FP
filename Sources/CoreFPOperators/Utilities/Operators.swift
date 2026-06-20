@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// Append / list concatenation. (`++` in Haskell)
 ///
 /// Appends the right-hand sequence to the left-hand sequence.

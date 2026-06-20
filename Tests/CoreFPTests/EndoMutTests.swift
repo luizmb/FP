@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @testable import CoreFP
 import Testing
 
@@ -33,23 +34,23 @@ import Testing
         let double = EndoMut<Int> { $0 *= 2 }
         let combined = EndoMut.combine(addOne, double)
         combined.runEndoMut(&value)
-        #expect(value == 8)   // (3+1)*2
+        #expect(value == 8) // (3+1)*2
     }
 
     @Test func combine_rhsSeesLhsMutation() {
         // rhs closure runs on the value already mutated by lhs
         var value = 0
-        let setToFive  = EndoMut<Int> { $0 = 5 }
+        let setToFive = EndoMut<Int> { $0 = 5 }
         let addToValue = EndoMut<Int> { $0 += 3 }
         EndoMut.combine(setToFive, addToValue).runEndoMut(&value)
-        #expect(value == 8)   // 5+3, not 0+3
+        #expect(value == 8) // 5+3, not 0+3
     }
 
     @Test func combine_associativity() {
         let addOne = EndoMut<Int> { $0 += 1 }
         let double = EndoMut<Int> { $0 *= 2 }
         let addTen = EndoMut<Int> { $0 += 10 }
-        let left  = EndoMut.combine(EndoMut.combine(addOne, double), addTen)
+        let left = EndoMut.combine(EndoMut.combine(addOne, double), addTen)
         let right = EndoMut.combine(addOne, EndoMut.combine(double, addTen))
         var lv = 3, rv = 3
         left.runEndoMut(&lv)
@@ -81,8 +82,10 @@ import Testing
 
     @Test func mconcat_pipelineAppliesInOrder() {
         var items = [3, 1, 4, 1, 5]
-        let clamp = EndoMut<[Int]> { xs in for i in xs.indices { xs[i] = min(xs[i], 3) } }
-        let sort  = EndoMut<[Int]> { $0.sort() }
+        let clamp = EndoMut<[Int]> { xs in for i in xs.indices {
+            xs[i] = min(xs[i], 3)
+        } }
+        let sort = EndoMut<[Int]> { $0.sort() }
         mconcat([clamp, sort]).runEndoMut(&items)
         #expect(items == [1, 1, 3, 3, 3])
     }
@@ -120,7 +123,7 @@ import Testing
         let bridgedCombined = EndoMut.combine(addOne.toEndoMut(), double.toEndoMut())
         var value = 3
         bridgedCombined.runEndoMut(&value)
-        #expect(value == endoCombined.runEndo(3))   // (3+1)*2 = 8
+        #expect(value == endoCombined.runEndo(3)) // (3+1)*2 = 8
     }
 
     // MARK: - Bridge: EndoMut → Endo

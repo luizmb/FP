@@ -1,5 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
-import DataStructure
 
 /// Sequence a Writer of an Optional into an Optional of Writer.
 /// sequence :: Writer w b? -> Writer w b?

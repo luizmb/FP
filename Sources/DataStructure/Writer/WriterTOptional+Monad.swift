@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -13,6 +14,7 @@ public extension Writer {
         return Writer<W, B?>(wb.value, W.combine(log, wb.log))
     }
 
+    /// The `property` property.
     static func bindT<Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> Writer<W, B?>
     ) -> (Writer<W, Inner?>) -> Writer<W, B?> where A == Inner? {

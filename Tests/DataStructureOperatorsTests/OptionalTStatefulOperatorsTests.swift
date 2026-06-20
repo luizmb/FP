@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 import DataStructureOperators
@@ -42,7 +43,7 @@ import Testing
     }
 
     @Test func apply() {
-        let sf: Stateful<Int, @Sendable (Int) -> String>? = .pure({ "\($0)" })
+        let sf: Stateful<Int, @Sendable (Int) -> String>? = .pure { "\($0)" }
         let sa: Stateful<Int, Int>? = .get
         let result = sf <*> sa
         #expect(result?.eval(5) == "5")

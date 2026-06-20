@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @testable import CoreFP
 @testable import CoreFPOperators
 import Testing
@@ -11,7 +12,7 @@ import Testing
     // MARK: - Basic Applicative Tests
 
     @Test func apply() {
-        let fn: Result<@Sendable (Int) -> Int, TestError> = .success({ $0 * 2 })
+        let fn: Result<@Sendable (Int) -> Int, TestError> = .success { $0 * 2 }
         let value: Result<Int, TestError> = .success(5)
         let result = fn <*> value
         #expect((try? result.get()) == 10)
@@ -45,7 +46,7 @@ import Testing
         let value2: Result<String, TestError> = .success("test")
         let result = Result<(Int, String), TestError>.zip(value1, value2)
 
-        if case .success(let tuple) = result {
+        if case let .success(tuple) = result {
             #expect(tuple.0 == 5)
             #expect(tuple.1 == "test")
         } else {
@@ -69,8 +70,8 @@ import Testing
 
     @Test func applicativeCompositionLaw() {
         // pure (.) <*> u <*> v <*> w = u <*> (v <*> w)
-        let u: Result<@Sendable (Int) -> String, TestError> = .success({ "\($0)" })
-        let v: Result<@Sendable (Int) -> Int, TestError> = .success({ $0 * 2 })
+        let u: Result<@Sendable (Int) -> String, TestError> = .success { "\($0)" }
+        let v: Result<@Sendable (Int) -> Int, TestError> = .success { $0 * 2 }
         let w: Result<Int, TestError> = .success(5)
 
         // Left side: compose functions then apply to w
@@ -104,7 +105,7 @@ import Testing
 
     @Test func applicativeInterchangeLaw() {
         // u <*> pure y = pure ($ y) <*> u
-        let u: Result<@Sendable (Int) -> Int, TestError> = .success({ $0 * 2 })
+        let u: Result<@Sendable (Int) -> Int, TestError> = .success { $0 * 2 }
         let y = 5
 
         let pureY: Result<Int, TestError> = .success(y)
@@ -120,7 +121,7 @@ import Testing
     // MARK: - Applicative Operators
 
     @Test func applyOperator() {
-        let fn: Result<@Sendable (Int) -> Int, TestError> = .success({ $0 * 2 })
+        let fn: Result<@Sendable (Int) -> Int, TestError> = .success { $0 * 2 }
         let value: Result<Int, TestError> = .success(5)
         let result = fn <*> value
         #expect((try? result.get()) == 10)

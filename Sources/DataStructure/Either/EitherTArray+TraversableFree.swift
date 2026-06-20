@@ -1,5 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
-import DataStructure
 
 /// Sequence an Either of an Array into an Array of Eithers.
 /// sequence :: Either a [c] -> [Either a c]

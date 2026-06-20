@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// Allows for transforming a function which returns an optional type to a function which returns non-optional type
 /// by passing a fallback of a given type.
 ///
@@ -33,6 +34,7 @@ public func withDefault<A: Sendable>(_ fallback: A) -> @Sendable (A?) -> A {
 // Execute a closure if and only if the value can be unwrapped.
 // Eg: myOptional.then { unwrappedValue in print(unwrappedValue) }
 public extension Optional {
+    /// Declaration.
     @discardableResult func then(_ f: (Wrapped) -> Void, otherwise: () -> Void = ignore) -> Wrapped? {
         if let wrapped = self {
             f(wrapped)

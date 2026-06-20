@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // MARK: - Semigroup / Monoid for Endo<A>
 
 // Endomorphisms form a Monoid under left-to-right composition:

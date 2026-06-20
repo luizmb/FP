@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import DataStructure
 import Testing
@@ -19,7 +20,7 @@ private enum Route {
     case other
 
     var homeValue: Int? {
-        guard case .home(let v) = self else { return nil }
+        guard case let .home(v) = self else { return nil }
         return v
     }
 }
@@ -75,7 +76,7 @@ struct PrismZoomTests {
         }
         let (result, final) = homePrism.zoom(double).runStateful(.home(5))
         #expect(result == 5)
-        guard case .home(let v) = final else { Issue.record("Expected .home"); return }
+        guard case let .home(v) = final else { Issue.record("Expected .home"); return }
         #expect(v == 10)
     }
 

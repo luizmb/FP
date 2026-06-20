@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+import CoreFP
 import DataStructure
 import Testing
 
@@ -38,7 +40,7 @@ import Testing
 
     @Test func flatMapTInnerNone() {
         let w = Writer<[String], Int?>(.some(5), ["outer"])
-        let result = w.flatMapT { _ in Writer<[String], String?>(nil, ["inner"]) }
+        let result = w.flatMapT(const(Writer<[String], String?>(nil, ["inner"])))
         #expect(result.value == nil)
         #expect(result.log == ["outer", "inner"])
     }

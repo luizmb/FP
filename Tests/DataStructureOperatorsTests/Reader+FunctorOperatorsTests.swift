@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @testable import CoreFP
 import CoreFPOperators
 import DataStructure
@@ -67,7 +68,7 @@ import Testing
 
         let readers: [Reader<Environment, Int>] = [
             Reader { $0.multiplier },
-            Reader { $0.addend },
+            Reader { $0.addend }
         ]
         let widen = Reader<Environment, Int>.contramapEnvironment { (g: GlobalEnv) in g.local }
         let global = readers.map(widen)
@@ -111,7 +112,7 @@ import Testing
 
         let readers: [Reader<Environment, Int>] = [
             Reader { $0.multiplier },
-            Reader { $0.addend },
+            Reader { $0.addend }
         ]
         let transform = Reader<Environment, Int>.dimap(
             { (g: GlobalEnv) in g.local },

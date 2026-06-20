@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // swiftlint:disable discouraged_optional_collection
 import Foundation
 
@@ -23,4 +24,5 @@ public extension Optional {
         { opt in opt.flatMapT(fn) }
     }
 }
+
 // swiftlint:enable discouraged_optional_collection

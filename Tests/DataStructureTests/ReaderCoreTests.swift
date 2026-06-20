@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import DataStructure
 import Testing
@@ -245,7 +246,7 @@ import Testing
 
     @Test func joinFreeFunction() {
         let nested = Reader<Environment, Reader<Environment, Int>> { env in
-            Reader { _ in env.multiplier * 3 }
+            Reader(const(env.multiplier * 3))
         }
         let env = Environment(multiplier: 4, offset: 0)
         #expect(DataStructure.join(nested)(env) == 12)

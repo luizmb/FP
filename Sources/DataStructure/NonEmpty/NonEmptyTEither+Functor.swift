@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // NonEmptyTEither: outer = NonEmpty, inner = Either
 // Type: NonEmpty<Either<L, A>>
 
@@ -8,6 +9,7 @@ public extension NonEmpty {
         map { $0.mapRight(fn) }
     }
 
+    /// The `property` property.
     static func fmapT<L, Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> B
     ) -> @Sendable (NonEmpty<Either<L, Inner>>) -> NonEmpty<Either<L, B>> {

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -14,6 +15,7 @@ public extension Reader {
         mapReader { writer in writer.flatMap(fn) }
     }
 
+    /// The `property` property.
     static func bindT<W: Monoid, A, B>(
         _ fn: @escaping @Sendable (A) -> Writer<W, B>
     ) -> (Reader<Environment, Writer<W, A>>) -> Reader<Environment, Writer<W, B>>

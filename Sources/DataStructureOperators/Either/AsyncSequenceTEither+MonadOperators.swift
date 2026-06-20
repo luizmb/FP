@@ -1,8 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 
 // AsyncSequenceTEither: AsyncStream<Either<L,A>>
 
+/// `>>-` overload.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func >>- <L, A, B>(
     _ stream: AsyncStream<Either<L, A>>,
@@ -11,6 +13,7 @@ public func >>- <L, A, B>(
     flatMapTAsyncStreamEither(stream, fn)
 }
 
+/// `-` overload.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func -<< <L, A, B>(
     _ fn: @escaping @Sendable (A) -> AsyncStream<Either<L, B>>,

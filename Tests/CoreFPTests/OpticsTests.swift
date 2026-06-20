@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @testable import CoreFP
 import Testing
 
@@ -20,7 +21,7 @@ private enum Shape {
 
 private extension Shape {
     var circleRadius: Double? {
-        guard case .circle(let r) = self else { return nil }
+        guard case let .circle(r) = self else { return nil }
         return r
     }
 }
@@ -48,7 +49,7 @@ struct LensTests {
     @Test func lensFromWritableKeyPath_over() {
         let ageLens = lens(\Person.age)
         let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
-        let updated = ageLens.over({ $0 + 1 })(person)
+        let updated = ageLens.over { $0 + 1 }(person)
         #expect(updated.age == 31)
     }
 
@@ -174,7 +175,7 @@ struct PrismTests {
     }
 
     @Test func review() {
-        guard case .circle(let r) = circlePrism.review(5.0) else {
+        guard case let .circle(r) = circlePrism.review(5.0) else {
             Issue.record("Expected .circle")
             return
         }
@@ -182,8 +183,8 @@ struct PrismTests {
     }
 
     @Test func over_hit() {
-        let doubled = circlePrism.over({ $0 * 2 })(.circle(3.0))
-        guard case .circle(let r) = doubled else {
+        let doubled = circlePrism.over { $0 * 2 }(.circle(3.0))
+        guard case let .circle(r) = doubled else {
             Issue.record("Expected .circle")
             return
         }
@@ -192,8 +193,8 @@ struct PrismTests {
 
     @Test func over_miss() {
         let rect = Shape.rectangle(2.0, 4.0)
-        let result = circlePrism.over({ $0 * 2 })(rect)
-        guard case .rectangle(let w, let h) = result else {
+        let result = circlePrism.over { $0 * 2 }(rect)
+        guard case let .rectangle(w, h) = result else {
             Issue.record("Expected .rectangle")
             return
         }
@@ -206,14 +207,14 @@ struct PrismTests {
     @Test func lift_hit_mutatesFocusedValue() {
         var shape = Shape.circle(3.0)
         circlePrism.lift(EndoMut { $0 *= 2 })(&shape)
-        guard case .circle(let r) = shape else { Issue.record("Expected .circle"); return }
+        guard case let .circle(r) = shape else { Issue.record("Expected .circle"); return }
         #expect(r == 6.0)
     }
 
     @Test func lift_miss_isNoOp() {
         var shape = Shape.rectangle(1.0, 2.0)
         circlePrism.lift(EndoMut { $0 *= 2 })(&shape)
-        guard case .rectangle(let w, let h) = shape else { Issue.record("Expected .rectangle"); return }
+        guard case let .rectangle(w, h) = shape else { Issue.record("Expected .rectangle"); return }
         #expect(w == 1.0)
         #expect(h == 2.0)
     }
@@ -246,7 +247,7 @@ struct AffineTraversalTests {
 
     @Test func over() {
         let person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
-        let updated = streetAT.over({ $0.uppercased() })(person)
+        let updated = streetAT.over { $0.uppercased() }(person)
         #expect(updated.address.street == "1ST AVE")
     }
 
@@ -295,7 +296,8 @@ struct AffineTraversalTests {
     @Test func setMut_lift_miss_is_noOp() {
         // preview returns nil → setMut is never called
         let at = AffineTraversal<Person, String>(
-            preview: { _ in nil },
+            preview: const(nil),
+            // swiftlint:disable:next closure_ignoring_args
             setMut: { _, _ in Issue.record("setMut must not be called when focus is absent") }
         )
         var person = Person(age: 30, name: "Alice", address: Address(street: "1st Ave"))
@@ -313,7 +315,7 @@ struct IsoLiftTests {
     @Test func lift_applies_mutation_and_converts_back() {
         var value = 3
         doubleIso.lift(EndoMut { $0 *= 2.5 })(&value)
-        #expect(value == 7)   // Int(3 * 2.5) = Int(7.5) = 7
+        #expect(value == 7) // Int(3 * 2.5) = Int(7.5) = 7
     }
 
     @Test func asLens_get() {
@@ -356,7 +358,7 @@ struct IsoLiftTests {
 @Suite("compose (named function, no operators)")
 struct ComposeTests {
     private let addressLens = lens(\Person.address)
-    private let streetLens  = lens(\Address.street)
+    private let streetLens = lens(\Address.street)
     private let circlePrism = prism(\Shape.circleRadius, review: Shape.circle)
 
     @Test func lensComposeLens_get() {

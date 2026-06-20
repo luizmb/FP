@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import DataStructure
 import Testing
 
@@ -41,7 +42,7 @@ import Testing
 
         #expect(results.count == 2)
         #expect(Either<any Error, Int>.prism.right.preview(results[0]) == 1)
-        guard case .left(let error) = results[1] else {
+        guard case let .left(error) = results[1] else {
             Issue.record("Expected .left error")
             return
         }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -13,16 +14,22 @@ public extension Loading {
     /// `loadedOrPrevious` as the previous value on failure.
     func applying(_ result: Result<Success, Failure>) -> Self {
         switch result {
-        case .success(let value):    .loaded(value)
-        case .failure(let error):    .failed(error: error, previous: loadedOrPrevious)
+        case let .success(value):
+            .loaded(value)
+
+        case let .failure(error):
+            .failed(error: error, previous: loadedOrPrevious)
         }
     }
 
     /// Wraps a `Result` as a fresh `Loading` with no prior context.
     static func from(_ result: Result<Success, Failure>) -> Self {
         switch result {
-        case .success(let value):    .loaded(value)
-        case .failure(let error):    .failed(error: error, previous: nil)
+        case let .success(value):
+            .loaded(value)
+
+        case let .failure(error):
+            .failed(error: error, previous: nil)
         }
     }
 }

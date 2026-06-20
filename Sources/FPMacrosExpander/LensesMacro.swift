@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 import SwiftDiagnostics
 import SwiftSyntax
@@ -6,16 +7,27 @@ import SwiftSyntaxMacros
 // MARK: - Access levels
 
 enum AccessLevel: Int, Comparable {
-    case `private` = 0, `fileprivate`, `internal`, `package`, `public`, open
+    case `private` = 0, `fileprivate`, `internal`, package, `public`, open
 
     var keyword: String {
         switch self {
-        case .private:     "private"
-        case .fileprivate: "fileprivate"
-        case .internal:    "internal"
-        case .package:     "package"
-        case .public:      "public"
-        case .open:        "open"
+        case .private:
+            "private"
+
+        case .fileprivate:
+            "fileprivate"
+
+        case .internal:
+            "internal"
+
+        case .package:
+            "package"
+
+        case .public:
+            "public"
+
+        case .open:
+            "open"
         }
     }
 
@@ -29,13 +41,26 @@ enum AccessLevel: Int, Comparable {
 private func explicitAccessLevel(from modifiers: DeclModifierListSyntax) -> AccessLevel? {
     for modifier in modifiers {
         switch modifier.name.text {
-        case "open":        return .open
-        case "public":      return .public
-        case "package":     return .package
-        case "internal":    return .internal
-        case "fileprivate": return .fileprivate
-        case "private":     return .private
-        default:            continue
+        case "open":
+            return .open
+
+        case "public":
+            return .public
+
+        case "package":
+            return .package
+
+        case "internal":
+            return .internal
+
+        case "fileprivate":
+            return .fileprivate
+
+        case "private":
+            return .private
+
+        default:
+            continue
         }
     }
     return nil
@@ -73,10 +98,17 @@ private func parseEmit(from node: AttributeSyntax) -> LensesEmitFlags {
         return .all
     }
     switch member.declName.baseName.text {
-    case "initOnly":   return LensesEmitFlags(emitInit: true, emitLenses: false)
-    case "lensesOnly": return LensesEmitFlags(emitInit: false, emitLenses: true)
-    case "all":        return .all
-    default:           return .all
+    case "initOnly":
+        return LensesEmitFlags(emitInit: true, emitLenses: false)
+
+    case "lensesOnly":
+        return LensesEmitFlags(emitInit: false, emitLenses: true)
+
+    case "all":
+        return .all
+
+    default:
+        return .all
     }
 }
 
@@ -95,11 +127,20 @@ private func parseInitAccess(from node: AttributeSyntax) -> AccessLevel {
     else { return .internal }
 
     switch member.declName.baseName.text {
-    case "private":  return .private
-    case "internal": return .internal
-    case "package":  return .package
-    case "public":   return .public
-    default:         return .internal
+    case "private":
+        return .private
+
+    case "internal":
+        return .internal
+
+    case "package":
+        return .package
+
+    case "public":
+        return .public
+
+    default:
+        return .internal
     }
 }
 
@@ -192,7 +233,7 @@ private func hasConflictingInit(in structDecl: StructDeclSyntax, params: [Stored
     let wantLabels = params.map(\.name)
     return structDecl.memberBlock.members.contains { member in
         guard let initDecl = member.decl.as(InitializerDeclSyntax.self) else { return false }
-        let gotLabels = initDecl.signature.parameterClause.parameters.map { $0.firstName.text }
+        let gotLabels = initDecl.signature.parameterClause.parameters.map(\.firstName.text)
         return gotLabels == wantLabels
     }
 }
@@ -224,7 +265,7 @@ private func collectProperties(
             let defaultValue = binding.initializer?.value.trimmedDescription
 
             // `let x = v` with no explicit type annotation → immutable constant, skip
-            if isLet && defaultValue != nil && binding.typeAnnotation == nil { return nil }
+            if isLet, defaultValue != nil, binding.typeAnnotation == nil { return nil }
 
             // Resolve type: explicit annotation, or inferred from a simple literal default
             let type: String
@@ -391,8 +432,7 @@ private func makeWithFunc(
         : "\(localBindings); return \(structName)(\(callArgs))"
 
     return DeclSyntax(stringLiteral:
-        "\(prefix)func with(\(params)) -> \(structName) { \(body) }"
-    )
+        "\(prefix)func with(\(params)) -> \(structName) { \(body) }")
 }
 
 // MARK: - Diagnostics
@@ -407,12 +447,15 @@ private enum LensesDiagnostic: DiagnosticMessage {
         switch self {
         case .notAStruct:
             "@Lenses can only be applied to structs"
+
         case .privateHostUnsupported:
             "@Lenses cannot be applied to `private` structs. Change the declaration to `fileprivate`, "
                 + "`internal`, or higher. (`private` is the only access level whose type-scope semantics "
                 + "block the generated namespace; `fileprivate` is functionally identical at file scope.)"
+
         case let .cannotInferType(name):
             "Cannot infer type of '\(name)' — add an explicit type annotation (e.g., var \(name): SomeType = ...)"
+
         case let .skippedProperty(name, propAccess, structAccess):
             "Property '\(name)' excluded from lens namespace and with(...) because "
                 + "its visibility (\(propAccess)) is lower than the struct's (\(structAccess))"
@@ -423,9 +466,15 @@ private enum LensesDiagnostic: DiagnosticMessage {
 
     var severity: DiagnosticSeverity {
         switch self {
-        case .notAStruct, .privateHostUnsupported: .error
-        case .cannotInferType:                     .warning
-        case .skippedProperty:                     .note
+        case .notAStruct,
+             .privateHostUnsupported:
+            .error
+
+        case .cannotInferType:
+            .warning
+
+        case .skippedProperty:
+            .note
         }
     }
 }

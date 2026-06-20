@@ -1,4 +1,5 @@
-extension MutableCollection where Index: Sendable {
+// SPDX-License-Identifier: Apache-2.0
+public extension MutableCollection where Index: Sendable {
     /// Returns an `AffineTraversal` focusing on the element at `index`.
     /// Preview returns `nil` when `index` is out of bounds; set is a no-op in that case.
     ///
@@ -10,7 +11,7 @@ extension MutableCollection where Index: Sendable {
     /// [Int].ix(9).preview([10, 20, 30])        // nil
     /// [Int].ix(0).set([10, 20, 30], 99)        // [99, 20, 30]
     /// ```
-    public static func ix(_ index: Index) -> AffineTraversal<Self, Element> {
+    static func ix(_ index: Index) -> AffineTraversal<Self, Element> {
         AffineTraversal(
             preview: { @Sendable in $0[safe: index] },
             set: { @Sendable collection, element in
@@ -26,7 +27,7 @@ extension MutableCollection where Index: Sendable {
     }
 }
 
-extension MutableCollection where Index: Sendable, Element: Sendable {
+public extension MutableCollection where Index: Sendable, Element: Sendable {
     /// Returns an `AffineTraversal` focusing on the first element whose field at `identifier`
     /// equals `id`. Use this when the element type is not `Identifiable` but has a stable
     /// `Hashable` field that uniquely identifies each element.
@@ -38,7 +39,7 @@ extension MutableCollection where Index: Sendable, Element: Sendable {
     /// struct Project { let slug: String; var title: String }
     /// [Project].ix(id: "auth", by: \.slug).preview(projects)?.title   // "Auth Module"
     /// ```
-    public static func ix<ID: Hashable & Sendable>(id: ID, by identifier: KeyPath<Element, ID>) -> AffineTraversal<Self, Element> {
+    static func ix<ID: Hashable & Sendable>(id: ID, by identifier: KeyPath<Element, ID>) -> AffineTraversal<Self, Element> {
         AffineTraversal(
             preview: { @Sendable in $0.first(where: { $0[keyPath: identifier] == id }) },
             set: { @Sendable collection, element in
@@ -60,7 +61,7 @@ extension MutableCollection where Index: Sendable, Element: Sendable {
     /// returns a value equal to `id`. Prefer `ix(id:by:)` with a `KeyPath` when your type
     /// supports it; use this overload when the identifier is a computed property or requires
     /// a closure (e.g. SwiftRex lift rules that prohibit plain `KeyPath`).
-    public static func ix<ID: Hashable & Sendable>(
+    static func ix<ID: Hashable & Sendable>(
         id: ID,
         by identifier: @escaping @Sendable (Element) -> ID
     ) -> AffineTraversal<Self, Element> {
@@ -82,7 +83,7 @@ extension MutableCollection where Index: Sendable, Element: Sendable {
     }
 }
 
-extension MutableCollection where Element: Identifiable, Element.ID: Sendable, Index: Sendable {
+public extension MutableCollection where Element: Identifiable, Element.ID: Sendable, Index: Sendable {
     /// Returns an `AffineTraversal` focusing on the first element whose `id` matches.
     /// Preview returns `nil` when no element with that `id` exists; set is a no-op in that case.
     ///
@@ -93,7 +94,7 @@ extension MutableCollection where Element: Identifiable, Element.ID: Sendable, I
     /// [Item].ix(id: 2).preview(items)?.name   // "B"
     /// [Item].ix(id: 99).preview(items)        // nil
     /// ```
-    public static func ix(id: Element.ID) -> AffineTraversal<Self, Element> {
+    static func ix(id: Element.ID) -> AffineTraversal<Self, Element> {
         AffineTraversal(
             preview: { @Sendable in $0.first(where: { $0.id == id }) },
             set: { @Sendable collection, element in
@@ -110,7 +111,7 @@ extension MutableCollection where Element: Identifiable, Element.ID: Sendable, I
     }
 }
 
-extension Dictionary where Key: Sendable {
+public extension Dictionary where Key: Sendable {
     /// Returns an `AffineTraversal` focusing on the value for `key`.
     /// Preview returns `nil` when the key is absent; set is a no-op in that case.
     ///
@@ -123,7 +124,7 @@ extension Dictionary where Key: Sendable {
     /// [String: Int].ix(key: "z").preview(["a": 1, "b": 2])   // nil
     /// [String: Int].ix(key: "a").set(["a": 1, "b": 2], 99)   // ["a": 99, "b": 2]
     /// ```
-    public static func ix(key: Key) -> AffineTraversal<[Key: Value], Value> {
+    static func ix(key: Key) -> AffineTraversal<[Key: Value], Value> {
         AffineTraversal(
             preview: { @Sendable in $0[key] },
             set: { @Sendable dict, value in

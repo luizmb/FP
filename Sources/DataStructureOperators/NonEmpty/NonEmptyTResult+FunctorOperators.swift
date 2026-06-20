@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 
 // MARK: - Transformer functor operators: NonEmpty<Result<A, E>>
 
-// (<£^>) :: (A -> B) -> NonEmpty<Result<A, E>> -> NonEmpty<Result<B, E>>
+/// (<£^>) :: (A -> B) -> NonEmpty<Result<A, E>> -> NonEmpty<Result<B, E>>
 public func <£^> <A, B, E>(
     _ fn: @escaping @Sendable (A) -> B,
     _ ne: NonEmpty<Result<A, E>>
@@ -11,7 +12,7 @@ public func <£^> <A, B, E>(
     ne.mapT(fn)
 }
 
-// (<&^>) :: NonEmpty<Result<A, E>> -> (A -> B) -> NonEmpty<Result<B, E>>
+/// (<&^>) :: NonEmpty<Result<A, E>> -> (A -> B) -> NonEmpty<Result<B, E>>
 public func <&^> <A, B, E>(
     _ ne: NonEmpty<Result<A, E>>,
     _ fn: @escaping @Sendable (A) -> B

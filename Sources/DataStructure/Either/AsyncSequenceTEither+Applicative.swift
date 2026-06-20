@@ -1,8 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // AsyncSequenceTEither: outer = AsyncStream, inner = Either
 // Type: AsyncStream<Either<L,A>>
 
+/// `liftA2AsyncStreamEither`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func liftA2AsyncStreamEither<L, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
@@ -18,11 +20,14 @@ where A: Sendable, B: Sendable, C: Sendable, L: Sendable {
                 }
                 continuation.finish()
             }
+            // swiftlint:disable:next closure_ignoring_args
+            // swiftlint:disable:next closure_ignoring_args
             continuation.onTermination = { _ in task.cancel() }
         }
     }
 }
 
+/// `seqRightAsyncStreamEither`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func seqRightAsyncStreamEither<L, A, B>(
     _ lhs: AsyncStream<Either<L, A>>,
@@ -37,10 +42,12 @@ public func seqRightAsyncStreamEither<L, A, B>(
             }
             continuation.finish()
         }
+        // swiftlint:disable:next closure_ignoring_args
         continuation.onTermination = { _ in task.cancel() }
     }
 }
 
+/// `seqLeftAsyncStreamEither`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func seqLeftAsyncStreamEither<L, A, B>(
     _ lhs: AsyncStream<Either<L, A>>,
@@ -55,6 +62,7 @@ public func seqLeftAsyncStreamEither<L, A, B>(
             }
             continuation.finish()
         }
+        // swiftlint:disable:next closure_ignoring_args
         continuation.onTermination = { _ in task.cancel() }
     }
 }

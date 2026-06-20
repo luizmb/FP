@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // NonEmptyTResult: outer = NonEmpty, inner = Result
 // Type: NonEmpty<Result<A, E>>  (Success = A, Failure = E)
 
@@ -13,6 +14,7 @@ public extension NonEmpty {
         )
     }
 
+    /// The `property` property.
     static func fmapT<Inner, E, Output>(
         _ fn: @escaping @Sendable (Inner) -> Output
     ) -> @Sendable (NonEmpty<Result<Inner, E>>) -> NonEmpty<Result<Output, E>> {

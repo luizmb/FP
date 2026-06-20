@@ -1,6 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // MARK: - Optional as SumType2
+
 //
 // Optional<A> is isomorphic to Either<A, Void>:
 //   .some(a) ≅ .left(a)    (SumType2.A = Wrapped)
@@ -17,14 +19,17 @@ extension Optional: SumType2 {
         .some(a)
     }
 
-    public static func right(_ b: Void) -> Wrapped? {
+    public static func right(_: Void) -> Wrapped? {
         .none
     }
 
     public func match<C>(caseLeft: (Wrapped) -> C, caseRight: (()) -> C) -> C {
         switch self {
-        case let value?: caseLeft(value)
-        case nil: caseRight(())
+        case let value?:
+            caseLeft(value)
+
+        case nil:
+            caseRight(())
         }
     }
 }

@@ -1,4 +1,7 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // MARK: - Optic composition — named functions
+
 //
 // These `compose` methods are the semantic layer for optic composition.
 // The `>>>` and `<<<` operators in `CoreFPOperators` delegate to them;
@@ -33,11 +36,11 @@
 
 // MARK: - Lens compositions
 
-extension Lens {
+public extension Lens {
     /// Composes two lenses left-to-right, focusing from `S` through `A` to `B`.
     /// Both `modifyMut` closures are chained; zero-copy when both lenses are
     /// `WritableKeyPath`-backed.
-    public func compose<B>(_ other: Lens<A, B>) -> Lens<S, B> {
+    func compose<B>(_ other: Lens<A, B>) -> Lens<S, B> {
         Lens<S, B>(
             get: { @Sendable s in other.get(get(s)) },
             set: { @Sendable s, b in set(s, other.set(get(s), b)) },
@@ -48,7 +51,7 @@ extension Lens {
     /// Composes a lens with a prism, yielding an `AffineTraversal<S, B>`.
     /// The lens part is zero-copy (if `WritableKeyPath`-backed); the prism
     /// copies the enum case value at its link.
-    public func compose<B>(_ other: Prism<A, B>) -> AffineTraversal<S, B> {
+    func compose<B>(_ other: Prism<A, B>) -> AffineTraversal<S, B> {
         AffineTraversal<S, B>(
             preview: { @Sendable s in other.preview(get(s)) },
             set: { @Sendable s, b in set(s, other.review(b)) },
@@ -59,7 +62,7 @@ extension Lens {
     /// Composes a lens with an affine traversal, yielding an `AffineTraversal<S, B>`.
     /// The lens part is zero-copy (if `WritableKeyPath`-backed); the traversal
     /// contributes its own copy cost (e.g. zero for `ix` on `MutableCollection`).
-    public func compose<B>(_ other: AffineTraversal<A, B>) -> AffineTraversal<S, B> {
+    func compose<B>(_ other: AffineTraversal<A, B>) -> AffineTraversal<S, B> {
         AffineTraversal<S, B>(
             preview: { @Sendable s in other.preview(get(s)) },
             set: { @Sendable s, b in set(s, other.set(get(s), b)) },
@@ -70,10 +73,10 @@ extension Lens {
 
 // MARK: - Prism compositions
 
-extension Prism {
+public extension Prism {
     /// Composes two prisms left-to-right. Each link copies its enum case value;
     /// the outer `S` is `inout` and is never CoW-copied.
-    public func compose<B>(_ other: Prism<A, B>) -> Prism<S, B> {
+    func compose<B>(_ other: Prism<A, B>) -> Prism<S, B> {
         Prism<S, B>(
             preview: { @Sendable s in preview(s).flatMap(other.preview) },
             review: { @Sendable b in review(other.review(b)) },
@@ -82,7 +85,7 @@ extension Prism {
     }
 
     /// Composes a prism with a lens, yielding an `AffineTraversal<S, B>`.
-    public func compose<B>(_ other: Lens<A, B>) -> AffineTraversal<S, B> {
+    func compose<B>(_ other: Lens<A, B>) -> AffineTraversal<S, B> {
         AffineTraversal<S, B>(
             preview: { @Sendable s in preview(s).map(other.get) },
             set: { @Sendable s, b in preview(s).map { a in review(other.set(a, b)) } ?? s },
@@ -91,7 +94,7 @@ extension Prism {
     }
 
     /// Composes a prism with an affine traversal, yielding an `AffineTraversal<S, B>`.
-    public func compose<B>(_ other: AffineTraversal<A, B>) -> AffineTraversal<S, B> {
+    func compose<B>(_ other: AffineTraversal<A, B>) -> AffineTraversal<S, B> {
         AffineTraversal<S, B>(
             preview: { @Sendable s in preview(s).flatMap(other.preview) },
             set: { @Sendable s, b in preview(s).map { a in review(other.set(a, b)) } ?? s },
@@ -102,9 +105,9 @@ extension Prism {
 
 // MARK: - AffineTraversal compositions
 
-extension AffineTraversal {
+public extension AffineTraversal {
     /// Composes an affine traversal with a lens, yielding an `AffineTraversal<S, B>`.
-    public func compose<B>(_ other: Lens<A, B>) -> AffineTraversal<S, B> {
+    func compose<B>(_ other: Lens<A, B>) -> AffineTraversal<S, B> {
         AffineTraversal<S, B>(
             preview: { @Sendable s in preview(s).map(other.get) },
             set: { @Sendable s, b in preview(s).map { a in set(s, other.set(a, b)) } ?? s },
@@ -113,16 +116,16 @@ extension AffineTraversal {
     }
 
     /// Composes two affine traversals left-to-right.
-    public func compose<B>(_ other: Prism<A, B>) -> AffineTraversal<S, B> {
+    func compose<B>(_ other: Prism<A, B>) -> AffineTraversal<S, B> {
         AffineTraversal<S, B>(
             preview: { @Sendable s in preview(s).flatMap(other.preview) },
-            set: { @Sendable s, b in preview(s).map { _ in set(s, other.review(b)) } ?? s },
+            set: { @Sendable s, b in preview(s).map(const(set(s, other.review(b)))) ?? s },
             tryModifyMut: { @Sendable s, f in tryModifyMut(&s) { a in other.tryModifyMut(&a, f) } }
         )
     }
 
     /// Composes two affine traversals left-to-right.
-    public func compose<B>(_ other: AffineTraversal<A, B>) -> AffineTraversal<S, B> {
+    func compose<B>(_ other: AffineTraversal<A, B>) -> AffineTraversal<S, B> {
         AffineTraversal<S, B>(
             preview: { @Sendable s in preview(s).flatMap(other.preview) },
             set: { @Sendable s, b in preview(s).map { a in set(s, other.set(a, b)) } ?? s },

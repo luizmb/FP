@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 
-// (>>-) :: Stateful<s, a> -> (a -> Stateful<s, b>) -> Stateful<s, b>
+/// (>>-) :: Stateful<s, a> -> (a -> Stateful<s, b>) -> Stateful<s, b>
 public func >>- <S, A, B>(
     _ stateful: Stateful<S, A>,
     _ fn: @escaping @Sendable (A) -> Stateful<S, B>
@@ -9,7 +10,7 @@ public func >>- <S, A, B>(
     stateful.flatMap(fn)
 }
 
-// (-<<) :: (a -> Stateful<s, b>) -> Stateful<s, a> -> Stateful<s, b>
+/// (-<<) :: (a -> Stateful<s, b>) -> Stateful<s, a> -> Stateful<s, b>
 public func -<< <S, A, B>(
     _ fn: @escaping @Sendable (A) -> Stateful<S, B>,
     _ stateful: Stateful<S, A>
@@ -17,7 +18,7 @@ public func -<< <S, A, B>(
     stateful.flatMap(fn)
 }
 
-// (>=>) :: (a -> Stateful<s, b>) -> (b -> Stateful<s, c>) -> a -> Stateful<s, c>
+/// (>=>) :: (a -> Stateful<s, b>) -> (b -> Stateful<s, c>) -> a -> Stateful<s, c>
 public func >=> <S, O0, A, B>(
     _ fn1: @escaping @Sendable (O0) -> Stateful<S, A>,
     _ fn2: @escaping @Sendable (A) -> Stateful<S, B>

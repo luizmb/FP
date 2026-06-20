@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros
@@ -58,9 +59,14 @@ struct CaseInfo {
 
     var focusType: String {
         switch params.count {
-        case 0: "Void"
-        case 1: params[0].type
-        default: "(\(params.map(\.type).joined(separator: ", ")))"
+        case 0:
+            "Void"
+
+        case 1:
+            params[0].type
+
+        default:
+            "(\(params.map(\.type).joined(separator: ", ")))"
         }
     }
 
@@ -77,8 +83,10 @@ struct CaseInfo {
         switch params.count {
         case 0:
             "(_ s: \(enumName)) in guard case .\(name) = s else { return nil }; return ()"
+
         case 1:
             "(_ s: \(enumName)) in guard case .\(name)(let a) = s else { return nil }; return a"
+
         default:
             "(_ s: \(enumName)) in guard case .\(name)(\(bindings)) = s else { return nil }; return (\(tuple))"
         }
@@ -88,8 +96,10 @@ struct CaseInfo {
         switch params.count {
         case 0:
             "{ (_: Void) in \(enumName).\(name) }"
+
         case 1:
             "\(enumName).\(name)"
+
         default:
             "{ (t: \(focusType)) in \(enumName).\(name)(\(reviewArgs)) }"
         }
@@ -163,8 +173,14 @@ private func accessKeyword(from modifiers: DeclModifierListSyntax) -> String {
     for modifier in modifiers {
         let text = modifier.name.text
         switch text {
-        case "open", "public", "package", "internal", "fileprivate", "private":
+        case "open",
+             "public",
+             "package",
+             "internal",
+             "fileprivate",
+             "private":
             return text
+
         default:
             continue
         }
@@ -221,11 +237,11 @@ private func makeCasesEnum(enumName: String, access: String, cases: [CaseInfo]) 
 
     guard !cases.isEmpty else {
         return DeclSyntax(stringLiteral: """
-            \(prefix)enum Cases: CoreFP.CaseMatchable { \
-            \(prefix)typealias Subject = \(enumName) \
-            \(prefix)func matches(_ value: \(enumName)) -> Bool { false } \
-            }
-            """)
+        \(prefix)enum Cases: CoreFP.CaseMatchable { \
+        \(prefix)typealias Subject = \(enumName) \
+        \(prefix)func matches(_ value: \(enumName)) -> Bool { false } \
+        }
+        """)
     }
     let caseDeclarations = "case " + cases.map(\.name).joined(separator: ", ")
     let matchClauses = cases
@@ -233,12 +249,12 @@ private func makeCasesEnum(enumName: String, access: String, cases: [CaseInfo]) 
         .joined(separator: "; ")
     let defaultClause = cases.count == 1 ? "" : "; default: return false"
     return DeclSyntax(stringLiteral: """
-        \(prefix)enum Cases: CoreFP.CaseMatchable { \
-        \(prefix)typealias Subject = \(enumName); \
-        \(caseDeclarations); \
-        \(prefix)func matches(_ value: \(enumName)) -> Bool { switch (self, value) { \(matchClauses)\(defaultClause) } } \
-        }
-        """)
+    \(prefix)enum Cases: CoreFP.CaseMatchable { \
+    \(prefix)typealias Subject = \(enumName); \
+    \(caseDeclarations); \
+    \(prefix)func matches(_ value: \(enumName)) -> Bool { switch (self, value) { \(matchClauses)\(defaultClause) } } \
+    }
+    """)
 }
 
 // MARK: - Diagnostics
@@ -251,6 +267,7 @@ private enum PrismsDiagnostic: DiagnosticMessage {
         switch self {
         case .notAnEnum:
             "@Prisms can only be applied to enums"
+
         case .privateHostUnsupported:
             "@Prisms cannot be applied to `private` enums. Change the declaration to `fileprivate`, "
                 + "`internal`, or higher. (`private` is the only access level whose type-scope semantics "
@@ -262,7 +279,9 @@ private enum PrismsDiagnostic: DiagnosticMessage {
 
     var severity: DiagnosticSeverity {
         switch self {
-        case .notAnEnum, .privateHostUnsupported: .error
+        case .notAnEnum,
+             .privateHostUnsupported:
+            .error
         }
     }
 }

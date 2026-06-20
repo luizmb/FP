@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import DataStructure
 import Testing
 
@@ -12,7 +13,7 @@ import Testing
 
     @Test func fmapT_curried() {
         let s = Stateful<Int, NonEmpty<Int>>.pure(NonEmpty(head: 5))
-        let mapped = Stateful<Int, NonEmpty<Int>>.fmapT({ $0 + 1 })(s)
+        let mapped = Stateful<Int, NonEmpty<Int>>.fmapT { $0 + 1 }(s)
         #expect(mapped.eval(0) == NonEmpty(head: 6))
     }
 
@@ -48,9 +49,9 @@ import Testing
 
     @Test func bindT_curried() {
         let s = Stateful<Int, NonEmpty<Int>>.pure(NonEmpty(head: 3))
-        let bound = Stateful<Int, NonEmpty<Int>>.bindT({ n -> Stateful<Int, NonEmpty<Int>?> in
+        let bound = Stateful<Int, NonEmpty<Int>>.bindT { n -> Stateful<Int, NonEmpty<Int>?> in
             .pure(NonEmpty(head: n + 1))
-        })(s)
+        }(s)
         #expect(bound.eval(0) == NonEmpty(head: 4))
     }
 }

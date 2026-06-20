@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @testable import CoreFP
 import Testing
 
@@ -13,7 +14,9 @@ import Testing
 
     private func makeStream<A: Sendable>(_ values: [A]) -> AsyncStream<A> {
         AsyncStream { continuation in
-            for v in values { continuation.yield(v) }
+            for v in values {
+                continuation.yield(v)
+            }
             continuation.finish()
         }
     }

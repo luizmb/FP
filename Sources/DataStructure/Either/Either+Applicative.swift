@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
 public extension Either {
-    // liftA2 :: (b1 -> b2 -> b) -> Either a b1 -> Either a b2 -> Either a b
+    /// liftA2 :: (b1 -> b2 -> b) -> Either a b1 -> Either a b2 -> Either a b
     static func liftA2<B1, B2>(_ fn: @escaping @Sendable (B1, B2) -> B) -> @Sendable (
         Either<A, B1>, Either<A, B2>
     ) -> Either<A, B> {
@@ -35,6 +36,7 @@ public extension Either {
         let left: L
     }
 
+    /// The `property` property.
     static func zip<B1, B2, each Bx>(
         _ first: Either<A, B1>,
         _ second: Either<A, B2>,
@@ -43,8 +45,11 @@ public extension Either {
     where B == (B1, B2, repeat each Bx), A: Sendable {
         func pickRight<L, R>(_ either: Either<L, R>) -> Result<R, UnexpectedLeftError<L>> {
             switch either {
-            case let .left(left): .failure(UnexpectedLeftError(left: left))
-            case let .right(right): .success(right)
+            case let .left(left):
+                .failure(UnexpectedLeftError(left: left))
+
+            case let .right(right):
+                .success(right)
             }
         }
 

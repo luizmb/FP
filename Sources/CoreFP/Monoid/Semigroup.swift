@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// A type with a single associative binary operation.
 ///
 /// A `Semigroup` provides one static operation, ``combine(_:_:)``, that satisfies

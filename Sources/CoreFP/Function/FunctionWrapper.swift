@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// A protocol for types that wrap a single function `(Input) -> Output`.
 ///
 /// `FunctionWrapper` provides a uniform interface for newtype wrappers around functions.

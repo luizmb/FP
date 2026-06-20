@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // ResultTStateful: outer = Result, inner = Stateful
@@ -15,6 +16,7 @@ public extension Result {
         map { stateful in stateful.flatMap(fn) }
     }
 
+    /// The `property` property.
     static func bindT<S, A, B>(
         _ fn: @escaping @Sendable (A) -> Stateful<S, B>
     ) -> (Result<Stateful<S, A>, Failure>) -> Result<Stateful<S, B>, Failure> {

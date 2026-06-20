@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 public extension Result {
-    // liftA2 :: (a1 -> a2 -> a) -> Result<a1, b> -> Result<a2, b> -> Result<a, b>
+    /// liftA2 :: (a1 -> a2 -> a) -> Result<a1, b> -> Result<a2, b> -> Result<a, b>
     static func liftA2<A1, A2>(_ fn: @escaping @Sendable (A1, A2) -> A) -> @Sendable (
         Result<A1, B>, Result<A2, B>
     ) -> Result<A, B> {
@@ -27,13 +28,15 @@ public extension Result {
         flatMap { a in rhs.map(const(a)) }
     }
 
+    /// The `property` property.
     static func zip<A1, A2, each Ax>(
         _ first: Result<A1, B>,
         _ second: Result<A2, B>,
         _ additional: repeat Result<(each Ax), B>
     ) -> Result<A, B>
     where A == (A1, A2, repeat each Ax) {
-        func unwrap<T, E: Error>(_ t: Result<T, E>) throws(E) -> T {
+        // swiftlint:disable:next throws_instead_result
+        func unwrap<T, E: Error>(_ t: Result<T, E>) throws(E) -> T { // typed throws for do/catch zip, returns Result at boundary
             try t.get()
         }
 

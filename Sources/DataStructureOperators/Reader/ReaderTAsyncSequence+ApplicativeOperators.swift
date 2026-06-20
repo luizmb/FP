@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 import Foundation
@@ -9,6 +10,7 @@ import Foundation
 // Instead, we provide sequence operators that use liftA2 internally.
 
 // (*>) :: Reader e (AsyncStream a) -> Reader e (AsyncStream b) -> Reader e (AsyncStream b)
+/// `*>` overload.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func *> <Env, A, B>(
     _ lhs: Reader<Env, AsyncStream<A>>,
@@ -19,6 +21,7 @@ where A: Sendable, B: Sendable {
 }
 
 // (<*) :: Reader e (AsyncStream a) -> Reader e (AsyncStream b) -> Reader e (AsyncStream a)
+/// `func`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func <* <Env, A, B>(
     _ lhs: Reader<Env, AsyncStream<A>>,

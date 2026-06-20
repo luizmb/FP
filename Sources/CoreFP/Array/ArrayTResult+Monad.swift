@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // ArrayTResult: outer = Array, inner = Result
@@ -12,8 +13,11 @@ public extension Array {
     where Element == Result<A, E> {
         flatMap { result -> [Result<B, E>] in
             switch result {
-            case .failure(let e): [.failure(e)]
-            case .success(let a): fn(a)
+            case let .failure(e):
+                [.failure(e)]
+
+            case let .success(a):
+                fn(a)
             }
         }
     }

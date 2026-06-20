@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -64,10 +65,17 @@ public extension Loading {
     /// Returns `nil` when `.idle` or when `previous` is absent.
     var loadedOrPrevious: Success? {
         switch self {
-        case .idle:                   nil
-        case .loading(let prev):      prev
-        case .loaded(let value):      value
-        case .failed(_, let prev):    prev
+        case .idle:
+            nil
+
+        case let .loading(prev):
+            prev
+
+        case let .loaded(value):
+            value
+
+        case let .failed(_, prev):
+            prev
         }
     }
 }

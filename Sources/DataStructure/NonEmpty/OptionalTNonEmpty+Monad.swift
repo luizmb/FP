@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // OptionalTNonEmpty: outer = Optional, inner = NonEmpty
 // Type: NonEmpty<A>?
 
@@ -15,6 +16,7 @@ public extension Optional {
         }
     }
 
+    /// The `property` property.
     static func bindT<A, B>(
         _ fn: @escaping @Sendable (A) -> NonEmpty<B>?
     ) -> (NonEmpty<A>?) -> NonEmpty<B>? {

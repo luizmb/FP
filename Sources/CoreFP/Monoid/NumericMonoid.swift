@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// Namespace for numeric ``Monoid`` instances.
 ///
 /// `NumericMonoid<T>` provides four named newtypes for the common monoid structures
@@ -78,9 +79,9 @@ public protocol HasMin: Comparable, Sendable {
     static var min: Self { get }
 }
 
-extension NumericMonoid where T: HasMax {
+public extension NumericMonoid where T: HasMax {
     /// Monoid under comparison, finding the minimum value, with identity Self.max.
-    public struct Min: Monoid, RawRepresentable {
+    struct Min: Monoid, RawRepresentable {
         public let rawValue: T
 
         public init(_ rawValue: T) {
@@ -99,9 +100,9 @@ extension NumericMonoid where T: HasMax {
     }
 }
 
-extension NumericMonoid where T: HasMin {
+public extension NumericMonoid where T: HasMin {
     /// Monoid under comparison, finding the maximum value, with identity Self.min.
-    public struct Max: Monoid, RawRepresentable {
+    struct Max: Monoid, RawRepresentable {
         public let rawValue: T
 
         public init(_ rawValue: T) {
@@ -241,47 +242,47 @@ extension Double: HasMax, HasMin {
 // Float80 exists only on x86, and even there it is unavailable on Windows and Android
 // (the Swift Android SDK marks it unavailable on the target platform regardless of arch).
 #if arch(x86_64) && !os(Windows) && !os(Android)
-extension Float80: HasMax, HasMin {
-    public typealias Monoids = NumericMonoid<Float80>
+    extension Float80: HasMax, HasMin {
+        public typealias Monoids = NumericMonoid<Float80>
 
-    public static var min: Float80 {
-        -Float80.greatestFiniteMagnitude
-    }
+        public static var min: Float80 {
+            -Float80.greatestFiniteMagnitude
+        }
 
-    public static var max: Float80 {
-        Float80.greatestFiniteMagnitude
+        public static var max: Float80 {
+            Float80.greatestFiniteMagnitude
+        }
     }
-}
 #endif
 
 #if canImport(CoreGraphics)
-import CoreGraphics
+    import CoreGraphics
 
-extension CGFloat: HasMax, HasMin {
-    public typealias Monoids = NumericMonoid<CGFloat>
+    extension CGFloat: HasMax, HasMin {
+        public typealias Monoids = NumericMonoid<CGFloat>
 
-    public static var min: CGFloat {
-        -CGFloat.greatestFiniteMagnitude
+        public static var min: CGFloat {
+            -CGFloat.greatestFiniteMagnitude
+        }
+
+        public static var max: CGFloat {
+            CGFloat.greatestFiniteMagnitude
+        }
     }
-
-    public static var max: CGFloat {
-        CGFloat.greatestFiniteMagnitude
-    }
-}
 #endif
 
 #if canImport(Foundation)
-import Foundation
+    import Foundation
 
-extension Decimal: HasMax, HasMin {
-    public typealias Monoids = NumericMonoid<Decimal>
+    extension Decimal: HasMax, HasMin {
+        public typealias Monoids = NumericMonoid<Decimal>
 
-    public static var min: Decimal {
-        -Decimal.greatestFiniteMagnitude
+        public static var min: Decimal {
+            -Decimal.greatestFiniteMagnitude
+        }
+
+        public static var max: Decimal {
+            Decimal.greatestFiniteMagnitude
+        }
     }
-
-    public static var max: Decimal {
-        Decimal.greatestFiniteMagnitude
-    }
-}
 #endif

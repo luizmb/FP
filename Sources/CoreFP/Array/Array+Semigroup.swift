@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 extension Array: Semigroup {
     public static func combine(_ lhs: [Element], _ rhs: [Element]) -> [Element] {
         lhs + rhs
@@ -9,7 +10,9 @@ extension Array: Semigroup {
     public static func sconcat(_ first: [Element], _ rest: [[Element]]) -> [Element] {
         var result = first
         result.reserveCapacity(rest.reduce(into: first.count) { $0 += $1.count })
-        for next in rest { result.append(contentsOf: next) }
+        for next in rest {
+            result.append(contentsOf: next)
+        }
         return result
     }
 }
@@ -21,7 +24,9 @@ extension Array: Monoid {
     public static func mconcat(_ values: [[Element]]) -> [Element] {
         var result = [Element]()
         result.reserveCapacity(values.reduce(into: 0) { $0 += $1.count })
-        for next in values { result.append(contentsOf: next) }
+        for next in values {
+            result.append(contentsOf: next)
+        }
         return result
     }
 }

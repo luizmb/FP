@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
-// EitherTValidation: outer = Either, inner = Validation
-// Type: Either<L, Validation<E, A>>
-// flatMapT sequences through Validation — short-circuits on failure (does NOT accumulate).
+/// EitherTValidation: outer = Either, inner = Validation
+/// Type: Either<L, Validation<E, A>>
+/// flatMapT sequences through Validation — short-circuits on failure (does NOT accumulate).
 
 public func flatMapTEitherValidation<L, E: Semigroup, A, B>(
     _ either: Either<L, Validation<E, A>>,
@@ -16,6 +17,7 @@ public func flatMapTEitherValidation<L, E: Semigroup, A, B>(
     }
 }
 
+/// `bindTEitherValidation`.
 public func bindTEitherValidation<L, E: Semigroup, A, B>(
     _ fn: @escaping @Sendable (A) -> Either<L, Validation<E, B>>
 ) -> (Either<L, Validation<E, A>>) -> Either<L, Validation<E, B>> {

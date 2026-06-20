@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import FPMacros
 import Testing
@@ -30,6 +31,7 @@ fileprivate struct MemoryRepo: Repository, Sendable {
     func fetch(id: String) async -> Result<Int, RepoError> {
         store[id].map(Result.success) ?? .failure(.notFound)
     }
+
     var count: Int { store.count }
 }
 
@@ -92,7 +94,7 @@ struct WitnessTests {
     }
 
     @Test func associatedTypesAndAsync() async {
-        let w = MemoryRepo(store: ["a": 1]).witness   // RepositoryWitness<Int, RepoError>
+        let w = MemoryRepo(store: ["a": 1]).witness // RepositoryWitness<Int, RepoError>
         #expect(w.count() == 1)
         let hit = await w.fetch("a")
         #expect(hit == .success(1))
@@ -107,7 +109,7 @@ struct WitnessTests {
     }
 
     @Test func inheritanceComposition() {
-        let w = Dog(name: "Rex").witness   // PetWitness { name thunk, animal: AnimalWitness }
+        let w = Dog(name: "Rex").witness // PetWitness { name thunk, animal: AnimalWitness }
         #expect(w.name() == "Rex")
         #expect(w.animal.sound() == "woof")
     }
@@ -121,11 +123,11 @@ struct WitnessTests {
 
     @Test func settablePropertyFromReferenceConformer() {
         let live = LiveCounter()
-        let w = live.witness   // gated to AnyObject — the class conformer gets `.witness`
+        let w = live.witness // gated to AnyObject — the class conformer gets `.witness`
         w.bump()
         w.setValue(10)
         #expect(w.value() == 10)
-        #expect(live.value == 10)   // mutates through the live instance
+        #expect(live.value == 10) // mutates through the live instance
     }
 
     @Test func settablePropertyViaMemberwiseInit() {

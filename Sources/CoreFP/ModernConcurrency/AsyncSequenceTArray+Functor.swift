@@ -1,8 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // AsyncSequenceTArray: outer = AsyncStream, inner = Array
 // Type: AsyncStream<[A]>
 
+/// `mapTAsyncStreamArray`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func mapTAsyncStreamArray<A, B: Sendable>(
     _ fn: @escaping @Sendable (A) -> B,
@@ -15,10 +17,12 @@ public func mapTAsyncStreamArray<A, B: Sendable>(
             }
             continuation.finish()
         }
+        // swiftlint:disable:next closure_ignoring_args
         continuation.onTermination = { _ in task.cancel() }
     }
 }
 
+/// `fmapTAsyncStreamArray`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func fmapTAsyncStreamArray<A, B: Sendable>(
     _ fn: @escaping @Sendable (A) -> B

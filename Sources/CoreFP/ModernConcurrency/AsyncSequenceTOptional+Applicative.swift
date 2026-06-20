@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // AsyncSequenceTOptional: outer = AsyncStream, inner = Optional
@@ -19,6 +20,8 @@ where A: Sendable, B: Sendable, C: Sendable {
                 }
                 continuation.finish()
             }
+            // swiftlint:disable:next closure_ignoring_args
+            // swiftlint:disable:next closure_ignoring_args
             continuation.onTermination = { _ in task.cancel() }
         }
     }
@@ -39,6 +42,7 @@ public func seqRightAsyncStreamOptional<A, B>(
             }
             continuation.finish()
         }
+        // swiftlint:disable:next closure_ignoring_args
         continuation.onTermination = { _ in task.cancel() }
     }
 }
@@ -58,6 +62,7 @@ public func seqLeftAsyncStreamOptional<A, B>(
             }
             continuation.finish()
         }
+        // swiftlint:disable:next closure_ignoring_args
         continuation.onTermination = { _ in task.cancel() }
     }
 }

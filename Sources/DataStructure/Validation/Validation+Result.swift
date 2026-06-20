@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 public extension Validation {
@@ -10,7 +11,10 @@ public extension Validation {
 /// Convert from Result to Validation — requires E: Semigroup & Error.
 public func validationFromResult<E: Semigroup & Error, A>(_ result: Result<A, E>) -> Validation<E, A> {
     switch result {
-    case let .failure(e): .failure(e)
-    case let .success(a): .success(a)
+    case let .failure(e):
+        .failure(e)
+
+    case let .success(a):
+        .success(a)
     }
 }

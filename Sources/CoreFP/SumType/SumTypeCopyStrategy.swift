@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 /// A strategy for copying a ``SumType2`` value in two distinct ways: in-parallel (same cases)

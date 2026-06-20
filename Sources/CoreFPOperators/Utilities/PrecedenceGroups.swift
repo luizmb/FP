@@ -1,7 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 // https://rosettacode.org/wiki/Operator_precedence
 // https://developer.apple.com/documentation/swift/operator-declarations
 
 // MARK: - Precedence group hierarchy
+
 //
 // This file defines all custom precedence groups used across CoreFPOperators,
 // DataStructureOperators, and their dependents.

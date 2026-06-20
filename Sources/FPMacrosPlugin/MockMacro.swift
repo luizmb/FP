@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros
@@ -19,7 +20,7 @@ public struct MockMacro: PeerMacro {
         // The mock must *conform* to the protocol, but a syntactic macro can't see an inherited
         // protocol's requirements — so it can't synthesise them. Reject inheritance.
         let inherited = (proto.inheritanceClause?.inheritedTypes ?? [])
-            .map { $0.type.trimmedDescription }
+            .map(\.type.trimmedDescription)
             .filter { !markerProtocols.contains($0) }
         guard inherited.isEmpty else {
             context.diagnose(Diagnostic(node: node, message: MockDiagnostic.inheritanceUnsupported))
@@ -90,7 +91,7 @@ private func collectMembers(_ proto: ProtocolDeclSyntax, in context: some MacroE
         let decl = member.decl
         if let assoc = decl.as(AssociatedTypeDeclSyntax.self) {
             let constraint = assoc.inheritanceClause?.inheritedTypes
-                .map { $0.type.trimmedDescription }.joined(separator: " & ")
+                .map(\.type.trimmedDescription).joined(separator: " & ")
             associatedTypes.append((assoc.name.text, constraint))
         } else if let function = decl.as(FunctionDeclSyntax.self) {
             let modifiers = Set(function.modifiers.map(\.name.text))
@@ -134,7 +135,7 @@ private func mockMethod(
 ) -> MockMember? {
     let baseName = function.name.text
     let params = function.signature.parameterClause.parameters
-    var paramTypes = params.map { $0.type.trimmedDescription }
+    var paramTypes = params.map(\.type.trimmedDescription)
     let returnType = function.signature.returnClause?.type.trimmedDescription ?? "Void"
 
     // Erase each sound method generic to its existential constraint, else abort.
@@ -212,7 +213,9 @@ private func mockProperty(_ variable: VariableDeclSyntax, access: AccessLevel) -
 
 private func baseNameCollisions(_ functions: [FunctionDeclSyntax]) -> Set<String> {
     var counts: [String: Int] = [:]
-    for function in functions { counts[function.name.text, default: 0] += 1 }
+    for function in functions {
+        counts[function.name.text, default: 0] += 1
+    }
     return Set(counts.filter { $0.value > 1 }.keys)
 }
 
@@ -230,17 +233,29 @@ private enum MockDiagnostic: DiagnosticMessage {
 
     var message: String {
         switch self {
-        case .notAProtocol: "@Mock can only be applied to protocols"
+        case .notAProtocol:
+            "@Mock can only be applied to protocols"
+
         case .inheritanceUnsupported:
             "@Mock can't mock a protocol that inherits another protocol — the macro can't see the parent's "
                 + "requirements to synthesise them. Flatten the protocol or conform the inherited part by hand."
-        case .staticRequirement:   "@Mock can't mock `static` requirements"
-        case .mutatingRequirement: "@Mock can't mock `mutating` requirements"
-        case .initRequirement:     "@Mock can't mock `init` requirements"
-        case .subscriptRequirement: "@Mock can't mock `subscript` requirements"
+
+        case .staticRequirement:
+            "@Mock can't mock `static` requirements"
+
+        case .mutatingRequirement:
+            "@Mock can't mock `mutating` requirements"
+
+        case .initRequirement:
+            "@Mock can't mock `init` requirements"
+
+        case .subscriptRequirement:
+            "@Mock can't mock `subscript` requirements"
+
         case .unconstrainedGeneric:
             "@Mock can't mock a method with an unconstrained generic parameter "
                 + "(no protocol/class constraint to erase to `any`)."
+
         case .genericInReturn:
             "@Mock can't mock a method whose generic parameter appears in the return type "
                 + "(e.g. `decode<T>(_: T.Type) -> T`)."

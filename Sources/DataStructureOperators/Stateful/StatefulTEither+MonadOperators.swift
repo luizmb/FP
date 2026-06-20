@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 
-// (>>-) :: Stateful<s, Either<l, a>> -> (a -> Stateful<s, Either<l, b>>) -> Stateful<s, Either<l, b>>
+/// (>>-) :: Stateful<s, Either<l, a>> -> (a -> Stateful<s, Either<l, b>>) -> Stateful<s, Either<l, b>>
 public func >>- <S, L, A, B>(
     _ stateful: Stateful<S, Either<L, A>>,
     _ fn: @escaping @Sendable (A) -> Stateful<S, Either<L, B>>
@@ -9,7 +10,7 @@ public func >>- <S, L, A, B>(
     stateful.flatMapT(fn)
 }
 
-// (-<<) :: (a -> Stateful<s, Either<l, b>>) -> Stateful<s, Either<l, a>> -> Stateful<s, Either<l, b>>
+/// (-<<) :: (a -> Stateful<s, Either<l, b>>) -> Stateful<s, Either<l, a>> -> Stateful<s, Either<l, b>>
 public func -<< <S, L, A, B>(
     _ fn: @escaping @Sendable (A) -> Stateful<S, Either<L, B>>,
     _ stateful: Stateful<S, Either<L, A>>
@@ -17,7 +18,7 @@ public func -<< <S, L, A, B>(
     stateful.flatMapT(fn)
 }
 
-// (>=>) :: (a -> Stateful<s, Either<l, b>>) -> (b -> Stateful<s, Either<l, c>>) -> a -> Stateful<s, Either<l, c>>
+/// (>=>) :: (a -> Stateful<s, Either<l, b>>) -> (b -> Stateful<s, Either<l, c>>) -> a -> Stateful<s, Either<l, c>>
 public func >=> <S, L, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Stateful<S, Either<L, B>>,
     _ fn2: @escaping @Sendable (B) -> Stateful<S, Either<L, C>>

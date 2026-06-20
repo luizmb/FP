@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -72,6 +73,7 @@ public struct Writer<W: Monoid, A> {
     /// The accumulated log up to this point.
     public let log: W
 
+    /// Initializer.
     public init(_ value: A, _ log: W) {
         self.value = value
         self.log = log

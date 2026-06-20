@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import DataStructure
 import Testing
 
@@ -13,7 +14,7 @@ import Testing
 
     @Test func fmapT_curried() {
         let w = Writer<[String], NonEmpty<Int>>(NonEmpty(head: 5), ["entry"])
-        let result = Writer<[String], NonEmpty<Int>>.fmapT({ $0 + 1 })(w)
+        let result = Writer<[String], NonEmpty<Int>>.fmapT { $0 + 1 }(w)
         #expect(result.value == NonEmpty(head: 6))
         #expect(result.log == ["entry"])
     }
@@ -49,9 +50,9 @@ import Testing
 
     @Test func bindT_curried() {
         let w = Writer<[String], NonEmpty<Int>>(NonEmpty(head: 3), ["init"])
-        let bound = Writer<[String], NonEmpty<Int>>.bindT({ n in
+        let bound = Writer<[String], NonEmpty<Int>>.bindT { n in
             Writer<[String], NonEmpty<Int>?>(NonEmpty(head: n + 1), ["step"])
-        })(w)
+        }(w)
         #expect(bound.value == NonEmpty(head: 4))
         #expect(bound.log == ["init", "step"])
     }

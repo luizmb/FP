@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 // ReaderTValidation: outer = Reader, inner = Validation
@@ -5,6 +6,7 @@ import CoreFP
 // flatMapT sequences — short-circuits on Validation failure (does NOT accumulate).
 
 public extension Reader {
+    /// Declaration.
     func flatMapT<E: Semigroup, Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> Reader<Environment, Validation<E, B>>
     ) -> Reader<Environment, Validation<E, B>>
@@ -17,6 +19,7 @@ public extension Reader {
         }
     }
 
+    /// The `property` property.
     static func bindT<E: Semigroup, Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> Reader<Environment, Validation<E, B>>
     ) -> (Reader<Environment, Validation<E, Inner>>) -> Reader<Environment, Validation<E, B>>

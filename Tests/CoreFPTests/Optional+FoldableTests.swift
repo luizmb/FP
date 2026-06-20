@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Testing
 
@@ -30,16 +31,16 @@ import Testing
 
     @Test func foldMapSome() {
         let opt: Int? = 3
-        #expect(opt.foldMap({ "\($0)" }) == "3")
+        #expect(opt.foldMap { "\($0)" } == "3")
     }
 
     @Test func foldMapNoneReturnsIdentity() {
         let opt: Int? = nil
-        #expect(opt.foldMap({ "\($0)" }) == "")
+        #expect(opt.foldMap { "\($0)" } == "")
     }
 
     @Test func foldMapCurried() {
-        let fn = Int?.foldMap({ "\($0)" })
+        let fn = Int?.foldMap { "\($0)" }
         #expect(fn(.some(7)) == "7")
         #expect(fn(nil) == "")
     }
@@ -84,14 +85,16 @@ import Testing
     @Test func thenSomeRunsClosure() {
         nonisolated(unsafe) var ran = false
         let opt: Int? = 42
-        opt.then { _ in ran = true }
+        // swiftlint:disable:next closure_ignoring_args
+        opt.then { _ in ran = true } // side effect: sets flag; value is irrelevant
         #expect(ran)
     }
 
     @Test func thenNoneSkipsClosure() {
         nonisolated(unsafe) var ran = false
         let opt: Int? = nil
-        opt.then { _ in ran = true }
+        // swiftlint:disable:next closure_ignoring_args
+        opt.then { _ in ran = true } // side effect: sets flag; value is irrelevant
         #expect(!ran)
     }
 

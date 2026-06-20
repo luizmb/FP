@@ -1,8 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // AsyncSequenceTResult: outer = AsyncStream, inner = Result
 // Type: AsyncStream<Result<A,E>>
 
+/// `mapTAsyncStreamResult`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func mapTAsyncStreamResult<A, B: Sendable, E: Error>(
     _ fn: @escaping @Sendable (A) -> B,
@@ -15,10 +17,12 @@ public func mapTAsyncStreamResult<A, B: Sendable, E: Error>(
             }
             continuation.finish()
         }
+        // swiftlint:disable:next closure_ignoring_args
         continuation.onTermination = { _ in task.cancel() }
     }
 }
 
+/// `fmapTAsyncStreamResult`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func fmapTAsyncStreamResult<A, B: Sendable, E: Error>(
     _ fn: @escaping @Sendable (A) -> B

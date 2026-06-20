@@ -1,6 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 // MARK: - Reader: Semigroup / Monoid
+
 //
 // A `Reader<Environment, Output>` whose `Output` is a `Semigroup` or `Monoid` is itself
 // a `Semigroup` or `Monoid` under pointwise combination — a standard result from
@@ -17,7 +19,7 @@ extension Reader: Semigroup where Output: Semigroup {
     /// ```swift
     /// let combined = Reader<Int, [String]>.combine(
     ///     Reader { n in (0..<n).map { "item \($0)" } },
-    ///     Reader { _ in ["footer"] }
+    ///     Reader(const(["footer"]))
     /// )
     /// combined.runReader(3) // ["item 0", "item 1", "item 2", "footer"]
     /// ```
@@ -34,6 +36,6 @@ extension Reader: Monoid where Output: Monoid {
     /// id.runReader(42) // []
     /// ```
     public static var identity: Self {
-        Reader { _ in Output.identity }
+        Reader(const(Output.identity))
     }
 }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 import DataStructureOperators
@@ -35,7 +36,7 @@ import Testing
 
     @Test func kleisli() {
         let f: @Sendable (Int) -> Stateful<Int, Writer<[String], Int>> = { n in
-            Stateful { _ in Writer(n + 1, ["f"]) }
+            Stateful<Int, Writer<[String], Int>>.pure(Writer(n + 1, ["f"]))
         }
         let g: @Sendable (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["g"]) }
         let result = f(4) >>- g

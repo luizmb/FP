@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // EitherTNonEmpty: outer = Either, inner = NonEmpty
 // Type: Either<L, NonEmpty<A>>
 
@@ -12,8 +13,10 @@ public func flatMapTEitherNonEmpty<L, A, B>(
         var accumulated: NonEmpty<B>?
         for element in ne.toArray {
             switch fn(element) {
-            case .left(let l): return .left(l)
-            case .right(let nbOpt):
+            case let .left(l):
+                return .left(l)
+
+            case let .right(nbOpt):
                 if let nb = nbOpt {
                     accumulated = accumulated.map { NonEmpty.combine($0, nb) } ?? nb
                 }

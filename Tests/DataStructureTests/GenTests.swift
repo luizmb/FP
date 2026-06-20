@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import DataStructure
 import Foundation
 import Testing
@@ -51,7 +52,7 @@ struct GenTests {
         for uuid in uuids {
             let v = uuid.uuid.6 & 0xF0
             let variant = uuid.uuid.8 & 0xC0
-            #expect(v == 0x40)      // version 4
+            #expect(v == 0x40) // version 4
             #expect(variant == 0x80) // RFC 4122 variant
         }
     }
@@ -115,6 +116,7 @@ struct GenTests {
         let g = Gen.string(of: .letter(), count: Gen.int(in: 5...5))
         let s = g.generate(seed: 1)
         #expect(s.count == 5)
+        // swiftlint:disable:next prefer_key_path
         #expect(s.allSatisfy { $0.isLetter })
     }
 }

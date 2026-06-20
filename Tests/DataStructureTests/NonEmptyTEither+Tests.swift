@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import DataStructure
 import Testing
 
@@ -26,7 +27,7 @@ import Testing
 
     @Test func fmapT_curried() {
         let ne = NonEmpty<Either<String, Int>>(head: .right(5))
-        let mapped = NonEmpty<Either<String, Int>>.fmapT({ $0 + 1 })(ne)
+        let mapped = NonEmpty<Either<String, Int>>.fmapT { $0 + 1 }(ne)
         #expect(mapped.toArray == [.right(6)])
     }
 
@@ -50,9 +51,9 @@ import Testing
 
     @Test func bindT_curried() {
         let ne = NonEmpty<Either<String, Int>>(head: .right(3))
-        let bound = NonEmpty<Either<String, Int>>.bindT({ n in
+        let bound = NonEmpty<Either<String, Int>>.bindT { n in
             NonEmpty<Either<String, Int>>(head: .right(n + 1))
-        })(ne)
+        }(ne)
         #expect(bound.toArray == [.right(4)])
     }
 }

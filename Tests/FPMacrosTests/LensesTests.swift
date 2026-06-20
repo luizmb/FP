@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import CoreFPOperators
 import FPMacros
@@ -8,7 +9,7 @@ import Testing
 @Lenses(init: .internal)
 fileprivate struct Config {
     let host: String
-    let version = 3       // constant — excluded from init and lens
+    let version = 3 // constant — excluded from init and lens
     var port: Int
     var timeout = 30
 }
@@ -67,7 +68,7 @@ struct LensesLetTests {
     }
 
     @Test func over_transforms_focused_property() {
-        let updated = Config.lens.host.over({ $0 + ":9000" })(config)
+        let updated = Config.lens.host.over { $0 + ":9000" }(config)
         #expect(updated.host == "localhost:9000")
         #expect(updated.port == config.port)
     }
@@ -114,7 +115,7 @@ struct LensesVarTests {
     }
 
     @Test func over_transforms_focused_property() {
-        let updated = Config.lens.port.over({ $0 + 1 })(config)
+        let updated = Config.lens.port.over { $0 + 1 }(config)
         #expect(updated.port == 8_081)
     }
 

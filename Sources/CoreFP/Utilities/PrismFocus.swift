@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // MARK: - Prismatic
 
 /// A type whose enum cases are exposed as a `Prisms` namespace.
@@ -58,13 +60,13 @@ public typealias PrismKeyPath<Root, Value> = KeyPath<PrismFocus<Root, Root>, Pri
 
 // MARK: - Recovery
 
-extension Prism {
+public extension Prism {
     /// Recovers the concrete prism denoted by a `\.case` key path.
     ///
     /// Seeds a ``PrismFocus`` with the identity prism and applies the key path, which threads each
     /// case's prism through the dynamic-member subscripts; the result's `prism` is the composition
     /// from `S` down to the focused `A`.
-    public init(_ keyPath: PrismKeyPath<S, A>) {
+    init(_ keyPath: PrismKeyPath<S, A>) {
         self = PrismFocus<S, S>(prism: .id)[keyPath: keyPath].prism
     }
 }

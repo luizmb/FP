@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 import DataStructureOperators
@@ -44,8 +45,8 @@ import Testing
     @Test func readerExtendOperatorChained() {
         let r = Reader<String, Int> { $0.count }
         let result = r
-            ->> { inner in inner.runReader("!") }   // shift env by "!"
-            ->> { inner in inner.runReader("?") }   // shift that shifted env by "?"
+            ->> { inner in inner.runReader("!") } // shift env by "!"
+            ->> { inner in inner.runReader("?") } // shift that shifted env by "?"
         // result.runReader("a") = r.run("a" + "?" + "!") = 3
         #expect(result.runReader("a") == 3)
     }

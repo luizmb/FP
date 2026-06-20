@@ -36,8 +36,12 @@ jobs:
       - name: Install Mint
         run: brew install mint
 
-      - name: Install SwiftLint and Periphery
+      - name: Install SwiftLint, SwiftFormat, and Periphery
         run: mint bootstrap
+
+      - name: Format (check)
+        # --lint exits with code 1 if any file would be changed — no post-check needed
+        run: mint run swiftformat --lint .
 
       - name: Lint
         run: mint run swiftlint lint --strict

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -24,7 +25,7 @@ public func seqRightEitherResult<L, A, B, E: Error>(
     _ lhs: Either<L, Result<A, E>>,
     _ rhs: Either<L, Result<B, E>>
 ) -> Either<L, Result<B, E>> {
-    Either.liftA2({ (a: Result<A, E>, b: Result<B, E>) in a.seqRight(b) })(lhs, rhs)
+    Either.liftA2 { (a: Result<A, E>, b: Result<B, E>) in a.seqRight(b) }(lhs, rhs)
 }
 
 /// seqLeft for EitherTResult
@@ -32,5 +33,5 @@ public func seqLeftEitherResult<L, A, B, E: Error>(
     _ lhs: Either<L, Result<A, E>>,
     _ rhs: Either<L, Result<B, E>>
 ) -> Either<L, Result<A, E>> {
-    Either.liftA2({ (a: Result<A, E>, b: Result<B, E>) in a.seqLeft(b) })(lhs, rhs)
+    Either.liftA2 { (a: Result<A, E>, b: Result<B, E>) in a.seqLeft(b) }(lhs, rhs)
 }

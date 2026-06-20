@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+import CoreFP
 import CoreFPOperators
 import DataStructure
 import DataStructureOperators
@@ -47,12 +49,10 @@ import Testing
 
     @Test func applicativeOperatorApply() {
         let readerFn = Reader<Environment, Either<String, @Sendable (Int) -> Int>> { env in
-            .right({ $0 + env.multiplier })
+            .right { $0 + env.multiplier }
         }
 
-        let readerValue = Reader<Environment, Either<String, Int>> { _ in
-            .right(10)
-        }
+        let readerValue = Reader<Environment, Either<String, Int>>(const(.right(10)))
 
         let result = readerFn <*> readerValue
 
@@ -61,13 +61,9 @@ import Testing
     }
 
     @Test func applicativeOperatorSequenceRight() {
-        let reader1 = Reader<Environment, Either<String, Int>> { _ in
-            .right(5)
-        }
+        let reader1 = Reader<Environment, Either<String, Int>>(const(.right(5)))
 
-        let reader2 = Reader<Environment, Either<String, Int>> { _ in
-            .right(10)
-        }
+        let reader2 = Reader<Environment, Either<String, Int>>(const(.right(10)))
 
         let result = reader1 *> reader2
 
@@ -76,13 +72,9 @@ import Testing
     }
 
     @Test func applicativeOperatorSequenceLeft() {
-        let reader1 = Reader<Environment, Either<String, Int>> { _ in
-            .right(5)
-        }
+        let reader1 = Reader<Environment, Either<String, Int>>(const(.right(5)))
 
-        let reader2 = Reader<Environment, Either<String, Int>> { _ in
-            .right(10)
-        }
+        let reader2 = Reader<Environment, Either<String, Int>>(const(.right(10)))
 
         let result = reader1 <* reader2
 

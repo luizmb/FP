@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 
 // MARK: - ReaderT + Optional
 
-// (>>-) :: m a -> (a -> m b) -> m b
+/// (>>-) :: m a -> (a -> m b) -> m b
 public func >>- <Env, A, B>(
     _ reader: Reader<Env, A?>,
     _ fn: @escaping @Sendable (A) -> Reader<Env, B?>
@@ -11,7 +12,7 @@ public func >>- <Env, A, B>(
     reader.flatMapT(fn)
 }
 
-// (-<<) :: (a -> m b) -> m a -> m b
+/// (-<<) :: (a -> m b) -> m a -> m b
 public func -<< <Env, A, B>(
     _ fn: @escaping @Sendable (A) -> Reader<Env, B?>,
     _ reader: Reader<Env, A?>
@@ -19,7 +20,7 @@ public func -<< <Env, A, B>(
     reader.flatMapT(fn)
 }
 
-// (>=>) :: (a -> m b) -> (b -> m c) -> a -> m c
+/// (>=>) :: (a -> m b) -> (b -> m c) -> a -> m c
 public func >=> <Env, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Reader<Env, B?>,
     _ fn2: @escaping @Sendable (B) -> Reader<Env, C?>
@@ -27,7 +28,7 @@ public func >=> <Env, A, B, C>(
     { a in fn1(a).flatMapT(fn2) }
 }
 
-// (<&>) :: Functor f => f a -> (a -> b) -> f b
+/// (<&>) :: Functor f => f a -> (a -> b) -> f b
 public func <&> <Env, A, B>(
     _ reader: Reader<Env, A?>,
     _ transform: @escaping @Sendable (A) -> B

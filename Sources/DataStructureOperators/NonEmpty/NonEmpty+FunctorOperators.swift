@@ -1,10 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import CoreFPOperators
 import DataStructure
 
 // MARK: - Functor operators for NonEmpty
 
-// (<£>) :: (A -> B) -> NonEmpty<A> -> NonEmpty<B>
+/// (<£>) :: (A -> B) -> NonEmpty<A> -> NonEmpty<B>
 public func <£> <A, B>(
     _ fn: @escaping @Sendable (A) -> B,
     _ ne: NonEmpty<A>
@@ -12,7 +13,7 @@ public func <£> <A, B>(
     ne.map(fn)
 }
 
-// ($>) :: NonEmpty<A> -> B -> NonEmpty<B>
+/// ($>) :: NonEmpty<A> -> B -> NonEmpty<B>
 public func £> <A, B>(
     _ ne: NonEmpty<A>,
     _ value: B
@@ -20,7 +21,7 @@ public func £> <A, B>(
     ne.map(const(value))
 }
 
-// (<$) :: B -> NonEmpty<A> -> NonEmpty<B>
+/// (<$) :: B -> NonEmpty<A> -> NonEmpty<B>
 public func <£ <A, B>(
     _ value: B,
     _ ne: NonEmpty<A>
@@ -28,7 +29,7 @@ public func <£ <A, B>(
     ne £> value
 }
 
-// (<&>) :: NonEmpty<A> -> (A -> B) -> NonEmpty<B>
+/// (<&>) :: NonEmpty<A> -> (A -> B) -> NonEmpty<B>
 public func <&> <A, B>(
     _ ne: NonEmpty<A>,
     _ fn: @escaping @Sendable (A) -> B

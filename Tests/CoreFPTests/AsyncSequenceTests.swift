@@ -1,5 +1,7 @@
+// SPDX-License-Identifier: Apache-2.0
 @testable import CoreFP
 import Testing
+
 @Suite struct AsyncSequenceTests {
     // MARK: - Functor Tests (Core Methods)
 

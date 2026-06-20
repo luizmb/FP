@@ -1,4 +1,5 @@
-extension Collection {
+// SPDX-License-Identifier: Apache-2.0
+public extension Collection {
     /// Returns the element at `index`, or `nil` if `index` is out of bounds.
     ///
     /// This is the safe alternative to the standard `[index]` subscript, which
@@ -12,12 +13,12 @@ extension Collection {
     /// ```
     ///
     /// - SeeAlso: ``MutableCollection/subscript(safe:)``
-    public subscript(safe index: Index) -> Element? {
+    subscript(safe index: Index) -> Element? {
         indices.contains(index) ? self[index] : nil
     }
 }
 
-extension MutableCollection {
+public extension MutableCollection {
     /// Returns the element at `index`, or `nil` if `index` is out of bounds.
     /// Setting `nil` or setting at an out-of-bounds index is a no-op.
     ///
@@ -33,7 +34,7 @@ extension MutableCollection {
     /// ```
     ///
     /// Used internally by the ``ix(_:)`` affine traversal.
-    public subscript(safe index: Index) -> Element? {
+    subscript(safe index: Index) -> Element? {
         get { indices.contains(index) ? self[index] : nil }
         set {
             guard let value = newValue, indices.contains(index) else { return }

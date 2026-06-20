@@ -1,7 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 
 // (>>-) :: AsyncStream<Stateful<s, a>> -> (a -> Stateful<s, b>) -> AsyncMapSequence<..., Stateful<s, b>>
+/// `>>-` overload.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func >>- <S, A, B>(
     _ stream: AsyncStream<Stateful<S, A>>,
@@ -11,6 +13,7 @@ public func >>- <S, A, B>(
 }
 
 // (-<<) :: (a -> Stateful<s, b>) -> AsyncStream<Stateful<s, a>> -> AsyncMapSequence<..., Stateful<s, b>>
+/// `-` overload.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func -<< <S, A, B>(
     _ fn: @escaping @Sendable (A) -> Stateful<S, B>,

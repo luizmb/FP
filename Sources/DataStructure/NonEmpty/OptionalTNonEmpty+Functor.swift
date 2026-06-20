@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // OptionalTNonEmpty: outer = Optional, inner = NonEmpty
 // Type: NonEmpty<A>?
 
@@ -7,6 +8,7 @@ public extension Optional {
         map { $0.map(fn) }
     }
 
+    /// The `property` property.
     static func fmapT<A, B>(_ fn: @escaping @Sendable (A) -> B) -> @Sendable (NonEmpty<A>?) -> NonEmpty<B>? {
         { opt in opt.mapT(fn) }
     }

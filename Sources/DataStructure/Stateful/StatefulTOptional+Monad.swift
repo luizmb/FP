@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 public extension Stateful {
-    // StatefulT + Optional — Stateful<S, A?>
+    /// StatefulT + Optional — Stateful<S, A?>
 
     func flatMapT<Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> Stateful<S, B?>
@@ -11,6 +12,7 @@ public extension Stateful {
         }
     }
 
+    /// The `property` property.
     static func bindT<Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> Stateful<S, B?>
     ) -> (Stateful<S, Inner?>) -> Stateful<S, B?> where A == Inner? {

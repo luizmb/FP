@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// A zero-cost wrapper that gives `RawValue` a distinct nominal identity, distinguished by a phantom `Tag`.
 ///
 /// `Newtype` is this library's equivalent of Haskell's `newtype` keyword: a struct that wraps a single
@@ -60,25 +61,31 @@
 /// alongside the type in `DataStructure` — no `DataStructureOperators` module is required to use them.
 @propertyWrapper
 public struct Newtype<Tag, RawValue> {
+    /// The `rawValue` property.
     public var rawValue: RawValue
 
+    /// Initializer.
     public init(_ rawValue: RawValue) {
         self.rawValue = rawValue
     }
 
+    /// Initializer.
     public init(rawValue: RawValue) {
         self.rawValue = rawValue
     }
 
+    /// Initializer.
     public init(wrappedValue: RawValue) {
-        self.rawValue = wrappedValue
+        rawValue = wrappedValue
     }
 
+    /// The `wrappedValue` property.
     public var wrappedValue: RawValue {
         get { rawValue }
         set { rawValue = newValue }
     }
 
+    /// The `projectedValue` property.
     public var projectedValue: Self {
         get { self }
         set { self = newValue }
@@ -113,7 +120,8 @@ extension Newtype: Comparable where RawValue: Comparable {
 }
 
 extension Newtype: Encodable where RawValue: Encodable {
-    public func encode(to encoder: Encoder) throws {
+    // swiftlint:disable:next throws_instead_result
+    public func encode(to encoder: Encoder) throws { // Encodable protocol mandates throws
         var container = encoder.singleValueContainer()
         try container.encode(rawValue)
     }

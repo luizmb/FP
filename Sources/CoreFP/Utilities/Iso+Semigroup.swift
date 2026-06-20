@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // MARK: - Semigroup / Monoid for Iso<A, A>
 
 // An endomorphism iso (same type on both ends) forms a group under composition:

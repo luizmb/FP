@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Testing
 
@@ -5,21 +6,22 @@ import Testing
 // `AffineFocus` / mixed `\.field.case` mechanism independently of the `@Prisms` macro.
 
 private enum Role: Equatable, Sendable {
-    case admin(Int)   // permission level
+    case admin(Int) // permission level
     case guest
 }
 
 extension Role: Prismatic {
     struct Prisms: Sendable {
         let admin = Prism<Role, Int>(
-            preview: { if case .admin(let value) = $0 { value } else { nil } },
+            preview: { if case let .admin(value) = $0 { value } else { nil } },
             review: Role.admin
         )
         let guest = Prism<Role, Void>(
             preview: { if case .guest = $0 { () } else { nil } },
-            review: { _ in .guest }
+            review: const(Role.guest)
         )
     }
+
     static let prism = Prisms()
 }
 
@@ -32,7 +34,7 @@ private struct App: Equatable, Sendable {
     var user: User
 }
 
-@Suite("AffineFocus / mixed \\.field.case key paths")
+@Suite(#"AffineFocus / mixed \.field.case key paths"#)
 struct AffineFocusTests {
     private let app = App(user: User(name: "Alice", role: .admin(3)))
     private let guestApp = App(user: User(name: "Bob", role: .guest))

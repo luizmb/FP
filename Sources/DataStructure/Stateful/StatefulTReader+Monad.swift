@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // StatefulT + Reader — Stateful<S, Reader<Env, A>>

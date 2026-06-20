@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
-// ValidationTStateful: outer = Validation, inner = Stateful
-// Type: Validation<E, Stateful<S, A>>
+/// ValidationTStateful: outer = Validation, inner = Stateful
+/// Type: Validation<E, Stateful<S, A>>
 
 public func fmapTValidationStateful<E: Semigroup, S, A, B>(
     _ fn: @escaping @Sendable (A) -> B

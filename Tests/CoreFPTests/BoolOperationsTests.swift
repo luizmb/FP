@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Testing
 
@@ -5,7 +6,7 @@ import Testing
     private struct User { let name: String; let age: Int; let isAdmin: Bool }
 
     private let alice = User(name: "Alice", age: 30, isAdmin: false)
-    private let bob   = User(name: "Bob", age: 16, isAdmin: true)
+    private let bob = User(name: "Bob", age: 16, isAdmin: true)
 
     // MARK: - equals / notEquals
 
@@ -37,7 +38,7 @@ import Testing
     // MARK: - not (predicate lifting)
 
     @Test func notPredicate() {
-        let isAdmin: @Sendable (User) -> Bool = { $0.isAdmin }
+        let isAdmin: @Sendable (User) -> Bool = get(\.isAdmin)
         let nonAdmin = not(isAdmin)
         #expect(nonAdmin(alice) == true)
         #expect(nonAdmin(bob) == false)
@@ -53,7 +54,7 @@ import Testing
     // MARK: - and (predicate combining)
 
     @Test func andPredicates() {
-        let isAdmin: @Sendable (User) -> Bool = { $0.isAdmin }
+        let isAdmin: @Sendable (User) -> Bool = get(\.isAdmin)
         let isAdult: @Sendable (User) -> Bool = compose(get(\User.age), flip(>=)(18))
         let adultNonAdmin = and(not(isAdmin), isAdult)
         #expect(adultNonAdmin(alice) == true)
@@ -62,7 +63,7 @@ import Testing
 
     @Test func andPredicatesFilter() {
         let users = [alice, bob]
-        let isAdmin: @Sendable (User) -> Bool = { $0.isAdmin }
+        let isAdmin: @Sendable (User) -> Bool = get(\.isAdmin)
         let isAdult: @Sendable (User) -> Bool = compose(get(\User.age), flip(>=)(18))
         let result = users.filter(and(not(isAdmin), isAdult))
         #expect(result.count == 1)
@@ -72,17 +73,17 @@ import Testing
     // MARK: - or (predicate combining)
 
     @Test func orPredicates() {
-        let isAdmin: @Sendable (User) -> Bool = { $0.isAdmin }
+        let isAdmin: @Sendable (User) -> Bool = get(\.isAdmin)
         let nameIsAlice = compose(get(\User.name), equals("Alice"))
         let aliceOrAdmin = or(nameIsAlice, isAdmin)
-        #expect(aliceOrAdmin(alice) == true)   // name matches
-        #expect(aliceOrAdmin(bob) == true)   // isAdmin
+        #expect(aliceOrAdmin(alice) == true) // name matches
+        #expect(aliceOrAdmin(bob) == true) // isAdmin
     }
 
     @Test func orPredicatesFilter() {
         let users = [alice, bob]
         let nameIsAlice = compose(get(\User.name), equals("Alice"))
-        let nameIsBob   = compose(get(\User.name), equals("Bob"))
+        let nameIsBob = compose(get(\User.name), equals("Bob"))
         let result = users.filter(or(nameIsAlice, nameIsBob))
         #expect(result.count == 2)
     }

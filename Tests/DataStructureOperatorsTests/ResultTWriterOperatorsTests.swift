@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import CoreFPOperators
 import DataStructure
@@ -24,7 +25,7 @@ import Testing
     @Test func fmapFailure() {
         let result: Result<Writer<[String], Int>, TestError> = .failure(.failure)
         let mapped: Result<Writer<[String], Int>, TestError> = { $0 * 2 } <£^> result
-        if case .failure(let e) = mapped { #expect(e == .failure) } else { Issue.record("Expected .failure") }
+        if case let .failure(e) = mapped { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func bindSuccess() {
@@ -37,7 +38,7 @@ import Testing
     @Test func bindFailure() {
         let result: Result<Writer<[String], Int>, TestError> = .failure(.failure)
         let bound = result >>- { n in Writer<[String], String>("\(n)", ["inner"]) }
-        if case .failure(let e) = bound { #expect(e == .failure) } else { Issue.record("Expected .failure") }
+        if case let .failure(e) = bound { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func kleisli() {
@@ -60,7 +61,7 @@ import Testing
         let rf: Result<Writer<[String], @Sendable (Int) -> String>, TestError> = .failure(.failure)
         let ra: Result<Writer<[String], Int>, TestError> = .success(Writer(7, ["val"]))
         let result = rf <*> ra
-        if case .failure(let e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
+        if case let .failure(e) = result { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
     @Test func seqRight() {

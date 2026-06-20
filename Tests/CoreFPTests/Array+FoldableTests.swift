@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Testing
 
@@ -46,7 +47,7 @@ import Testing
     // MARK: - foldMap
 
     @Test func foldMapConcatenatesStrings() {
-        let result = [Int].foldMap({ "\($0)" })([1, 2, 3])
+        let result = [Int].foldMap { "\($0)" }([1, 2, 3])
         #expect(result == "123")
     }
 
@@ -56,7 +57,7 @@ import Testing
     }
 
     @Test func foldMapPointFree() {
-        let toStrings = [Int].foldMap({ "\($0)" })
+        let toStrings = [Int].foldMap { "\($0)" }
         #expect(toStrings([1, 2, 3]) == "123")
         #expect(toStrings([]) == "")
     }

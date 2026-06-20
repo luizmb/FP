@@ -1,16 +1,21 @@
+// SPDX-License-Identifier: Apache-2.0
 @testable import CoreFP
 import Testing
 
 // MARK: - Fixtures
 
-private let addOne = iso(get: { $0 + 1 }, reverseGet: { $0 - 1 })   // Iso<Int, Int>
-private let timesTwo = iso(get: { $0 * 2 }, reverseGet: { $0 / 2 })   // Iso<Int, Int>
-private let swap     = iso(get: { (a: Int, b: Int) in (b, a) },
-                           reverseGet: { (a: Int, b: Int) in (b, a) }) // Iso<(Int,Int),(Int,Int)>
+private let addOne = iso(get: { $0 + 1 }, reverseGet: { $0 - 1 }) // Iso<Int, Int>
+private let timesTwo = iso(get: { $0 * 2 }, reverseGet: { $0 / 2 }) // Iso<Int, Int>
+private let swap = iso(
+    get: { (a: Int, b: Int) in (b, a) },
+    reverseGet: { (a: Int, b: Int) in (b, a) }
+) // Iso<(Int,Int),(Int,Int)>
 
 private struct Point: Equatable { var x: Double; var y: Double }
-private let mirrorX = iso(get: { Point(x: -$0.x, y: $0.y) },
-                          reverseGet: { Point(x: -$0.x, y: $0.y) })   // Iso<Point, Point>
+private let mirrorX = iso(
+    get: { Point(x: -$0.x, y: $0.y) },
+    reverseGet: { Point(x: -$0.x, y: $0.y) }
+) // Iso<Point, Point>
 
 @Suite struct IsoTests {
     // MARK: - Round-trip laws
@@ -40,7 +45,7 @@ private let mirrorX = iso(get: { Point(x: -$0.x, y: $0.y) },
     // MARK: - reverse
 
     @Test func reverse() {
-        let rev = addOne.reverse    // Iso<Int, Int> with get = -1, reverseGet = +1
+        let rev = addOne.reverse // Iso<Int, Int> with get = -1, reverseGet = +1
         #expect(rev.get(6) == 5)
         #expect(rev.reverseGet(5) == 6)
     }
@@ -56,12 +61,12 @@ private let mirrorX = iso(get: { Point(x: -$0.x, y: $0.y) },
     @Test func over() {
         // addOne.over doubles: get (+1), transform (*10), reverseGet (-1)
         let transform = addOne.over { $0 * 10 }
-        #expect(transform(3) == 39)  // (3+1)*10 - 1 = 40 - 1 = 39
+        #expect(transform(3) == 39) // (3+1)*10 - 1 = 40 - 1 = 39
     }
 
     @Test func overIdentity() {
         let transform = addOne.over { $0 }
-        #expect(transform(7) == 7)   // round-trip with identity is a no-op
+        #expect(transform(7) == 7) // round-trip with identity is a no-op
     }
 
     // MARK: - asLens
@@ -164,107 +169,107 @@ private let mirrorX = iso(get: { Point(x: -$0.x, y: $0.y) },
 // MARK: - Binding tests (Apple platforms only)
 
 #if canImport(SwiftUI)
-import SwiftUI
+    import SwiftUI
 
-private struct User: Equatable {
-    var name: String
-    var age: Int
-}
-
-private enum Shape: Equatable {
-    case circle(Double)
-    case rectangle(Double, Double)
-}
-
-private func mutableBinding<V>(_ initial: V) -> (binding: Binding<V>, read: () -> V) {
-    var storage = initial
-    return (
-        Binding(get: { storage }, set: { storage = $0 }),
-        { storage }
-    )
-}
-
-@Suite struct BindingOpticsTests {
-    // MARK: - Lens
-
-    @Test func bindingLens_get() {
-        let nameLens: Lens<User, String> = lens(\.name)
-        let (binding, _) = mutableBinding(User(name: "Alice", age: 30))
-        #expect(binding[optic: nameLens].wrappedValue == "Alice")
+    private struct User: Equatable {
+        var name: String
+        var age: Int
     }
 
-    @Test func bindingLens_set() {
-        let nameLens: Lens<User, String> = lens(\.name)
-        let (binding, read) = mutableBinding(User(name: "Alice", age: 30))
-        binding[optic: nameLens].wrappedValue = "Bob"
-        #expect(read().name == "Bob")
-        #expect(read().age == 30)   // other fields untouched
+    private enum Shape: Equatable {
+        case circle(Double)
+        case rectangle(Double, Double)
     }
 
-    // MARK: - Iso
-
-    @Test func bindingIso_get() {
-        let addOne = iso(get: { $0 + 1 }, reverseGet: { $0 - 1 })
-        let (binding, _) = mutableBinding(5)
-        #expect(binding[optic: addOne].wrappedValue == 6)
-    }
-
-    @Test func bindingIso_set() {
-        let addOne = iso(get: { $0 + 1 }, reverseGet: { $0 - 1 })
-        let (binding, read) = mutableBinding(5)
-        binding[optic: addOne].wrappedValue = 10
-        #expect(read() == 9)   // reverseGet(10) = 9
-    }
-
-    // MARK: - Prism
-
-    @Test func bindingPrism_activeCase_isNonNil() {
-        let circlePrism: Prism<Shape, Double> = prism(
-            preview: { if case .circle(let r) = $0 { return r } else { return nil } },
-            review: Shape.circle
+    private func mutableBinding<V>(_ initial: V) -> (binding: Binding<V>, read: () -> V) {
+        var storage = initial
+        return (
+            Binding(get: { storage }, set: { storage = $0 }),
+            { storage }
         )
-        let (binding, _) = mutableBinding(Shape.circle(5.0))
-        #expect(binding[optic: circlePrism] != nil)
-        #expect(binding[optic: circlePrism]?.wrappedValue == 5.0)
     }
 
-    @Test func bindingPrism_inactiveCase_isNil() {
-        let circlePrism: Prism<Shape, Double> = prism(
-            preview: { if case .circle(let r) = $0 { return r } else { return nil } },
-            review: Shape.circle
-        )
-        let (binding, _) = mutableBinding(Shape.rectangle(3, 4))
-        #expect(binding[optic: circlePrism] == nil)
-    }
+    @Suite struct BindingOpticsTests {
+        // MARK: - Lens
 
-    @Test func bindingPrism_set() {
-        let circlePrism: Prism<Shape, Double> = prism(
-            preview: { if case .circle(let r) = $0 { return r } else { return nil } },
-            review: Shape.circle
-        )
-        let (binding, read) = mutableBinding(Shape.circle(5.0))
-        binding[optic: circlePrism]?.wrappedValue = 10.0
-        #expect(read() == .circle(10.0))
-    }
+        @Test func bindingLens_get() {
+            let nameLens: Lens<User, String> = lens(\.name)
+            let (binding, _) = mutableBinding(User(name: "Alice", age: 30))
+            #expect(binding[optic: nameLens].wrappedValue == "Alice")
+        }
 
-    // MARK: - AffineTraversal
+        @Test func bindingLens_set() {
+            let nameLens: Lens<User, String> = lens(\.name)
+            let (binding, read) = mutableBinding(User(name: "Alice", age: 30))
+            binding[optic: nameLens].wrappedValue = "Bob"
+            #expect(read().name == "Bob")
+            #expect(read().age == 30) // other fields untouched
+        }
 
-    @Test func bindingAffineTraversal_present() {
-        let nameAT: AffineTraversal<User?, String> = AffineTraversal(
-            preview: { $0?.name },
-            set: { s, v in s.map { User(name: v, age: $0.age) } }
-        )
-        let (binding, _) = mutableBinding(Optional(User(name: "Alice", age: 30)))
-        #expect(binding[optic: nameAT]?.wrappedValue == "Alice")
-    }
+        // MARK: - Iso
 
-    @Test func bindingAffineTraversal_absent() {
-        let nameAT: AffineTraversal<User?, String> = AffineTraversal(
-            preview: { $0?.name },
-            set: { s, v in s.map { User(name: v, age: $0.age) } }
-        )
-        let (binding, _) = mutableBinding(Optional<User>.none)
-        #expect(binding[optic: nameAT] == nil)
+        @Test func bindingIso_get() {
+            let addOne = iso(get: { $0 + 1 }, reverseGet: { $0 - 1 })
+            let (binding, _) = mutableBinding(5)
+            #expect(binding[optic: addOne].wrappedValue == 6)
+        }
+
+        @Test func bindingIso_set() {
+            let addOne = iso(get: { $0 + 1 }, reverseGet: { $0 - 1 })
+            let (binding, read) = mutableBinding(5)
+            binding[optic: addOne].wrappedValue = 10
+            #expect(read() == 9) // reverseGet(10) = 9
+        }
+
+        // MARK: - Prism
+
+        @Test func bindingPrism_activeCase_isNonNil() {
+            let circlePrism: Prism<Shape, Double> = prism(
+                preview: { if case let .circle(r) = $0 { r } else { nil } },
+                review: Shape.circle
+            )
+            let (binding, _) = mutableBinding(Shape.circle(5.0))
+            #expect(binding[optic: circlePrism] != nil)
+            #expect(binding[optic: circlePrism]?.wrappedValue == 5.0)
+        }
+
+        @Test func bindingPrism_inactiveCase_isNil() {
+            let circlePrism: Prism<Shape, Double> = prism(
+                preview: { if case let .circle(r) = $0 { r } else { nil } },
+                review: Shape.circle
+            )
+            let (binding, _) = mutableBinding(Shape.rectangle(3, 4))
+            #expect(binding[optic: circlePrism] == nil)
+        }
+
+        @Test func bindingPrism_set() {
+            let circlePrism: Prism<Shape, Double> = prism(
+                preview: { if case let .circle(r) = $0 { r } else { nil } },
+                review: Shape.circle
+            )
+            let (binding, read) = mutableBinding(Shape.circle(5.0))
+            binding[optic: circlePrism]?.wrappedValue = 10.0
+            #expect(read() == .circle(10.0))
+        }
+
+        // MARK: - AffineTraversal
+
+        @Test func bindingAffineTraversal_present() {
+            let nameAT: AffineTraversal<User?, String> = AffineTraversal(
+                preview: { $0?.name },
+                set: { s, v in s.map { User(name: v, age: $0.age) } }
+            )
+            let (binding, _) = mutableBinding(Optional(User(name: "Alice", age: 30)))
+            #expect(binding[optic: nameAT]?.wrappedValue == "Alice")
+        }
+
+        @Test func bindingAffineTraversal_absent() {
+            let nameAT: AffineTraversal<User?, String> = AffineTraversal(
+                preview: { $0?.name },
+                set: { s, v in s.map { User(name: v, age: $0.age) } }
+            )
+            let (binding, _) = mutableBinding(User?.none)
+            #expect(binding[optic: nameAT] == nil)
+        }
     }
-}
 #endif

@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
-// StatefulTValidation: outer = Stateful, inner = Validation
-// Type: Stateful<S, Validation<E, A>>
-// flatMapT sequences state AND Validation — short-circuits on Validation failure.
+/// StatefulTValidation: outer = Stateful, inner = Validation
+/// Type: Stateful<S, Validation<E, A>>
+/// flatMapT sequences state AND Validation — short-circuits on Validation failure.
 
 public func flatMapTStatefulValidation<S, E: Semigroup, A, B>(
     _ stateful: Stateful<S, Validation<E, A>>,
@@ -16,6 +17,7 @@ public func flatMapTStatefulValidation<S, E: Semigroup, A, B>(
     }
 }
 
+/// `bindTStatefulValidation`.
 public func bindTStatefulValidation<S, E: Semigroup, A, B>(
     _ fn: @escaping @Sendable (A) -> Stateful<S, Validation<E, B>>
 ) -> (Stateful<S, Validation<E, A>>) -> Stateful<S, Validation<E, B>> {

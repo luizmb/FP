@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// Given a function that transforms A into B, it will generate a function that transforms
 /// a tuple of As into a tuple of Bs. This is the 2-ary version
 /// - Parameter function: (A) - B

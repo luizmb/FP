@@ -1,14 +1,15 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 // ArrayTResult: outer = Array, inner = Result
 // Type: [Result<A,E>] = Array<Result<A,E>>
 
-// (<£^>) :: (a -> b) -> [Result<a,e>] -> [Result<b,e>]
+/// (<£^>) :: (a -> b) -> [Result<a,e>] -> [Result<b,e>]
 public func <£^> <A, B, E: Error>(_ fn: @escaping @Sendable (A) -> B, _ arr: [Result<A, E>]) -> [Result<B, E>] {
     arr.mapT(fn)
 }
 
-// (<&^>) :: [Result<a,e>] -> (a -> b) -> [Result<b,e>]
+/// (<&^>) :: [Result<a,e>] -> (a -> b) -> [Result<b,e>]
 public func <&^> <A, B, E: Error>(_ arr: [Result<A, E>], _ fn: @escaping @Sendable (A) -> B) -> [Result<B, E>] {
     arr.mapT(fn)
 }

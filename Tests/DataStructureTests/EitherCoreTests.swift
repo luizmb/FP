@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import DataStructure
 import Foundation
@@ -8,20 +9,14 @@ import Testing
 
     @Test func leftConstruction() {
         let either: Either<String, Int> = .left("error")
-
-        either.match(
-            caseLeft: { error in #expect(error == "error") },
-            caseRight: { _ in Issue.record("Expected left") }
-        )
+        #expect(either.is(.left), "Expected left")
+        if case let .left(e) = either { #expect(e == "error") }
     }
 
     @Test func rightConstruction() {
         let either: Either<String, Int> = .right(42)
-
-        either.match(
-            caseLeft: { _ in Issue.record("Expected right") },
-            caseRight: { value in #expect(value == 42) }
-        )
+        #expect(either.is(.right), "Expected right")
+        if case let .right(v) = either { #expect(v == 42) }
     }
 
     // MARK: - Pattern Matching
@@ -50,11 +45,11 @@ import Testing
 
     @Test func fmap() {
         let right: Either<String, Int> = .right(5)
-        let result = Either<String, Int>.fmap({ $0 * 2 })(right)
+        let result = Either<String, Int>.fmap { $0 * 2 }(right)
         #expect(result == .right(10))
 
         let left: Either<String, Int> = .left("error")
-        let leftResult = Either<String, Int>.fmap({ $0 * 2 })(left)
+        let leftResult = Either<String, Int>.fmap { $0 * 2 }(left)
         #expect(leftResult == .left("error"))
     }
 
@@ -109,7 +104,7 @@ import Testing
         let right2: Either<String, String> = .right("hello")
         let result: Either<String, (Int, String)> = Either.zip(right1, right2)
 
-        if case .right(let tuple) = result {
+        if case let .right(tuple) = result {
             #expect(tuple.0 == 5)
             #expect(tuple.1 == "hello")
         } else {
@@ -118,7 +113,7 @@ import Testing
 
         let left: Either<String, Int> = .left("error")
         let leftResult: Either<String, (Int, String)> = Either.zip(left, right2)
-        if case .left(let error) = leftResult {
+        if case let .left(error) = leftResult {
             #expect(error == "error")
         } else {
             Issue.record("Expected left")
@@ -143,9 +138,7 @@ import Testing
 
     @Test func flatMapLeftToRight() {
         let right: Either<String, Int> = .right(5)
-        let result = right.flatMap { _ in
-            Either<String, Int>.left("new error")
-        }
+        let result = right.flatMap(const(Either<String, Int>.left("new error")))
         #expect(result == .left("new error"))
     }
 
@@ -198,7 +191,7 @@ import Testing
         let either: Either<TestError, Int> = .right(42)
         let result = either.result()
 
-        if case .success(let value) = result {
+        if case let .success(value) = result {
             #expect(value == 42)
         } else {
             Issue.record("Expected success")
@@ -209,7 +202,7 @@ import Testing
         let either: Either<TestError, Int> = .left(.test)
         let result = either.result()
 
-        if case .failure(let error) = result {
+        if case let .failure(error) = result {
             #expect(error == .test)
         } else {
             Issue.record("Expected failure")

@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 
 // MARK: - Applicative operators for NonEmpty
 
-// (<*>) :: NonEmpty<(A -> B)> -> NonEmpty<A> -> NonEmpty<B>
+/// (<*>) :: NonEmpty<(A -> B)> -> NonEmpty<A> -> NonEmpty<B>
 public func <*> <A, B>(
     _ nf: NonEmpty<@Sendable (A) -> B>,
     _ na: NonEmpty<A>
@@ -11,7 +12,7 @@ public func <*> <A, B>(
     NonEmpty<B>.apply(nf, na)
 }
 
-// (*>) :: NonEmpty<A> -> NonEmpty<B> -> NonEmpty<B>
+/// (*>) :: NonEmpty<A> -> NonEmpty<B> -> NonEmpty<B>
 public func *> <A, B>(
     _ lhs: NonEmpty<A>,
     _ rhs: NonEmpty<B>
@@ -19,7 +20,7 @@ public func *> <A, B>(
     lhs.seqRight(rhs)
 }
 
-// (<*) :: NonEmpty<A> -> NonEmpty<B> -> NonEmpty<A>
+/// (<*) :: NonEmpty<A> -> NonEmpty<B> -> NonEmpty<A>
 public func <* <A, B>(
     _ lhs: NonEmpty<A>,
     _ rhs: NonEmpty<B>

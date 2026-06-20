@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// A scalar type suitable for element-wise SIMD monoid operations.
 ///
 /// This protocol bridges integer and floating-point SIMD scalars so that:
@@ -14,16 +15,22 @@ public protocol SIMDMonoidScalar: SIMDScalar, Hashable, Codable, Comparable, Exp
     static var one: Self { get }
 }
 
-extension SIMDMonoidScalar where Self: FixedWidthInteger {
-    public static func simdAdd<V: SIMD>(_ a: V, _ b: V) -> V where V.Scalar == Self { a &+ b }
-    public static func simdMultiply<V: SIMD>(_ a: V, _ b: V) -> V where V.Scalar == Self { a &* b }
-    public static var one: Self { 1 }
+public extension SIMDMonoidScalar where Self: FixedWidthInteger {
+    /// The `property` property.
+    static func simdAdd<V: SIMD>(_ a: V, _ b: V) -> V where V.Scalar == Self { a &+ b }
+    /// The `property` property.
+    static func simdMultiply<V: SIMD>(_ a: V, _ b: V) -> V where V.Scalar == Self { a &* b }
+    /// The `one` property.
+    static var one: Self { 1 }
 }
 
-extension SIMDMonoidScalar where Self: FloatingPoint & ExpressibleByIntegerLiteral {
-    public static func simdAdd<V: SIMD>(_ a: V, _ b: V) -> V where V.Scalar == Self { a + b }
-    public static func simdMultiply<V: SIMD>(_ a: V, _ b: V) -> V where V.Scalar == Self { a * b }
-    public static var one: Self { 1 }
+public extension SIMDMonoidScalar where Self: FloatingPoint & ExpressibleByIntegerLiteral {
+    /// The `property` property.
+    static func simdAdd<V: SIMD>(_ a: V, _ b: V) -> V where V.Scalar == Self { a + b }
+    /// The `property` property.
+    static func simdMultiply<V: SIMD>(_ a: V, _ b: V) -> V where V.Scalar == Self { a * b }
+    /// The `one` property.
+    static var one: Self { 1 }
 }
 
 // MARK: - SIMDMonoid namespace
@@ -92,9 +99,9 @@ public enum SIMDMonoid<T: SIMD & Sendable> where T.Scalar: SIMDMonoidScalar {
     }
 }
 
-extension SIMDMonoid where T.Scalar: HasMax {
+public extension SIMDMonoid where T.Scalar: HasMax {
     /// Monoid under element-wise minimum, with identity vector of Scalar.max.
-    public struct Min: Monoid, RawRepresentable {
+    struct Min: Monoid, RawRepresentable {
         public let rawValue: T
 
         public init(_ rawValue: T) {
@@ -114,9 +121,9 @@ extension SIMDMonoid where T.Scalar: HasMax {
     }
 }
 
-extension SIMDMonoid where T.Scalar: HasMin {
+public extension SIMDMonoid where T.Scalar: HasMin {
     /// Monoid under element-wise maximum, with identity vector of Scalar.min.
-    public struct Max: Monoid, RawRepresentable {
+    struct Max: Monoid, RawRepresentable {
         public let rawValue: T
 
         public init(_ rawValue: T) {
@@ -205,30 +212,37 @@ extension Double: SIMDMonoidScalar {}
 
 // MARK: - SIMD Monoids type aliases
 
-extension SIMD2 where Scalar: SIMDMonoidScalar {
-    public typealias Monoids = SIMDMonoid<Self>
+public extension SIMD2 where Scalar: SIMDMonoidScalar {
+    /// `Monoids` type alias.
+    typealias Monoids = SIMDMonoid<Self>
 }
 
-extension SIMD3 where Scalar: SIMDMonoidScalar {
-    public typealias Monoids = SIMDMonoid<Self>
+public extension SIMD3 where Scalar: SIMDMonoidScalar {
+    /// `Monoids` type alias.
+    typealias Monoids = SIMDMonoid<Self>
 }
 
-extension SIMD4 where Scalar: SIMDMonoidScalar {
-    public typealias Monoids = SIMDMonoid<Self>
+public extension SIMD4 where Scalar: SIMDMonoidScalar {
+    /// `Monoids` type alias.
+    typealias Monoids = SIMDMonoid<Self>
 }
 
-extension SIMD8 where Scalar: SIMDMonoidScalar {
-    public typealias Monoids = SIMDMonoid<Self>
+public extension SIMD8 where Scalar: SIMDMonoidScalar {
+    /// `Monoids` type alias.
+    typealias Monoids = SIMDMonoid<Self>
 }
 
-extension SIMD16 where Scalar: SIMDMonoidScalar {
-    public typealias Monoids = SIMDMonoid<Self>
+public extension SIMD16 where Scalar: SIMDMonoidScalar {
+    /// `Monoids` type alias.
+    typealias Monoids = SIMDMonoid<Self>
 }
 
-extension SIMD32 where Scalar: SIMDMonoidScalar {
-    public typealias Monoids = SIMDMonoid<Self>
+public extension SIMD32 where Scalar: SIMDMonoidScalar {
+    /// `Monoids` type alias.
+    typealias Monoids = SIMDMonoid<Self>
 }
 
-extension SIMD64 where Scalar: SIMDMonoidScalar {
-    public typealias Monoids = SIMDMonoid<Self>
+public extension SIMD64 where Scalar: SIMDMonoidScalar {
+    /// `Monoids` type alias.
+    typealias Monoids = SIMDMonoid<Self>
 }

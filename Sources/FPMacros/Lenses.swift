@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @_exported import CoreFP
 
 /// Generates a memberwise initializer, a `lens` namespace, and a `with(...)` helper for
@@ -102,5 +103,5 @@ public enum LensesEmit: Sendable {
 /// The `lens` namespace and `with(...)` helper mirror the struct's declared
 /// visibility — this parameter only controls the init.
 public enum LensesAccess: Sendable {
-    case `private`, `internal`, `package`, `public`
+    case `private`, `internal`, package, `public`
 }

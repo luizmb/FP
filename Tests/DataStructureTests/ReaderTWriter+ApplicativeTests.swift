@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+import CoreFP
 import DataStructure
 import Testing
 
@@ -7,7 +9,8 @@ import Testing
     // MARK: - Reader<Env, Writer<W, A>> — Reader as outer, Writer as inner
 
     @Test func apply() {
-        let rf: Reader<Env, Writer<[String], @Sendable (Int) -> String>> = Reader { _ in Writer({ "\($0)" }, ["fn"]) }
+        let fn: @Sendable (Int) -> String = { "\($0)" }
+        let rf: Reader<Env, Writer<[String], @Sendable (Int) -> String>> = Reader(const(Writer(fn, ["fn"])))
         let ra: Reader<Env, Writer<[String], Int>> = Reader { env in Writer(env.value, ["val"]) }
         let result = applyReaderWriter(rf, ra)
         let w = result(Env(value: 7))
@@ -26,8 +29,8 @@ import Testing
     }
 
     @Test func seqRight() {
-        let lhs: Reader<Env, Writer<[String], Int>> = Reader { _ in Writer(1, ["a"]) }
-        let rhs: Reader<Env, Writer<[String], String>> = Reader { _ in Writer("hello", ["b"]) }
+        let lhs: Reader<Env, Writer<[String], Int>> = Reader(const(Writer(1, ["a"])))
+        let rhs: Reader<Env, Writer<[String], String>> = Reader(const(Writer("hello", ["b"])))
         let result = seqRightReaderWriter(lhs, rhs)
         let w = result(Env(value: 0))
         #expect(w.value == "hello")
@@ -35,8 +38,8 @@ import Testing
     }
 
     @Test func seqLeft() {
-        let lhs: Reader<Env, Writer<[String], Int>> = Reader { _ in Writer(99, ["a"]) }
-        let rhs: Reader<Env, Writer<[String], String>> = Reader { _ in Writer("ignored", ["b"]) }
+        let lhs: Reader<Env, Writer<[String], Int>> = Reader(const(Writer(99, ["a"])))
+        let rhs: Reader<Env, Writer<[String], String>> = Reader(const(Writer("ignored", ["b"])))
         let result = seqLeftReaderWriter(lhs, rhs)
         let w = result(Env(value: 0))
         #expect(w.value == 99)

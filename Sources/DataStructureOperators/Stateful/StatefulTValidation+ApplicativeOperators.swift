@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import CoreFPOperators
 import DataStructure
 
-// (<*>) :: Stateful<s, Validation<e,(a->b)>> -> Stateful<s, Validation<e,a>> -> Stateful<s, Validation<e,b>>
+/// (<*>) :: Stateful<s, Validation<e,(a->b)>> -> Stateful<s, Validation<e,a>> -> Stateful<s, Validation<e,b>>
 public func <*> <S, E: Semigroup, A, B>(
     _ sf: Stateful<S, Validation<E, @Sendable (A) -> B>>,
     _ sa: Stateful<S, Validation<E, A>>
@@ -10,7 +11,7 @@ public func <*> <S, E: Semigroup, A, B>(
     applyStatefulValidation(sf, sa)
 }
 
-// (*>) :: Stateful<s, Validation<e,a>> -> Stateful<s, Validation<e,b>> -> Stateful<s, Validation<e,b>>
+/// (*>) :: Stateful<s, Validation<e,a>> -> Stateful<s, Validation<e,b>> -> Stateful<s, Validation<e,b>>
 public func *> <S, E: Semigroup, A, B>(
     _ lhs: Stateful<S, Validation<E, A>>,
     _ rhs: Stateful<S, Validation<E, B>>
@@ -18,7 +19,7 @@ public func *> <S, E: Semigroup, A, B>(
     seqRightStatefulValidation(lhs, rhs)
 }
 
-// (<*) :: Stateful<s, Validation<e,a>> -> Stateful<s, Validation<e,b>> -> Stateful<s, Validation<e,a>>
+/// (<*) :: Stateful<s, Validation<e,a>> -> Stateful<s, Validation<e,b>> -> Stateful<s, Validation<e,a>>
 public func <* <S, E: Semigroup, A, B>(
     _ lhs: Stateful<S, Validation<E, A>>,
     _ rhs: Stateful<S, Validation<E, B>>

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import DataStructure
 import Foundation
@@ -8,31 +9,27 @@ import Testing
 
     @Test func failureConstruction() {
         let v: Validation<String, Int> = .failure("error")
-        v.match(
-            caseFailure: { #expect($0 == "error") },
-            caseSuccess: { _ in Issue.record("Expected failure") }
-        )
+        #expect(v.is(.failure), "Expected failure")
+        if case let .failure(e) = v { #expect(e == "error") }
     }
 
     @Test func successConstruction() {
         let v: Validation<String, Int> = .success(42)
-        v.match(
-            caseFailure: { _ in Issue.record("Expected success") },
-            caseSuccess: { #expect($0 == 42) }
-        )
+        #expect(v.is(.success), "Expected success")
+        if case let .success(s) = v { #expect(s == 42) }
     }
 
     // MARK: - Functor
 
     @Test func fmapSuccess() {
         let v: Validation<String, Int> = .success(5)
-        let result = Validation<String, Int>.fmap({ $0 * 2 })(v)
+        let result = Validation<String, Int>.fmap { $0 * 2 }(v)
         #expect(result == .success(10))
     }
 
     @Test func fmapFailure() {
         let v: Validation<String, Int> = .failure("err")
-        let result = Validation<String, Int>.fmap({ $0 * 2 })(v)
+        let result = Validation<String, Int>.fmap { $0 * 2 }(v)
         #expect(result == .failure("err"))
     }
 
@@ -80,10 +77,9 @@ import Testing
 
     @Test func voidPreservesError() {
         let v: Validation<String, Int> = .failure("msg")
-        v.void().match(
-            caseFailure: { #expect($0 == "msg") },
-            caseSuccess: { _ in Issue.record("Expected .failure") }
-        )
+        let voided = v.void()
+        #expect(voided.is(.failure), "Expected .failure")
+        if case let .failure(e) = voided { #expect(e == "msg") }
     }
 
     // MARK: - Applicative — the key behaviour
@@ -116,7 +112,7 @@ import Testing
     @Test func liftA2AccumulatesErrors() {
         let v1: Validation<[String], Int> = .failure(["name too short"])
         let v2: Validation<[String], Int> = .failure(["age invalid"])
-        let result = Validation<[String], String>.liftA2({ "\($0)-\($1)" })(v1, v2)
+        let result = Validation<[String], String>.liftA2 { "\($0)-\($1)" }(v1, v2)
         #expect(result == .failure(["name too short", "age invalid"]))
     }
 
@@ -146,62 +142,56 @@ import Testing
 
     // MARK: - Zip
 
-    // Tuples don't satisfy Equatable in generic positions, so use match to inspect results.
+    // Tuples don't satisfy Equatable in generic positions, so inspect via .isA/.isB/.a/.b.
 
     @Test func zipBothSuccess() {
         let v1: Validation<[String], Int> = .success(1)
         let v2: Validation<[String], String> = .success("a")
-        Validation<[String], (Int, String)>.zip(v1, v2).match(
-            caseFailure: { _ in Issue.record("Expected success") },
-            caseSuccess: { #expect($0 == (1, "a")) }
-        )
+        let result = Validation<[String], (Int, String)>.zip(v1, v2)
+        #expect(result.is(.success), "Expected success")
+        if case let .success(value) = result { #expect(value == (1, "a")) }
     }
 
     @Test func zipFirstFailure() {
         let v1: Validation<[String], Int> = .failure(["e1"])
         let v2: Validation<[String], String> = .success("a")
-        Validation<[String], (Int, String)>.zip(v1, v2).match(
-            caseFailure: { #expect($0 == ["e1"]) },
-            caseSuccess: { _ in Issue.record("Expected failure") }
-        )
+        let result = Validation<[String], (Int, String)>.zip(v1, v2)
+        #expect(result.is(.failure), "Expected failure")
+        if case let .failure(e) = result { #expect(e == ["e1"]) }
     }
 
     @Test func zipSecondFailure() {
         let v1: Validation<[String], Int> = .success(1)
         let v2: Validation<[String], String> = .failure(["e2"])
-        Validation<[String], (Int, String)>.zip(v1, v2).match(
-            caseFailure: { #expect($0 == ["e2"]) },
-            caseSuccess: { _ in Issue.record("Expected failure") }
-        )
+        let result = Validation<[String], (Int, String)>.zip(v1, v2)
+        #expect(result.is(.failure), "Expected failure")
+        if case let .failure(e) = result { #expect(e == ["e2"]) }
     }
 
     @Test func zipAccumulatesBothFailures() {
         let v1: Validation<[String], Int> = .failure(["e1"])
         let v2: Validation<[String], String> = .failure(["e2"])
-        Validation<[String], (Int, String)>.zip(v1, v2).match(
-            caseFailure: { #expect($0 == ["e1", "e2"]) },
-            caseSuccess: { _ in Issue.record("Expected failure") }
-        )
+        let result = Validation<[String], (Int, String)>.zip(v1, v2)
+        #expect(result.is(.failure), "Expected failure")
+        if case let .failure(e) = result { #expect(e == ["e1", "e2"]) }
     }
 
     @Test func zip3AllSuccess() {
         let v1: Validation<[String], Int> = .success(1)
         let v2: Validation<[String], String> = .success("a")
         let v3: Validation<[String], Bool> = .success(true)
-        Validation<[String], (Int, String, Bool)>.zip3(v1, v2, v3).match(
-            caseFailure: { _ in Issue.record("Expected success") },
-            caseSuccess: { #expect($0 == (1, "a", true)) }
-        )
+        let result = Validation<[String], (Int, String, Bool)>.zip3(v1, v2, v3)
+        #expect(result.is(.success), "Expected success")
+        if case let .success(value) = result { #expect(value == (1, "a", true)) }
     }
 
     @Test func zip3AccumulatesAllThreeFailures() {
         let v1: Validation<[String], Int> = .failure(["e1"])
         let v2: Validation<[String], String> = .failure(["e2"])
         let v3: Validation<[String], Bool> = .failure(["e3"])
-        Validation<[String], (Int, String, Bool)>.zip3(v1, v2, v3).match(
-            caseFailure: { #expect($0 == ["e1", "e2", "e3"]) },
-            caseSuccess: { _ in Issue.record("Expected failure") }
-        )
+        let result = Validation<[String], (Int, String, Bool)>.zip3(v1, v2, v3)
+        #expect(result.is(.failure), "Expected failure")
+        if case let .failure(e) = result { #expect(e == ["e1", "e2", "e3"]) }
     }
 
     @Test func zip3AccumulatesPartialFailures() {
@@ -209,10 +199,9 @@ import Testing
         let v1: Validation<[String], Int> = .failure(["e1"])
         let v2: Validation<[String], String> = .success("ok")
         let v3: Validation<[String], Bool> = .failure(["e3"])
-        Validation<[String], (Int, String, Bool)>.zip3(v1, v2, v3).match(
-            caseFailure: { #expect($0 == ["e1", "e3"]) },
-            caseSuccess: { _ in Issue.record("Expected failure") }
-        )
+        let result = Validation<[String], (Int, String, Bool)>.zip3(v1, v2, v3)
+        #expect(result.is(.failure), "Expected failure")
+        if case let .failure(e) = result { #expect(e == ["e1", "e3"]) }
     }
 
     @Test func zip4AllSuccess() {
@@ -220,10 +209,9 @@ import Testing
         let v2: Validation<[String], String> = .success("a")
         let v3: Validation<[String], Bool> = .success(true)
         let v4: Validation<[String], Double> = .success(3.14)
-        Validation<[String], (Int, String, Bool, Double)>.zip4(v1, v2, v3, v4).match(
-            caseFailure: { _ in Issue.record("Expected success") },
-            caseSuccess: { #expect($0 == (1, "a", true, 3.14)) }
-        )
+        let result = Validation<[String], (Int, String, Bool, Double)>.zip4(v1, v2, v3, v4)
+        #expect(result.is(.success), "Expected success")
+        if case let .success(value) = result { #expect(value == (1, "a", true, 3.14)) }
     }
 
     @Test func zip4AccumulatesAllFourFailures() {
@@ -231,10 +219,9 @@ import Testing
         let v2: Validation<[String], String> = .failure(["e2"])
         let v3: Validation<[String], Bool> = .failure(["e3"])
         let v4: Validation<[String], Double> = .failure(["e4"])
-        Validation<[String], (Int, String, Bool, Double)>.zip4(v1, v2, v3, v4).match(
-            caseFailure: { #expect($0 == ["e1", "e2", "e3", "e4"]) },
-            caseSuccess: { _ in Issue.record("Expected failure") }
-        )
+        let result = Validation<[String], (Int, String, Bool, Double)>.zip4(v1, v2, v3, v4)
+        #expect(result.is(.failure), "Expected failure")
+        if case let .failure(e) = result { #expect(e == ["e1", "e2", "e3", "e4"]) }
     }
 
     // MARK: - Prism
@@ -281,7 +268,7 @@ import Testing
 
     @Test func validationTOptionalFunctor() {
         let v: Validation<[String], Int?> = .success(.some(5))
-        let result = fmapTValidationOptional({ $0 * 2 })(v)
+        let result = fmapTValidationOptional { $0 * 2 }(v)
         #expect(result == .success(.some(10)))
     }
 
@@ -295,7 +282,7 @@ import Testing
 
     @Test func validationTArrayFunctor() {
         let v: Validation<[String], [Int]> = .success([1, 2, 3])
-        let result = fmapTValidationArray({ $0 * 2 })(v)
+        let result = fmapTValidationArray { $0 * 2 }(v)
         #expect(result == .success([2, 4, 6]))
     }
 
@@ -369,8 +356,8 @@ import Testing
     // MARK: - Transformer: StatefulTValidation
 
     @Test func statefulTValidationApplyAccumulatesErrors() {
-        let sf = Stateful<Int, Validation<[String], @Sendable (Int) -> Int>> { _ in .failure(["e1"]) }
-        let sa = Stateful<Int, Validation<[String], Int>> { _ in .failure(["e2"]) }
+        let sf = Stateful<Int, Validation<[String], @Sendable (Int) -> Int>>.pure(.failure(["e1"]))
+        let sa = Stateful<Int, Validation<[String], Int>>.pure(.failure(["e2"]))
         var state = 0
         let result = applyStatefulValidation(sf, sa).run(&state)
         #expect(result == .failure(["e1", "e2"]))
@@ -396,8 +383,8 @@ import Testing
     // MARK: - Transformer: ReaderTValidation
 
     @Test func readerTValidationApplyAccumulatesErrors() {
-        let rf = Reader<String, Validation<[Int], @Sendable (Int) -> Int>> { _ in .failure([1]) }
-        let ra = Reader<String, Validation<[Int], Int>> { _ in .failure([2]) }
+        let rf = Reader<String, Validation<[Int], @Sendable (Int) -> Int>>(const(.failure([1])))
+        let ra = Reader<String, Validation<[Int], Int>>(const(.failure([2])))
         let result = applyReaderValidation(rf, ra)("env")
         #expect(result == .failure([1, 2]))
     }
@@ -405,7 +392,7 @@ import Testing
     @Test func readerTValidationFlatMapTSuccess() {
         let reader = Reader<String, Validation<[Int], Int>> { env in .success(env.count) }
         let result = reader.flatMapT { n in
-            Reader<String, Validation<[Int], String>> { _ in .success("count: \(n)") }
+            Reader<String, Validation<[Int], String>>(const(.success("count: \(n)")))
         }
         #expect(result("hello") == .success("count: 5"))
     }
@@ -434,16 +421,16 @@ import Testing
 
     @Test func foldMapSuccess() {
         let v: Validation<String, Int> = .success(5)
-        #expect(v.foldMap({ "\($0)" }) == "5")
+        #expect(v.foldMap { "\($0)" } == "5")
     }
 
     @Test func foldMapFailureReturnsIdentity() {
         let v: Validation<String, Int> = .failure("err")
-        #expect(v.foldMap({ "\($0)" }) == "")
+        #expect(v.foldMap { "\($0)" } == "")
     }
 
     @Test func foldMapCurried() {
-        let fn = Validation<String, Int>.foldMap({ "\($0)" })
+        let fn = Validation<String, Int>.foldMap { "\($0)" }
         #expect(fn(.success(3)) == "3")
         #expect(fn(.failure("x")) == "")
     }

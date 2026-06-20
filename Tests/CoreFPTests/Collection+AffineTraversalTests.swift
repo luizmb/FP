@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @testable import CoreFP
 import Testing
 
@@ -31,11 +32,11 @@ struct IxIndexTests {
     }
 
     @Test func over_hit() {
-        #expect([Int].ix(0).over({ $0 * 2 })(xs) == [20, 20, 30])
+        #expect([Int].ix(0).over { $0 * 2 }(xs) == [20, 20, 30])
     }
 
     @Test func over_miss() {
-        #expect([Int].ix(9).over({ $0 * 2 })(xs) == xs)
+        #expect([Int].ix(9).over { $0 * 2 }(xs) == xs)
     }
 
     @Test("preview-set: setting at an in-bounds index returns the new value on preview")
@@ -106,12 +107,12 @@ struct IxCustomIdentifierTests {
     }
 
     @Test func over_hit() {
-        let updated = [Project].ix(id: "auth", by: \.slug).over({ Project(slug: $0.slug, title: $0.title.uppercased()) })(projects)
+        let updated = [Project].ix(id: "auth", by: \.slug).over { Project(slug: $0.slug, title: $0.title.uppercased()) }(projects)
         #expect(updated.map(\.title) == ["AUTH", "Profile", "Feed"])
     }
 
     @Test func over_miss() {
-        let updated = [Project].ix(id: "gone", by: \.slug).over({ Project(slug: $0.slug, title: $0.title.uppercased()) })(projects)
+        let updated = [Project].ix(id: "gone", by: \.slug).over { Project(slug: $0.slug, title: $0.title.uppercased()) }(projects)
         #expect(updated == projects)
     }
 
@@ -159,7 +160,7 @@ struct IxCustomIdentifierClosureTests {
         Project(slug: "feed", title: "Feed")
     ]
 
-    private let bySlug: @Sendable (Project) -> String = { $0.slug }
+    private let bySlug: @Sendable (Project) -> String = get(\.slug)
 
     @Test func preview_hit() {
         #expect([Project].ix(id: "profile", by: bySlug).preview(projects)?.title == "Profile")
@@ -181,13 +182,13 @@ struct IxCustomIdentifierClosureTests {
 
     @Test func over_hit() {
         let updated = [Project].ix(id: "auth", by: bySlug)
-            .over({ Project(slug: $0.slug, title: $0.title.uppercased()) })(projects)
+            .over { Project(slug: $0.slug, title: $0.title.uppercased()) }(projects)
         #expect(updated.map(\.title) == ["AUTH", "Profile", "Feed"])
     }
 
     @Test func over_miss() {
         let updated = [Project].ix(id: "gone", by: bySlug)
-            .over({ Project(slug: $0.slug, title: $0.title.uppercased()) })(projects)
+            .over { Project(slug: $0.slug, title: $0.title.uppercased()) }(projects)
         #expect(updated == projects)
     }
 
@@ -201,8 +202,10 @@ struct IxCustomIdentifierClosureTests {
     @Test("set-set: last set wins")
     func law_setSet() {
         let optic = [Project].ix(id: "profile", by: bySlug)
-        let result = optic.set(optic.set(projects, Project(slug: "profile", title: "X")),
-                               Project(slug: "profile", title: "Y"))
+        let result = optic.set(
+            optic.set(projects, Project(slug: "profile", title: "X")),
+            Project(slug: "profile", title: "Y")
+        )
         #expect(result == optic.set(projects, Project(slug: "profile", title: "Y")))
     }
 
@@ -255,12 +258,12 @@ struct IxIDTests {
     }
 
     @Test func over_hit() {
-        let updated = [Item].ix(id: 3).over({ Item(id: $0.id, name: $0.name.lowercased()) })(items)
+        let updated = [Item].ix(id: 3).over { Item(id: $0.id, name: $0.name.lowercased()) }(items)
         #expect(updated.map(\.name) == ["A", "B", "c"])
     }
 
     @Test func over_miss() {
-        let updated = [Item].ix(id: 99).over({ Item(id: $0.id, name: $0.name.lowercased()) })(items)
+        let updated = [Item].ix(id: 99).over { Item(id: $0.id, name: $0.name.lowercased()) }(items)
         #expect(updated == items)
     }
 
@@ -316,11 +319,11 @@ struct IxDictionaryTests {
     }
 
     @Test func over_hit() {
-        #expect([String: Int].ix(key: "a").over({ $0 * 10 })(dict) == ["a": 10, "b": 2, "c": 3])
+        #expect([String: Int].ix(key: "a").over { $0 * 10 }(dict) == ["a": 10, "b": 2, "c": 3])
     }
 
     @Test func over_miss() {
-        #expect([String: Int].ix(key: "z").over({ $0 * 10 })(dict) == dict)
+        #expect([String: Int].ix(key: "z").over { $0 * 10 }(dict) == dict)
     }
 
     @Test("preview-set: setting a known key returns the new value on preview")
@@ -399,7 +402,7 @@ struct AffineTraversalKeyPathTests {
         #expect(affineTraversal(\[Int][safe: 9]).set([10, 20, 30], 99) == [10, 20, 30])
     }
 
-    @Test("affineTraversal(\\[Int][safe: i]) is equivalent to [Int].ix(i)")
+    @Test(#"affineTraversal(\[Int][safe: i]) is equivalent to [Int].ix(i)"#)
     func equivalenceWithIx() {
         let xs = [10, 20, 30]
         let via = affineTraversal(\[Int][safe: 2])

@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 
-// (<*>) :: Reader<env, Stateful<s, (a -> b)>> -> Reader<env, Stateful<s, a>> -> Reader<env, Stateful<s, b>>
+/// (<*>) :: Reader<env, Stateful<s, (a -> b)>> -> Reader<env, Stateful<s, a>> -> Reader<env, Stateful<s, b>>
 public func <*> <Env, S, A, B>(
     _ rf: Reader<Env, Stateful<S, @Sendable (A) -> B>>,
     _ ra: Reader<Env, Stateful<S, A>>
@@ -9,7 +10,7 @@ public func <*> <Env, S, A, B>(
     applyReaderStateful(rf, ra)
 }
 
-// (*>) :: Reader<env, Stateful<s, a>> -> Reader<env, Stateful<s, b>> -> Reader<env, Stateful<s, b>>
+/// (*>) :: Reader<env, Stateful<s, a>> -> Reader<env, Stateful<s, b>> -> Reader<env, Stateful<s, b>>
 public func *> <Env, S, A, B>(
     _ lhs: Reader<Env, Stateful<S, A>>,
     _ rhs: Reader<Env, Stateful<S, B>>
@@ -17,7 +18,7 @@ public func *> <Env, S, A, B>(
     seqRightReaderStateful(lhs, rhs)
 }
 
-// (<*) :: Reader<env, Stateful<s, a>> -> Reader<env, Stateful<s, b>> -> Reader<env, Stateful<s, a>>
+/// (<*) :: Reader<env, Stateful<s, a>> -> Reader<env, Stateful<s, b>> -> Reader<env, Stateful<s, a>>
 public func <* <Env, S, A, B>(
     _ lhs: Reader<Env, Stateful<S, A>>,
     _ rhs: Reader<Env, Stateful<S, B>>

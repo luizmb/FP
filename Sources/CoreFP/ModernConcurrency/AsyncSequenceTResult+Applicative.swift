@@ -1,8 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // AsyncSequenceTResult: outer = AsyncStream, inner = Result
 // Type: AsyncStream<Result<A,E>>
 
+/// `liftA2AsyncStreamResult`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func liftA2AsyncStreamResult<A, B, C, E: Error>(
     _ fn: @escaping @Sendable (A, B) -> C
@@ -18,11 +20,14 @@ where A: Sendable, B: Sendable, C: Sendable, E: Sendable {
                 }
                 continuation.finish()
             }
+            // swiftlint:disable:next closure_ignoring_args
+            // swiftlint:disable:next closure_ignoring_args
             continuation.onTermination = { _ in task.cancel() }
         }
     }
 }
 
+/// `seqRightAsyncStreamResult`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func seqRightAsyncStreamResult<A, B, E: Error>(
     _ lhs: AsyncStream<Result<A, E>>,
@@ -37,10 +42,12 @@ public func seqRightAsyncStreamResult<A, B, E: Error>(
             }
             continuation.finish()
         }
+        // swiftlint:disable:next closure_ignoring_args
         continuation.onTermination = { _ in task.cancel() }
     }
 }
 
+/// `seqLeftAsyncStreamResult`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func seqLeftAsyncStreamResult<A, B, E: Error>(
     _ lhs: AsyncStream<Result<A, E>>,
@@ -55,6 +62,7 @@ public func seqLeftAsyncStreamResult<A, B, E: Error>(
             }
             continuation.finish()
         }
+        // swiftlint:disable:next closure_ignoring_args
         continuation.onTermination = { _ in task.cancel() }
     }
 }

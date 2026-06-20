@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import DataStructure
 import Testing
 
@@ -73,7 +74,7 @@ import Testing
     @Test func eitherTStatefulMapTLeft() {
         let e: Either<String, Stateful<Int, Int>> = .left("error")
         let mapped: Either<String, Stateful<Int, Int>> = e.mapT { $0 * 2 }
-        if case .left(let l) = mapped {
+        if case let .left(l) = mapped {
             #expect(l == "error")
         } else {
             Issue.record("Expected .left")
@@ -93,7 +94,7 @@ import Testing
         let result: Either<String, Stateful<Int, String>> = e.flatMapT { value in
             Stateful<Int, String>.pure("\(value)")
         }
-        if case .left(let l) = result {
+        if case let .left(l) = result {
             #expect(l == "fail")
         } else {
             Issue.record("Expected .left")

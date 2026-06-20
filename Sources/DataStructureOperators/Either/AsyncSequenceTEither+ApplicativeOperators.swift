@@ -1,14 +1,17 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 
 // AsyncSequenceTEither: AsyncStream<Either<L,A>>
 
+/// `*>` overload.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func *> <L, A, B>(_ lhs: AsyncStream<Either<L, A>>, _ rhs: AsyncStream<Either<L, B>>) -> AsyncStream<Either<L, B>>
 where A: Sendable, B: Sendable, L: Sendable {
     seqRightAsyncStreamEither(lhs, rhs)
 }
 
+/// `func`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func <* <L, A, B>(_ lhs: AsyncStream<Either<L, A>>, _ rhs: AsyncStream<Either<L, B>>) -> AsyncStream<Either<L, A>>
 where A: Sendable, B: Sendable, L: Sendable {

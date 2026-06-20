@@ -1,4 +1,5 @@
-extension Comparable {
+// SPDX-License-Identifier: Apache-2.0
+public extension Comparable {
     /// Constrains `self` to fall inside `range`, clamping to the nearest endpoint when it falls outside.
     ///
     /// Returns `self` if it already lies within `range`; otherwise returns the closest bound.
@@ -9,7 +10,7 @@ extension Comparable {
     /// 42.clamped(to: 0...10)   // 10   (clamped to upper bound)
     /// 3.5.clamped(to: 0.0...1.0) // 1.0
     /// ```
-    public func clamped(to range: ClosedRange<Self>) -> Self {
+    func clamped(to range: ClosedRange<Self>) -> Self {
         min(max(self, range.lowerBound), range.upperBound)
     }
 
@@ -30,7 +31,7 @@ extension Comparable {
     /// ```swift
     /// 41.within(42 ± 2)    // true — 41 falls inside 40...44
     /// ```
-    public func within(_ range: ClosedRange<Self>) -> Bool {
+    func within(_ range: ClosedRange<Self>) -> Bool {
         range.contains(self)
     }
 }

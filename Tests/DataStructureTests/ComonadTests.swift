@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import DataStructure
 import Testing
 
@@ -25,7 +26,7 @@ import Testing
     @Test func writerExtendPreservesLog() {
         let w = Writer<String, Int>(5, "mylog")
         let result = w.extend { $0.log.count }
-        #expect(result.value == 5)     // f(w) = w.log.count = 5
+        #expect(result.value == 5) // f(w) = w.log.count = 5
         #expect(result.log == "mylog") // original log preserved
     }
 

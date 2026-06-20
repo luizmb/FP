@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 public extension Optional where Wrapped: Collection {
     /// Returns true if the Optional is nil or contains an empty Collection.
     var isNilOrEmpty: Bool {

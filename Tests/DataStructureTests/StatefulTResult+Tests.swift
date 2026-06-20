@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import DataStructure
 import Testing
 
@@ -54,7 +55,7 @@ import Testing
     @Test func resultTStatefulMapTFailure() {
         let r: Result<Stateful<Int, Int>, TestError> = .failure(.failure)
         let mapped: Result<Stateful<Int, Int>, TestError> = r.mapT { $0 * 3 }
-        if case .failure(let e) = mapped {
+        if case let .failure(e) = mapped {
             #expect(e == .failure)
         } else {
             Issue.record("Expected .failure")
@@ -74,7 +75,7 @@ import Testing
         let result: Result<Stateful<Int, String>, TestError> = r.flatMapT { value in
             Stateful<Int, String>.pure("\(value)")
         }
-        if case .failure(let e) = result {
+        if case let .failure(e) = result {
             #expect(e == .failure)
         } else {
             Issue.record("Expected .failure")

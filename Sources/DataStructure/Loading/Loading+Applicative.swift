@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -17,15 +18,20 @@ public extension Loading {
     ) -> Loading<(Left, Right), Failure>
     where Success == (Left, Right) {
         switch (left, right) {
-        case (.failed(let err, _), _),
-             (_, .failed(let err, _)):
+        case let (.failed(err, _), _),
+             let (_, .failed(err, _)):
             .failed(error: err, previous: (Left, Right)?.zip(left.loadedOrPrevious, right.loadedOrPrevious))
-        case (.idle, _), (_, .idle):
+
+        case (.idle, _),
+             (_, .idle):
             .idle
-        case (.loading(let l), _):
+
+        case let (.loading(l), _):
             .loading(previous: (Left, Right)?.zip(l, right.loadedOrPrevious))
-        case (_, .loading(let r)):
+
+        case let (_, .loading(r)):
             .loading(previous: (Left, Right)?.zip(left.loadedOrPrevious, r))
+
         case let (.loaded(l), .loaded(r)):
             .loaded((l, r))
         }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 import DataStructureOperators
@@ -34,7 +35,7 @@ import Testing
     }
 
     @Test func apply() {
-        let fns: [Stateful<Int, @Sendable (Int) -> String>] = [.pure({ "\($0)" })]
+        let fns: [Stateful<Int, @Sendable (Int) -> String>] = [.pure { "\($0)" }]
         let vals: [Stateful<Int, Int>] = [.pure(5)]
         let result = fns <*> vals
         #expect(result.count == 1)

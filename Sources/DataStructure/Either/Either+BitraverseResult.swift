@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 public extension Either {
-    // bitraverse :: (a -> Result<c,err>) -> (b -> Result<d,err>) -> Either a b -> Result<Either c d, err>
-    // bitraverse lf _  (Left a)  = fmap Left  (lf a)
-    // bitraverse _  rf (Right b) = fmap Right (rf b)
+    /// bitraverse :: (a -> Result<c,err>) -> (b -> Result<d,err>) -> Either a b -> Result<Either c d, err>
+    /// bitraverse lf _  (Left a)  = fmap Left  (lf a)
+    /// bitraverse _  rf (Right b) = fmap Right (rf b)
     func bitraverse<C, D, Err: Error>(
         _ lf: (A) -> Result<C, Err>,
         _ rf: (B) -> Result<D, Err>
@@ -14,9 +15,9 @@ public extension Either {
         )
     }
 
-    // bisequence :: Either Result<c,err> Result<d,err> -> Result<Either c d, err>
+    /// bisequence :: Either Result<c,err> Result<d,err> -> Result<Either c d, err>
     func bisequence<C, D, Err: Error>() -> Result<Either<C, D>, Err>
-        where A == Result<C, Err>, B == Result<D, Err> {
+    where A == Result<C, Err>, B == Result<D, Err> {
         bitraverse(CoreFP.id, CoreFP.id)
     }
 }

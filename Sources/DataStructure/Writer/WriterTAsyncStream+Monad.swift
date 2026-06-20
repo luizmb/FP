@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -9,6 +10,7 @@ import Foundation
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public extension Writer {
+    /// Declaration.
     func flatMapT<Inner, B: AsyncSequence>(
         _ fn: @escaping @Sendable (Inner) async throws -> Writer<W, B>
     ) -> Writer<W, AsyncThrowingFlatMapSequence<AsyncThrowingMapSequence<AsyncStream<Inner>, B>, B>>

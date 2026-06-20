@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -11,7 +12,7 @@ public extension Either {
     /// Either<DBError, User>.right(user).result()              // .success(user)
     /// ```
     func result() -> Result<B, A> where A: Error {
-        Result.from(self.inverted())
+        Result.from(inverted())
     }
 }
 

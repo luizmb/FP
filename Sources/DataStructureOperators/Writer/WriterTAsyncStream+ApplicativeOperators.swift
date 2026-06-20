@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import CoreFPOperators
 import DataStructure
@@ -5,6 +6,7 @@ import DataStructure
 // (*>) :: Writer<w, AsyncStream<a>> -> Writer<w, AsyncStream<b>> -> Writer<w, AsyncMapSequence<...>>
 // Note: <*> is not available — AsyncStream has no apply free function due to its complex return type.
 // Use liftA2WriterAsyncStream for general applicative lifting.
+/// `*>` overload.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func *> <W: Monoid, A: Sendable, B: Sendable>(
     _ lhs: Writer<W, AsyncStream<A>>,
@@ -14,6 +16,7 @@ public func *> <W: Monoid, A: Sendable, B: Sendable>(
 }
 
 // (<*) :: Writer<w, AsyncStream<a>> -> Writer<w, AsyncStream<b>> -> Writer<w, AsyncMapSequence<...>>
+/// `func`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func <* <W: Monoid, A: Sendable, B: Sendable>(
     _ lhs: Writer<W, AsyncStream<A>>,

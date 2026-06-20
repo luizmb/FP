@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // MARK: - Functor
 
 public extension NonEmpty {
@@ -6,6 +8,7 @@ public extension NonEmpty {
         NonEmpty<B>(head: fn(head), tail: tail.map(fn))
     }
 
+    /// The `property` property.
     static func fmap<B>(
         _ fn: @escaping @Sendable (A) -> B
     ) -> @Sendable (NonEmpty<A>) -> NonEmpty<B> {
@@ -15,6 +18,7 @@ public extension NonEmpty {
 
 // MARK: - Free functions
 
+/// `fmap` for `Free functions`.
 public func fmap<A, B>(
     _ fn: @escaping @Sendable (A) -> B,
     _ ne: NonEmpty<A>

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // StatefulT + Either — free functions for Stateful<S, Either<L, A>>

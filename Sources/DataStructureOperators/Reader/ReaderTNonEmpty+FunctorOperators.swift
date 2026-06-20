@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 import Foundation
@@ -5,12 +6,12 @@ import Foundation
 // ReaderTNonEmpty: outer = Reader, inner = NonEmpty
 // Type: Reader<Environment, NonEmpty<A>>
 
-// (<£^>) :: (A -> B) -> Reader<Env, NonEmpty<A>> -> Reader<Env, NonEmpty<B>>
+/// (<£^>) :: (A -> B) -> Reader<Env, NonEmpty<A>> -> Reader<Env, NonEmpty<B>>
 public func <£^> <A, B, Env>(_ fn: @escaping @Sendable (A) -> B, _ reader: Reader<Env, NonEmpty<A>>) -> Reader<Env, NonEmpty<B>> {
     reader.mapT(fn)
 }
 
-// (<&^>) :: Reader<Env, NonEmpty<A>> -> (A -> B) -> Reader<Env, NonEmpty<B>>
+/// (<&^>) :: Reader<Env, NonEmpty<A>> -> (A -> B) -> Reader<Env, NonEmpty<B>>
 public func <&^> <A, B, Env>(_ reader: Reader<Env, NonEmpty<A>>, _ fn: @escaping @Sendable (A) -> B) -> Reader<Env, NonEmpty<B>> {
     reader.mapT(fn)
 }

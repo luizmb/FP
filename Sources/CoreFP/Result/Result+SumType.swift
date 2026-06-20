@@ -1,6 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // MARK: - Result as SumType2
+
 //
 // Result<Success, Failure> is isomorphic to Either<Success, Failure>:
 //   .success(a) ≅ .left(a)   (SumType2.A = Success)
@@ -23,8 +25,11 @@ extension Result: SumType2 {
 
     public func match<C>(caseLeft: (Success) -> C, caseRight: (Failure) -> C) -> C {
         switch self {
-        case let .success(value): caseLeft(value)
-        case let .failure(value): caseRight(value)
+        case let .success(value):
+            caseLeft(value)
+
+        case let .failure(value):
+            caseRight(value)
         }
     }
 }

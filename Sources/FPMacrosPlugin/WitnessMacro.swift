@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros
@@ -5,14 +6,14 @@ import SwiftSyntaxMacros
 // MARK: - Parsed model
 
 private struct WitnessParam {
-    let label: String?     // nil when the parameter label is `_`
+    let label: String? // nil when the parameter label is `_`
     let type: String
 }
 
 private struct WitnessMethod {
     let baseName: String
     let params: [WitnessParam]
-    let returnType: String   // "Void" when absent
+    let returnType: String // "Void" when absent
     let isAsync: Bool
     let isThrows: Bool
 
@@ -46,7 +47,7 @@ private struct WitnessModel {
     let methods: [WitnessMethod]
     let properties: [WitnessProperty]
     let associatedTypes: [(name: String, constraint: String?)]
-    let inheritedWitnesses: [String]   // parent protocol names (already filtered of markers)
+    let inheritedWitnesses: [String] // parent protocol names (already filtered of markers)
 
     var hasSettable: Bool { properties.contains(where: \.isSettable) }
 }
@@ -141,7 +142,7 @@ private func parseModel(
         let decl = member.decl
         if let assoc = decl.as(AssociatedTypeDeclSyntax.self) {
             let constraint = assoc.inheritanceClause?.inheritedTypes
-                .map { $0.type.trimmedDescription }.joined(separator: " & ")
+                .map(\.type.trimmedDescription).joined(separator: " & ")
             associatedTypes.append((assoc.name.text, constraint))
         } else if let function = decl.as(FunctionDeclSyntax.self) {
             if let method = parseMethod(function, abort: abort) { methods.append(method) }
@@ -155,7 +156,7 @@ private func parseModel(
     }
 
     let inherited = (proto.inheritanceClause?.inheritedTypes ?? [])
-        .map { $0.type.trimmedDescription }
+        .map(\.type.trimmedDescription)
         .filter { !markerProtocols.contains($0) }
 
     return aborted ? nil : WitnessModel(
@@ -317,7 +318,9 @@ private func initFieldNames(_ model: WitnessModel) -> [String] {
 
 private func disambiguatedNames(_ methods: [WitnessMethod]) -> [String] {
     var counts: [String: Int] = [:]
-    for method in methods { counts[method.baseName, default: 0] += 1 }
+    for method in methods {
+        counts[method.baseName, default: 0] += 1
+    }
 
     return methods.map { method in
         guard counts[method.baseName, default: 0] > 1 else { return method.baseName }
@@ -334,8 +337,8 @@ func typeToken(_ type: String) -> String {
 // MARK: - Generics
 
 struct GenericClause {
-    let declaration: String   // e.g. "<Item, Failure: Error>" or ""
-    let usage: String         // e.g. "<Item, Failure>" or ""
+    let declaration: String // e.g. "<Item, Failure: Error>" or ""
+    let usage: String // e.g. "<Item, Failure>" or ""
 }
 
 func genericClause(_ associatedTypes: [(name: String, constraint: String?)]) -> GenericClause {
@@ -354,12 +357,24 @@ let markerProtocols: Set<String> = ["Sendable", "AnyObject", "Any"]
 func witnessAccess(_ modifiers: DeclModifierListSyntax) -> AccessLevel {
     for modifier in modifiers {
         switch modifier.name.text {
-        case "open", "public": return .public   // `open` structs are illegal → public witness
-        case "package":        return .package
-        case "internal":       return .internal
-        case "fileprivate":    return .fileprivate
-        case "private":        return .private
-        default:               continue
+        case "open",
+             "public":
+            return .public // `open` structs are illegal → public witness
+
+        case "package":
+            return .package
+
+        case "internal":
+            return .internal
+
+        case "fileprivate":
+            return .fileprivate
+
+        case "private":
+            return .private
+
+        default:
+            continue
         }
     }
     return .internal
@@ -367,7 +382,7 @@ func witnessAccess(_ modifiers: DeclModifierListSyntax) -> AccessLevel {
 
 /// Whole-identifier check: does `name` appear as a standalone token in `text`?
 func appears(_ name: String, in text: String) -> Bool {
-    substitute(name, with: "\u{0}", in: text).contains("\u{0}")
+    substitute(name, with: " {0}", in: text).contains(" {0}")
 }
 
 /// Replace standalone occurrences of identifier `name` with `replacement`, respecting
@@ -394,7 +409,9 @@ func substitute(_ name: String, with replacement: String, in text: String) -> St
 func matches(_ name: String, in chars: [Character], at index: Int) -> Bool {
     let target = Array(name)
     guard index + target.count <= chars.count else { return false }
-    for offset in 0..<target.count where chars[index + offset] != target[offset] { return false }
+    for offset in 0..<target.count where chars[index + offset] != target[offset] {
+        return false
+    }
     return true
 }
 
@@ -416,14 +433,25 @@ private enum WitnessDiagnostic: DiagnosticMessage {
 
     var message: String {
         switch self {
-        case .notAProtocol:        "@Witness can only be applied to protocols"
-        case .staticRequirement:   "@Witness can't witness `static` requirements (a value witness has no Self)"
-        case .mutatingRequirement: "@Witness can't witness `mutating` requirements in a value witness"
-        case .initRequirement:     "@Witness can't witness `init` requirements"
-        case .subscriptRequirement: "@Witness can't witness `subscript` requirements"
+        case .notAProtocol:
+            "@Witness can only be applied to protocols"
+
+        case .staticRequirement:
+            "@Witness can't witness `static` requirements (a value witness has no Self)"
+
+        case .mutatingRequirement:
+            "@Witness can't witness `mutating` requirements in a value witness"
+
+        case .initRequirement:
+            "@Witness can't witness `init` requirements"
+
+        case .subscriptRequirement:
+            "@Witness can't witness `subscript` requirements"
+
         case .unconstrainedGeneric:
             "@Witness can't witness a method with an unconstrained generic parameter "
                 + "(no protocol/class constraint to erase to `any`). Add a constraint or remove the requirement."
+
         case .genericInReturn:
             "@Witness can't witness a method whose generic parameter appears in the return type "
                 + "(e.g. `decode<T>(_: T.Type) -> T`) — it can't be lowered to an existential."

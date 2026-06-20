@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import DataStructure
 import Testing
 
@@ -5,7 +6,7 @@ import Testing
     // MARK: - [Stateful<S, A>] — Array as outer, Stateful as inner
 
     @Test func apply() {
-        let fns: [Stateful<Int, @Sendable (Int) -> String>] = [.pure({ "\($0)" })]
+        let fns: [Stateful<Int, @Sendable (Int) -> String>] = [.pure { "\($0)" }]
         let vals: [Stateful<Int, Int>] = [.get]
         let result = applyArrayStateful(fns, vals)
         #expect(result.count == 1)
@@ -13,7 +14,7 @@ import Testing
     }
 
     @Test func applyCartesianProduct() {
-        let fns: [Stateful<Int, @Sendable (Int) -> Int>] = [.pure({ $0 + 1 }), .pure({ $0 * 2 })]
+        let fns: [Stateful<Int, @Sendable (Int) -> Int>] = [.pure { $0 + 1 }, .pure { $0 * 2 }]
         let vals: [Stateful<Int, Int>] = [.pure(3), .pure(4)]
         let result = applyArrayStateful(fns, vals)
         #expect(result.count == 4)

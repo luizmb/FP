@@ -1,10 +1,11 @@
+// SPDX-License-Identifier: Apache-2.0
 @testable import CoreFP
 import Testing
 
 @Suite struct ArrayFunctorTests {
     @Test func fmap() {
         let array = [1, 2, 3]
-        let result = Array.fmap({ $0 * 2 })(array)
+        let result = Array.fmap { $0 * 2 }(array)
         #expect(result == [2, 4, 6])
     }
 
@@ -28,7 +29,7 @@ import Testing
         let f: @Sendable (Int) -> Int = { $0 * 2 }
         let g: @Sendable (Int) -> Int = { $0 + 1 }
 
-        let left = Array.fmap({ x in f(g(x)) })(array)
+        let left = Array.fmap { x in f(g(x)) }(array)
         let right = Array.fmap(f)(Array.fmap(g)(array))
 
         #expect(left == right)

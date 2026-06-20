@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import CoreFPOperators
 import DataStructure
 
-// (<*>) :: Writer<w, Validation<e,(a->b)>> -> Writer<w, Validation<e,a>> -> Writer<w, Validation<e,b>>
+/// (<*>) :: Writer<w, Validation<e,(a->b)>> -> Writer<w, Validation<e,a>> -> Writer<w, Validation<e,b>>
 public func <*> <W: Monoid, E: Semigroup, A, B>(
     _ wf: Writer<W, Validation<E, @Sendable (A) -> B>>,
     _ wa: Writer<W, Validation<E, A>>
@@ -10,7 +11,7 @@ public func <*> <W: Monoid, E: Semigroup, A, B>(
     applyWriterValidation(wf, wa)
 }
 
-// (*>) :: Writer<w, Validation<e,a>> -> Writer<w, Validation<e,b>> -> Writer<w, Validation<e,b>>
+/// (*>) :: Writer<w, Validation<e,a>> -> Writer<w, Validation<e,b>> -> Writer<w, Validation<e,b>>
 public func *> <W: Monoid, E: Semigroup, A, B>(
     _ lhs: Writer<W, Validation<E, A>>,
     _ rhs: Writer<W, Validation<E, B>>
@@ -18,7 +19,7 @@ public func *> <W: Monoid, E: Semigroup, A, B>(
     seqRightWriterValidation(lhs, rhs)
 }
 
-// (<*) :: Writer<w, Validation<e,a>> -> Writer<w, Validation<e,b>> -> Writer<w, Validation<e,a>>
+/// (<*) :: Writer<w, Validation<e,a>> -> Writer<w, Validation<e,b>> -> Writer<w, Validation<e,a>>
 public func <* <W: Monoid, E: Semigroup, A, B>(
     _ lhs: Writer<W, Validation<E, A>>,
     _ rhs: Writer<W, Validation<E, B>>

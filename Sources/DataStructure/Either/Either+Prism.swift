@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -13,15 +14,16 @@ import Foundation
 public extension Either {
     struct Prisms: Sendable {
         public let left: CoreFP.Prism<Either, A> = CoreFP.prism(
-            preview: { (s: Either) in guard case .left(let a) = s else { return nil }; return a },
+            preview: { (s: Either) in guard case let .left(a) = s else { return nil }; return a },
             review: Either.left
         )
         public let right: CoreFP.Prism<Either, B> = CoreFP.prism(
-            preview: { (s: Either) in guard case .right(let b) = s else { return nil }; return b },
+            preview: { (s: Either) in guard case let .right(b) = s else { return nil }; return b },
             review: Either.right
         )
     }
 
+    /// The `prism` property.
     static var prism: Prisms { Prisms() }
 
     enum Cases: CoreFP.CaseMatchable {
@@ -30,13 +32,19 @@ public extension Either {
 
         public func matches(_ value: Either) -> Bool {
             switch (self, value) {
-            case (.left, .left):   true
-            case (.right, .right): true
-            default:               false
+            case (.left, .left):
+                true
+
+            case (.right, .right):
+                true
+
+            default:
+                false
             }
         }
     }
 
+    /// Declaration.
     func `is`(_ c: Cases) -> Bool { c.matches(self) }
 }
 

@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
-// ValidationTNonEmpty: outer = Validation, inner = NonEmpty
-// Type: Validation<E, NonEmpty<A>>
+/// ValidationTNonEmpty: outer = Validation, inner = NonEmpty
+/// Type: Validation<E, NonEmpty<A>>
 
 public func fmapTValidationNonEmpty<E: Semigroup, A, B>(
     _ fn: @escaping @Sendable (A) -> B

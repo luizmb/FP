@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @testable import CoreFP
 import Testing
 
@@ -69,9 +70,9 @@ import Testing
         let oddTrues = mconcat([Bool.Monoids.Xor(true), .init(false), .init(true)])
         let evenTrues = mconcat([Bool.Monoids.Xor(true), .init(true), .init(false)])
         let empty = mconcat([Bool.Monoids.Xor]())
-        #expect(oddTrues.rawValue == false)    // true XOR false XOR true = false
-        #expect(evenTrues.rawValue == false)   // true XOR true XOR false = false
-        #expect(empty.rawValue == false)       // identity
+        #expect(oddTrues.rawValue == false) // true XOR false XOR true = false
+        #expect(evenTrues.rawValue == false) // true XOR true XOR false = false
+        #expect(empty.rawValue == false) // identity
     }
 
     // MARK: - RawRepresentable

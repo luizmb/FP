@@ -1,12 +1,14 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
 public extension Reader {
-    // ReaderT + Optional
+    /// ReaderT + Optional
     func mapT<A, B>(_ fn: @escaping @Sendable (A) -> B) -> Reader<Environment, B?> where Output == A?, A: Sendable {
         mapReader(A?.fmap(fn))
     }
 
+    /// The `property` property.
     static func fmap<A, B>(
         _ fn: @escaping @Sendable (A) -> B
     ) -> @Sendable (Reader<Environment, A?>) -> Reader<Environment, B?>

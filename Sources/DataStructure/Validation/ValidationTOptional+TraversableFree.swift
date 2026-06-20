@@ -1,5 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
-import DataStructure
 
 /// Sequence a Validation of an Optional into an Optional of Validation.
 /// sequence :: Validation e b? -> Validation e b?

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Testing
 
@@ -15,14 +16,15 @@ private enum Sheet: Equatable, Sendable {
 extension Sheet: Prismatic {
     struct Prisms: Sendable {
         let settings = Prism<Sheet, Int>(
-            preview: { if case .settings(let value) = $0 { value } else { nil } },
+            preview: { if case let .settings(value) = $0 { value } else { nil } },
             review: Sheet.settings
         )
         let profile = Prism<Sheet, String>(
-            preview: { if case .profile(let value) = $0 { value } else { nil } },
+            preview: { if case let .profile(value) = $0 { value } else { nil } },
             review: Sheet.profile
         )
     }
+
     static let prism = Prisms()
 }
 

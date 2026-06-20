@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import DataStructure
 import Testing
 
@@ -165,7 +166,7 @@ import Testing
             }
         }
         let doubleFromState: @Sendable (Int) -> Stateful<Int, String> = { n in
-            Stateful { _ in "\(n * 2)" }
+            Stateful.pure("\(n * 2)")
         }
         let composed = Stateful<Int, Int>.kleisli(addToState, doubleFromState)
         #expect(composed(3).eval(10) == "26") // state = 13, result = 13*2 = 26

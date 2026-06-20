@@ -1,6 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 // MARK: - Zooming Stateful computations through optics
+
 //
 // `zoom` lifts a `Stateful<Part, Result>` to a `Stateful<Whole, Result>` by
 // routing the optic's focus through the stateful computation.
@@ -31,11 +33,11 @@ import CoreFP
 // | `lens.lift(endoMut)` | `EndoMut<Whole>` | No return value needed, maximum efficiency |
 // | `lens.zoom(stateful)` | `Stateful<Whole, Result>` | The stateful computation returns a value |
 
-extension Lens {
+public extension Lens {
     /// Lifts a `Stateful<A, Result>` to `Stateful<S, Result>` through this lens.
     ///
     /// `S` is `inout` throughout; `A` is copied once via `get`+`set`.
-    public func zoom<Result>(_ s: Stateful<A, Result>) -> Stateful<S, Result> {
+    func zoom<Result>(_ s: Stateful<A, Result>) -> Stateful<S, Result> {
         Stateful<S, Result> { whole in
             var part = get(whole)
             let result = s.run(&part)
@@ -45,12 +47,12 @@ extension Lens {
     }
 }
 
-extension Prism {
+public extension Prism {
     /// Lifts a `Stateful<A, Result>` to `Stateful<S, Result?>` through this prism.
     ///
     /// Returns `nil` and leaves `S` unchanged when the focus is absent.
     /// When present, copies the enum case value once; `S` is `inout` throughout.
-    public func zoom<Result>(_ s: Stateful<A, Result>) -> Stateful<S, Result?> {
+    func zoom<Result>(_ s: Stateful<A, Result>) -> Stateful<S, Result?> {
         Stateful<S, Result?> { whole in
             guard var part = preview(whole) else { return nil }
             let result = s.run(&part)
@@ -60,12 +62,12 @@ extension Prism {
     }
 }
 
-extension AffineTraversal {
+public extension AffineTraversal {
     /// Lifts a `Stateful<A, Result>` to `Stateful<S, Result?>` through this traversal.
     ///
     /// Returns `nil` and leaves `S` unchanged when the focus is absent.
     /// When present, copies `A` once via `preview`+`set`; `S` is `inout` throughout.
-    public func zoom<Result>(_ s: Stateful<A, Result>) -> Stateful<S, Result?> {
+    func zoom<Result>(_ s: Stateful<A, Result>) -> Stateful<S, Result?> {
         Stateful<S, Result?> { whole in
             guard var part = preview(whole) else { return nil }
             let result = s.run(&part)

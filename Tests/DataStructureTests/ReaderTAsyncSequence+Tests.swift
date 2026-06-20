@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+import CoreFP
 import DataStructure
 import Testing
 
@@ -40,13 +42,12 @@ import Testing
             }
         }
 
-        let readerB = Reader<Environment, AsyncStream<Int>> { _ in
-            AsyncStream { continuation in
-                continuation.yield(10)
-                continuation.yield(20)
-                continuation.finish()
-            }
+        let fixedStream = AsyncStream<Int> { continuation in
+            continuation.yield(10)
+            continuation.yield(20)
+            continuation.finish()
         }
+        let readerB = Reader<Environment, AsyncStream<Int>>(const(fixedStream))
 
         let combined = liftA2ReaderAsyncStream { a, b in a + b }(readerA, readerB)
 

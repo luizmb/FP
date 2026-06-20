@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // swiftlint:disable discouraged_optional_collection
 import Foundation
 
@@ -30,4 +31,5 @@ public func seqRightOptionalArray<A, B>(_ lhs: [A]?, _ rhs: [B]?) -> [B]? {
 public func seqLeftOptionalArray<A, B>(_ lhs: [A]?, _ rhs: [B]?) -> [A]? {
     lhs.seqLeft(rhs)
 }
+
 // swiftlint:enable discouraged_optional_collection

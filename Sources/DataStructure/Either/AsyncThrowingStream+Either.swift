@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // Bridges between AsyncThrowingStream and Either.
 //
 // A throwing async stream is structurally equivalent to a non-throwing stream
@@ -12,10 +13,10 @@
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public extension AsyncThrowingStream where Element: Sendable, Failure: Sendable {
-    // toEitherStream :: AsyncThrowingStream<a, e> -> AsyncStream<Either<e, a>>
-    //
-    // Converts a throwing stream into a non-throwing stream of Either values.
-    // The stream never throws — errors surface as .left elements instead.
+    /// toEitherStream :: AsyncThrowingStream<a, e> -> AsyncStream<Either<e, a>>
+    ///
+    /// Converts a throwing stream into a non-throwing stream of Either values.
+    /// The stream never throws — errors surface as .left elements instead.
     func toEitherStream() -> AsyncStream<Either<Failure, Element>> {
         AsyncStream { continuation in
             Task {
@@ -37,18 +38,19 @@ public extension AsyncThrowingStream where Element: Sendable, Failure: Sendable 
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public extension AsyncStream {
-    // toThrowingStream :: AsyncStream<Either<e, a>> -> AsyncThrowingStream<a, any Error>
-    //
-    // Converts a non-throwing stream of Either values into a throwing stream.
-    // .right elements are yielded normally; the first .left element throws and ends the stream.
+    /// toThrowingStream :: AsyncStream<Either<e, a>> -> AsyncThrowingStream<a, any Error>
+    ///
+    /// Converts a non-throwing stream of Either values into a throwing stream.
+    /// .right elements are yielded normally; the first .left element throws and ends the stream.
     func toThrowingStream<L: Error & Sendable, R: Sendable>() -> AsyncThrowingStream<R, any Error> where Element == Either<L, R> {
         AsyncThrowingStream { continuation in
             Task {
                 for await element in self {
                     switch element {
-                    case .right(let value):
+                    case let .right(value):
                         continuation.yield(value)
-                    case .left(let error):
+
+                    case let .left(error):
                         continuation.finish(throwing: error)
                         return
                     }

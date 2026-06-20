@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // ArrayTStateful: outer = Array, inner = Stateful
@@ -13,6 +14,7 @@ public extension Array {
         map { stateful in stateful.flatMap(fn) }
     }
 
+    /// The `property` property.
     static func bindT<S, A, B>(_ fn: @escaping @Sendable (A) -> Stateful<S, B>) -> ([Stateful<S, A>]) -> [Stateful<S, B>] {
         { arr in arr.flatMapT(fn) }
     }

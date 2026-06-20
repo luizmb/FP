@@ -1,4 +1,7 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // MARK: - Traversal<S, A>
+
 //
 // A `Traversal` focuses on zero, one, or many values of type `A` inside `S`.
 // It is the most general optic in the hierarchy: every other optic (`Iso`,
@@ -100,25 +103,25 @@ public struct Traversal<S, A>: Sendable {
     }
 }
 
-extension Traversal where S == A {
+public extension Traversal where S == A {
     /// The identity traversal: a single focus that is the whole value itself.
-    public static var id: Traversal<S, S> {
+    static var id: Traversal<S, S> {
         Traversal(getAll: { [$0] }, modifyMut: { s, f in f(&s) })
     }
 }
 
 // MARK: - Widening other optics to Traversal
 
-extension Lens {
+public extension Lens {
     /// Widens this lens to a single-focus ``Traversal``.
-    public var traversal: Traversal<S, A> {
+    var traversal: Traversal<S, A> {
         Traversal(getAll: { [get($0)] }, modifyMut: { s, f in var a = get(s); f(&a); s = set(s, a) })
     }
 }
 
-extension Prism {
+public extension Prism {
     /// Widens this prism to a 0..1-focus ``Traversal``.
-    public var traversal: Traversal<S, A> {
+    var traversal: Traversal<S, A> {
         Traversal(
             getAll: { preview($0).map { [$0] } ?? [] },
             modifyMut: { s, f in guard var a = preview(s) else { return }; f(&a); s = review(a) }
@@ -126,16 +129,16 @@ extension Prism {
     }
 }
 
-extension Iso {
+public extension Iso {
     /// Widens this iso to a single-focus ``Traversal``.
-    public var traversal: Traversal<S, A> {
+    var traversal: Traversal<S, A> {
         Traversal(getAll: { [get($0)] }, modifyMut: { s, f in var a = get(s); f(&a); s = reverseGet(a) })
     }
 }
 
-extension AffineTraversal {
+public extension AffineTraversal {
     /// Widens this affine traversal to a 0..1-focus ``Traversal``.
-    public var traversal: Traversal<S, A> {
+    var traversal: Traversal<S, A> {
         Traversal(
             getAll: { preview($0).map { [$0] } ?? [] },
             modifyMut: { s, f in tryModifyMut(&s, f) }

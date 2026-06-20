@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // AsyncSequenceTResult: outer = AsyncStream, inner = Result
@@ -16,9 +17,10 @@ public func flatMapTAsyncStreamResult<A, B, E: Error>(
         let task = Task { @Sendable in
             for await result in stream {
                 switch result {
-                case .failure(let e):
+                case let .failure(e):
                     continuation.yield(.failure(e))
-                case .success(let a):
+
+                case let .success(a):
                     for await b in fn(a) {
                         continuation.yield(b)
                     }
@@ -26,10 +28,12 @@ public func flatMapTAsyncStreamResult<A, B, E: Error>(
             }
             continuation.finish()
         }
+        // swiftlint:disable:next closure_ignoring_args
         continuation.onTermination = { _ in task.cancel() }
     }
 }
 
+/// `bindTAsyncStreamResult`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func bindTAsyncStreamResult<A, B, E: Error>(
     _ fn: @escaping @Sendable (A) -> AsyncStream<Result<B, E>>

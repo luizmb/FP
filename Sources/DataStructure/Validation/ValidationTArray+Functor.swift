@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
-// ValidationTArray: outer = Validation, inner = Array
-// Type: Validation<E, [A]>
+/// ValidationTArray: outer = Validation, inner = Array
+/// Type: Validation<E, [A]>
 
 public func fmapTValidationArray<E: Semigroup, A, B>(
     _ fn: @escaping @Sendable (A) -> B

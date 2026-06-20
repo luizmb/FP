@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 /// The FP umbrella module — re-exports all four sub-modules for single-import convenience.
 ///
 /// Importing `FP` is equivalent to importing all four modules simultaneously:

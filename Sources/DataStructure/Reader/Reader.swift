@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -83,7 +84,7 @@ public struct Reader<Environment, Output>: FunctionWrapper {
     public let runReader: @Sendable (Environment) -> Output
 
     public init(_ fn: @escaping @Sendable (Environment) -> Output) {
-        self.runReader = fn
+        runReader = fn
     }
 
     /// Run the reader by applying `value` as the environment.

@@ -1,4 +1,7 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // MARK: - Lens<S, A>
+
 //
 // A `Lens` focuses on exactly one value of type `A` inside `S`.
 //
@@ -135,7 +138,7 @@ public struct Lens<S, A>: Sendable {
     public init(get: @escaping @Sendable (S) -> A, set: @escaping @Sendable (S, A) -> S) {
         self.get = get
         self.set = set
-        self.modifyMut = { s, f in
+        modifyMut = { s, f in
             var part = get(s)
             f(&part)
             s = set(s, part)
@@ -156,8 +159,8 @@ public struct Lens<S, A>: Sendable {
     /// ```
     public init(get: @escaping @Sendable (S) -> A, setMut: @escaping @Sendable (inout S, A) -> Void) {
         self.get = get
-        self.set = { s, a in var c = s; setMut(&c, a); return c }
-        self.modifyMut = { s, f in
+        set = { s, a in var c = s; setMut(&c, a); return c }
+        modifyMut = { s, f in
             var part = get(s)
             f(&part)
             setMut(&s, part)
@@ -201,8 +204,9 @@ public struct Lens<S, A>: Sendable {
     }
 }
 
-extension Lens where S == A {
-    public static var id: Lens<S, S> {
+public extension Lens where S == A {
+    /// The `id` property.
+    static var id: Lens<S, S> {
         Lens(get: { $0 }, set: { _, a in a }, modifyMut: { s, f in f(&s) })
     }
 }

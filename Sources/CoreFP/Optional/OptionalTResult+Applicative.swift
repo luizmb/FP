@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import Foundation
 
 // OptionalTResult: outer = Optional, inner = Result
@@ -16,7 +17,7 @@ public func applyOptionalResult<A, B, E: Error>(
 public func liftA2OptionalResult<A, B, C, E: Error>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Result<A, E>?, Result<B, E>?) -> Result<C, E>? {
-    Optional.liftA2({ @Sendable a, b in Result.liftA2(fn)(a, b) })
+    Optional.liftA2 { @Sendable a, b in Result.liftA2(fn)(a, b) }
 }
 
 /// seqRight for OptionalTResult: Result<A,E>? -> Result<B,E>? -> Result<B,E>?

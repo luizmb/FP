@@ -1,4 +1,5 @@
-extension Bool {
+// SPDX-License-Identifier: Apache-2.0
+public extension Bool {
     /// Namespace for `Bool` ``Monoid`` instances.
     ///
     /// Because `Bool` has more than one natural monoid (conjunction, disjunction, XOR),
@@ -29,7 +30,7 @@ extension Bool {
     /// ```
     ///
     /// - SeeAlso: ``Monoid``, ``mconcat(_:)``
-    public enum Monoids {
+    enum Monoids {
         /// Monoid under conjunction (&&), with identity `true`.
         public struct And: Monoid, RawRepresentable {
             public let rawValue: Bool
@@ -91,18 +92,18 @@ extension Bool {
 
 extension Bool.Monoids.And: ExpressibleByBooleanLiteral {
     public init(booleanLiteral value: Bool) {
-        self.rawValue = value
+        rawValue = value
     }
 }
 
 extension Bool.Monoids.Or: ExpressibleByBooleanLiteral {
     public init(booleanLiteral value: Bool) {
-        self.rawValue = value
+        rawValue = value
     }
 }
 
 extension Bool.Monoids.Xor: ExpressibleByBooleanLiteral {
     public init(booleanLiteral value: Bool) {
-        self.rawValue = value
+        rawValue = value
     }
 }

@@ -1,4 +1,7 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // MARK: - AsyncThrowingStream <-> Result bridges
+
 //
 // A throwing async stream is structurally equivalent to a non-throwing stream
 // of Result values — errors are just failures, elements are successes.
@@ -17,10 +20,10 @@
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public extension AsyncThrowingStream where Element: Sendable, Failure: Sendable {
-    // toResultStream :: AsyncThrowingStream<a, e> -> AsyncStream<Result<a, e>>
-    //
-    // Converts a throwing stream into a non-throwing stream of Result values.
-    // The stream never throws — errors surface as .failure elements instead.
+    /// toResultStream :: AsyncThrowingStream<a, e> -> AsyncStream<Result<a, e>>
+    ///
+    /// Converts a throwing stream into a non-throwing stream of Result values.
+    /// The stream never throws — errors surface as .failure elements instead.
     func toResultStream() -> AsyncStream<Result<Element, Failure>> {
         AsyncStream { continuation in
             Task {
@@ -42,19 +45,20 @@ public extension AsyncThrowingStream where Element: Sendable, Failure: Sendable 
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public extension AsyncStream {
-    // toThrowingStream :: AsyncStream<Result<a, e>> -> AsyncThrowingStream<a, any Error>
-    //
-    // Converts a non-throwing stream of Result values into a throwing stream.
-    // .success elements are yielded normally; the first .failure element throws and ends the stream.
+    /// toThrowingStream :: AsyncStream<Result<a, e>> -> AsyncThrowingStream<a, any Error>
+    ///
+    /// Converts a non-throwing stream of Result values into a throwing stream.
+    /// .success elements are yielded normally; the first .failure element throws and ends the stream.
     func toThrowingStream<Success: Sendable, E: Error & Sendable>() -> AsyncThrowingStream<Success, any Error>
     where Element == Result<Success, E> {
         AsyncThrowingStream { continuation in
             Task {
                 for await element in self {
                     switch element {
-                    case .success(let value):
+                    case let .success(value):
                         continuation.yield(value)
-                    case .failure(let error):
+
+                    case let .failure(error):
                         continuation.finish(throwing: error)
                         return
                     }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 @testable import CoreFP
 import Testing
 
@@ -46,8 +47,8 @@ import Testing
         let w = [5]
 
         // First apply v to w, then apply u to the result
-        let vw = Array.apply(v, w)  // [6]
-        let result = Array.apply(u, vw)  // [12]
+        let vw = Array.apply(v, w) // [6]
+        let result = Array.apply(u, vw) // [12]
 
         #expect(result == [12])
     }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 // swiftlint:disable file_length
 import Foundation
 
@@ -38,9 +39,10 @@ public enum Of3<T, U, V> {}
 ///     }
 /// }
 /// ```
-public func absurd<T>(_: Never) -> T { }
+public func absurd<T>(_: Never) -> T {}
 public extension Of {
-    static func absurd(_: Never) -> T { }
+    /// The `property` property.
+    static func absurd(_: Never) -> T {}
 }
 
 // Removed due to crashing compiler bug in Swift 6.2
@@ -72,14 +74,17 @@ public func ignore<T, U, V>(_: T, _: U, _: V) {}
 public func ignore<T, U, V, W, each X>(_: T, _: U, _: V, _: W, _: repeat each X) {}
 
 public extension Of {
+    /// The `property` property.
     static func ignore() -> (T) -> Void { { _ in } }
 }
 
 public extension Of2 {
+    /// The `property` property.
     static func ignore() -> (T, U) -> Void { { _, _ in } }
 }
 
 public extension Of3 {
+    /// The `property` property.
     static func ignore() -> (T, U, V) -> Void { { _, _, _ in } }
 }
 
@@ -113,6 +118,9 @@ public func const<Return: Sendable>(_ returnValue: Return) -> @Sendable () -> Re
     { returnValue }
 }
 
+// swiftlint:disable closure_ignoring_args unnecessary_single_param_closure
+// `const`, `Of.const`, `Of2.const`, `Of3.const` ARE the `{ _ in value }` pattern.
+// These bodies define the primitive; disabling both rules here is intentional.
 /// Returns a function that ignores one argument and always returns `returnValue`.
 public func const<Ignore, Return>(_ returnValue: Return) -> (Ignore) -> Return {
     { _ in returnValue }
@@ -160,22 +168,27 @@ public func const<I1, I2, I3, I4, each I, Return: Sendable>(
 }
 
 public extension Of {
+    /// The `property` property.
     static func const<Return>(_ returnValue: Return) -> (T) -> Return {
         { _ in returnValue }
     }
 }
 
 public extension Of2 {
+    /// The `property` property.
     static func const(_ returnValue: U) -> (T) -> U {
         { _ in returnValue }
     }
 }
 
 public extension Of3 {
+    /// The `property` property.
     static func const(_ returnValue: V) -> (T, U) -> V {
         { _, _ in returnValue }
     }
 }
+
+// swiftlint:enable closure_ignoring_args unnecessary_single_param_closure
 
 /// Identify function of a value, returning the unmodified value
 /// Useful in function composition and represents the arrow pointing to itself category.
@@ -184,6 +197,7 @@ public func id<T>(_ value: T) -> T {
 }
 
 public extension Of {
+    /// The `property` property.
     static func id(_ value: T) -> T {
         CoreFP.id(value)
     }
@@ -216,6 +230,7 @@ public func curry<A: Sendable, B, C>(
     }
 }
 
+/// `curryT`.
 public func curryT<A, B, C>(
     _ function: @escaping @Sendable ((A, B)) -> C
 ) -> (A) -> (B) -> C {
@@ -237,6 +252,7 @@ public func curryT<A: Sendable, B, C>(
     }
 }
 
+/// `partialApply`.
 public func partialApply<A, B, C>(
     _ function: @escaping @Sendable (A, B) -> C,
     _ value: A
@@ -315,6 +331,7 @@ public func unlazy<A>(
     function()
 }
 
+/// `flip`.
 public func flip<A, B, C>(
     _ function: @escaping @Sendable (A, B) -> C
 ) -> (B) -> (A) -> C {
@@ -336,6 +353,7 @@ public func flip<A, B: Sendable, C>(
     }
 }
 
+/// `partialApplyFlip`.
 public func partialApplyFlip<A, B, C>(
     _ function: @escaping @Sendable (A, B) -> C,
     _ value: B
@@ -351,6 +369,7 @@ public func partialApplyFlip<A, B: Sendable, C>(
     flip(function)(value)
 }
 
+/// `flipU`.
 public func flipU<A, B, C>(
     _ function: @escaping @Sendable (A, B) -> C
 ) -> @Sendable (B, A) -> C {
@@ -359,6 +378,7 @@ public func flipU<A, B, C>(
     }
 }
 
+/// `flip`.
 public func flip<A, B, C>(
     _ function: @escaping @Sendable (A) -> (B) -> C
 ) -> (B) -> (A) -> C {
@@ -380,14 +400,17 @@ public func flip<A, B: Sendable, C>(
     }
 }
 
+/// `tuple`.
 public func tuple<A, B>(_ a: A, _ b: B) -> (A, B) {
     (a, b)
 }
 
+/// `tuple`.
 public func tuple<A, B, C>(_ fn: @escaping @Sendable (A, B) -> C) -> @Sendable ((A, B)) -> C {
     { tuple in fn(tuple.0, tuple.1) }
 }
 
+/// `untuple`.
 public func untuple<A, B, C>(_ fn: @escaping @Sendable ((A, B)) -> C) -> @Sendable (A, B) -> C {
     { a, b in fn((a, b)) }
 }
@@ -407,6 +430,10 @@ public func withArg<Arg1, Arg2, Picked, Return>(
 ) -> @Sendable (@escaping @Sendable (Picked) -> Return) -> @Sendable (Arg1, Arg2) -> Return {
     curryT(compose(compose, untuple))(pickArgument)
 }
+
+// swiftlint:disable closure_ignoring_args
+// All `fail` overloads intentionally call fatalError — that IS the definition.
+// The commented-out pack-expansion variant also contains fatalError in code comments (not live code).
 
 // Removed due to crashing compiler bug in Swift 6.2
 // public func fail<T, each U>(
@@ -457,3 +484,5 @@ public func fail<T, U, V, W, X, each Y>(
 ) -> (U, V, W, X, repeat each Y) -> T {
     { (_: U, _: V, _: W, _: X, _: repeat each Y) in fatalError(message, file: file, line: line) }
 }
+
+// swiftlint:enable closure_ignoring_args

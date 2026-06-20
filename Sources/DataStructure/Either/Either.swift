@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import Foundation
 
@@ -72,10 +73,14 @@ public enum Either<A, B>: SumType2 {
 }
 
 public extension Either {
+    /// Declaration.
     func match<C>(caseLeft: (A) -> C, caseRight: (B) -> C) -> C {
         switch self {
-        case let .left(left): caseLeft(left)
-        case let .right(right): caseRight(right)
+        case let .left(left):
+            caseLeft(left)
+
+        case let .right(right):
+            caseRight(right)
         }
     }
 }

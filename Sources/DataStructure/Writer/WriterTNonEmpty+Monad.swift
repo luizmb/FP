@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 // WriterTNonEmpty: outer = Writer, inner = NonEmpty
@@ -18,6 +19,7 @@ public extension Writer {
         return Writer<W, NonEmpty<B>?>(combined, combinedLog)
     }
 
+    /// The `property` property.
     static func bindT<Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> Writer<W, NonEmpty<B>?>
     ) -> (Writer<W, NonEmpty<Inner>>) -> Writer<W, NonEmpty<B>?>

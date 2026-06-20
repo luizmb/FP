@@ -1,20 +1,21 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 
 // ArrayTEither: outer = Array, inner = Either
 // Type: [Either<L,A>]
 
-// (>>-) :: [Either<l,a>] -> (a -> [Either<l,b>]) -> [Either<l,b>]
+/// (>>-) :: [Either<l,a>] -> (a -> [Either<l,b>]) -> [Either<l,b>]
 public func >>- <L, A, B>(_ arr: [Either<L, A>], _ fn: @escaping @Sendable (A) -> [Either<L, B>]) -> [Either<L, B>] {
     arr.flatMapT(fn)
 }
 
-// (-<<) :: (a -> [Either<l,b>]) -> [Either<l,a>] -> [Either<l,b>]
+/// (-<<) :: (a -> [Either<l,b>]) -> [Either<l,a>] -> [Either<l,b>]
 public func -<< <L, A, B>(_ fn: @escaping @Sendable (A) -> [Either<L, B>], _ arr: [Either<L, A>]) -> [Either<L, B>] {
     arr.flatMapT(fn)
 }
 
-// (>=>) :: (a -> [Either<l,b>]) -> (b -> [Either<l,c>]) -> a -> [Either<l,c>]
+/// (>=>) :: (a -> [Either<l,b>]) -> (b -> [Either<l,c>]) -> a -> [Either<l,c>]
 public func >=> <L, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> [Either<L, B>],
     _ fn2: @escaping @Sendable (B) -> [Either<L, C>]

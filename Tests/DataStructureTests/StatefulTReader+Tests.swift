@@ -1,3 +1,5 @@
+// SPDX-License-Identifier: Apache-2.0
+import CoreFP
 import DataStructure
 import Testing
 
@@ -31,8 +33,9 @@ import Testing
     }
 
     @Test func applyStatefulReaderBoth() {
+        let fn: @Sendable (Int) -> String = { "\($0)" }
         let sf = Stateful<Int, Reader<Env, @Sendable (Int) -> String>>.pure(
-            Reader { _ in { "\($0)" } }
+            Reader(const(fn))
         )
         let sa = Stateful<Int, Reader<Env, Int>>.pure(
             Reader { env in env.multiplier }
@@ -44,7 +47,7 @@ import Testing
 
     @Test func liftA2StatefulReaderBoth() {
         let sa = Stateful<Int, Reader<Env, Int>>.pure(Reader { env in env.multiplier })
-        let sb = Stateful<Int, Reader<Env, Int>>.pure(Reader { _ in 10 })
+        let sb = Stateful<Int, Reader<Env, Int>>.pure(Reader(const(10)))
         let result = liftA2StatefulReader(+)(sa, sb)
         let env = Env(multiplier: 5)
         #expect(result.eval(0)(env) == 15)
@@ -95,7 +98,8 @@ import Testing
     }
 
     @Test func applyReaderStatefulTest() {
-        let rf = Reader<Env, Stateful<Int, @Sendable (Int) -> String>> { _ in .pure({ "\($0)" }) }
+        let fn2: @Sendable (Int) -> String = { "\($0)" }
+        let rf = Reader<Env, Stateful<Int, @Sendable (Int) -> String>>(const(.pure(fn2)))
         let ra = Reader<Env, Stateful<Int, Int>> { env in .pure(env.multiplier) }
         let result = DataStructure.applyReaderStateful(rf, ra)
         let env = Env(multiplier: 5)
@@ -103,16 +107,16 @@ import Testing
     }
 
     @Test func seqRightReaderStatefulTest() {
-        let lhs = Reader<Env, Stateful<Int, Int>> { _ in .pure(1) }
-        let rhs = Reader<Env, Stateful<Int, String>> { _ in .pure("hello") }
+        let lhs = Reader<Env, Stateful<Int, Int>>(const(.pure(1)))
+        let rhs = Reader<Env, Stateful<Int, String>>(const(.pure("hello")))
         let result = DataStructure.seqRightReaderStateful(lhs, rhs)
         let env = Env(multiplier: 0)
         #expect(result(env).eval(0) == "hello")
     }
 
     @Test func seqLeftReaderStatefulTest() {
-        let lhs = Reader<Env, Stateful<Int, Int>> { _ in .pure(99) }
-        let rhs = Reader<Env, Stateful<Int, String>> { _ in .pure("ignored") }
+        let lhs = Reader<Env, Stateful<Int, Int>>(const(.pure(99)))
+        let rhs = Reader<Env, Stateful<Int, String>>(const(.pure("ignored")))
         let result = DataStructure.seqLeftReaderStateful(lhs, rhs)
         let env = Env(multiplier: 0)
         #expect(result(env).eval(0) == 99)

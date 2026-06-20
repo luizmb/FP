@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFPOperators
 import DataStructure
 
-// (>>-) :: m a -> (a -> m b) -> m b
+/// (>>-) :: m a -> (a -> m b) -> m b
 public func >>- <Env, O, O1>(
     _ reader: Reader<Env, O>,
     _ fn: @escaping @Sendable (O) -> Reader<Env, O1>
@@ -9,7 +10,7 @@ public func >>- <Env, O, O1>(
     reader.flatMap(fn)
 }
 
-// (-<<) :: (a -> m b) -> m a -> m b
+/// (-<<) :: (a -> m b) -> m a -> m b
 public func -<< <Env, O, O1>(
     _ fn: @escaping @Sendable (O) -> Reader<Env, O1>,
     _ reader: Reader<Env, O>
@@ -17,7 +18,7 @@ public func -<< <Env, O, O1>(
     reader.flatMap(fn)
 }
 
-// (>=>) :: (a -> m b) -> (b -> m c) -> a -> m c
+/// (>=>) :: (a -> m b) -> (b -> m c) -> a -> m c
 public func >=> <Env, O0, O, O1>(
     _ fn1: @escaping @Sendable (O0) -> Reader<Env, O>,
     _ fn2: @escaping @Sendable (O) -> Reader<Env, O1>
@@ -25,7 +26,7 @@ public func >=> <Env, O0, O, O1>(
     Reader.kleisli(fn1, fn2)
 }
 
-// (<&>) :: Functor f => f a -> (a -> b) -> f b
+/// (<&>) :: Functor f => f a -> (a -> b) -> f b
 public func <&> <Env, O, O1>(
     _ reader: Reader<Env, O>,
     _ transform: @escaping @Sendable (O) -> O1
