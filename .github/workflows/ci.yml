@@ -97,3 +97,37 @@ jobs:
 
       - name: Test
         run: swift test
+
+  # Non-gating: builds and runs the nested BenchmarkSuite package (which pulls in
+  # package-benchmark + jemalloc — deliberately kept out of the shipping package).
+  # `continue-on-error` ensures it never blocks a PR. It exists to surface the
+  # three-way by-id comparison — plain [ID: Element] Dictionary vs [Element] Array
+  # vs IdentifiedArray — on a stable runner; results are written to the job summary.
+  benchmarks:
+    name: Benchmarks (non-gating)
+    runs-on: macos-26
+    continue-on-error: true
+    env:
+      HOMEBREW_NO_AUTO_UPDATE: "1"
+      HOMEBREW_NO_INSTALL_CLEANUP: "1"
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Select Xcode
+        run: sudo xcode-select -s /Applications/Xcode_26.2.app
+
+      - name: Install jemalloc
+        run: brew install jemalloc
+
+      - name: Run benchmarks (Dictionary vs Array vs IdentifiedArray)
+        working-directory: BenchmarkSuite
+        run: |
+          {
+            echo '## IdentifiedArray benchmarks'
+            echo
+            echo 'Three-way by-id comparison on a stable runner. Lower time / higher throughput is better.'
+            echo
+            echo '```'
+            swift package --disable-sandbox benchmark --no-progress 2>&1
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"

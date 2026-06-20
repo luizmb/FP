@@ -66,3 +66,9 @@ fastlane/screenshots/**/*.png
 fastlane/test_output
 build/
 release-artifacts/
+
+# Benchmark baselines are local run artifacts; keep only the committed phase2 reference.
+BenchmarkSuite/.benchmarkBaselines/*
+!BenchmarkSuite/.benchmarkBaselines/IdentifiedArrayBenchmarks
+BenchmarkSuite/.benchmarkBaselines/IdentifiedArrayBenchmarks/*
+!BenchmarkSuite/.benchmarkBaselines/IdentifiedArrayBenchmarks/phase2
