@@ -119,7 +119,9 @@ func iterateBenchmarks() {
         Benchmark("Iterate sum — IdentifiedArray (\(size))", configuration: config()) { benchmark in
             for _ in benchmark.scaledIterations {
                 var sum = 0
-                for user in identified { sum &+= user.id }
+                for user in identified {
+                    sum &+= user.id
+                }
                 blackHole(sum)
             }
         }
@@ -128,7 +130,9 @@ func iterateBenchmarks() {
         Benchmark("Iterate sum — [Element] baseline (\(size))", configuration: config()) { benchmark in
             for _ in benchmark.scaledIterations {
                 var sum = 0
-                for user in array { sum &+= user.id }
+                for user in array {
+                    sum &+= user.id
+                }
                 blackHole(sum)
             }
         }
@@ -136,6 +140,7 @@ func iterateBenchmarks() {
 }
 
 // MARK: - Insert at the exact middle (positional shift + tail reindex)
+
 //
 // A pure repeated insert would grow the collection without bound, so each step
 // inserts at the middle and then removes the just-inserted element from the
@@ -176,7 +181,9 @@ func buildBenchmarks() {
         Benchmark("Build by append — IdentifiedArray (\(size))", configuration: config()) { benchmark in
             for _ in benchmark.scaledIterations {
                 var identified = IdentifiedArray<Int, BenchUser>(id: { $0.id })
-                for i in 0..<size { identified.append(BenchUser(id: i)) }
+                for i in 0..<size {
+                    identified.append(BenchUser(id: i))
+                }
                 blackHole(identified.count)
             }
         }
@@ -184,7 +191,9 @@ func buildBenchmarks() {
         Benchmark("Build by append — [Element] baseline (\(size))", configuration: config()) { benchmark in
             for _ in benchmark.scaledIterations {
                 var array: [BenchUser] = []
-                for i in 0..<size { array.append(BenchUser(id: i)) }
+                for i in 0..<size {
+                    array.append(BenchUser(id: i))
+                }
                 blackHole(array.count)
             }
         }
@@ -192,7 +201,9 @@ func buildBenchmarks() {
         Benchmark("Build by insert — [ID: Element] dictionary (\(size))", configuration: config()) { benchmark in
             for _ in benchmark.scaledIterations {
                 var dictionary: [Int: BenchUser] = [:]
-                for i in 0..<size { dictionary[i] = BenchUser(id: i) }
+                for i in 0..<size {
+                    dictionary[i] = BenchUser(id: i)
+                }
                 blackHole(dictionary.count)
             }
         }

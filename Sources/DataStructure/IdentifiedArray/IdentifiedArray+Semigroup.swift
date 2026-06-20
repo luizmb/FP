@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 // MARK: - Semigroup
@@ -26,6 +27,7 @@ extension IdentifiedArray: Semigroup {
 }
 
 // MARK: - Lawful surface (why there is no Functor / Applicative / Monad)
+
 //
 // `Semigroup` is the ONLY standard algebra `IdentifiedArray` conforms to. The
 // rest are deliberately absent, for two compounding reasons:
