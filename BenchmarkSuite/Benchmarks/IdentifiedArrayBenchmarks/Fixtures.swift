@@ -25,6 +25,8 @@ func makeIdentified(_ count: Int) -> IdentifiedArrayOf<BenchUser> {
 // the price of keeping order.
 func makeDictionary(_ count: Int) -> [Int: BenchUser] {
     var dictionary = [Int: BenchUser](minimumCapacity: count)
-    for i in 0..<count { dictionary[i] = BenchUser(id: i) }
+    for i in 0..<count {
+        dictionary[i] = BenchUser(id: i)
+    }
     return dictionary
 }

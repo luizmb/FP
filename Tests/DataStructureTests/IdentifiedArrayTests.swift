@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 import DataStructure
 import Testing
@@ -221,26 +222,31 @@ struct IdentifiedArrayStressTests {
                 nextID += 1
                 ia.append(u)
                 ref.append(u)
+
             case 1 where !ref.isEmpty: // update existing in place (same id)
                 let i = rng.next(ref.count)
                 let u = User(id: ref[i].id, name: "u\(step)")
                 ia[id: u.id] = u
                 ref[i] = u
+
             case 2: // insert at random position (new id)
                 let pos = rng.next(ref.count + 1)
                 let u = User(id: nextID, name: "i\(nextID)")
                 nextID += 1
                 ia.insert(u, at: pos)
                 ref.insert(u, at: pos)
+
             case 3 where !ref.isEmpty: // remove by id
                 let i = rng.next(ref.count)
                 let removedID = ref[i].id
                 ia.remove(id: removedID)
                 ref.remove(at: i)
+
             case 4 where !ref.isEmpty: // remove at position
                 let pos = rng.next(ref.count)
                 ia.remove(at: pos)
                 ref.remove(at: pos)
+
             default:
                 continue
             }

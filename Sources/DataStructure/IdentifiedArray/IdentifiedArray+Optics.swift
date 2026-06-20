@@ -1,6 +1,8 @@
+// SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
 // MARK: - IdentifiedArray optics
+
 //
 // First-class optics over `IdentifiedArray`, composable with every other optic
 // via `>>>` / `<<<`. The by-id affine traversal is the headline: O(1) focus and
@@ -10,7 +12,7 @@ import CoreFP
 // The optic surfaces are `Sendable`-first (per the library contract): they take
 // and return `@Sendable` closures and require `ID`/`Element` to be `Sendable`.
 
-extension IdentifiedArray where ID: Sendable, Element: Sendable {
+public extension IdentifiedArray where ID: Sendable, Element: Sendable {
     /// An ``AffineTraversal`` focusing the element with `id`. **O(1)** preview and
     /// in-place mutation.
     ///
@@ -24,7 +26,7 @@ extension IdentifiedArray where ID: Sendable, Element: Sendable {
     /// IdentifiedArray.ix(id: 2).preview(items)?.name   // O(1)
     /// IdentifiedArray.ix(id: 2) >>> ^\Item.name        // composes with downstream optics
     /// ```
-    public static func ix(id key: ID) -> AffineTraversal<IdentifiedArray, Element> {
+    static func ix(id key: ID) -> AffineTraversal<IdentifiedArray, Element> {
         AffineTraversal(
             preview: { @Sendable whole in whole.position(of: key).map { whole.storage[$0] } },
             set: { @Sendable whole, element in
@@ -46,7 +48,7 @@ extension IdentifiedArray where ID: Sendable, Element: Sendable {
     /// element's id; the lookup table for that single slot is patched accordingly
     /// (O(1)). Colliding with an id already present elsewhere is a precondition
     /// violation (ids must stay unique).
-    public static func ix(_ position: Int) -> AffineTraversal<IdentifiedArray, Element> {
+    static func ix(_ position: Int) -> AffineTraversal<IdentifiedArray, Element> {
         AffineTraversal(
             preview: { @Sendable whole in whole.storage.indices.contains(position) ? whole.storage[position] : nil },
             set: { @Sendable whole, element in
@@ -70,11 +72,13 @@ extension IdentifiedArray where ID: Sendable, Element: Sendable {
     /// element in place (zero-copy on the buffer when uniquely referenced), then
     /// rebuilds the lookup table — so mutations through this traversal MAY change
     /// ids (unlike ``ix(id:)``).
-    public static var traversed: Traversal<IdentifiedArray, Element> {
+    static var traversed: Traversal<IdentifiedArray, Element> {
         Traversal(
             getAll: { @Sendable whole in whole.storage },
             modifyMut: { @Sendable whole, f in
-                for i in whole.storage.indices { f(&whole.storage[i]) }
+                for i in whole.storage.indices {
+                    f(&whole.storage[i])
+                }
                 whole.rebuildIndex()
             }
         )
@@ -82,13 +86,15 @@ extension IdentifiedArray where ID: Sendable, Element: Sendable {
 
     /// A ``Traversal`` over every element satisfying `isIncluded`, in order.
     /// Rebuilds the lookup table after mutating, so ids may change.
-    public static func traversed(
+    static func traversed(
         where isIncluded: @escaping @Sendable (Element) -> Bool
     ) -> Traversal<IdentifiedArray, Element> {
         Traversal(
             getAll: { @Sendable whole in whole.storage.filter(isIncluded) },
             modifyMut: { @Sendable whole, f in
-                for i in whole.storage.indices where isIncluded(whole.storage[i]) { f(&whole.storage[i]) }
+                for i in whole.storage.indices where isIncluded(whole.storage[i]) {
+                    f(&whole.storage[i])
+                }
                 whole.rebuildIndex()
             }
         )
@@ -97,7 +103,7 @@ extension IdentifiedArray where ID: Sendable, Element: Sendable {
 
 // MARK: - Iso / Prism to Array and Dictionary
 
-extension IdentifiedArray where ID: Sendable, Element: Sendable {
+public extension IdentifiedArray where ID: Sendable, Element: Sendable {
     /// A lawful ``Iso`` between `IdentifiedArray` and its ordered `[Element]`.
     ///
     /// `get` exposes the elements in order; `reverseGet` normalises an arbitrary
@@ -107,7 +113,7 @@ extension IdentifiedArray where ID: Sendable, Element: Sendable {
     ///
     /// - SeeAlso: ``dedupPrism(id:)`` for the array→`IdentifiedArray` direction as a
     ///   lawful ``Prism`` that succeeds only on duplicate-free input.
-    public static func arrayIso(id: @escaping @Sendable (Element) -> ID) -> Iso<IdentifiedArray, [Element]> {
+    static func arrayIso(id: @escaping @Sendable (Element) -> ID) -> Iso<IdentifiedArray, [Element]> {
         Iso(
             get: { @Sendable whole in whole.storage },
             reverseGet: { @Sendable array in IdentifiedArray(array, id: id) }
@@ -117,7 +123,7 @@ extension IdentifiedArray where ID: Sendable, Element: Sendable {
     /// A ``Prism`` from `[Element]` into `IdentifiedArray` that succeeds only when
     /// every id is unique (`preview` returns `nil` on duplicates). `review` is the
     /// total `IdentifiedArray → [Element]` direction. Both prism laws hold.
-    public static func dedupPrism(id: @escaping @Sendable (Element) -> ID) -> Prism<[Element], IdentifiedArray> {
+    static func dedupPrism(id: @escaping @Sendable (Element) -> ID) -> Prism<[Element], IdentifiedArray> {
         Prism(
             preview: { @Sendable array in
                 let identified = IdentifiedArray(array, id: id)
@@ -134,7 +140,7 @@ extension IdentifiedArray where ID: Sendable, Element: Sendable {
     /// it would otherwise lose. A plain `Iso` to `[ID: Element]` cannot be lawful
     /// because a bare dictionary has no order to round-trip. For the lossy, explicit
     /// projection use ``dictionary``.
-    public static func orderedDictionaryIso(
+    static func orderedDictionaryIso(
         id: @escaping @Sendable (Element) -> ID
     ) -> Iso<IdentifiedArray, (ids: [ID], lookup: [ID: Element])> {
         Iso(
@@ -152,10 +158,10 @@ extension IdentifiedArray where ID: Sendable, Element: Sendable {
 
 // MARK: - Keyed projection (lossy)
 
-extension IdentifiedArray {
+public extension IdentifiedArray {
     /// A keyed projection of the elements. **Lossy: drops order** — this is a
     /// getter, NOT an iso. For a lawful keyed iso use ``orderedDictionaryIso(id:)``.
-    public var dictionary: [ID: Element] {
+    var dictionary: [ID: Element] {
         var result = [ID: Element](minimumCapacity: storage.count)
         var i = 0
         while i < storage.count {
@@ -168,15 +174,15 @@ extension IdentifiedArray {
 
 // MARK: - Identifiable conveniences
 
-extension IdentifiedArray where Element: Identifiable & Sendable, ID == Element.ID, ID: Sendable {
+public extension IdentifiedArray where Element: Identifiable & Sendable, ID == Element.ID, ID: Sendable {
     /// `arrayIso` keyed by `Element.id`.
-    public static var arrayIso: Iso<IdentifiedArray, [Element]> { arrayIso(id: { $0.id }) }
+    static var arrayIso: Iso<IdentifiedArray, [Element]> { arrayIso(id: { $0.id }) }
 
     /// `dedupPrism` keyed by `Element.id`.
-    public static var dedupPrism: Prism<[Element], IdentifiedArray> { dedupPrism(id: { $0.id }) }
+    static var dedupPrism: Prism<[Element], IdentifiedArray> { dedupPrism(id: { $0.id }) }
 
     /// `orderedDictionaryIso` keyed by `Element.id`.
-    public static var orderedDictionaryIso: Iso<IdentifiedArray, (ids: [ID], lookup: [ID: Element])> {
+    static var orderedDictionaryIso: Iso<IdentifiedArray, (ids: [ID], lookup: [ID: Element])> {
         orderedDictionaryIso(id: { $0.id })
     }
 }

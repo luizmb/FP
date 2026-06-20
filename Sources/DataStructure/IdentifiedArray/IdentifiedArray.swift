@@ -1,4 +1,7 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // MARK: - IdentifiedArray<ID, Element>
+
 //
 // An ordered, value-type collection that keeps its elements in a user-defined
 // order — exactly like `Array` — while offering O(1) lookup and in-place update
@@ -80,9 +83,9 @@ public struct IdentifiedArray<ID: Hashable, Element> {
     /// Creates an empty collection that derives identifiers via `id`.
     @inlinable
     public init(id: @escaping @Sendable (Element) -> ID) {
-        self.storage = []
-        self.keys = []
-        self.buckets = []
+        storage = []
+        keys = []
+        buckets = []
         self.id = id
     }
 
@@ -99,17 +102,19 @@ public struct IdentifiedArray<ID: Hashable, Element> {
         // allocations). A local `var` keeps the fast in-place path.
         var result = IdentifiedArray(id: id)
         result.reserveCapacity(elements.underestimatedCount)
-        for element in elements { result.append(element) }
+        for element in elements {
+            result.append(element)
+        }
         self = result
     }
 }
 
 // MARK: - Identifiable conveniences
 
-extension IdentifiedArray where Element: Identifiable & Sendable, ID == Element.ID, ID: Sendable {
+public extension IdentifiedArray where Element: Identifiable & Sendable, ID == Element.ID, ID: Sendable {
     /// Creates an empty collection keyed by `Element.id`.
     @inlinable
-    public init() {
+    init() {
         self.init(id: { $0.id })
     }
 
@@ -119,7 +124,7 @@ extension IdentifiedArray where Element: Identifiable & Sendable, ID == Element.
     /// the generic build path can't keep its copy-on-write buffers unique and allocates
     /// O(n) extra buffers.
     @inlinable
-    public init<S: Sequence>(_ elements: S) where S.Element == Element {
+    init<S: Sequence>(_ elements: S) where S.Element == Element {
         self.init(elements, id: { $0.id })
     }
 }
@@ -162,7 +167,9 @@ extension IdentifiedArray {
     mutating func tableInsert(_ key: ID, _ position: Int) {
         let mask = buckets.count &- 1
         var slot = hashSlot(key, mask)
-        while buckets[slot] != Self.empty { slot = (slot &+ 1) & mask }
+        while buckets[slot] != Self.empty {
+            slot = (slot &+ 1) & mask
+        }
         buckets[slot] = UInt32(position)
     }
 
@@ -172,7 +179,9 @@ extension IdentifiedArray {
         let capacity = buckets.count
         guard capacity == 0 || count &* 4 > capacity &* 3 else { return }
         var newCapacity = capacity == 0 ? 16 : capacity
-        while count &* 4 > newCapacity &* 3 { newCapacity &*= 2 }
+        while count &* 4 > newCapacity &* 3 {
+            newCapacity &*= 2
+        }
         rebuildTable(capacity: newCapacity)
     }
 
@@ -195,7 +204,9 @@ extension IdentifiedArray {
                 let count = keyBuffer.count
                 while i < count {
                     var slot = Int(UInt(bitPattern: keyBase[i].hashValue) & UInt(bitPattern: mask))
-                    while bucketBase[slot] != Self.empty { slot = (slot &+ 1) & mask }
+                    while bucketBase[slot] != Self.empty {
+                        slot = (slot &+ 1) & mask
+                    }
                     bucketBase[slot] = UInt32(i)
                     i &+= 1
                 }
@@ -244,7 +255,7 @@ extension IdentifiedArray {
             var slot = 0
             while slot < count {
                 let value = base[slot]
-                if value != Self.empty && Int(value) >= threshold {
+                if value != Self.empty, Int(value) >= threshold {
                     base[slot] = UInt32(Int(value) &+ delta)
                 }
                 slot &+= 1
@@ -276,18 +287,18 @@ extension IdentifiedArray {
 
 // MARK: - Lookup & mutation
 
-extension IdentifiedArray {
+public extension IdentifiedArray {
     /// The elements in their user-defined order. O(1); shares the backing buffer.
-    public var elements: [Element] { storage }
+    var elements: [Element] { storage }
 
     /// The identifiers in element order. O(1); shares the backing buffer.
-    public var ids: [ID] { keys }
+    var ids: [ID] { keys }
 
     /// Whether an element with `id` is present. O(1).
-    public func contains(id key: ID) -> Bool { position(of: key) != nil }
+    func contains(id key: ID) -> Bool { position(of: key) != nil }
 
     /// The position of the element with `id`, or `nil`. O(1).
-    public func position(id key: ID) -> Int? { position(of: key) }
+    func position(id key: ID) -> Int? { position(of: key) }
 
     /// Get-or-set an element by its identifier, with `Dictionary`-like semantics.
     ///
@@ -302,18 +313,21 @@ extension IdentifiedArray {
     /// | `v` (`v.id == id`) | yes | replace in place   |
     /// | `v` (`v.id == id`) | no  | append to end      |
     /// | `v` (`v.id != id`) | —   | no-op (id mismatch)|
-    public subscript(id key: ID) -> Element? {
+    subscript(id key: ID) -> Element? {
         get { position(of: key).map { storage[$0] } }
         set {
             switch (newValue, position(of: key)) {
             case let (element?, position?):
                 guard id(element) == key else { return }
                 storage[position] = element
+
             case let (element?, nil):
                 guard id(element) == key else { return }
                 append(element)
+
             case let (nil, position?):
                 remove(at: position)
+
             case (nil, nil):
                 return
             }
@@ -327,7 +341,7 @@ extension IdentifiedArray {
     /// tombstones, the first `empty` slot in the probe chain is exactly where a new
     /// key belongs, so one walk handles both the replace and the append case.
     @inlinable
-    public mutating func append(_ element: Element) {
+    mutating func append(_ element: Element) {
         let key = id(element)
         reserveTable(forCount: storage.count &+ 1)
         let mask = buckets.count &- 1
@@ -351,7 +365,7 @@ extension IdentifiedArray {
     /// Inserts `element` at `position`, shifting later elements toward the tail.
     /// If an element with the same id already exists, replaces it in place instead
     /// (the `position` argument is ignored in that case). O(n).
-    public mutating func insert(_ element: Element, at position: Int) {
+    mutating func insert(_ element: Element, at position: Int) {
         let key = id(element)
         if let slot = bucketSlot(of: key) {
             storage[Int(buckets[slot])] = element
@@ -366,7 +380,7 @@ extension IdentifiedArray {
 
     /// Removes and returns the element at `position`, shifting later elements down. O(n).
     @discardableResult
-    public mutating func remove(at position: Int) -> Element {
+    mutating func remove(at position: Int) -> Element {
         let removed = storage[position]
         if let slot = bucketSlot(of: keys[position]) { tableRemoveSlot(slot) }
         storage.remove(at: position)
@@ -377,7 +391,7 @@ extension IdentifiedArray {
 
     /// Removes and returns the element with `id`, or `nil` if absent. O(n).
     @discardableResult
-    public mutating func remove(id key: ID) -> Element? {
+    mutating func remove(id key: ID) -> Element? {
         guard let position = position(of: key) else { return nil }
         return remove(at: position)
     }

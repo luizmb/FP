@@ -1,4 +1,7 @@
+// SPDX-License-Identifier: Apache-2.0
+
 // MARK: - IdentifiedArray: RandomAccessCollection
+
 //
 // Order lives entirely in the element buffer, so positional access is a direct
 // passthrough to `storage`. Integer-indexed, like `Array`. Lookup by identifier
