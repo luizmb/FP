@@ -20,6 +20,14 @@ fileprivate struct Point {
     let y: Double
 }
 
+@Lenses(init: .internal)
+fileprivate struct Session {
+    var id: Int
+    var token: String? // optional — implicitly defaults to nil in the generated init
+    // swiftlint:disable:next syntactic_sugar
+    var note: Optional<String> // the spelled-out form defaults too
+}
+
 // MARK: - Generated init
 
 @Suite("@Lenses — generated init")
@@ -46,6 +54,18 @@ struct LensesInitTests {
         let p = Point(x: 1.0, y: 2.0)
         #expect(p.x == 1.0)
         #expect(p.y == 2.0)
+    }
+
+    @Test func optional_params_default_to_nil() {
+        let s = Session(id: 1) // token and note omitted → both nil
+        #expect(s.token == nil)
+        #expect(s.note == nil)
+    }
+
+    @Test func optional_params_can_be_provided() {
+        let s = Session(id: 1, token: "abc", note: "hi")
+        #expect(s.token == "abc")
+        #expect(s.note == "hi")
     }
 }
 

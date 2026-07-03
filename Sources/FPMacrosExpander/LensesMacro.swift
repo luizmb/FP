@@ -312,7 +312,13 @@ private func makeInit(access: AccessLevel, structAccess: AccessLevel, params: [S
     let effective = min(access, structAccess)
     let prefix = effective.prefix
     let paramList = params
-        .map { p in p.defaultValue.map { "\(p.name): \(p.type) = \($0)" } ?? "\(p.name): \(p.type)" }
+        .map { p -> String in
+            if let value = p.defaultValue { return "\(p.name): \(p.type) = \(value)" }
+            // Optionals get an implicit `= nil` (matching Swift's own memberwise init, SE-0242), so a
+            // caller can omit them without writing `= nil` on the property — which SwiftLint flags.
+            if p.type.hasSuffix("?") || p.type.hasPrefix("Optional<") { return "\(p.name): \(p.type) = nil" }
+            return "\(p.name): \(p.type)"
+        }
         .joined(separator: ", ")
     let body = params.map { "self.\($0.name) = \($0.name)" }.joined(separator: "; ")
 
