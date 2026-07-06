@@ -98,7 +98,7 @@ FP is a Swift Package Manager library and is designed to be **modular**: import 
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/luizmb/FP.git", from: "1.13.0")
+    .package(url: "https://github.com/luizmb/FP.git", from: "1.14.0")
 ]
 ```
 
