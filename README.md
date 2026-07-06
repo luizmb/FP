@@ -4,7 +4,7 @@ FP is a Swift library that brings functional programming patterns to your codeba
 
 [![Tests](https://github.com/luizmb/FP/actions/workflows/ci.yml/badge.svg)](https://github.com/luizmb/FP/actions)
 [![Documentation](https://img.shields.io/badge/docs-online-blue)](https://ios.lu/FP)
-[![Swift 6.2+](https://img.shields.io/badge/swift-6.2%2B-orange)](https://swift.org)
+[![Swift 6.3+](https://img.shields.io/badge/swift-6.3%2B-orange)](https://swift.org)
 
 **[→ Full API Documentation](https://ios.lu/FP)** · [Learning Resources](#learning-resources) · [Installation](#installation)
 
@@ -98,7 +98,7 @@ FP is a Swift Package Manager library and is designed to be **modular**: import 
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/luizmb/FP.git", from: "1.0.0")
+    .package(url: "https://github.com/luizmb/FP.git", from: "1.13.0")
 ]
 ```
 
@@ -106,7 +106,7 @@ dependencies: [
 
 #### `FPMacros` — optic derivation via Swift macros _(optional)_
 
-Adds `@Lenses` and `@Prisms` macros that generate `Lens` and `Prism` optics directly from type declarations. Requires Swift 6.2+.
+Adds `@Lenses` and `@Prisms` macros that generate `Lens` and `Prism` optics directly from type declarations. Requires Swift 6.3+.
 
 #### `CoreFP` — the foundation
 
