@@ -3,6 +3,12 @@ import CoreFP
 import Foundation
 
 public extension Either {
+    /// pure :: b -> Either<a, b>
+    /// Lift a value into the minimal successful context (right-biased).
+    static func pure(_ value: B) -> Either<A, B> {
+        .right(value)
+    }
+
     /// liftA2 :: (b1 -> b2 -> b) -> Either a b1 -> Either a b2 -> Either a b
     static func liftA2<B1, B2>(_ fn: @escaping @Sendable (B1, B2) -> B) -> @Sendable (
         Either<A, B1>, Either<A, B2>

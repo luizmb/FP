@@ -52,4 +52,65 @@ import Testing
 
         #expect(result == [12])
     }
+
+    // MARK: - pure
+
+    @Test func pureLiftsIntoSingletonArray() {
+        #expect(Array.pure(42) == [42])
+    }
+
+    @Test func pureIsLeftIdentityForApply() {
+        // pure id <*> v == v
+        let array = [1, 2, 3]
+        let identityArr = [@Sendable (Int) -> Int].pure(id)
+        #expect(Array.apply(identityArr, array) == array)
+    }
+
+    // MARK: - zip3 / zip4
+
+    @Test func zip3SameLength() {
+        let a1 = [1, 2, 3]
+        let a2 = ["a", "b", "c"]
+        let a3 = [true, false, true]
+
+        let result = Array.zip3(a1, a2, a3)
+        #expect(result.count == 3)
+        #expect(result[0] == (1, "a", true))
+        #expect(result[2] == (3, "c", true))
+    }
+
+    @Test func zip3MismatchedLengths_truncatesToShortest() {
+        let a1 = [1, 2, 3, 4]
+        let a2 = ["a", "b"]
+        let a3 = [true, false, true]
+
+        let result = Array.zip3(a1, a2, a3)
+        #expect(result.count == 2)
+        #expect(result[0] == (1, "a", true))
+        #expect(result[1] == (2, "b", false))
+    }
+
+    @Test func zip4SameLength() {
+        let a1 = [1, 2]
+        let a2 = ["a", "b"]
+        let a3 = [true, false]
+        let a4 = [1.0, 2.0]
+
+        let result = Array.zip4(a1, a2, a3, a4)
+        #expect(result.count == 2)
+        #expect(result[0] == (1, "a", true, 1.0))
+        #expect(result[1] == (2, "b", false, 2.0))
+    }
+
+    @Test func zip4MismatchedLengths_truncatesToShortest() {
+        let a1 = [1, 2, 3]
+        let a2 = ["a", "b", "c"]
+        let a3 = [true, false]
+        let a4 = [1.0, 2.0, 3.0]
+
+        let result = Array.zip4(a1, a2, a3, a4)
+        #expect(result.count == 2)
+        #expect(result[0] == (1, "a", true, 1.0))
+        #expect(result[1] == (2, "b", false, 2.0))
+    }
 }

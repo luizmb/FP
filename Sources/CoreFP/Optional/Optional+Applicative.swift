@@ -2,6 +2,12 @@
 import Foundation
 
 public extension Optional {
+    /// pure :: a -> a?
+    /// Lift a value into the minimal successful context.
+    static func pure(_ value: Wrapped) -> Wrapped? {
+        .some(value)
+    }
+
     /// liftA2 :: (a1 -> a2 -> a) -> Optional<a1> -> Optional<a2> -> Optional<a>
     static func liftA2<A1, A2>(_ fn: @escaping @Sendable (A1, A2) -> A) -> @Sendable (A1?, A2?) -> A? {
         { optionalA, optionalB in
