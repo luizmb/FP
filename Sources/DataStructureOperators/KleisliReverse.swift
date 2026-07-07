@@ -44,12 +44,6 @@ public func <=< <L: Sendable, A: Sendable, B: Sendable, C: Sendable, E: Error>(
 ) -> (A) -> Either<L, Result<C, E>> { fn1 >=> fn2 }
 
 /// `func` for `Either`.
-public func <=< <L: Sendable, E: Semigroup, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Either<L, Validation<E, C>>,
-    _ fn1: @escaping @Sendable (A) -> Either<L, Validation<E, B>>
-) -> (A) -> Either<L, Validation<E, C>> { fn1 >=> fn2 }
-
-/// `func` for `Either`.
 public func <=< <L: Sendable, W: Monoid, A: Sendable, B: Sendable, C: Sendable>(
     _ fn2: @escaping @Sendable (B) -> Writer<W, C>,
     _ fn1: @escaping @Sendable (A) -> Either<L, Writer<W, B>>
@@ -104,12 +98,6 @@ public func <=< <Env: Sendable, A: Sendable, B: Sendable, C: Sendable, E: Error>
     _ fn2: @escaping @Sendable (B) -> Reader<Env, Result<C, E>>,
     _ fn1: @escaping @Sendable (A) -> Reader<Env, Result<B, E>>
 ) -> (A) -> Reader<Env, Result<C, E>> { fn1 >=> fn2 }
-
-/// `func` for `Reader`.
-public func <=< <Env: Sendable, E: Semigroup, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Reader<Env, Validation<E, C>>,
-    _ fn1: @escaping @Sendable (A) -> Reader<Env, Validation<E, B>>
-) -> (A) -> Reader<Env, Validation<E, C>> { fn1 >=> fn2 }
 
 /// `func` for `Reader`.
 public func <=< <Env1: Sendable, Env2: Sendable, A: Sendable, B: Sendable, C: Sendable>(
@@ -174,12 +162,6 @@ public func <=< <S: Sendable, A: Sendable, B: Sendable, C: Sendable, E: Error>(
 ) -> (A) -> Stateful<S, Result<C, E>> { fn1 >=> fn2 }
 
 /// `func` for `Stateful`.
-public func <=< <S: Sendable, E: Semigroup, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Stateful<S, Validation<E, C>>,
-    _ fn1: @escaping @Sendable (A) -> Stateful<S, Validation<E, B>>
-) -> (A) -> Stateful<S, Validation<E, C>> { fn1 >=> fn2 }
-
-/// `func` for `Stateful`.
 public func <=< <S: Sendable, A: Sendable, B: Sendable, C: Sendable>(
     _ fn2: @escaping @Sendable (B) -> Stateful<S, C>,
     _ fn1: @escaping @Sendable (A) -> Stateful<S, B>?
@@ -228,12 +210,6 @@ public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable, E: Error>(
     _ fn2: @escaping @Sendable (B) -> Writer<W, Result<C, E>>,
     _ fn1: @escaping @Sendable (A) -> Writer<W, Result<B, E>>
 ) -> (A) -> Writer<W, Result<C, E>> { fn1 >=> fn2 }
-
-/// `func` for `Writer`.
-public func <=< <W: Monoid, E: Semigroup, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Writer<W, Validation<E, C>>,
-    _ fn1: @escaping @Sendable (A) -> Writer<W, Validation<E, B>>
-) -> (A) -> Writer<W, Validation<E, C>> { fn1 >=> fn2 }
 
 /// `func` for `Writer`.
 public func <=< <W: Monoid, S: Sendable, A: Sendable, B: Sendable, C: Sendable>(
