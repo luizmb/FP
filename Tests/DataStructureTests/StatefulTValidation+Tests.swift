@@ -17,31 +17,6 @@ import Testing
         #expect(mapped.eval(0) == .failure(["err"]))
     }
 
-    @Test func flatMapTSuccess() {
-        let s = Stateful<Int, Validation<[String], Int>> { state in
-            let v = state
-            state += 1
-            return .success(v)
-        }
-        let result = flatMapTStatefulValidation(s) { value in
-            Stateful<Int, Validation<[String], String>> { state in
-                state += value
-                return .success("\(value)")
-            }
-        }
-        let (output, finalState) = result.runStateful(5)
-        #expect(output == .success("5"))
-        #expect(finalState == 11) // 5→6 from first, 6+5=11 from second
-    }
-
-    @Test func flatMapTFailureShortCircuits() {
-        let s = Stateful<Int, Validation<[String], Int>>.pure(.failure(["err"]))
-        let result = flatMapTStatefulValidation(s) { value in
-            Stateful<Int, Validation<[String], String>>.pure(.success("\(value)"))
-        }
-        #expect(result.eval(0) == .failure(["err"]))
-    }
-
     @Test func applyStatefulValidationBothSuccess() {
         let sf = Stateful<Int, Validation<[String], @Sendable (Int) -> String>>.pure(.success { "\($0)" })
         let sa = Stateful<Int, Validation<[String], Int>>.pure(.success(42))

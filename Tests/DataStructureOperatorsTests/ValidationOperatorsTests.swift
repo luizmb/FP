@@ -51,21 +51,6 @@ import Testing
         #expect((lhs <* rhs) == .failure(["left", "right"]))
     }
 
-    // MARK: - EitherTValidation monad operators
-
-    @Test func eitherTValidationBindOperator() {
-        let e: Either<String, Validation<[Int], Int>> = .right(.success(5))
-        let result = e >>- { n in Either<String, Validation<[Int], Int>>.right(.success(n * 2)) }
-        #expect(result == .right(.success(10)))
-    }
-
-    @Test func eitherTValidationKleisli() {
-        let f: @Sendable (Int) -> Either<String, Validation<[Int], Int>> = { n in .right(.success(n + 1)) }
-        let g: @Sendable (Int) -> Either<String, Validation<[Int], String>> = { n in .right(.success("val: \(n)")) }
-        let fg = f >=> g
-        #expect(fg(4) == .right(.success("val: 5")))
-    }
-
     // MARK: - WriterTValidation operators
 
     @Test func writerTValidationFmapOperator() {
@@ -90,13 +75,6 @@ import Testing
         #expect(result.log == ["l1", "l2"])
     }
 
-    @Test func writerTValidationBindOperator() {
-        let w = Writer<[String], Validation<[Int], Int>>(.success(5), ["start"])
-        let result = w >>- { (n: Int) in Writer<[String], Validation<[Int], String>>(.success("got \(n)"), ["end"]) }
-        #expect(result.value == .success("got 5"))
-        #expect(result.log == ["start", "end"])
-    }
-
     // MARK: - StatefulTValidation operators
 
     @Test func statefulTValidationApplyOperator() {
@@ -107,13 +85,6 @@ import Testing
         #expect(result == .failure(["sf", "sa"]))
     }
 
-    @Test func statefulTValidationBindOperator() {
-        let s = Stateful<Int, Validation<[String], Int>> { s in s += 1; return .success(s) }
-        let result = s >>- { (n: Int) in Stateful<Int, Validation<[String], String>>.pure(.success("n=\(n)")) }
-        var state = 0
-        #expect(result.run(&state) == .success("n=1"))
-    }
-
     // MARK: - ReaderTValidation operators
 
     @Test func readerTValidationApplyOperator() {
@@ -121,11 +92,5 @@ import Testing
         let ra = Reader<String, Validation<[Int], Int>>(const(.failure([2])))
         let result = (rf <*> ra)("env")
         #expect(result == .failure([1, 2]))
-    }
-
-    @Test func readerTValidationBindOperator() {
-        let r = Reader<String, Validation<[Int], Int>> { env in .success(env.count) }
-        let result = r >>- { (n: Int) in Reader<String, Validation<[Int], String>>(const(.success("n=\(n)"))) }
-        #expect(result("hello") == .success("n=5"))
     }
 }

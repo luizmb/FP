@@ -268,7 +268,7 @@ import Testing
 
     @Test func validationTOptionalFunctor() {
         let v: Validation<[String], Int?> = .success(.some(5))
-        let result = fmapTValidationOptional { $0 * 2 }(v)
+        let result = mapTValidationOptional { $0 * 2 }(v)
         #expect(result == .success(.some(10)))
     }
 
@@ -282,7 +282,7 @@ import Testing
 
     @Test func validationTArrayFunctor() {
         let v: Validation<[String], [Int]> = .success([1, 2, 3])
-        let result = fmapTValidationArray { $0 * 2 }(v)
+        let result = mapTValidationArray { $0 * 2 }(v)
         #expect(result == .success([2, 4, 6]))
     }
 
@@ -313,22 +313,6 @@ import Testing
         #expect(applyEitherValidation(ef, ea) == .left("outer err"))
     }
 
-    @Test func eitherTValidationFlatMapTSuccess() {
-        let e: Either<String, Validation<[Int], Int>> = .right(.success(5))
-        let result = flatMapTEitherValidation(e) { n in
-            .right(.success(n * 2))
-        }
-        #expect(result == .right(.success(10)))
-    }
-
-    @Test func eitherTValidationFlatMapTFailure() {
-        let e: Either<String, Validation<[Int], Int>> = .right(.failure([42]))
-        let result = flatMapTEitherValidation(e) { n in
-            Either<String, Validation<[Int], Int>>.right(.success(n * 2))
-        }
-        #expect(result == .right(.failure([42])))
-    }
-
     // MARK: - Transformer: WriterTValidation
 
     @Test func writerTValidationApplyAccumulatesLogsAndErrors() {
@@ -337,20 +321,6 @@ import Testing
         let result = applyWriterValidation(wf, wa)
         #expect(result.value == .failure([1, 2]))
         #expect(result.log == ["log1", "log2"])
-    }
-
-    @Test func writerTValidationFlatMapTSuccess() {
-        let w = Writer<[String], Validation<[Int], Int>>(.success(3), ["outer"])
-        let result = w.flatMapT { n in Writer<[String], Validation<[Int], String>>(.success("\(n)"), ["inner"]) }
-        #expect(result.value == .success("3"))
-        #expect(result.log == ["outer", "inner"])
-    }
-
-    @Test func writerTValidationFlatMapTFailure() {
-        let w = Writer<[String], Validation<[Int], Int>>(.failure([9]), ["outer"])
-        let result = w.flatMapT { n in Writer<[String], Validation<[Int], String>>(.success("\(n)"), ["inner"]) }
-        #expect(result.value == .failure([9]))
-        #expect(result.log == ["outer"])
     }
 
     // MARK: - Transformer: StatefulTValidation
@@ -363,23 +333,6 @@ import Testing
         #expect(result == .failure(["e1", "e2"]))
     }
 
-    @Test func statefulTValidationFlatMapTSuccess() {
-        let stateful = Stateful<Int, Validation<[String], Int>> { s in
-            s += 1
-            return .success(s)
-        }
-        let result = flatMapTStatefulValidation(stateful) { n in
-            Stateful<Int, Validation<[String], String>> { s in
-                s += 10
-                return .success("\(n + s)")
-            }
-        }
-        var state = 0
-        let value = result.run(&state)
-        #expect(value == .success("12"))
-        #expect(state == 11)
-    }
-
     // MARK: - Transformer: ReaderTValidation
 
     @Test func readerTValidationApplyAccumulatesErrors() {
@@ -387,14 +340,6 @@ import Testing
         let ra = Reader<String, Validation<[Int], Int>>(const(.failure([2])))
         let result = applyReaderValidation(rf, ra)("env")
         #expect(result == .failure([1, 2]))
-    }
-
-    @Test func readerTValidationFlatMapTSuccess() {
-        let reader = Reader<String, Validation<[Int], Int>> { env in .success(env.count) }
-        let result = reader.flatMapT { n in
-            Reader<String, Validation<[Int], String>>(const(.success("count: \(n)")))
-        }
-        #expect(result("hello") == .success("count: 5"))
     }
 
     // MARK: - Alternative
