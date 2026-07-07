@@ -23,5 +23,5 @@ public func >=> <S, L, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Stateful<S, Either<L, B>>,
     _ fn2: @escaping @Sendable (B) -> Stateful<S, Either<L, C>>
 ) -> (A) -> Stateful<S, Either<L, C>> {
-    { a in fn1(a).flatMapT(fn2) }
+    kleisliT(fn1, fn2)
 }

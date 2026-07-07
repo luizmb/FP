@@ -32,7 +32,7 @@
         _ fn1: @escaping @Sendable (A) -> Writer<W, any Publisher<B, E>>,
         _ fn2: @escaping @Sendable (B) -> Writer<W, any Publisher<C, E>>
     ) -> (A) -> Writer<W, any Publisher<C, E>> {
-        { a in fn1(a).flatMapT(fn2) }
+        kleisliT(fn1, fn2)
     }
 
 #endif

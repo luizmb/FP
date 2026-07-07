@@ -18,11 +18,3 @@ public func <<- <Env: Monoid & Sendable, A: Sendable, B: Sendable>(
 ) -> Reader<Env, B> {
     r.extend(f)
 }
-
-/// f <<= r  =  extend f r  (infixr 1, requires Env: Monoid)
-public func <<= <Env: Monoid & Sendable, A: Sendable, B: Sendable>(
-    _ f: @escaping @Sendable (Reader<Env, A>) -> B,
-    _ r: Reader<Env, A>
-) -> Reader<Env, B> {
-    r.extend(f)
-}

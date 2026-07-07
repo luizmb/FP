@@ -16,5 +16,5 @@ public func -<< <A, B>(_ fn: @escaping @Sendable (A) -> [B?], _ arr: [A?]) -> [B
 
 /// (>=>) :: (a -> [b?]) -> (b -> [c?]) -> a -> [c?]
 public func >=> <A, B, C>(_ fn1: @escaping @Sendable (A) -> [B?], _ fn2: @escaping @Sendable (B) -> [C?]) -> (A) -> [C?] {
-    { a in fn1(a).flatMapT(fn2) }
+    kleisliT(fn1, fn2)
 }

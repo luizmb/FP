@@ -20,3 +20,12 @@ public extension Stateful {
         { $0.flatMapT(fn) }
     }
 }
+
+/// Kleisli composition for `StatefulT + Result` (left-to-right)
+/// (>=>) :: (a -> Stateful<s, Result<b, e>>) -> (b -> Stateful<s, Result<c, e>>) -> a -> Stateful<s, Result<c, e>>
+public func kleisliT<S, A, B, C, E: Error>(
+    _ fn1: @escaping @Sendable (A) -> Stateful<S, Result<B, E>>,
+    _ fn2: @escaping @Sendable (B) -> Stateful<S, Result<C, E>>
+) -> (A) -> Stateful<S, Result<C, E>> {
+    { a in fn1(a).flatMapT(fn2) }
+}

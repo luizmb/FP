@@ -24,3 +24,12 @@ public extension Optional {
         { opt in opt.flatMapT(fn) }
     }
 }
+
+/// Kleisli composition for `OptionalT + Either` (left-to-right)
+/// (>=>) :: (a -> Either<l,b>?) -> (b -> Either<l,c>?) -> a -> Either<l,c>?
+public func kleisliT<L, A, B, C>(
+    _ fn1: @escaping @Sendable (A) -> Either<L, B>?,
+    _ fn2: @escaping @Sendable (B) -> Either<L, C>?
+) -> (A) -> Either<L, C>? {
+    { a in fn1(a).flatMapT(fn2) }
+}

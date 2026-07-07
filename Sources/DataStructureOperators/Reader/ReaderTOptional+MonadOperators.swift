@@ -25,13 +25,5 @@ public func >=> <Env, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Reader<Env, B?>,
     _ fn2: @escaping @Sendable (B) -> Reader<Env, C?>
 ) -> (A) -> Reader<Env, C?> {
-    { a in fn1(a).flatMapT(fn2) }
-}
-
-/// (<&>) :: Functor f => f a -> (a -> b) -> f b
-public func <&> <Env, A, B>(
-    _ reader: Reader<Env, A?>,
-    _ transform: @escaping @Sendable (A) -> B
-) -> Reader<Env, B?> where A: Sendable {
-    reader.mapT(transform)
+    kleisliT(fn1, fn2)
 }

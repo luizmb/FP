@@ -24,3 +24,12 @@ public func bindTEitherOptional<L, A, B>(
 ) -> (Either<L, A?>) -> Either<L, B?> {
     { either in flatMapTEitherOptional(either, fn) }
 }
+
+/// Kleisli composition for `EitherT + Optional` (left-to-right)
+/// (>=>) :: (a -> Either<l,b?>) -> (b -> Either<l,c?>) -> a -> Either<l,c?>
+public func kleisliT<L, A, B, C>(
+    _ fn1: @escaping @Sendable (A) -> Either<L, B?>,
+    _ fn2: @escaping @Sendable (B) -> Either<L, C?>
+) -> (A) -> Either<L, C?> {
+    { a in flatMapTEitherOptional(fn1(a), fn2) }
+}

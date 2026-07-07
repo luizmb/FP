@@ -22,3 +22,12 @@ public extension Optional {
         { opt in opt.flatMapT(fn) }
     }
 }
+
+/// Kleisli composition for `OptionalT + Stateful` (left-to-right)
+/// (>=>) :: (a -> Stateful<s, b>?) -> (b -> Stateful<s, c>) -> a -> Stateful<s, c>?
+public func kleisliT<S, A, B, C>(
+    _ fn1: @escaping @Sendable (A) -> Stateful<S, B>?,
+    _ fn2: @escaping @Sendable (B) -> Stateful<S, C>
+) -> (A) -> Stateful<S, C>? {
+    { a in fn1(a).flatMapT(fn2) }
+}

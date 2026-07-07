@@ -9,7 +9,10 @@ import CoreFP
 //
 // All overloads delegate to the corresponding >=> overload, which means
 // the semantics (and copy cost) are identical. The overloads here cover
-// the same set of monads as the >=> operator in the adjacent >=> files.
+// the same set of monads as the >=> operator in the adjacent >=> files:
+// the base monads (Optional, Array, Result, Publisher, AsyncSequence) and
+// the CoreFP transformer combos (ArrayTOptional, ArrayTResult,
+// OptionalTArray, OptionalTResult).
 
 // MARK: - Optional
 
@@ -43,6 +46,42 @@ public func <=< <A0, A, A1, B>(
     _ fn2: @escaping @Sendable (A) -> Result<A1, B>,
     _ fn1: @escaping @Sendable (A0) -> Result<A, B>
 ) -> (A0) -> Result<A1, B> { fn1 >=> fn2 }
+
+// MARK: - ArrayTOptional
+
+/// `func` for `ArrayT + Optional`.
+public func <=< <A, B, C>(
+    _ fn2: @escaping @Sendable (B) -> [C?],
+    _ fn1: @escaping @Sendable (A) -> [B?]
+) -> (A) -> [C?] { fn1 >=> fn2 }
+
+// MARK: - ArrayTResult
+
+/// `func` for `ArrayT + Result`.
+public func <=< <A, B, C, E: Error>(
+    _ fn2: @escaping @Sendable (B) -> [Result<C, E>],
+    _ fn1: @escaping @Sendable (A) -> [Result<B, E>]
+) -> (A) -> [Result<C, E>] { fn1 >=> fn2 }
+
+// MARK: - OptionalTArray
+
+// swiftlint:disable discouraged_optional_collection
+
+/// `func` for `OptionalT + Array`.
+public func <=< <A, B, C>(
+    _ fn2: @escaping @Sendable (B) -> [C]?,
+    _ fn1: @escaping @Sendable (A) -> [B]?
+) -> (A) -> [C]? { fn1 >=> fn2 }
+
+// swiftlint:enable discouraged_optional_collection
+
+// MARK: - OptionalTResult
+
+/// `func` for `OptionalT + Result`.
+public func <=< <A, B, C, E: Error>(
+    _ fn2: @escaping @Sendable (B) -> Result<C, E>?,
+    _ fn1: @escaping @Sendable (A) -> Result<B, E>?
+) -> (A) -> Result<C, E>? { fn1 >=> fn2 }
 
 // MARK: - Publisher
 

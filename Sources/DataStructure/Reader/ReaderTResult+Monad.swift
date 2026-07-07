@@ -25,3 +25,12 @@ public extension Reader {
         }
     }
 }
+
+/// Kleisli composition for `ReaderT + Result` (left-to-right)
+/// (>=>) :: (a -> m b) -> (b -> m c) -> a -> m c
+public func kleisliT<Env, A, B, C, E: Error>(
+    _ fn1: @escaping @Sendable (A) -> Reader<Env, Result<B, E>>,
+    _ fn2: @escaping @Sendable (B) -> Reader<Env, Result<C, E>>
+) -> (A) -> Reader<Env, Result<C, E>> {
+    { a in fn1(a).flatMapT(fn2) }
+}

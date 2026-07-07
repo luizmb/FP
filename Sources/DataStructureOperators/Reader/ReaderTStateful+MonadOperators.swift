@@ -26,5 +26,5 @@ public func >=> <Env, S, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Reader<Env, Stateful<S, B>>,
     _ fn2: @escaping @Sendable (B) -> Stateful<S, C>
 ) -> (A) -> Reader<Env, Stateful<S, C>> {
-    { a in fn1(a).flatMapT(fn2) }
+    kleisliT(fn1, fn2)
 }

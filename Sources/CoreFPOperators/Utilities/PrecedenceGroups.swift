@@ -78,7 +78,7 @@ precedencegroup AppendToList {
 // 4: ComparisonPrecedence == <=
 
 // 4: Functor/Applicative Ops <£> £> <£ <*> *> <*
-// Note: <&> is at precedence 1 (KleisliCompositionLeft), not here
+// Note: <&> is at precedence 1 (MonadBindLeft), not here
 
 precedencegroup FunctorOps {
     associativity: left

@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import CoreFP
 import Foundation
 
 // WriterT + Stateful — Writer<W, Stateful<S, A>>
@@ -26,4 +27,13 @@ public extension Writer {
     where A == Stateful<S, Inner> {
         { $0.flatMapT(fn) }
     }
+}
+
+/// Kleisli composition for `WriterT + Stateful` (left-to-right)
+/// (>=>) :: (a -> Writer<w, Stateful<s, b>>) -> (b -> Writer<w, Stateful<s, c>>) -> a -> Writer<w, Stateful<s, c>>
+public func kleisliT<W: Monoid, S, A, B, C>(
+    _ fn1: @escaping @Sendable (A) -> Writer<W, Stateful<S, B>>,
+    _ fn2: @escaping @Sendable (B) -> Writer<W, Stateful<S, C>>
+) -> (A) -> Writer<W, Stateful<S, C>> {
+    { a in fn1(a).flatMapT(fn2) }
 }

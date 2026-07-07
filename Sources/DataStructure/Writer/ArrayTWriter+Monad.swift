@@ -17,3 +17,12 @@ public extension Array {
         { arr in arr.flatMapT(fn) }
     }
 }
+
+/// Kleisli composition for `ArrayT + Writer` (left-to-right)
+/// (>=>) :: (a -> [Writer<w, b>]) -> (b -> Writer<w, c>) -> a -> [Writer<w, c>]
+public func kleisliT<W: Monoid, A, B, C>(
+    _ fn1: @escaping @Sendable (A) -> [Writer<W, B>],
+    _ fn2: @escaping @Sendable (B) -> Writer<W, C>
+) -> (A) -> [Writer<W, C>] {
+    { a in fn1(a).flatMapT(fn2) }
+}

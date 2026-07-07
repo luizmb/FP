@@ -30,3 +30,12 @@ public func bindTEitherResult<L, A, B, E: Error>(
 ) -> (Either<L, Result<A, E>>) -> Either<L, Result<B, E>> {
     { either in flatMapTEitherResult(either, fn) }
 }
+
+/// Kleisli composition for `EitherT + Result` (left-to-right)
+/// (>=>) :: (a -> Either<l,Result<b,e>>) -> (b -> Either<l,Result<c,e>>) -> a -> Either<l,Result<c,e>>
+public func kleisliT<L, A, B, C, E: Error>(
+    _ fn1: @escaping @Sendable (A) -> Either<L, Result<B, E>>,
+    _ fn2: @escaping @Sendable (B) -> Either<L, Result<C, E>>
+) -> (A) -> Either<L, Result<C, E>> {
+    { a in flatMapTEitherResult(fn1(a), fn2) }
+}
