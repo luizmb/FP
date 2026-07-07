@@ -21,3 +21,12 @@ public extension Writer {
         { $0.flatMapT(fn) }
     }
 }
+
+/// Kleisli composition for `WriterT + Optional` (left-to-right)
+/// (>=>) :: (a -> Writer<w, b?>) -> (b -> Writer<w, c?>) -> a -> Writer<w, c?>
+public func kleisliT<W: Monoid, A, B, C>(
+    _ fn1: @escaping @Sendable (A) -> Writer<W, B?>,
+    _ fn2: @escaping @Sendable (B) -> Writer<W, C?>
+) -> (A) -> Writer<W, C?> {
+    { a in fn1(a).flatMapT(fn2) }
+}

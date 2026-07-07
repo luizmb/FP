@@ -24,3 +24,12 @@ public extension Either {
         { either in either.flatMapT(fn) }
     }
 }
+
+/// Kleisli composition for `EitherT + Writer` (left-to-right)
+/// (>=>) :: (a -> Either<l, Writer<w, b>>) -> (b -> Writer<w, c>) -> a -> Either<l, Writer<w, c>>
+public func kleisliT<L, W: Monoid, A, B, C>(
+    _ fn1: @escaping @Sendable (A) -> Either<L, Writer<W, B>>,
+    _ fn2: @escaping @Sendable (B) -> Writer<W, C>
+) -> (A) -> Either<L, Writer<W, C>> {
+    { a in fn1(a).flatMapT(fn2) }
+}

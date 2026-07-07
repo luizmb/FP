@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import CoreFP
 import Foundation
 
 // WriterT + Reader — Writer<W, Reader<Env, A>>
@@ -26,4 +27,13 @@ public extension Writer {
     where A == Reader<Env, Inner> {
         { $0.flatMapT(fn) }
     }
+}
+
+/// Kleisli composition for `WriterT + Reader` (left-to-right)
+/// (>=>) :: (a -> Writer<w, Reader<env, b>>) -> (b -> Writer<w, Reader<env, c>>) -> a -> Writer<w, Reader<env, c>>
+public func kleisliT<W: Monoid, Env, A, B, C>(
+    _ fn1: @escaping @Sendable (A) -> Writer<W, Reader<Env, B>>,
+    _ fn2: @escaping @Sendable (B) -> Writer<W, Reader<Env, C>>
+) -> (A) -> Writer<W, Reader<Env, C>> {
+    { a in fn1(a).flatMapT(fn2) }
 }

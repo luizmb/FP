@@ -23,3 +23,12 @@ public extension Either {
         { either in either.flatMapT(fn) }
     }
 }
+
+/// Kleisli composition for `EitherT + Stateful` (left-to-right)
+/// (>=>) :: (a -> Either<l, Stateful<s, b>>) -> (b -> Stateful<s, c>) -> a -> Either<l, Stateful<s, c>>
+public func kleisliT<L, S, A, B, C>(
+    _ fn1: @escaping @Sendable (A) -> Either<L, Stateful<S, B>>,
+    _ fn2: @escaping @Sendable (B) -> Stateful<S, C>
+) -> (A) -> Either<L, Stateful<S, C>> {
+    { a in fn1(a).flatMapT(fn2) }
+}

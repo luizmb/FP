@@ -24,5 +24,5 @@ public func >=> <W: Monoid, L, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Writer<W, Either<L, B>>,
     _ fn2: @escaping @Sendable (B) -> Writer<W, Either<L, C>>
 ) -> (A) -> Writer<W, Either<L, C>> {
-    { a in fn1(a).flatMapT(fn2) }
+    kleisliT(fn1, fn2)
 }

@@ -33,17 +33,7 @@ import DataStructure
         _ fn1: @escaping @Sendable (A) -> Reader<Env, any Publisher<B, E>>,
         _ fn2: @escaping @Sendable (B) -> Reader<Env, any Publisher<C, E>>
     ) -> (A) -> Reader<Env, any Publisher<C, E>> {
-        { a in fn1(a).flatMapT(fn2) }
-    }
-
-    // (<&>) :: Functor f => f a -> (a -> b) -> f b
-    /// `func` for `ReaderT + Publisher`.
-    @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
-    public func <&> <Env, A, B, E: Error>(
-        _ reader: Reader<Env, any Publisher<A, E>>,
-        _ transform: @escaping @Sendable (A) -> B
-    ) -> Reader<Env, any Publisher<B, E>> where A: Sendable {
-        reader.mapT(transform)
+        kleisliT(fn1, fn2)
     }
 
 #endif

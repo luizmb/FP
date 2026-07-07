@@ -21,3 +21,12 @@ public extension Result {
         { result in result.flatMapT(fn) }
     }
 }
+
+/// Kleisli composition for `ResultT + Writer` (left-to-right)
+/// (>=>) :: (a -> Result<Writer<w, b>, e>) -> (b -> Writer<w, c>) -> a -> Result<Writer<w, c>, e>
+public func kleisliT<W: Monoid, A, B, C, E: Error>(
+    _ fn1: @escaping @Sendable (A) -> Result<Writer<W, B>, E>,
+    _ fn2: @escaping @Sendable (B) -> Writer<W, C>
+) -> (A) -> Result<Writer<W, C>, E> {
+    { a in fn1(a).flatMapT(fn2) }
+}

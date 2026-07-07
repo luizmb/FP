@@ -25,4 +25,13 @@ public extension Optional {
     }
 }
 
+/// Kleisli composition for `OptionalT + Array` (left-to-right)
+/// (>=>) :: (a -> [b]?) -> (b -> [c]?) -> a -> [c]?
+public func kleisliT<A, B, C>(
+    _ fn1: @escaping @Sendable (A) -> [B]?,
+    _ fn2: @escaping @Sendable (B) -> [C]?
+) -> (A) -> [C]? {
+    { a in fn1(a).flatMapT(fn2) }
+}
+
 // swiftlint:enable discouraged_optional_collection

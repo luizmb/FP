@@ -19,5 +19,5 @@ public func >=> <A, B, C, E: Error>(
     _ fn1: @escaping @Sendable (A) -> Result<B, E>?,
     _ fn2: @escaping @Sendable (B) -> Result<C, E>?
 ) -> (A) -> Result<C, E>? {
-    { a in fn1(a).flatMapT(fn2) }
+    kleisliT(fn1, fn2)
 }

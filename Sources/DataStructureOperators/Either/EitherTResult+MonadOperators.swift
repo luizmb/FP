@@ -26,5 +26,5 @@ public func >=> <L, A, B, C, E: Error>(
     _ fn1: @escaping @Sendable (A) -> Either<L, Result<B, E>>,
     _ fn2: @escaping @Sendable (B) -> Either<L, Result<C, E>>
 ) -> (A) -> Either<L, Result<C, E>> {
-    { a in flatMapTEitherResult(fn1(a), fn2) }
+    kleisliT(fn1, fn2)
 }

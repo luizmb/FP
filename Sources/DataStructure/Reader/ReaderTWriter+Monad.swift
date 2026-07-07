@@ -23,3 +23,12 @@ public extension Reader {
         { $0.flatMapT(fn) }
     }
 }
+
+/// Kleisli composition for `ReaderT + Writer` (left-to-right)
+/// (>=>) :: (a -> m b) -> (b -> m c) -> a -> m c
+public func kleisliT<Env, W: Monoid, A, B, C>(
+    _ fn1: @escaping @Sendable (A) -> Reader<Env, Writer<W, B>>,
+    _ fn2: @escaping @Sendable (B) -> Writer<W, C>
+) -> (A) -> Reader<Env, Writer<W, C>> {
+    { a in fn1(a).flatMapT(fn2) }
+}

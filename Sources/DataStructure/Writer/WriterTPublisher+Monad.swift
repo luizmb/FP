@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
     import Combine
+    import CoreFP
     import Foundation
 
     public extension Writer {
@@ -36,6 +37,16 @@
         where A == any Publisher<Inner, E> {
             { $0.flatMapT(fn) }
         }
+    }
+
+    /// Kleisli composition for `WriterT + Publisher` (left-to-right)
+    /// (>=>) :: (a -> Writer<w, any Publisher<b, e>>) -> (b -> Writer<w, any Publisher<c, e>>) -> a -> Writer<w, any Publisher<c, e>>
+    @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
+    public func kleisliT<W: Monoid, A, B, C, E: Error>(
+        _ fn1: @escaping @Sendable (A) -> Writer<W, any Publisher<B, E>>,
+        _ fn2: @escaping @Sendable (B) -> Writer<W, any Publisher<C, E>>
+    ) -> (A) -> Writer<W, any Publisher<C, E>> {
+        { a in fn1(a).flatMapT(fn2) }
     }
 
 #endif
