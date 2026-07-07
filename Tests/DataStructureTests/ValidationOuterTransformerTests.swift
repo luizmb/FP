@@ -7,7 +7,8 @@ import Testing
 /// `Validation<E, Inner>` where `Inner` is `Either`, `Reader`, `Result`, `Stateful`, or `Writer`.
 ///
 /// `ValidationTArray` and `ValidationTOptional` are already covered in `ValidationTests.swift`.
-/// `ValidationTNonEmpty` is Functor-only and out of scope.
+/// `ValidationTNonEmpty` (Functor + Applicative) is covered in `ValidationTNonEmptyApplicativeTests.swift`
+/// and `ValidationTNonEmpty+Tests.swift`.
 ///
 /// Validation is an accumulating Applicative, not a Monad — there is no `flatMapT` for any of
 /// these combos and none is referenced here.
