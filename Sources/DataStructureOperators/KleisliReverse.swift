@@ -73,6 +73,15 @@ public func <=< <L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
     _ fn1: @escaping @Sendable (A) -> Either<L, NonEmpty<B>?>
 ) -> (A) -> Either<L, NonEmpty<C>?> { fn1 >=> fn2 }
 
+// MARK: - These
+
+/// Reverse Kleisli composition for `These`.
+/// `g <=< f` is equivalent to `f >=> g`.
+public func <=< <A: Semigroup, B0, B, B1>(
+    _ fn2: @escaping @Sendable (B) -> These<A, B1>,
+    _ fn1: @escaping @Sendable (B0) -> These<A, B>
+) -> (B0) -> These<A, B1> { fn1 >=> fn2 }
+
 // MARK: - Reader
 
 /// `func` for `Reader`.
