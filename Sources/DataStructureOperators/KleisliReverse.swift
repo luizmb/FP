@@ -67,6 +67,12 @@ public func <=< <L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
     _ fn1: @escaping @Sendable (A) -> [Either<L, B>]
 ) -> (A) -> [Either<L, C>] { fn1 >=> fn2 }
 
+/// `func` for `Either`.
+public func <=< <L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
+    _ fn2: @escaping @Sendable (B) -> Either<L, NonEmpty<C>?>,
+    _ fn1: @escaping @Sendable (A) -> Either<L, NonEmpty<B>?>
+) -> (A) -> Either<L, NonEmpty<C>?> { fn1 >=> fn2 }
+
 // MARK: - Reader
 
 /// `func` for `Reader`.
@@ -116,6 +122,12 @@ public func <=< <Env: Sendable, S: Sendable, A: Sendable, B: Sendable, C: Sendab
     _ fn2: @escaping @Sendable (B) -> Stateful<S, C>,
     _ fn1: @escaping @Sendable (A) -> Reader<Env, Stateful<S, B>>
 ) -> (A) -> Reader<Env, Stateful<S, C>> { fn1 >=> fn2 }
+
+/// `func` for `Reader`.
+public func <=< <Env: Sendable, A: Sendable, B: Sendable, C: Sendable>(
+    _ fn2: @escaping @Sendable (B) -> Reader<Env, NonEmpty<C>?>,
+    _ fn1: @escaping @Sendable (A) -> Reader<Env, NonEmpty<B>?>
+) -> (A) -> Reader<Env, NonEmpty<C>?> { fn1 >=> fn2 }
 
 #if canImport(Combine)
     import Combine
@@ -179,6 +191,12 @@ public func <=< <S: Sendable, A: Sendable, B: Sendable, C: Sendable, E: Error>(
     _ fn1: @escaping @Sendable (A) -> Result<Stateful<S, B>, E>
 ) -> (A) -> Result<Stateful<S, C>, E> { fn1 >=> fn2 }
 
+/// `func` for `Stateful`.
+public func <=< <S, A: Sendable, B: Sendable, C>(
+    _ fn2: @escaping @Sendable (B) -> Stateful<S, NonEmpty<C>?>,
+    _ fn1: @escaping @Sendable (A) -> Stateful<S, NonEmpty<B>?>
+) -> (A) -> Stateful<S, NonEmpty<C>?> { fn1 >=> fn2 }
+
 // MARK: - Writer
 
 /// `func` for `Writer`.
@@ -223,6 +241,12 @@ public func <=< <W: Monoid, Env: Sendable, A: Sendable, B: Sendable, C: Sendable
     _ fn1: @escaping @Sendable (A) -> Writer<W, Reader<Env, B>>
 ) -> (A) -> Writer<W, Reader<Env, C>> { fn1 >=> fn2 }
 
+/// `func` for `Writer`.
+public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable>(
+    _ fn2: @escaping @Sendable (B) -> Writer<W, NonEmpty<C>?>,
+    _ fn1: @escaping @Sendable (A) -> Writer<W, NonEmpty<B>?>
+) -> (A) -> Writer<W, NonEmpty<C>?> { fn1 >=> fn2 }
+
 #if canImport(Combine)
     import Combine
     import CoreFPOperators
@@ -253,3 +277,12 @@ public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable, E: Error>(
     _ fn2: @escaping @Sendable (B) -> Writer<W, C>,
     _ fn1: @escaping @Sendable (A) -> Result<Writer<W, B>, E>
 ) -> (A) -> Result<Writer<W, C>, E> { fn1 >=> fn2 }
+
+// MARK: - NonEmpty
+
+/// Reverse Kleisli composition for `NonEmptyTResult`.
+/// `g <=< f` is equivalent to `f >=> g`.
+public func <=< <A, B, C, E>(
+    _ fn2: @escaping @Sendable (B) -> NonEmpty<Result<C, E>>,
+    _ fn1: @escaping @Sendable (A) -> NonEmpty<Result<B, E>>
+) -> (A) -> NonEmpty<Result<C, E>> { fn1 >=> fn2 }

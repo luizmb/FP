@@ -32,3 +32,12 @@ public extension NonEmpty {
         { $0.flatMapT(fn) }
     }
 }
+
+/// Kleisli composition for `NonEmptyTResult` (left-to-right)
+/// (>=>) :: (a -> NonEmpty<Result<b,e>>) -> (b -> NonEmpty<Result<c,e>>) -> a -> NonEmpty<Result<c,e>>
+public func kleisliT<A, B, C, E>(
+    _ fn1: @escaping @Sendable (A) -> NonEmpty<Result<B, E>>,
+    _ fn2: @escaping @Sendable (B) -> NonEmpty<Result<C, E>>
+) -> (A) -> NonEmpty<Result<C, E>> {
+    { a in fn1(a).flatMapT(fn2) }
+}
