@@ -85,6 +85,20 @@ import Testing
 
     // MARK: - Applicative (Core Methods)
 
+    // MARK: - pure
+
+    @Test func pureLiftsIntoRight() {
+        let result: Either<String, Int> = Either.pure(42)
+        #expect(result == .right(42))
+    }
+
+    @Test func pureIsLeftIdentityForApply() {
+        // pure id <*> v == v
+        let right: Either<String, Int> = .right(5)
+        let identity = Either<String, @Sendable (Int) -> Int>.pure(id)
+        #expect(Either.apply(identity, right) == right)
+    }
+
     @Test func liftA2() {
         let add: @Sendable (Int, Int) -> Int = { $0 + $1 }
         let liftedAdd = Either<String, Int>.liftA2(add)

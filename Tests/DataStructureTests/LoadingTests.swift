@@ -329,6 +329,99 @@ struct LoadingApplicativeTests {
         #expect(prev?.0 == 1)
         #expect(prev?.1 == "a")
     }
+
+    // MARK: - zip3 / zip4
+
+    @Test func zip3_allLoaded_returnsTriple() {
+        let first: L<Int> = .loaded(1)
+        let second: L<String> = .loaded("a")
+        let third: L<Bool> = .loaded(true)
+        let result = L<(Int, String, Bool)>.zip3(first, second, third)
+        guard case let .loaded(triple) = result else {
+            Issue.record("Expected .loaded"); return
+        }
+        #expect(triple.0 == 1)
+        #expect(triple.1 == "a")
+        #expect(triple.2 == true)
+    }
+
+    @Test func zip3_idleTrumpsLoaded() {
+        let first: L<Int> = .idle
+        let second: L<String> = .loaded("a")
+        let third: L<Bool> = .loaded(true)
+        let result = L<(Int, String, Bool)>.zip3(first, second, third)
+        if case .idle = result { /* expected */ } else {
+            Issue.record("Expected .idle")
+        }
+    }
+
+    @Test func zip3_failedTrumpsIdle() {
+        let first: L<Int> = .idle
+        let second: L<String> = .failed(error: .network, previous: "stale")
+        let third: L<Bool> = .loaded(true)
+        let result = L<(Int, String, Bool)>.zip3(first, second, third)
+        guard case let .failed(err, prev) = result else {
+            Issue.record("Expected .failed"); return
+        }
+        #expect(err == .network)
+        #expect(prev == nil)
+    }
+
+    @Test func zip3_loadingPairsPrevious() {
+        let first: L<Int> = .loading(previous: 1)
+        let second: L<String> = .loaded("a")
+        let third: L<Bool> = .loaded(true)
+        let result = L<(Int, String, Bool)>.zip3(first, second, third)
+        guard case let .loading(prev) = result else {
+            Issue.record("Expected .loading"); return
+        }
+        #expect(prev?.0 == 1)
+        #expect(prev?.1 == "a")
+        #expect(prev?.2 == true)
+    }
+
+    @Test func zip4_allLoaded_returnsQuadruple() {
+        let first: L<Int> = .loaded(1)
+        let second: L<String> = .loaded("a")
+        let third: L<Bool> = .loaded(true)
+        let fourth: L<Double> = .loaded(2.5)
+        let result = L<(Int, String, Bool, Double)>.zip4(first, second, third, fourth)
+        guard case let .loaded(quad) = result else {
+            Issue.record("Expected .loaded"); return
+        }
+        #expect(quad.0 == 1)
+        #expect(quad.1 == "a")
+        #expect(quad.2 == true)
+        #expect(quad.3 == 2.5)
+    }
+
+    @Test func zip4_failedTrumpsEverything() {
+        let first: L<Int> = .loaded(1)
+        let second: L<String> = .idle
+        let third: L<Bool> = .loading(previous: false)
+        let fourth: L<Double> = .failed(error: .network, previous: 2.5)
+        let result = L<(Int, String, Bool, Double)>.zip4(first, second, third, fourth)
+        guard case let .failed(err, prev) = result else {
+            Issue.record("Expected .failed"); return
+        }
+        #expect(err == .network)
+        #expect(prev == nil)
+    }
+
+    @Test func zip4_loadingPairsPreviousAcrossAllFour() {
+        let first: L<Int> = .loading(previous: 1)
+        let second: L<String> = .loaded("a")
+        let third: L<Bool> = .loaded(true)
+        let fourth: L<Double> = .loaded(2.5)
+        let result = L<(Int, String, Bool, Double)>.zip4(first, second, third, fourth)
+        guard case let .loading(prev) = result else {
+            Issue.record("Expected .loading"); return
+        }
+        #expect(prev?.0 == 1)
+        #expect(prev?.1 == "a")
+        #expect(prev?.2 == true)
+        #expect(prev?.3 == 2.5)
+    }
 }
 
 // MARK: - Monad
