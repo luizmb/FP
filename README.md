@@ -944,7 +944,7 @@ let nameLens: Lens<User, String> = lens(\.name)
 TextField("Name", text: $user[optic: nameLens])
 ```
 
-See [Binding](Sources/FP/FP.docc/Articles/Binding.md) for the full bridge API.
+See [Binding](Sources/CoreFP/CoreFP.docc/Binding.md) for the full bridge API.
 
 ---
 
@@ -1049,7 +1049,7 @@ if let settingsBinding = $sheet[optic: settingsPrism] {
 }
 ```
 
-See [Binding](Sources/FP/FP.docc/Articles/Binding.md) for the full bridge API.
+See [Binding](Sources/CoreFP/CoreFP.docc/Binding.md) for the full bridge API.
 
 ---
 
@@ -1140,7 +1140,7 @@ if let cityBinding = $app[optic: loggedInPrism >>> ^\User.address >>> ^\Address.
 }
 ```
 
-See [Binding](Sources/FP/FP.docc/Articles/Binding.md) for the full bridge API.
+See [Binding](Sources/CoreFP/CoreFP.docc/Binding.md) for the full bridge API.
 
 **`affineTraversal` from a `WritableKeyPath` to an optional**
 
@@ -1439,7 +1439,7 @@ combined.reverseGet(12)  // 12/2 - 1 = 5
 TextField("Feet", value: $meters[optic: metersToFeet], format: .number)
 ```
 
-See [Binding](Sources/FP/FP.docc/Articles/Binding.md) for the full bridge API.
+See [Binding](Sources/CoreFP/CoreFP.docc/Binding.md) for the full bridge API.
 
 ---
 
@@ -2169,31 +2169,31 @@ Practical takeaways:
 
 Each type in this library has a dedicated reference page with comprehensive examples covering every operation, operator, and transformer combination.
 
-Links below point at the DocC article source in this repository (`Sources/FP/FP.docc/Articles/`), which is the same content rendered at the hosted documentation site, [ios.lu/FP](https://ios.lu/FP).
+Links below point at the DocC article source in this repository — each type's article lives in the `.docc` catalog of the module that actually declares it (`CoreFP` or `DataStructure`) — which is the same content rendered at the hosted documentation site, [ios.lu/FP](https://ios.lu/FP).
 
 #### CoreFP
 
 | Type | Description |
 |------|-------------|
-| [Optional](Sources/FP/FP.docc/Articles/Optional.md) | Swift's built-in optional, extended with full Functor / Applicative / Monad instances |
-| [Array](Sources/FP/FP.docc/Articles/Array.md) | Swift's built-in array, extended — models nondeterminism and multiple results |
-| [Result](Sources/FP/FP.docc/Articles/Result.md) | Swift's built-in result, extended with `bimap`, Kleisli composition, and Monoid strategies |
-| [Publisher](Sources/FP/FP.docc/Articles/Publisher.md) | Combine's `AnyPublisher`, extended with functional operations |
-| [AsyncSequence](Sources/FP/FP.docc/Articles/AsyncSequence.md) | Swift's `AsyncSequence`, extended with functional operations |
-| [Binding](Sources/FP/FP.docc/Articles/Binding.md) | SwiftUI's `Binding`, extended with `[optic:]` subscripts for `Lens`, `Iso`, `Prism`, and `AffineTraversal` _(Apple platforms only)_ |
+| [Optional](Sources/CoreFP/CoreFP.docc/Optional.md) | Swift's built-in optional, extended with full Functor / Applicative / Monad instances |
+| [Array](Sources/CoreFP/CoreFP.docc/Array.md) | Swift's built-in array, extended — models nondeterminism and multiple results |
+| [Result](Sources/CoreFP/CoreFP.docc/Result.md) | Swift's built-in result, extended with `bimap`, Kleisli composition, and Monoid strategies |
+| [Publisher](Sources/CoreFP/CoreFP.docc/Publisher.md) | Combine's `AnyPublisher`, extended with functional operations |
+| [AsyncSequence](Sources/CoreFP/CoreFP.docc/AsyncSequence.md) | Swift's `AsyncSequence`, extended with functional operations |
+| [Binding](Sources/CoreFP/CoreFP.docc/Binding.md) | SwiftUI's `Binding`, extended with `[optic:]` subscripts for `Lens`, `Iso`, `Prism`, and `AffineTraversal` _(Apple platforms only)_ |
 
 #### DataStructure
 
 | Type | Description |
 |------|-------------|
-| [Either](Sources/FP/FP.docc/Articles/Either.md) | Unconstrained sum type — both sides are equal citizens, no `Error` requirement |
-| [Loading](Sources/FP/FP.docc/Articles/Loading.md) | Four-state async lifecycle — `idle` / `loading` / `loaded` / `failed`; `loadedOrPrevious` keeps a view showing the last good value through a refresh or an error instead of blanking out |
-| [Validation](Sources/FP/FP.docc/Articles/Validation.md) | Accumulating applicative — errors collect instead of short-circuiting |
-| [Reader](Sources/FP/FP.docc/Articles/Reader.md) | Dependency injection monad — wraps `(Environment) -> Output` |
-| [Stateful](Sources/FP/FP.docc/Articles/Stateful.md) | State threading monad — wraps `(inout S) -> A` |
-| [Writer](Sources/FP/FP.docc/Articles/Writer.md) | Append-as-you-go monad — produces a value alongside an accumulated log |
-| [NonEmpty](Sources/FP/FP.docc/Articles/NonEmpty.md) | Statically guaranteed non-empty sequence — Semigroup (no Monoid), full FAM + Foldable + Traversable |
-| [IdentifiedArray](Sources/FP/FP.docc/Articles/IdentifiedArray.md) | Ordered, `Sendable` collection with O(1) by-id access via a custom open-addressing index — Semigroup, first-class optics (no Functor/Monad by design) |
+| [Either](Sources/DataStructure/DataStructure.docc/Either.md) | Unconstrained sum type — both sides are equal citizens, no `Error` requirement |
+| [Loading](Sources/DataStructure/DataStructure.docc/Loading.md) | Four-state async lifecycle — `idle` / `loading` / `loaded` / `failed`; `loadedOrPrevious` keeps a view showing the last good value through a refresh or an error instead of blanking out |
+| [Validation](Sources/DataStructure/DataStructure.docc/Validation.md) | Accumulating applicative — errors collect instead of short-circuiting |
+| [Reader](Sources/DataStructure/DataStructure.docc/Reader.md) | Dependency injection monad — wraps `(Environment) -> Output` |
+| [Stateful](Sources/DataStructure/DataStructure.docc/Stateful.md) | State threading monad — wraps `(inout S) -> A` |
+| [Writer](Sources/DataStructure/DataStructure.docc/Writer.md) | Append-as-you-go monad — produces a value alongside an accumulated log |
+| [NonEmpty](Sources/DataStructure/DataStructure.docc/NonEmpty.md) | Statically guaranteed non-empty sequence — Semigroup (no Monoid), full FAM + Foldable + Traversable |
+| [IdentifiedArray](Sources/DataStructure/DataStructure.docc/IdentifiedArray.md) | Ordered, `Sendable` collection with O(1) by-id access via a custom open-addressing index — Semigroup, first-class optics (no Functor/Monad by design) |
 
 ---
 

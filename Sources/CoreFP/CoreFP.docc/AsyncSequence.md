@@ -1,4 +1,4 @@
-# AsyncSequence
+# ``_Concurrency/AsyncSequence``
 
 `AsyncStream` extended with functional operators and named functions.
 
@@ -104,8 +104,8 @@ let pipeline = expand >=> doubled
 Combine `Reader` and `AsyncStream` to describe environment-dependent async sequences.
 
 ```swift
-import Reader
-import ReaderOperators
+import DataStructure
+import DataStructureOperators
 
 protocol EventSource {
     func events() -> AsyncStream<Event>
@@ -208,7 +208,7 @@ flatMapTAsyncStreamResult(stream) { n in
 AsyncStream emitting Either values.
 
 ```swift
-import Either
+import DataStructure
 
 let stream = AsyncStream<Either<String, Int>> { c in
     c.yield(.right(1)); c.yield(.left("err")); c.yield(.right(3)); c.finish()
@@ -230,15 +230,15 @@ flatMapTAsyncStreamEither(stream) { n in
 
 ```swift
 import FP        // Named functions (apply, seqRight, bind…) + AsyncSequenceT stacks
-import Operators  // Operators (<£>, <*>, >>-, >=>…) for AsyncStream and AsyncSequenceT stacks
+import CoreFPOperators  // Operators (<£>, <*>, >>-, >=>…) for AsyncStream and AsyncSequenceT stacks
 
 // For AsyncSequenceTEither:
-import Either
-import EitherOperators
+import DataStructure
+import DataStructureOperators
 
 // For ReaderT + AsyncStream:
-import Reader
-import ReaderOperators
+import DataStructure
+import DataStructureOperators
 ```
 
 ---

@@ -1,4 +1,4 @@
-# Writer
+# ``Writer``
 
 `Writer<W: Monoid, A>` is a pair of a value `A` and a log `W`.
 

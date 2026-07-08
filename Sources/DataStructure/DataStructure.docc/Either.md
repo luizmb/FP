@@ -1,11 +1,11 @@
-# Either
+# ``Either``
 
 `Either<Left, Right>` is a type with exactly two possible cases: `.left(Left)` or `.right(Right)`.
 
 It solves the same problem as `Result` — representing success or failure — but without requiring the error type to conform to `Error`. By convention the right side is the "happy path" and the left is the failure, but both sides are equal citizens and can hold any type. This makes `Either` more flexible when your error type is a simple enum, a `String`, or any non-`Error` type.
 
 ```swift
-import Either
+import DataStructure
 
 func divide(_ a: Double, by b: Double) -> Either<String, Double> {
     b == 0 ? .left("Division by zero") : .right(a / b)
@@ -165,7 +165,7 @@ Either participates in transformer stacks in two ways: as the **outer** layer (`
 Either containing an Optional. `.left` propagates; `.right(.none)` re-wraps as `.right(.none)`.
 
 ```swift
-import Either
+import DataStructure
 
 let e: Either<String, Int?> = .right(.some(5))
 mapTEitherOptional({ $0 * 2 }, e)          // .right(Optional(10))
@@ -187,7 +187,7 @@ e >>- { n in .right(.some(n + 1)) }
 Either containing an Array. `.left` propagates; `.right(arr)` lets you flatMap over elements.
 
 ```swift
-import Either
+import DataStructure
 
 let e: Either<String, [Int]> = .right([1, 2, 3])
 mapTEitherArray({ $0 * 2 }, e)         // .right([2, 4, 6])
@@ -202,7 +202,7 @@ Either<String, [Int]>.left("err")
 Either containing a Result — two independent error channels.
 
 ```swift
-import Either
+import DataStructure
 
 let e: Either<String, Result<Int, MyError>> = .right(.success(5))
 mapTEitherResult({ $0 * 2 }, e)         // .right(.success(10))
@@ -218,7 +218,7 @@ flatMapTEitherResult(innerFail) { n in .right(.success(n)) }  // .right(.failure
 Optional wrapping an Either. `nil` propagates; `.some(.left(l))` also propagates.
 
 ```swift
-import Either
+import DataStructure
 
 let e: Either<String, Int>? = .right(5)
 e.mapT { $0 * 2 }                       // Optional(.right(10))
@@ -235,7 +235,7 @@ left.mapT { $0 * 2 }                    // Optional(.left("err"))
 Array of Either values. `.left` elements propagate; `.right` elements are transformed.
 
 ```swift
-import Either
+import DataStructure
 
 let es: [Either<String, Int>] = [.right(1), .left("err"), .right(3)]
 es.mapT { $0 * 2 }              // [.right(2), .left("err"), .right(6)]
@@ -248,8 +248,8 @@ es.flatMapT { n in [.right(n), .right(n * 10)] }
 ## Module
 
 ```swift
-import Either          // Either type + named functions + transformer implementations
-import EitherOperators // Operators (<£>, <*>, >>-, >=>…) for Either and all EitherT stacks
+import DataStructure          // Either type + named functions + transformer implementations
+import DataStructureOperators // Operators (<£>, <*>, >>-, >=>…) for Either and all EitherT stacks
 ```
 
 ---

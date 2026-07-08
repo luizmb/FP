@@ -1,4 +1,4 @@
-# NonEmpty
+# ``NonEmpty``
 
 `NonEmpty<A>` is a sequence statically guaranteed to contain at least one element. The **head** is always present; the **tail** may be empty.
 

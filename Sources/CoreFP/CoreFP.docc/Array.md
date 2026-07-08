@@ -1,4 +1,4 @@
-# Array
+# ``Swift/Array``
 
 Swift's `Array` extended with functional operators and named functions.
 
@@ -257,7 +257,7 @@ rs >>- { n in [.success(n * 2)] }
 Array of Either values. `.left` elements propagate; `.right` elements are transformed.
 
 ```swift
-import Either
+import DataStructure
 
 let es: [Either<String, Int>] = [.right(1), .left("err"), .right(3)]
 es.mapT { $0 * 2 }              // [.right(2), .left("err"), .right(6)]
@@ -277,11 +277,11 @@ es >>- { n in [.right(n * 2)] }
 
 ```swift
 import FP        // Named functions (fmap, apply, seqRight, bind, kleisli…)
-import Operators  // Operators (<£>, <*>, >>-, >=>…)
+import CoreFPOperators  // Operators (<£>, <*>, >>-, >=>…)
 
 // For Either-inner transformers:
-import Either
-import EitherOperators
+import DataStructure
+import DataStructureOperators
 ```
 
 ---

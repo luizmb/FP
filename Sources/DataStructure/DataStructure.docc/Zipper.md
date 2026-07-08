@@ -1,4 +1,4 @@
-# Zipper
+# ``Zipper``
 
 `Zipper<A>` is a focused, navigable non-empty sequence — the classic "list zipper": a sequence together with a distinguished cursor position (`focus`) and O(1) navigation one step in either direction. It's the canonical data structure for walking back and forth over a sequence while editing the element currently under focus.
 

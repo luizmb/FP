@@ -1,4 +1,4 @@
-# SumType2
+# ``SumType2``
 
 `SumType2<A, B>` is the shared interface behind every built-in two-case sum type in this library — `Either`, `Result`, and `Optional` all conform. It gives you one `match` eliminator, one pair of optional projections (`.a` / `.b`), and one pair of predicates (`.isA` / `.isB`) that work identically no matter which concrete type you're holding.
 
@@ -94,7 +94,7 @@ Optional(42).isA                       // true  — .some is A for Optional
 Optional<Int>.none.isB                 // true  — .none is B for Optional
 ```
 
-`Validation<E, A>` is structurally a two-case type and ships its own `match(caseFailure:caseSuccess:)` with the same shape, but it does **not** conform to `SumType2` — it isn't a `Monad` either (see <doc:Validation>), and the library keeps its API surface separate rather than routing it through the shared protocol. To use a `Validation` value with a function generic over `SumType2`, bridge it first:
+`Validation<E, A>` is structurally a two-case type and ships its own `match(caseFailure:caseSuccess:)` with the same shape, but it does **not** conform to `SumType2` — it isn't a `Monad` either, and the library keeps its API surface separate rather than routing it through the shared protocol. To use a `Validation` value with a function generic over `SumType2`, bridge it first:
 
 ```swift
 let v: Validation<String, Int> = .success(42)

@@ -1,4 +1,4 @@
-# Stateful
+# ``Stateful``
 
 `Stateful<S, A>` is a wrapper for a function `(inout S) -> A`.
 

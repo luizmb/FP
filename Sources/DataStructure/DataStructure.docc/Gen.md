@@ -1,4 +1,4 @@
-# Gen
+# ``Gen``
 
 `Gen<Value>` — a composable, seedable random-value generator for property-based testing.
 

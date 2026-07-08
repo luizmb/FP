@@ -1,4 +1,4 @@
-# Optional
+# ``Swift/Optional``
 
 Swift's `Optional` extended with functional operators and named functions.
 
@@ -311,7 +311,7 @@ r >>- { n in .success("\(n)") }  // Optional(.success("5"))
 Optional wrapping an Either. `nil` propagates; `.some(.left(l))` also propagates.
 
 ```swift
-import Either
+import DataStructure
 
 let e: Either<String, Int>? = .right(5)
 e.mapT { $0 * 2 }              // Optional(.right(10))
@@ -329,11 +329,11 @@ left.mapT { $0 * 2 }           // Optional(.left("err"))
 
 ```swift
 import FP        // Named functions (fmap, apply, seqRight, bind, kleisli…)
-import Operators  // Operators (<£>, <*>, >>-, >=>…)
+import CoreFPOperators  // Operators (<£>, <*>, >>-, >=>…)
 
 // For Either-inner transformers:
-import Either
-import EitherOperators
+import DataStructure
+import DataStructureOperators
 ```
 
 ---

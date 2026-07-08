@@ -1,4 +1,4 @@
-# IdentifiedArray
+# ``IdentifiedArray``
 
 `IdentifiedArray<ID, Element>` is a `Sendable`, value-type (copy-on-write) ordered collection that keeps a **user-defined order exactly like `Array`** while offering **O(1)** lookup and in-place update by a stable identifier.
 
