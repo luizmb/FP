@@ -5,8 +5,8 @@ AI-powered development assistance for using and extending the FP (Functional Pro
 ## Philosophy: Operators + Tacit Programming
 
 This library encourages:
-1. **Operators over methods**: Use `<£>` not `.fmap()`, use `>>-` not `.flatMap()`
-2. **Tacit (point-free) style**: Use `2 |> curry(*)` not `{ $0 * 2 }` - prefer `|>` over nested parentheses
+1. **Operators over methods at call sites**: prefer `<£>` over `.map()`, `>>-` over `.flatMap()` — though `.map`/`.flatMap` are the real instance methods the operators delegate to
+2. **Tacit (point-free) style**: prefer `2 |> curry(*)` over `{ $0 * 2 }` for simple arithmetic
 3. **Composition**: Build complex functions from simple pieces
 
 Example:
@@ -19,9 +19,11 @@ array.map { $0 * 2 }.flatMap { [$0, $0 + 1] }
 
 // ✅✅ Best: Tacit style with operators (use |> curry)
 let double = 2 |> curry(*)
-let expand = { [$0, $0 + 1] }  // Some cases still need lambdas
+let expand: (Int) -> [Int] = { [$0, $0 + 1] }  // Some cases still need lambdas
 double <£> array >>- expand
 ```
+
+Swift has no operator-section syntax — `(+1)`/`(*2)` are not valid Swift. Always use `curry(_:)`.
 
 ## Two Audiences
 
@@ -29,18 +31,18 @@ double <£> array >>- expand
 
 **Use the library** in your Swift projects with operators and tacit style.
 
-**Core principle**: Import operator modules, use operators, prefer point-free style when readable.
+**Core principle**: Import the modules you need (`FP` for everything, or `CoreFP`/`CoreFPOperators`/`DataStructure`/`DataStructureOperators` individually), use operators, prefer point-free style when readable.
 
 ### 🔧 Library Contributors (`contributors/`)
 
 **Extend the library** with new types, transformers, following library conventions.
 
-**Core principle**: Implement methods, then wrap with operators, ensure type class laws.
+**Core principle**: Implement named functions first (instance `.map`/`.flatMap` + static curried `fmap`/`bind`), then wrap with operators that delegate to them, ensure type class laws, cover all four applicable test targets.
 
 ## Skills for Users
 
 ### ⭐ 1. getting-started.md (START HERE)
-Learn FP library operators and tacit programming style.
+Learn FP library operators and tacit programming style, plus Prism/PrismKeyPath composition for enum case access.
 
 ```
 Use the getting-started skill to learn how to use operators and
@@ -48,7 +50,7 @@ point-free style with the FP library.
 ```
 
 ### 2. convert-to-functional.md
-Refactor imperative code to functional style with operators.
+Refactor imperative code to functional style — operators, `Reader`, `Validation`, `Loading` + `loadedOrPrevious` for UI state, and `const`/`ignore`/`fail`/`withArg` for point-free test fixtures.
 
 ```
 Use the convert-to-functional skill to refactor this code using
@@ -56,7 +58,7 @@ FP operators and tacit style: [paste code]
 ```
 
 ### 3. explain-operators.md
-Understand operator compositions and precedence.
+Understand operator compositions and precedence — including the real, verified precedence table (not folklore).
 
 ```
 Use the explain-operators skill to explain how this composes:
@@ -64,7 +66,7 @@ curry(*)(2) <£> array >>- expand
 ```
 
 ### 4. reader-monad-guide.md
-Use Reader monad for dependency injection.
+Use Reader monad for dependency injection — **and know when not to**: `Reader` is for environment/dependency context that crosses the app's own boundary, not a wrapper for ordinary function parameters.
 
 ```
 Use the reader-monad-guide skill to refactor my service layer
@@ -82,7 +84,7 @@ work with <£> and >>- operators.
 ## Skills for Contributors
 
 ### 1. add-monad-support.md
-Implement type classes for new library types.
+Implement type classes for new library types, following the library's actual internal conventions (static-method-on-type `pure`/`apply`/`liftA2`/`kleisli`, not free functions; both flipped-operator directions; all four test targets).
 
 ```
 Use the add-monad-support skill to add Functor/Applicative/Monad
@@ -90,7 +92,7 @@ to the new Validation type I'm adding to the library.
 ```
 
 ### 2. create-readert-transformer.md
-Create monad transformer stacks (ReaderT or flat OuterT{Inner}) following library patterns.
+Create monad transformer stacks (`ReaderT` or a flat `OuterTInner`) following library patterns — real module locations, `mapT`/`flatMapT`/`kleisliT` naming, `<£^>`/`<&^>` for the transformer functor map.
 
 ```
 Use the create-readert-transformer skill to implement ReaderT + Validation
@@ -104,16 +106,17 @@ Use the create-readert-transformer skill to implement ArrayTValidation
 
 ## Tacit Programming Utilities
 
-The library provides utilities for point-free style (in `FP.Functions`):
+The library provides utilities for point-free style (in `CoreFP`):
 
 ```swift
 curry        // (A, B) -> C becomes (A) -> (B) -> C
 flip         // Reverse parameter order
-partialApply // Fix first parameter
-id           // identity function: (A) -> A (returns { $0 })
-const        // Constant function: ignores input
+withArg      // Adapt a single-argument function to a multi-argument call site
 compose      // Function composition (also >>> and <<<)
-|>           // Pipe operator
+const        // Ignores its arguments, always returns a fixed value — overloads for 0-4+ args
+ignore       // Accepts any arguments, returns Void — for no-op stubs
+fail         // Returns a function that traps with a message if ever actually called
+|>           // Pipe operator — apply a value to a function
 ```
 
 ### Tacit Examples
@@ -125,21 +128,6 @@ compose      // Function composition (also >>> and <<<)
 
 // ✅ Tacit (preferred with |>)
 2 |> curry(*)
-
-// Also valid but less preferred (nested parens)
-curry(*)(2)
-```
-
-**Addition**:
-```swift
-// Explicit
-{ $0 + 1 }
-
-// ✅ Tacit (preferred with |>)
-1 |> curry(+)
-
-// Or
-(+1)  // Swift supports this directly!
 ```
 
 **Composition**:
@@ -151,16 +139,13 @@ curry(*)(2)
 transform1 >>> transform2
 ```
 
-**With operators**:
+**Default/ignored closures in fixtures** (see `convert-to-functional.md` Pattern 9 for the full treatment):
 ```swift
-// Instead of:
-array <£> { $0 * 2 } >>- { [$0, $0 + 1] }
+// ❌ { _, _ in someValue } just to satisfy a default parameter
+var fetchUser: (String, Int) -> User = { _, _ in .guest }
 
-// Tacit:
-let double = curry(*)(2)
-let expand = curry(Array.init(repeating:count:))(2) >>> /* or keep lambda for clarity */
-
-double <£> array >>- expand
+// ✅ const names the intent: ignore the args, always return this
+var fetchUser: (String, Int) -> User = const(.guest)
 ```
 
 ## Key Differences: Users vs Contributors
@@ -168,17 +153,17 @@ double <£> array >>- expand
 | Aspect | Users | Contributors |
 |--------|-------|--------------|
 | **Goal** | Use library | Extend library |
-| **Style** | Operators + tacit | Methods + operators |
-| **Import** | Operators modules | Create modules |
-| **Methods** | Avoid (use operators) | Implement |
-| **Tests** | App logic | Type class laws |
+| **Style** | Operators + tacit | Named functions + operators |
+| **Import** | `FP` or the specific module(s) needed | Add to the appropriate core/`*Operators` module |
+| **Methods** | Call operators at use sites | Implement `.map`/`.flatMap` + static `fmap`/`bind`/`pure`/`apply`/`liftA2`/`kleisli` |
+| **Tests** | App logic | Type class laws, in all four applicable test targets |
 
 ## Quick Start
 
 **User journey**:
-1. `getting-started.md` - Learn operators
-2. `convert-to-functional.md` - Refactor code
-3. `reader-monad-guide.md` - Dependency injection
+1. `getting-started.md` - Learn operators + Prisms
+2. `convert-to-functional.md` - Refactor code, including UI state and test fixtures
+3. `reader-monad-guide.md` - Dependency injection (and its boundary)
 4. `explain-operators.md` - Debug when stuck
 
 **Contributor journey**:
@@ -192,21 +177,26 @@ double <£> array >>- expand
 - [Library Documentation](../../README.md)
 - [Monad Transformers](../../Sources/FP/FP.docc/Articles/MonadTransformers.md)
 - [Operator Vocabulary & Precedence](../../Sources/FP/FP.docc/Articles/OperatorVocabulary.md)
+- [Optics](../../Sources/FP/FP.docc/Articles/Optics.md)
+- [Loading](../../Sources/FP/FP.docc/Articles/Loading.md)
 - [Haskell Typeclassopedia](https://wiki.haskell.org/Typeclassopedia)
 
 ## Remember
 
 **For Users**:
-- ✅ Import operator modules
+- ✅ Import the modules you need (`FP`, or `CoreFP`/`CoreFPOperators`/`DataStructure`/`DataStructureOperators`)
 - ✅ Use operators (`<£>`, `>>-`, `>=>`)
 - ✅ Prefer tacit style when readable
 - ✅ Compose with `>>>`, `<<<`, `|>`
+- ✅ Use `Reader` only for real dependency-injection context, not ordinary parameters
+- ✅ Use `Prism`/`PrismKeyPath` composition for reusable, nesting-aware case access
 
 **For Contributors**:
-- ✅ Implement methods (fmap, flatMap)
-- ✅ Create operators that use methods
-- ✅ Test type class laws
-- ✅ Follow module organization
+- ✅ Implement `.map`/`.flatMap` (instance) + `fmap`/`bind`/`pure`/`apply`/`liftA2`/`kleisli` (static, curried)
+- ✅ Create operators that delegate to those named functions — never re-implement logic inline
+- ✅ Add both directions of every directional operator in the same change
+- ✅ Test type class laws in every applicable target (named-function tests: no operators; operator tests: must use the operator)
+- ✅ Follow module organization (`CoreFP`/`DataStructure` for named functions, `*Operators` for operator syntax)
 
 ---
 
