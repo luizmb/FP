@@ -341,12 +341,11 @@ config.with(port: 9090)                          // same effect, no lens needed
 let teamConfigHost = lens(\.teamConfig) >>> Config.lens.host
 ```
 
-`@Prisms` does the enum equivalent — one `Prism` per case, a `Shape.prism` accessor, `Prismatic`
-conformance (unlocking `\.case` mixed key paths), and a `Shape.Cases` mirror enum for
-payload-free case queries:
+`@Prisms` does the enum equivalent — one `Prism` per case, a `Shape.prism` accessor, a plain
+per-case property delegating to it, `Prismatic` conformance (unlocking `\.case` mixed key
+paths), and a `Shape.Cases` mirror enum for payload-free case queries:
 
 ```swift
-@dynamicMemberLookup
 @Prisms
 public enum Shape {
     case circle(Double)
@@ -355,7 +354,7 @@ public enum Shape {
 }
 
 let s = Shape.circle(3.14)
-s.circle                                // Optional(3.14) — dynamic-member accessor
+s.circle                                // Optional(3.14) — plain per-case property
 Shape.prism.circle.set(s, 5.0)           // Shape.circle(5.0)
 s.is(.circle)                            // true — case-name query, no dummy payload needed
 Shape.Cases.allCases                     // [.circle, .rectangle, .empty]

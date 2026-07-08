@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **`@Prisms` now generates one plain per-case property per case** (`shape.circle: Double?`,
+  `loading.loaded: Success?`, etc.), typed `Payload?` and delegating to the `Prism` the macro
+  already generates. Restores the ergonomics an earlier `@dynamicMemberLookup`-based design
+  offered before it was removed (2026-06-17) for consistency between hand-written and
+  macro-generated Prisms — but without reintroducing `@dynamicMemberLookup`: the macro can
+  name every case explicitly at expansion time, so a named property per case is both simpler
+  and more discoverable (autocomplete, no indirection through `PrismFocus`) than the
+  dynamic-member subscript it replaces. Applied identically to the 5 hand-written Prism types
+  (`Either`, `Loading`, `Validation`, `Optional`, `Result`) so macro and manual output stay in
+  lockstep.
+- Wired the previously-orphaned `ExpandOptic` executable target (and its `FPMacrosExpander`
+  dependency) into `Package.swift` — both existed on disk and were referenced by
+  `.swiftlint.yml`, but were never buildable via `swift build`/`swift run`. `swift run
+  ExpandOptic <file.swift>` prints what `@Lenses`/`@Prisms` would generate for a
+  shape-matching scratch declaration, for verifying the 5 hand-written Prism types stay in
+  sync with the macro. See `CONTRIBUTING.md`.
+
+### Fixed
+- `Either`/`Validation`/`Loading`'s doc comments, and a whole README `@Prisms` section, still
+  described the removed `@dynamicMemberLookup` per-case-accessor design (and a `.properties`
+  `PrismsOptions` case that was never actually implemented) — both now describe the real,
+  current per-case-property behavior.
+
 ## [2.0.0] - 2026-07-08
 
 A comprehensive gap-and-consistency audit of the whole library: every type family now has

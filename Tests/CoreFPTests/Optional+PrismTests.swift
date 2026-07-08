@@ -51,4 +51,24 @@ struct OptionalPrismTests {
         #expect(!s.is(.none))
         #expect(!n.is(.some))
     }
+
+    @Test func some_property_hit() {
+        let s: Int? = 42
+        #expect(s.some == 42)
+    }
+
+    @Test func some_property_miss() {
+        let n: Int? = nil
+        #expect(n.some == nil)
+    }
+
+    @Test func none_property_hit() {
+        let n: Int? = nil
+        #expect(n.none != nil)
+    }
+
+    @Test func none_property_miss() {
+        let s: Int? = 42
+        #expect(s.none == nil)
+    }
 }

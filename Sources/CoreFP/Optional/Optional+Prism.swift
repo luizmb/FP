@@ -7,7 +7,7 @@ import Foundation
 // `static var` returning a fresh `Prisms()` per access.
 //
 // `Prismatic` conformance unlocks `\.case` key paths; payload extraction goes through the
-// prism (`Optional.prism.some.preview(x)`) or `\.some`.
+// prism (`Optional.prism.some.preview(x)`), `\.some`, or the plain `optional.some` property.
 
 public extension Optional {
     struct Prisms: Sendable {
@@ -23,6 +23,12 @@ public extension Optional {
 
     /// The `prism` property.
     static var prism: Prisms { Prisms() }
+
+    /// `self`, unchanged — provided for parity with the other `@Prisms`-shaped types.
+    /// Delegates to `Self.prism.some`.
+    var some: Wrapped? { Self.prism.some.preview(self) }
+    /// `Void?` — non-`nil` only when `self` is `nil`. Delegates to `Self.prism.none`.
+    var none: Void? { Self.prism.none.preview(self) }
 
     enum Cases: CoreFP.CaseMatchable {
         public typealias Subject = Wrapped?

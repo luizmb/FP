@@ -80,6 +80,57 @@ struct PrismsNamespaceTests {
     }
 }
 
+// MARK: - Per-case properties
+
+@Suite("@Prisms — per-case properties")
+struct PrismsCasePropertiesTests {
+    @Test func property_hit_singlePayload() {
+        #expect(Shape.circle(3.14).circle == 3.14)
+    }
+
+    @Test func property_miss_singlePayload() {
+        #expect(Shape.rectangle(1, 2).circle == nil)
+    }
+
+    @Test func property_hit_noPayload() {
+        #expect(Shape.empty.empty != nil)
+    }
+
+    @Test func property_miss_noPayload() {
+        #expect(Shape.circle(3.14).empty == nil)
+    }
+
+    @Test func property_hit_multiplePayloads() {
+        let box = Box.labeled(x: 1, y: 2)
+        #expect(box.labeled?.0 == 1)
+        #expect(box.labeled?.1 == 2)
+    }
+
+    @Test func property_miss_multiplePayloads() {
+        #expect(Box.wrapped("x").labeled == nil)
+    }
+
+    @Test func property_delegatesToSamePrism_asExplicitPreview() {
+        let s = Shape.circle(3.14)
+        #expect(s.circle == Shape.prism.circle.preview(s))
+    }
+
+    @Test func property_worksForNestedEnum() {
+        let a = Reducer.Action.setName("hello")
+        #expect(a.setName == "hello")
+        #expect(a.increment != nil ? false : true) // .increment is a different case
+    }
+
+    @Test func property_worksForGenericHost() {
+        let some: Wrapped<String> = .some("hi")
+        let none: Wrapped<String> = .none
+        #expect(some.some == "hi")
+        #expect(none.some == nil)
+        #expect(none.none != nil)
+        #expect(some.none == nil)
+    }
+}
+
 // MARK: - Prism laws
 
 @Suite("@Prisms — laws")

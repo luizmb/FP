@@ -9,7 +9,7 @@ import Foundation
 // access — matching what the macro emits for any generic host.
 //
 // `Prismatic` conformance unlocks `\.case` key paths; payload extraction goes through the
-// prism (`Either.prism.left.preview(x)`) or `\.left`.
+// prism (`Either.prism.left.preview(x)`), `\.left`, or the plain `either.left` property.
 
 public extension Either {
     struct Prisms: Sendable {
@@ -25,6 +25,11 @@ public extension Either {
 
     /// The `prism` property.
     static var prism: Prisms { Prisms() }
+
+    /// The left payload, or `nil` if `self` is `.right`. Delegates to `Self.prism.left`.
+    var left: A? { Self.prism.left.preview(self) }
+    /// The right payload, or `nil` if `self` is `.left`. Delegates to `Self.prism.right`.
+    var right: B? { Self.prism.right.preview(self) }
 
     enum Cases: CoreFP.CaseMatchable {
         public typealias Subject = Either

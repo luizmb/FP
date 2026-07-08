@@ -8,7 +8,8 @@ import CoreFP
 // access — matching what the macro emits for any generic host.
 //
 // `Prismatic` conformance unlocks `\.case` key paths; payload extraction goes through the
-// prism (`Validation.prism.success.preview(x)`) or `\.success`.
+// prism (`Validation.prism.success.preview(x)`), `\.success`, or the plain `validation.success`
+// property.
 
 public extension Validation {
     struct Prisms: Sendable {
@@ -24,6 +25,11 @@ public extension Validation {
 
     /// The `prism` property.
     static var prism: Prisms { Prisms() }
+
+    /// The accumulated error(s), or `nil` if `self` is `.success`. Delegates to `Self.prism.failure`.
+    var failure: E? { Self.prism.failure.preview(self) }
+    /// The successful value, or `nil` if `self` is `.failure`. Delegates to `Self.prism.success`.
+    var success: A? { Self.prism.success.preview(self) }
 
     enum Cases: CoreFP.CaseMatchable {
         public typealias Subject = Validation

@@ -43,9 +43,10 @@ let fresh = Loading<[Movie], NetworkError>.from(.success([]))
 // .loaded([])
 ```
 
-### `loadedOrPrevious`
+### `loadedOrPrevious` — the "don't blank the screen" accessor
 
-Returns the loaded value, or the most recent `previous`. `nil` for `.idle` and for in-flight / failed states that never produced data.
+Returns the loaded value, or the most recent `previous`. `nil` only for `.idle` and for
+`.loading`/`.failed` states that never had a successful fetch to fall back on.
 
 ```swift
 Loading<Int, MyError>.idle.loadedOrPrevious                                // nil
@@ -54,6 +55,46 @@ Loading<Int, MyError>.loading(previous: 42).loadedOrPrevious               // 42
 Loading<Int, MyError>.loaded(7).loadedOrPrevious                           // 7
 Loading<Int, MyError>.failed(error: .network, previous: 3).loadedOrPrevious       // 3
 ```
+
+This is the property to reach for in a view: it collapses three of the four cases
+(`.loaded`, `.loading(previous:)`, `.failed(_, previous:)`) down to "the best value I
+currently have to show," so a screen never has to blank itself out just because a refresh
+is in flight or the last attempt failed. Compare the two approaches to rendering the same
+list:
+
+```swift
+// Without loadedOrPrevious — switches to an empty/spinner state on every refresh,
+// even when there's perfectly good data still on screen from the last successful fetch.
+switch state {
+case .idle, .loading:
+    ProgressView()
+case let .loaded(movies):
+    MovieList(movies)
+case .failed:
+    ErrorView()
+}
+
+// With loadedOrPrevious — refreshing (or a failed refresh) keeps showing the last
+// good list; only genuinely empty states (.idle, or a failure/loading with no prior
+// data at all) fall through to a full-screen placeholder.
+if let movies = state.loadedOrPrevious {
+    MovieList(movies)          // stays on screen through .loading and .failed alike
+} else {
+    switch state {
+    case .idle: EmptyStateView()
+    case .loading: ProgressView()
+    case .failed: ErrorView()
+    case .loaded: EmptyView()  // unreachable: .loaded always has a loadedOrPrevious
+    }
+}
+```
+
+The second version is the pattern this type exists for: pull-to-refresh and background
+poll/retry loops feel broken when the whole screen flashes to a spinner or an error page
+every time they run — `loadedOrPrevious` is what lets a view keep the last-known-good
+content on screen and layer a lighter-weight signal (a small inline spinner, a toast, a
+banner) on top instead, using `state.is(.loading)` / `state.failed != nil` alongside it to
+decide whether to show that lighter-weight signal at all.
 
 ---
 
@@ -172,7 +213,7 @@ Loading<Int, NetworkError>.loading(previous: 7).catch { _ in .loaded(0) }
 
 ## Prisms, `cases`, and `is(_:)`
 
-`Loading` ships hand-written equivalents of what FP's `@Prisms` macro generates. Because `Loading` is generic, Swift forbids `static let` in its scope, so `prism` is a computed `static var` returning a fresh `Prisms()` per access — matching what the macro emits for any generic host. `@dynamicMemberLookup` is on the `Loading` declaration, so per-case access goes through a single keypath-driven subscript rather than per-case computed properties.
+`Loading` ships hand-written equivalents of what FP's `@Prisms` macro generates. Because `Loading` is generic, Swift forbids `static let` in its scope, so `prism` is a computed `static var` returning a fresh `Prisms()` per access — matching what the macro emits for any generic host.
 
 ### `Loading.prism.<case>` — `CoreFP.Prism`
 
@@ -189,9 +230,9 @@ Loading.prism.loaded.set(.loaded(1), 99)                     // .loaded(99)
 Loading.prism.loaded.over({ $0 * 2 })(.loaded(5))            // .loaded(10)
 ```
 
-### Per-case accessors via `@dynamicMemberLookup`
+### Per-case properties
 
-Each case is reachable as a property of the instance — resolved through one generic subscript on `Loading`. Note that `.loading` is a double-optional because its focus type is `Success?`.
+Each case also has a plain property on the instance — no `@dynamicMemberLookup` involved, just one named property per case, each delegating to the `Prism` above. `if let` reads directly against a `Loading` value without going through `.prism.loaded.preview(...)`. Note that `.loading` is a double optional because its own focus type is already `Success?`.
 
 ```swift
 let state: Loading<Int, E> = .loaded(42)
@@ -199,6 +240,10 @@ state.loaded                    // Optional(42)
 state.idle                       // nil
 state.loading                    // nil
 state.failed                     // nil
+
+if let value = state.loaded {
+    render(value)
+}
 
 let inFlight: Loading<Int, E> = .loading(previous: 7)
 inFlight.loading                 // Optional(Optional(7))  — double optional

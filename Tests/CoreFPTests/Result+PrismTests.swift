@@ -53,4 +53,24 @@ struct ResultPrismTests {
         #expect(!ok.is(.failure))
         #expect(!bad.is(.success))
     }
+
+    @Test func success_property_hit() {
+        let r: Result<Int, MyError> = .success(42)
+        #expect(r.success == 42)
+    }
+
+    @Test func success_property_miss() {
+        let r: Result<Int, MyError> = .failure(.init(code: 1))
+        #expect(r.success == nil)
+    }
+
+    @Test func failure_property_hit() {
+        let r: Result<Int, MyError> = .failure(.init(code: 9))
+        #expect(r.failure == .init(code: 9))
+    }
+
+    @Test func failure_property_miss() {
+        let r: Result<Int, MyError> = .success(0)
+        #expect(r.failure == nil)
+    }
 }

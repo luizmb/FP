@@ -141,6 +141,7 @@ public struct PrismsMacro: MemberMacro {
         if flags.emitsPrismStruct {
             members.append(makePrismsStruct(enumName: enumName, access: access, cases: cases))
             members.append(makeStaticPrism(enumName: enumName, access: access, isGeneric: isGeneric))
+            members.append(contentsOf: makeCaseProperties(access: access, cases: cases))
         }
 
         if flags.cases {
@@ -210,6 +211,21 @@ private func makePrismsStruct(enumName: String, access: String, cases: [CaseInfo
         }
         .joined(separator: "; ")
     return DeclSyntax(stringLiteral: "\(prefix)struct Prisms: Sendable { \(fields) }")
+}
+
+/// One plain computed property per case, named after the case and typed `FocusType?` —
+/// `nil` when `self` isn't that case. Each delegates to the `Prism` this macro already
+/// generated for that case, so there's no duplicated pattern-matching logic. Emitted for
+/// every case including those with no payload (`Void?`) and multiple payloads (a tuple),
+/// matching the `Prisms` struct's own per-case coverage. Deliberately a named property,
+/// not `@dynamicMemberLookup` — the macro can name every case explicitly at expansion
+/// time, so there's no need for the runtime-dispatched indirection a hand-written
+/// equivalent would otherwise require.
+private func makeCaseProperties(access: String, cases: [CaseInfo]) -> [DeclSyntax] {
+    let prefix = accessPrefix(access)
+    return cases.map { info in
+        DeclSyntax(stringLiteral: "\(prefix)var \(info.name): \(info.focusType)? { Self.prism.\(info.name).preview(self) }")
+    }
 }
 
 /// For non-generic hosts emit `static let prism = Prisms()` — a one-time allocation,

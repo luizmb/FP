@@ -59,8 +59,8 @@ import Foundation
 ///
 /// ## Prism support
 ///
-/// Each case has a corresponding `Prism` via the `Either.prism` namespace, plus
-/// per-case accessors (`either.left`, `either.right`) via `@dynamicMemberLookup`. The
+/// Each case has a corresponding `Prism` via the `Either.prism` namespace, plus plain
+/// per-case accessors (`either.left`, `either.right`) that delegate to it. The
 /// `Either.Cases` enum lets you ask `either.is(.left)` / `.is(.right)` for a uniform
 /// predicate over the case names. See `Either+Prism.swift`.
 ///

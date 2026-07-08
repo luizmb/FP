@@ -61,10 +61,9 @@ import CoreFP
 /// ## Prism support
 ///
 /// Each case has a corresponding `Prism` via the `Validation.prism` namespace, plus
-/// per-case accessors (`validation.failure`, `validation.success`) via
-/// `@dynamicMemberLookup`. The `Validation.Cases` enum lets you ask
-/// `validation.is(.failure)` / `.is(.success)` for a uniform predicate over the case
-/// names. See `Validation+Prism.swift`.
+/// plain per-case accessors (`validation.failure`, `validation.success`) that delegate
+/// to it. The `Validation.Cases` enum lets you ask `validation.is(.failure)` /
+/// `.is(.success)` for a uniform predicate over the case names. See `Validation+Prism.swift`.
 ///
 /// - SeeAlso: ``Either``, ``NonEmpty``, ``Semigroup``
 public enum Validation<E: Semigroup, A> {

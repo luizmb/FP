@@ -42,6 +42,24 @@ let package = Package(
                 "FPMacrosPlugin"
             ]
         ),
+        .target(
+            name: "FPMacrosExpander",
+            dependencies: [
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
+                .product(name: "SwiftDiagnostics", package: "swift-syntax")
+            ]
+        ),
+        .executableTarget(
+            name: "ExpandOptic",
+            dependencies: [
+                "FPMacrosExpander",
+                .product(name: "SwiftSyntax", package: "swift-syntax"),
+                .product(name: "SwiftSyntaxMacros", package: "swift-syntax"),
+                .product(name: "SwiftDiagnostics", package: "swift-syntax"),
+                .product(name: "SwiftParser", package: "swift-syntax")
+            ]
+        ),
         .testTarget(name: "CoreFPTests", dependencies: ["CoreFP"]),
         .testTarget(name: "CoreFPOperatorsTests", dependencies: ["CoreFPOperators", "CoreFP"]),
         .testTarget(name: "DataStructureTests", dependencies: ["DataStructure", "CoreFP"]),
