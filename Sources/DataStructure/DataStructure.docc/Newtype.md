@@ -80,7 +80,7 @@ UserID.iso.get(UserID(42))     // 42
 UserID.iso.reverseGet(42)      // UserID(42)
 ```
 
-Because it is a real `Iso`, it composes with the rest of the optics hierarchy via `>>>`/`<<<` exactly like any other optic — see the "Optics" article, in the `CoreFP` module's documentation, for the full `Iso`/`Lens`/`Prism`/`AffineTraversal` composition story (use the module switcher in the sidebar).
+Because it is a real `Iso`, it composes with the rest of the optics hierarchy via `>>>`/`<<<` exactly like any other optic — see [Optics](../../corefp/optics) for the full `Iso`/`Lens`/`Prism`/`AffineTraversal` composition story.
 
 ---
 
