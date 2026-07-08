@@ -37,11 +37,13 @@ let parsed = "42"
 - <doc:Result>
 - <doc:Optional>
 - <doc:Validation>
+- <doc:These>
 - <doc:SumType>
 
 ### Collections & Sequences
 - <doc:Array>
 - <doc:NonEmpty>
+- <doc:Zipper>
 - <doc:IdentifiedArray>
 - <doc:AsyncSequence>
 - <doc:Publisher>
