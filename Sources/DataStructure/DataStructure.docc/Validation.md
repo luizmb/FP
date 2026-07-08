@@ -1,4 +1,4 @@
-# Validation
+# ``Validation``
 
 `Validation<E: Semigroup, A>` is a type with exactly two cases: `.failure(E)` or `.success(A)`.
 

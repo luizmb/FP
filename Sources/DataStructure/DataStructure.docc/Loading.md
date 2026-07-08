@@ -1,4 +1,4 @@
-# Loading
+# ``Loading``
 
 `Loading<Success, Failure>` is a four-state lifecycle enum for async operations: `.idle`, `.loading(previous:)`, `.loaded(Success)`, and `.failed(Failure, previous:)`. The `previous` payload on `.loading` and `.failed` carries the last successful value so UIs can keep displaying stale data while a refresh is in flight or after an error.
 

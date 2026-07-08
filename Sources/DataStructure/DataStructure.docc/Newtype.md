@@ -1,4 +1,4 @@
-# Newtype
+# ``Newtype``
 
 `Newtype<Tag, RawValue>` — a zero-cost wrapper that gives a raw value a distinct compile-time identity.
 
@@ -80,7 +80,7 @@ UserID.iso.get(UserID(42))     // 42
 UserID.iso.reverseGet(42)      // UserID(42)
 ```
 
-Because it is a real `Iso`, it composes with the rest of the optics hierarchy via `>>>`/`<<<` exactly like any other optic — see <doc:Optics> for the full `Iso`/`Lens`/`Prism`/`AffineTraversal` composition story.
+Because it is a real `Iso`, it composes with the rest of the optics hierarchy via `>>>`/`<<<` exactly like any other optic — see the "Optics" article, in the `CoreFP` module's documentation, for the full `Iso`/`Lens`/`Prism`/`AffineTraversal` composition story (use the module switcher in the sidebar).
 
 ---
 

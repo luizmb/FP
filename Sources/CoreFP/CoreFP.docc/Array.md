@@ -1,4 +1,4 @@
-# Array
+# ``Swift/Array``
 
 Swift's `Array` extended with functional operators and named functions.
 

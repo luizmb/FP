@@ -1,4 +1,4 @@
-# These
+# ``These``
 
 `These<A, B>` is the "inclusive-or" sum type: a value holds an `A` (`.this`), a `B` (`.that`), or **both at once** (`.both`). It fills a real gap between `Either` and `Validation`, neither of which can express "both sides present simultaneously."
 

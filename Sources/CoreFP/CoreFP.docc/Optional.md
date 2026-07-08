@@ -1,4 +1,4 @@
-# Optional
+# ``Swift/Optional``
 
 Swift's `Optional` extended with functional operators and named functions.
 

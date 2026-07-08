@@ -1,4 +1,4 @@
-# AsyncSequence
+# ``_Concurrency/AsyncSequence``
 
 `AsyncStream` extended with functional operators and named functions.
 

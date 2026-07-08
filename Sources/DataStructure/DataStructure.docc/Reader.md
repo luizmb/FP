@@ -1,4 +1,4 @@
-# Reader
+# ``Reader``
 
 `Reader<Environment, Output>` is a wrapper for a function `(Environment) -> Output`.
 

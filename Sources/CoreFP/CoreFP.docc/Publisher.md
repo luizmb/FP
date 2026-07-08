@@ -1,4 +1,4 @@
-# Publisher (Combine)
+# ``Combine/Publisher``
 
 Combine's `Publisher` extended with functional operators and named functions.
 

@@ -6,14 +6,15 @@ types, effects, and a full suite of composition operators.
 ## Overview
 
 `FP` is an umbrella module that re-exports four focused libraries. Import `FP` for everything,
-or import exactly the piece you need:
+or import exactly the piece you need — each has its own documentation landing page, reachable
+via the module switcher in the sidebar:
 
 | Module | Contents |
 |--------|----------|
-| `CoreFP` | Optics (Lens, Prism, AffineTraversal, Iso), the Semigroup/Monoid hierarchy, free functions, the SumType protocol |
-| `CoreFPOperators` | The operator surface: `>>>`, `<<<`, `|>`, `£`, `<|>`, `<£>`, `<*>`, `>>-`, `>=>`, `<=<`, … |
-| `DataStructure` | Algebraic and effect types: `Either`, `Validation`, `Reader`, `Writer`, `Stateful`, `NonEmpty`, `IdentifiedArray`, `Loading` |
-| `DataStructureOperators` | Operator variants for the data-structure types |
+| `CoreFP` | Optics (Lens, Prism, AffineTraversal, Iso), the Semigroup/Monoid hierarchy, standard-library extensions, the `SumType2` protocol |
+| `CoreFPOperators` | Operator syntax for `CoreFP`: `>>>`, `<<<`, `\|>`, `£`, `<\|>`, `<£>`, `<*>`, `>>-`, `>=>`, `<=<`, … |
+| `DataStructure` | The library's own algebraic and effect types: `Either`, `Validation`, `Reader`, `Writer`, `Stateful`, `NonEmpty`, `IdentifiedArray`, `Loading`, `These`, `Zipper`, `Newtype`, `Gen` |
+| `DataStructureOperators` | Operator syntax for `DataStructure` |
 
 Everything is pure: no implicit side effects, no singletons, `Sendable`-first, errors modelled as
 values (`Result` / `Either` / `Validation`) rather than `throws`, and async modelled lazily.
@@ -32,45 +33,8 @@ let parsed = "42"
 ### Tutorials
 - <doc:FPTutorials>
 
-### Error Handling & Sum Types
-- <doc:Either>
-- <doc:Result>
-- <doc:Optional>
-- <doc:Validation>
-- <doc:These>
-- <doc:SumType>
-
-### Collections & Sequences
-- <doc:Array>
-- <doc:NonEmpty>
-- <doc:Zipper>
-- <doc:IdentifiedArray>
-- <doc:AsyncSequence>
-- <doc:Publisher>
-
-### Effects & State
-- <doc:Reader>
-- <doc:Writer>
-- <doc:Stateful>
-- <doc:Loading>
-
-### SwiftUI Interop
-- <doc:Binding>
-
-### Lenses, Prisms & Isos
-- <doc:Optics>
-
-### Algebra
-- <doc:SemigroupMonoid>
-- <doc:EndoEndoMut>
-
 ### Code Generation
 - <doc:Macros>
-
-### Foundations
-- <doc:PointFreeStyle>
-- <doc:Newtype>
-- <doc:Gen>
 
 ### Concepts
 - <doc:MonadTransformers>

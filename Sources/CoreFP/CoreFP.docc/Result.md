@@ -1,4 +1,4 @@
-# Result
+# ``Swift/Result``
 
 Swift's `Result<Success, Failure>` extended with functional operators and named functions.
 

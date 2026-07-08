@@ -1,4 +1,4 @@
-# Either
+# ``Either``
 
 `Either<Left, Right>` is a type with exactly two possible cases: `.left(Left)` or `.right(Right)`.
 
