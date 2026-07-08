@@ -190,8 +190,8 @@ double <£> array >>- expand
 ## Resources
 
 - [Library Documentation](../../README.md)
-- [Implementation Summary](../../IMPLEMENTATION_SUMMARY.md)
-- [Operator Precedence](../../PRECEDENCE_CORRECTIONS.md)
+- [Monad Transformers](../../Sources/FP/FP.docc/Articles/MonadTransformers.md)
+- [Operator Vocabulary & Precedence](../../Sources/FP/FP.docc/Articles/OperatorVocabulary.md)
 - [Haskell Typeclassopedia](https://wiki.haskell.org/Typeclassopedia)
 
 ## Remember

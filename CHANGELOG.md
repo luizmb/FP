@@ -7,6 +7,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] - 2026-07-08
+
+A comprehensive gap-and-consistency audit of the whole library: every type family now has
+symmetric operator coverage, the transformer matrix is complete, the `Validation` Monad
+instances that violated the Applicative/Monad consistency law are gone, and the DocC catalog
+gained 10 new articles, a Haskell-mapping section on every article, and its first interactive
+tutorial. See the migration notes below for the breaking changes.
+
+### Breaking Changes
+- Removed the four `Validation`-as-inner Monad instances — `EitherTValidation`,
+  `ReaderTValidation`, `StatefulTValidation`, `WriterTValidation` no longer expose
+  `flatMapT`/`bindT` or the `>>-`/`-<<`/`>=>`/`<=<` operators. Each combo's `flatMapT`
+  short-circuited on the first `Validation` failure while its `liftA2T` accumulated errors,
+  violating the Monad/Applicative consistency law. `Validation` is now Applicative-only in
+  both directions (as it already was when Validation is the outer type). Convert via
+  `.toEither()` first if you need short-circuit sequencing.
+- Renamed 10 `fmapTValidationX` free functions to `mapTValidationX` (`Array`, `Either`,
+  `NonEmpty`, `Optional`, `Reader`, `Result`, `Stateful`, `Writer`), matching the `mapT`
+  naming convention used by every other transformer combo.
+- Removed the undocumented `<<=` Reader comonad-extend operator (an alias for `extend` that
+  overloaded the standard library's compound-assignment operator). Use `->>`/`<<-`, which
+  already cover comonad extend in both directions.
+- Removed 6 stray `<&>` overloads on `ReaderT*+MonadOperators` (Array/Either/Optional/
+  Publisher/Reader/Result) that duplicated `<&^>` from the sibling `+FunctorOperators` files.
+
+### Added
+- **New types**: `These<A, B>` (Haskell's inclusive-or sum type — `.this`/`.that`/`.both`,
+  with a real Applicative *and* Monad instance requiring `A: Semigroup`) and `Zipper<A>`
+  (the classic focused list zipper, with a lawful Comonad instance requiring no constraint).
+- **`Result`**: `traverse`/`sequence` into `Array`/`Optional`/`Either`/`Validation`, and
+  `fold(onSuccess:onFailure:)` — closing the biggest single-type gap the audit found.
+- **`NonEmpty`**: a full Comonad instance (`extract`/`extend`/`duplicate`), and a complete
+  Applicative + Monad-operator surface across all 8 transformer combos (`EitherTNonEmpty`,
+  `NonEmptyTEither`, `NonEmptyTOptional`, `OptionalTNonEmpty`, `NonEmptyTResult`,
+  `ReaderTNonEmpty`, `StatefulTNonEmpty`, `WriterTNonEmpty`) plus `ValidationTNonEmpty`
+  — previously only Functor + Monad (or Functor only) existed, with no Applicative anywhere
+  and, for `OptionalTNonEmpty`, no operators at all.
+- **Monoid wrappers**: `Min`/`Max`/`First`/`Last` (Semigroup-only — no identity exists for
+  an arbitrary type), `Dual` (Semigroup always, Monoid when the wrapped type is), and
+  `Ordering` (wraps `ComparisonResult` for composable lexicographic comparators via
+  `mconcat`, plus a `comparing(_:)` key-extractor helper).
+- **`Writer`** gains Semigroup/Monoid conformance (combines `value` and `log` pointwise).
+- **`Loading`** gains a full Applicative (`apply`/`liftA2`/`seqRight`/`seqLeft`) plus
+  `zip3`/`zip4`, built from the existing `zip` and preserving its
+  `.failed > .idle > .loading > .loaded` precedence.
+- **`zip3`/`zip4`** for `Array`. (`Optional`/`Result`/`Either` already had fully-variadic
+  `zip` via parameter packs, which subsumes arbitrary arities — no change needed there.)
+- **`pure`** named function on `Optional`/`Result`/`Array`/`Either`, matching the existing
+  `Reader`/`NonEmpty` precedent, for point-free parity.
+- Named `kleisliT` free functions everywhere `>=>`/`<=<` previously inlined
+  `{ a in fn1(a).flatMapT(fn2) }`, so every Kleisli operator now delegates to a named
+  function per the library's operator-delegation rule.
+- The 4 missing `<=<` overloads for `ArrayTOptional`/`ArrayTResult`/`OptionalTArray`/
+  `OptionalTResult`.
+- Test coverage for every transformer stack that had none in either the core or operator
+  target: the Reader-outer combos, the Validation-outer combos, the Combine/Publisher
+  stacks, and the 4 CoreFP combos above.
+- **10 new DocC articles**: Optics, Semigroup & Monoid, Monad Transformers, Operator
+  Vocabulary & Precedence, Point-Free Style, Newtype, Gen, Macros, SumType2, Endo/EndoMut.
+- A "For Haskell developers" section — with a type/operator mapping table and curated
+  external references — added to all 14 pre-existing DocC articles.
+- The library's first DocC Tutorial: "Modeling Failures: Optional → Result → Either →
+  Validation," a 4-section interactive walkthrough.
+- README: a Quick Start section, an operator precedence table, a "Coming from Haskell"
+  migration table, documentation for all 6 macros (previously 2 of 6), and new Newtype/Gen
+  sections.
+
+### Fixed
+- The `SumType2` protocol's doc comment (and the README) had an inverted left/right case
+  table for `Result`/`Optional` — `Result.success`/`Optional.some` are the *left*/`A` case,
+  not the right/`B` case as previously documented — and both wrongly listed `Validation` as
+  conforming to `SumType2`, which it doesn't.
+- A pre-existing unterminated code fence in the README that broke its GitHub rendering from
+  partway through the file onward.
+- `StatefulTNonEmpty`'s `>=>`/`<=<`/`kleisliT` had an asymmetric signature (a non-optional
+  first arrow where its `EitherTNonEmpty`/`ReaderTNonEmpty`/`WriterTNonEmpty` siblings all
+  use a symmetric optional-returning shape), which would have silently broken on any
+  3-arrow Kleisli chain. Fixed to match its siblings.
+- Inline `///` documentation raised on the primary type-definition files for `Either`,
+  `Validation`, `Reader`, `Writer`, `Stateful`, `Loading`, and `NonEmpty`.
+
+### Removed
+- `IMPLEMENTATION_SUMMARY.md` and `PRECEDENCE_CORRECTIONS.md` — internal, stale working
+  documents whose accurate content (operator vocabulary, precedence tables, the transformer
+  coverage matrix) has been rescued into the new `OperatorVocabulary` and `MonadTransformers`
+  DocC articles, re-verified against the current source rather than copied as-is.
+
 ## [1.13.0] - 2026-07-03
 
 ### Added
