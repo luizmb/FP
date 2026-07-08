@@ -110,8 +110,8 @@ AnyPublisher.kleisli(fetchUser, fetchProfile)(42)
 Combine `Reader` and `Publisher` to describe environment-dependent reactive computations. A typical use case is injecting a networking protocol so the real implementation and a test mock are swapped at the call site without changing any logic.
 
 ```swift
-import Reader
-import ReaderOperators
+import DataStructure
+import DataStructureOperators
 
 protocol HTTPClient {
     func get(_ path: String) -> AnyPublisher<Data, Error>
@@ -219,7 +219,7 @@ flatMapTPublisherResult(pub) { n in
 Publisher emitting Either values.
 
 ```swift
-import Either
+import DataStructure
 
 let pub: AnyPublisher<Either<String, Int>, Never> =
     [Either.right(1), .left("err"), .right(3)].publisher.eraseToAnyPublisher()
@@ -240,15 +240,15 @@ flatMapTPublisherEither(pub) { n in
 
 ```swift
 import FP        // Named functions (fmap, apply, seqRight, bind…) + PublisherT stacks
-import Operators  // Operators (<£>, <*>, >>-, >=>…) for Publisher and PublisherT stacks
+import CoreFPOperators  // Operators (<£>, <*>, >>-, >=>…) for Publisher and PublisherT stacks
 
 // For PublisherTEither:
-import Either
-import EitherOperators
+import DataStructure
+import DataStructureOperators
 
 // For ReaderT + Publisher:
-import Reader
-import ReaderOperators
+import DataStructure
+import DataStructureOperators
 ```
 
 ---

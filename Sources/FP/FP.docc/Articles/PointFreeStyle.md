@@ -144,5 +144,5 @@ For general background on the style itself — not specific to this library — 
 
 ```swift
 import FP        // Named functions (curry, flip, compose, fanout…)
-import Operators  // Operators (>>>, <<<, £, <|, |>…)
+import CoreFPOperators  // Operators (>>>, <<<, £, <|, |>…)
 ```

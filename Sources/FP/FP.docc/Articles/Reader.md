@@ -5,7 +5,7 @@
 It solves the **dependency injection** problem: instead of passing a configuration or service object through every function call, you describe computations that *need* an environment and compose them freely. The environment is provided once, at the edge of your program.
 
 ```swift
-import Reader
+import DataStructure
 
 // A Reader is just a function from Environment to Output
 let greeting = Reader<String, String> { name in "Hello, \(name)!" }
@@ -224,8 +224,8 @@ duplicate(base)
 ## Module
 
 ```swift
-import Reader          // Reader type + named functions
-import ReaderOperators // Operators (<£>, <*>, >>-, >=>…)
+import DataStructure          // Reader type + named functions
+import DataStructureOperators // Operators (<£>, <*>, >>-, >=>…)
 ```
 
 ---

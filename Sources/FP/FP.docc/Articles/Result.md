@@ -244,7 +244,7 @@ Result<Int, String>.success(21).bimap({ $0 * 2 }, { "Error: \($0)" })
 
 ```swift
 import FP       // Named functions (fmap, apply, seqRight, bind, kleisli…)
-import Operators // Operators (<£>, <*>, >>-, >=>…)
+import CoreFPOperators // Operators (<£>, <*>, >>-, >=>…)
 ```
 
 ---
