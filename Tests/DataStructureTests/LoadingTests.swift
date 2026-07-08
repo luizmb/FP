@@ -138,6 +138,54 @@ struct LoadingPrismTests {
         #expect(prism.preview(.loaded(42)) == 42)
         #expect(prism.preview(.idle) == nil)
     }
+
+    @Test func idle_property_hit() {
+        let s: Sut = .idle
+        #expect(s.idle != nil)
+    }
+
+    @Test func idle_property_miss() {
+        let s: Sut = .loaded(1)
+        #expect(s.idle == nil)
+    }
+
+    @Test func loading_property_hit() {
+        let s: Sut = .loading(previous: 7)
+        #expect(s.loading == 7)
+    }
+
+    @Test func loading_property_hit_whenPreviousIsNil() {
+        // Double optional: `.loading`'s own payload is `Int?`, so a present-but-nil
+        // `previous` still distinguishes from "not the .loading case at all".
+        let s: Sut = .loading(previous: nil)
+        #expect(s.loading == .some(nil))
+    }
+
+    @Test func loading_property_miss() {
+        let s: Sut = .idle
+        #expect(s.loading == nil)
+    }
+
+    @Test func loaded_property_hit() {
+        let s: Sut = .loaded(42)
+        #expect(s.loaded == 42)
+    }
+
+    @Test func loaded_property_miss() {
+        let s: Sut = .idle
+        #expect(s.loaded == nil)
+    }
+
+    @Test func failed_property_hit() {
+        let s: Sut = .failed(error: .network, previous: 3)
+        #expect(s.failed?.0 == .network)
+        #expect(s.failed?.1 == 3)
+    }
+
+    @Test func failed_property_miss() {
+        let s: Sut = .idle
+        #expect(s.failed == nil)
+    }
 }
 
 // MARK: - cases enum + is(_:)

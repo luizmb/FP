@@ -7,7 +7,8 @@ import Foundation
 // Because `Loading` is generic, Swift forbids `static let` in its scope, so the static
 // `prism` accessor is a computed `static var` returning a fresh `Prisms()` per access —
 // matching what the macro emits for any generic host. `Prismatic` conformance unlocks
-// `\.case` key paths; payload extraction goes through the prism or `\.case`.
+// `\.case` key paths; payload extraction goes through the prism, `\.case`, or the plain
+// per-case property (`state.loaded`, etc.).
 
 public extension Loading {
     struct Prisms: Sendable {
@@ -31,6 +32,18 @@ public extension Loading {
 
     /// The `prism` property.
     static var prism: Prisms { Prisms() }
+
+    /// `Void?` — non-`nil` only when `self` is `.idle`. Delegates to `Self.prism.idle`.
+    var idle: Void? { Self.prism.idle.preview(self) }
+    /// The `previous` payload of `.loading`, or `nil` if `self` isn't `.loading`. Note the
+    /// double optional: `.loading`'s own payload is already `Success?`. Delegates to
+    /// `Self.prism.loading`.
+    var loading: Success?? { Self.prism.loading.preview(self) }
+    /// The loaded value, or `nil` if `self` isn't `.loaded`. Delegates to `Self.prism.loaded`.
+    var loaded: Success? { Self.prism.loaded.preview(self) }
+    /// The `(error, previous)` pair, or `nil` if `self` isn't `.failed`. Delegates to
+    /// `Self.prism.failed`.
+    var failed: (Failure, Success?)? { Self.prism.failed.preview(self) }
 
     enum Cases: CoreFP.CaseMatchable {
         public typealias Subject = Loading

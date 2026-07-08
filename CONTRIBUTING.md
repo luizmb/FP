@@ -37,6 +37,23 @@ This library follows strict functional programming principles. See the README an
 - Tacit/point-free programming using FP operators
 - No force unwraps, no crash functions
 
+## Keeping Hand-Written Prisms/Lenses in Sync
+
+`Either`, `Validation`, `Loading`, `Optional`, and `Result` ship hand-written equivalents of
+what `@Prisms` would generate (Swift can't retroactively apply macros to `Optional`/`Result`,
+and the others predate the macro or need custom access-level handling). If you change
+`PrismsMacro`/`LensesMacro`'s codegen, verify these five stay in sync by diffing against
+what the macro actually emits for a shape-matching scratch enum/struct:
+
+```bash
+swift run ExpandOptic path/to/scratch/file.swift
+```
+
+`ExpandOptic` parses a file, finds any `@Lenses`/`@Prisms`-annotated declaration, and prints
+what the macro would generate — without needing to actually apply the macro to the real
+library type. Write a throwaway file with the same case/property shape as the type you're
+checking, annotate it, run the tool, and diff the output against the hand-written source.
+
 ## Pull Request Process
 
 1. Open a PR against `main`

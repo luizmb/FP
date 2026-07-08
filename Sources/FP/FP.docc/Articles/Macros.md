@@ -83,6 +83,7 @@ Properties whose type is `T?` get a double-Optional parameter in `with(...)` (`T
 Applied to an enum, `@Prisms` generates:
 - a nested `Prisms: Sendable` struct holding one `Prism<Host, Payload>` per case, plus `static let prism` (or `static var prism` for generic hosts),
 - `Prismatic` conformance, which unlocks `Prism(\.caseName)` — composable case key paths,
+- one plain property per case (`value.caseName`), typed `Payload?`, delegating to the `Prism` above,
 - a nested `Cases: CoreFP.CaseMatchable` enum mirroring the case *names* (no payloads), plus `value.is(.caseName)`.
 
 **Before:**
@@ -120,6 +121,10 @@ public enum Shape {
     }
     public static let prism = Prisms()
 
+    public var circle: Double? { Self.prism.circle.preview(self) }
+    public var rectangle: (Double, Double)? { Self.prism.rectangle.preview(self) }
+    public var empty: Void? { Self.prism.empty.preview(self) }
+
     public enum Cases: CoreFP.CaseMatchable {
         public typealias Subject = Shape
         case circle, rectangle, empty
@@ -142,11 +147,12 @@ let s = Shape.circle(3.14)
 Shape.prism.circle.preview(s)          // Optional(3.14)
 Shape.prism.circle.set(s, 5.0)         // .circle(5.0)
 Prism(\.circle).preview(s)             // Optional(3.14) — via the case key path
+s.circle                               // Optional(3.14) — via the plain per-case property
 s.is(.circle)                          // true
 Shape.Cases.allCases                   // [.circle, .rectangle, .empty]
 ```
 
-**Slicing:** `@Prisms(.all)` (default), `@Prisms(.prisms)` (prisms + `Prismatic` only), `@Prisms(.cases)` (`Cases` + `is(_:)` only).
+**Slicing:** `@Prisms(.all)` (default), `@Prisms(.prisms)` (prisms + per-case properties + `Prismatic` only), `@Prisms(.cases)` (`Cases` + `is(_:)` only).
 
 **When to reach for it:** any enum you inspect or transform by case — Redux/SwiftRex `Action` enums are the primary use case, mirroring `@Lenses` on the sibling `State`.
 
@@ -349,7 +355,7 @@ repo.count()            // 1
 | Macro | Attaches to | Attachment kind(s) | Generates | Replaces manual boilerplate for |
 |---|---|---|---|---|
 | `@Lenses` | `struct` | `member` | memberwise init, `Lenses` struct + `static lens`, `with(...)` | hand-written `Lens` per property + copy-with-overrides method |
-| `@Prisms` | `enum` | `member` + `extension` | `Prisms` struct + `static prism`, `Prismatic` conformance, `Cases` enum, `is(_:)` | hand-written `Prism` per case + case-name predicate boilerplate |
+| `@Prisms` | `enum` | `member` + `extension` | `Prisms` struct + `static prism`, per-case properties, `Prismatic` conformance, `Cases` enum, `is(_:)` | hand-written `Prism` per case + case-name predicate boilerplate |
 | `@Iso` | `struct` | `member` | `static var iso: Iso<Self, Representation>` | hand-written `get`/`reverseGet` pair for a field tuple or DTO bridge |
 | `@DeriveMonoid` | `struct` (all fields `Monoid`) | `extension` | `Monoid` conformance (`combine`, `identity`) | hand-written field-wise `combine`/`identity` |
 | `@Mock` | `protocol` | `peer` | `#if DEBUG` sibling `<Protocol>Mock` struct | hand-written test-double struct per protocol |

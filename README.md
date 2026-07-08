@@ -2185,7 +2185,7 @@ Links below point at the DocC article source in this repository (`Sources/FP/FP.
 | Type | Description |
 |------|-------------|
 | [Either](Sources/FP/FP.docc/Articles/Either.md) | Unconstrained sum type — both sides are equal citizens, no `Error` requirement |
-| [Loading](Sources/FP/FP.docc/Articles/Loading.md) | Four-state async lifecycle — `idle` / `loading` / `loaded` / `failed`, with `previous` carried through for stale-data UIs |
+| [Loading](Sources/FP/FP.docc/Articles/Loading.md) | Four-state async lifecycle — `idle` / `loading` / `loaded` / `failed`; `loadedOrPrevious` keeps a view showing the last good value through a refresh or an error instead of blanking out |
 | [Validation](Sources/FP/FP.docc/Articles/Validation.md) | Accumulating applicative — errors collect instead of short-circuiting |
 | [Reader](Sources/FP/FP.docc/Articles/Reader.md) | Dependency injection monad — wraps `(Environment) -> Output` |
 | [Stateful](Sources/FP/FP.docc/Articles/Stateful.md) | State threading monad — wraps `(inout S) -> A` |
@@ -2320,12 +2320,11 @@ Properties whose declared visibility is *lower* than the struct's are excluded f
 
 `@Prisms` generates three things for the annotated enum:
 
-1. A `Prisms` struct + `static let prism` accessor holding a typed `Prism` for each case.
-2. Per-case accessors (`shape.circle`, `shape.rectangle`, …) — either as one computed property per case, or as a single `subscript(dynamicMember:)` if the enum is also annotated with `@dynamicMemberLookup`.
+1. A `Prisms` struct + `static let prism` accessor holding a typed `Prism` for each case, plus `Prismatic` conformance (unlocks composable `\.case` key paths).
+2. One plain per-case property per case (`shape.circle`, `shape.rectangle`, …), typed `AssociatedValue?` — `nil` unless `self` is that case. Each delegates to the `Prism` from (1), so there's no duplicated pattern-matching logic.
 3. A nested `enum Cases: CaseMatchable` (which inherits `CaseIterable`) whose cases mirror the case *names* of the original enum (no associated values), plus a `func is(_:) -> Bool` predicate.
 
 ```swift
-@dynamicMemberLookup   // opt-in — collapses N computed properties into one subscript
 @Prisms
 public enum Shape {
     case circle(Double)
@@ -2358,12 +2357,10 @@ public enum Shape {
     }
     public static let prism = Prisms()
 
-    // With @dynamicMemberLookup on the enum — one subscript replaces N computed properties:
-    public subscript<PrismFocus>(
-        dynamicMember keyPath: KeyPath<Prisms, CoreFP.Prism<Shape, PrismFocus>>
-    ) -> PrismFocus? {
-        Self.prism[keyPath: keyPath].preview(self)
-    }
+    // One plain property per case — no @dynamicMemberLookup involved:
+    public var circle: Double? { Self.prism.circle.preview(self) }
+    public var rectangle: (Double, Double)? { Self.prism.rectangle.preview(self) }
+    public var empty: Void? { Self.prism.empty.preview(self) }
 
     public enum Cases: CoreFP.CaseMatchable {
         public typealias Subject = Shape
@@ -2374,7 +2371,7 @@ public enum Shape {
 }
 ```
 
-Without `@dynamicMemberLookup`, the macro emits one `var caseName: AssociatedValue? { Self.prism.caseName.preview(self) }` per case (and a build-time *warning* suggesting the attribute). Same call-site syntax in both modes.
+Multi-payload cases (like `.rectangle`) get an **unlabeled** tuple type — access with `.0`/`.1`, not the original parameter labels.
 
 For *generic* enums (e.g. `Loading<Success, Failure>`), Swift forbids `static let` in a generic context. The macro automatically falls back to `static var prism: Prisms { Prisms() }`. Same call-site syntax; allocates per access.
 
@@ -2383,9 +2380,9 @@ For *generic* enums (e.g. `Loading<Success, Failure>`), Swift forbids `static le
 ```swift
 let s = Shape.circle(3.14)
 
-s.circle                                    // Optional(3.14) — via dynamic-member subscript
+s.circle                                    // Optional(3.14) — plain per-case property
 s.rectangle                                 // nil
-Shape.prism.circle.preview(s)               // Optional(3.14) — explicit optic
+Shape.prism.circle.preview(s)               // Optional(3.14) — the same thing, via the explicit prism
 Shape.prism.circle.set(s, 5.0)             // Shape.circle(5.0)
 Shape.prism.circle.over({ $0 * 2 })(s)    // Shape.circle(6.28)
 
@@ -2400,12 +2397,9 @@ Shape.Cases.allCases                        // [.circle, .rectangle, .empty]
 Use `PrismsOptions` to opt out of pieces you don't need:
 
 ```swift
-@Prisms(.cases)                       // only the `Cases` enum + is(_:)
-@Prisms(.prisms)                      // only the `Prisms` struct + `static prism`
-@Prisms([.prisms, .properties])       // optics + accessors, no Cases / is
+@Prisms(.cases)    // only the `Cases` enum + is(_:)
+@Prisms(.prisms)   // only the `Prisms` struct + `static prism` + per-case properties + Prismatic
 ```
-
-`.properties` requires `.prisms` — auto-promoted silently if you forget.
 
 **Polymorphic `HasCases`**
 
@@ -2477,13 +2471,13 @@ var retryPolicy: RetryPolicy = .exponential  // explicit annotation required
 
 The following library types already ship with `@Prisms`-equivalent surface (hand-written to match what the macro would emit), so you can use them out of the box without applying the macro yourself:
 
-| Type | `Type.prism.…` | DML accessor (`value.…`) | `value.is(.…)` |
+| Type | `Type.prism.…` | plain property (`value.…`) | `value.is(.…)` |
 |---|---|---|---|
 | `Either<A, B>` | `.left`, `.right` | ✓ | ✓ |
 | `Validation<E, A>` | `.failure`, `.success` | ✓ | ✓ |
 | `Loading<S, F>` | `.idle`, `.loading`, `.loaded`, `.failed` | ✓ | ✓ |
-| `Optional<Wrapped>` | `.some`, `.none` | (explicit `.some` / `.none` properties — Swift stdlib types can't have `@dynamicMemberLookup` added) | ✓ |
-| `Result<S, F>` | `.success`, `.failure` | (explicit properties — same reason) | ✓ |
+| `Optional<Wrapped>` | `.some`, `.none` | ✓ | ✓ |
+| `Result<S, F>` | `.success`, `.failure` | ✓ | ✓ |
 
 All five conform to `HasCases`, so they work with the polymorphic `is(_:)` extension. The legacy `isSuccess` / `isFailure` / `isSome` / `isNone` / `isLeft` / `isRight` boolean accessors have been removed — use `value.is(.success)` (etc.) instead.
 

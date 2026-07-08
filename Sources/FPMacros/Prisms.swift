@@ -10,12 +10,17 @@
 ///   `Prisms` instance. Access via `MyEnum.prism.caseName`.
 /// - `Prismatic` conformance — which unlocks composable `\.case` key paths via `PrismFocus`:
 ///   `Prism(\.caseName)` recovers a concrete prism, and `\.a.b.c` composes through nested cases.
+/// - A plain per-case property named after the case (`myEnum.caseName`), typed
+///   `AssociatedValue?` — `nil` unless `self` is that case. Delegates to the generated
+///   `Prism`, so it costs nothing beyond the struct above. Emitted for every case, including
+///   no-payload cases (`Void?`) and multi-payload cases (an unlabeled tuple, `(A, B)?`).
 /// - `MyEnum.Cases` — a nested `CaseMatchable` (which inherits `CaseIterable`) enum
 ///   that mirrors the case *names* (no associated payloads).
 /// - `myEnum.is(.caseName)` — a per-enum predicate, delegating to `cases.matches`.
 ///
-/// To extract a case's payload, use the prism (`MyEnum.prism.caseName.preview(value)`), the
-/// case key path (`Prism(\.caseName).preview(value)`), or plain `if case` pattern matching.
+/// To extract a case's payload, use the plain property (`myEnum.caseName`), the prism
+/// (`MyEnum.prism.caseName.preview(value)`), the case key path
+/// (`Prism(\.caseName).preview(value)`), or plain `if case` pattern matching.
 ///
 /// The `HasCases` protocol in `CoreFP` lets file-level types opt into a polymorphic
 /// `is(_:)` via protocol extension — `@Prisms` doesn't add the conformance automatically
@@ -59,6 +64,7 @@
 /// Shape.prism.circle.set(s, 5.0)         // Shape.circle(5.0)
 /// Shape.prism.circle.over({ $0 * 2 })(s) // Shape.circle(6.28)
 /// Prism(\.circle).preview(s)             // Optional(3.14) — via the case key path
+/// s.circle                               // Optional(3.14) — via the plain per-case property
 ///
 /// s.is(.circle)                          // true
 /// Shape.Cases.allCases                   // [.circle, .rectangle, .empty]
@@ -73,7 +79,8 @@ public struct PrismsOptions: OptionSet, Sendable {
     public let rawValue: Int
     public init(rawValue: Int) { self.rawValue = rawValue }
 
-    /// Emit the `Prisms` struct, the `static prism` accessor, and `Prismatic` conformance.
+    /// Emit the `Prisms` struct, the `static prism` accessor, the plain per-case properties
+    /// that delegate to it, and `Prismatic` conformance.
     public static let prisms = PrismsOptions(rawValue: 1 << 0)
     /// Emit the `MyEnum.Cases` enum (conforming to `CaseMatchable`, which inherits
     /// `CaseIterable`) and a `myEnum.is(_:)` predicate.

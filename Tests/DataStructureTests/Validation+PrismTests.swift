@@ -43,4 +43,24 @@ struct ValidationPrismTests {
         #expect(s.is(.success))
         #expect(f.is(.failure))
     }
+
+    @Test func success_property_hit() {
+        let v: Validation<String, Int> = .success(42)
+        #expect(v.success == 42)
+    }
+
+    @Test func success_property_miss() {
+        let v: Validation<String, Int> = .failure("err")
+        #expect(v.success == nil)
+    }
+
+    @Test func failure_property_hit() {
+        let v: Validation<String, Int> = .failure("oops")
+        #expect(v.failure == "oops")
+    }
+
+    @Test func failure_property_miss() {
+        let v: Validation<String, Int> = .success(1)
+        #expect(v.failure == nil)
+    }
 }

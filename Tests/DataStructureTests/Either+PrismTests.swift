@@ -48,4 +48,24 @@ struct EitherPrismTests {
         let l: Either<String, Int> = .left("oops")
         #expect(!l.is(.right))
     }
+
+    @Test func left_property_hit() {
+        let e: Either<String, Int> = .left("oops")
+        #expect(e.left == "oops")
+    }
+
+    @Test func left_property_miss() {
+        let e: Either<String, Int> = .right(42)
+        #expect(e.left == nil)
+    }
+
+    @Test func right_property_hit() {
+        let e: Either<String, Int> = .right(42)
+        #expect(e.right == 42)
+    }
+
+    @Test func right_property_miss() {
+        let e: Either<String, Int> = .left("oops")
+        #expect(e.right == nil)
+    }
 }

@@ -44,9 +44,10 @@ import Foundation
 /// ## Prisms
 ///
 /// Each case exposes a `CoreFP.Prism` via the nested `Prisms` struct (`Loading.prism.idle`,
-/// `.loading`, `.loaded`, `.failed`), `Prismatic` conformance for `\.case` key paths, and an
-/// `is(_:)` predicate over the nested `Cases: CaseMatchable` enum — mirroring what FP's
-/// `@Prisms` macro generates.
+/// `.loading`, `.loaded`, `.failed`), `Prismatic` conformance for `\.case` key paths, a plain
+/// per-case accessor delegating to it (`state.loaded`, `state.failed`, etc.), and an `is(_:)`
+/// predicate over the nested `Cases: CaseMatchable` enum — mirroring what FP's `@Prisms`
+/// macro generates.
 ///
 /// - SeeAlso: ``map(_:)``, ``zip(_:_:)``, ``flatMap(_:)``, ``catch(_:)``, ``startLoading()``
 public enum Loading<Success: Sendable, Failure: Error & Sendable>: Sendable {
