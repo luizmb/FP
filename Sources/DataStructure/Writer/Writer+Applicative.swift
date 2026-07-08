@@ -10,17 +10,20 @@ public extension Writer {
         Writer<W, A>(wf.value(wa.value), W.combine(wf.log, wa.log))
     }
 
-    /// Declaration.
+    /// seqRight :: Writer<w, a> -> Writer<w, b> -> Writer<w, b>
+    /// Runs both, combining logs left-to-right, and keeps only the right-hand value.
     func seqRight<B>(_ other: Writer<W, B>) -> Writer<W, B> {
         Writer<W, B>(other.value, W.combine(log, other.log))
     }
 
-    /// Declaration.
+    /// seqLeft :: Writer<w, a> -> Writer<w, b> -> Writer<w, a>
+    /// Runs both, combining logs left-to-right, and keeps only the left-hand value.
     func seqLeft<B>(_ other: Writer<W, B>) -> Writer<W, A> {
         Writer<W, A>(value, W.combine(log, other.log))
     }
 
-    /// The `property` property.
+    /// Combines two `Writer` values with a binary function, merging their logs via `Monoid.combine`.
+    /// liftA2 :: (a -> b -> c) -> Writer w a -> Writer w b -> Writer w c
     static func liftA2<B, C>(
         _ fn: @escaping @Sendable (A, B) -> C
     ) -> @Sendable (Writer<W, A>, Writer<W, B>) -> Writer<W, C> {

@@ -13,7 +13,7 @@ public enum Loading<Success: Sendable, Failure: Error & Sendable>: Sendable {
 }
 ```
 
-`Loading` is a `Functor` (``map``), a binary applicative via ``zip``, a `Monad` (``flatMap``), and supports error recovery via ``catch``. Operator forms — `<£>`, `<&>`, `£>`, `<£`, `>>-`, `-<<`, `>=>`, `<=<` — live in `DataStructureOperators`.
+`Loading` is a `Functor` (`map`), a binary applicative via `zip`, a `Monad` (`flatMap`), and supports error recovery via `catch`. Operator forms — `<£>`, `<&>`, `£>`, `<£`, `>>-`, `-<<`, `>=>`, `<=<` — live in `DataStructureOperators`.
 
 ---
 
@@ -113,7 +113,7 @@ L<(Int, String)>.zip(.failed(error: .network, previous: 1), .loaded("a"))
 // .failed(error: .network, previous: Optional((1, "a")))
 ```
 
-> `Loading` doesn't expose `<*>` / `pure` because there is no canonical way to wrap a single value as `.idle` / `.loading` / `.failed`. Use ``zip`` when you need applicative-style combination.
+> `Loading` doesn't expose `<*>` / `pure` because there is no canonical way to wrap a single value as `.idle` / `.loading` / `.failed`. Use `zip` when you need applicative-style combination.
 
 ---
 
@@ -245,3 +245,23 @@ Loading<Int, E>.failed(error: .x, previous: 5).hash(into: &hasher)
 ## Functor / Monad laws
 
 All standard laws hold; the test suite covers identity, composition, left identity, right identity, and associativity for representative case combinations.
+
+---
+
+## For Haskell developers
+
+`Loading<Success, Failure>` has **no direct Haskell equivalent** — it isn't modeling a general-purpose algebraic structure, it's modeling a specific, opinionated shape: the four states a piece of async UI state moves through in a Swift app (`.idle` → `.loading` → `.loaded`/`.failed`), plus the "keep the stale value visible while refreshing" `previous` payload. Haskell code that needs this typically defines the ADT ad hoc per-project rather than reaching for a shared library type, because the concern is UI/application-state modeling, not pure computation.
+
+| This library | Closest parallel |
+|---|---|
+| `Loading<Success, Failure>` | a bespoke 4-case ADT (no canonical Haskell name); closest **named**, citable prior art is `RemoteData` from the Elm/PureScript ecosystem |
+| `.idle` / `.loading` / `.loaded` / `.failed` | `RemoteData`'s `NotAsked` / `Loading` / `Success` / `Failure` |
+| `map` / `<£>` | `fmap` (mapped over the `Success` channel, same as `RemoteData`'s `Functor`) |
+| `flatMap` / `>>-` | `>>=` (only `.loaded`/`Success` invokes the continuation) |
+| `catch` | error-recovery combinator, analogous to `RemoteData`'s `mapError`/withDefault-style helpers |
+
+The reason to reach past Haskell entirely here: `RemoteData` (originally from Elm, ported to PureScript as `purescript-remotedata`) is the exact same idea — a `NotAsked | Loading | Failure e | Success a` sum type purpose-built for representing a remote/async resource's lifecycle in a UI — and it is real, well-known, and directly citable, whereas forcing a `base`-package Haskell type onto this shape would be misleading; nothing in `base` or common Haskell web frameworks models this pattern as a shared, named type.
+
+**References:**
+- [`purescript-remotedata`](https://github.com/krisajenkins/purescript-remotedata) — the citable prior art this type's shape most closely mirrors
+- [Kris Jenkins — "How Elm Slays a UI Antipattern"](https://blog.jenkster.com/2016/06/how-elm-slays-a-ui-antipattern/) (the original `RemoteData` write-up)

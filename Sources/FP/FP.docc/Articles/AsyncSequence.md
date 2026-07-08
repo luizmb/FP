@@ -240,3 +240,21 @@ import EitherOperators
 import Reader
 import ReaderOperators
 ```
+
+---
+
+## For Haskell developers
+
+There's no tight Haskell analog here — `AsyncStream` is Swift's native effectful, push-based, single-consumer async sequence, tied to structured concurrency (`async`/`await`) rather than to a general streaming abstraction. The closest prior art in Haskell is the family of effectful streaming libraries — `streaming`, `pipes`, or `conduit` — which model a lazy sequence of values interleaved with effects (there, typically `IO`) the same way `AsyncStream<Element>` interleaves values with suspension points.
+
+| This library | Rough Haskell parallel |
+|---|---|
+| `AsyncStream<Element>` | `Stream (Of Element) IO ()` (`streaming`) / `Producer Element IO ()` (`pipes`) / `ConduitT () Element IO ()` (`conduit`) |
+| `<£>` / `.map` | `Streaming.Prelude.map` / `pipes`'s `for`+`yield` mapping |
+| `>>-` / `.flatMap` | streaming bind, roughly `Streaming`'s monadic `do`-block chaining over `Stream`, or `conduit`'s `.|` composition |
+| `>=>` (Kleisli) | Kleisli composition of `a -> Stream (Of b) IO ()`-shaped functions |
+
+Keep the mapping loose — none of these libraries share `AsyncStream`'s exact cancellation/backpressure model, and Swift's version is scoped to structured concurrency rather than a standalone streaming DSL.
+
+**References:**
+- [`streaming`](https://hackage.haskell.org/package/streaming) — effectful, `IO`-interleaved streams closest in spirit to `AsyncStream`

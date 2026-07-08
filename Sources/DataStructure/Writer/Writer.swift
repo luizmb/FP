@@ -73,7 +73,10 @@ public struct Writer<W: Monoid, A> {
     /// The accumulated log up to this point.
     public let log: W
 
-    /// Initializer.
+    /// Pairs a computed `value` with a `log`, the starting point for any `Writer` computation.
+    /// - Parameters:
+    ///   - value: The computed value.
+    ///   - log: The log entry to associate with this value.
     public init(_ value: A, _ log: W) {
         self.value = value
         self.log = log

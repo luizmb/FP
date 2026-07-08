@@ -67,12 +67,15 @@
 ///
 /// - SeeAlso: ``Validation``, ``Semigroup``, ``sconcat(_:_:)``
 public struct NonEmpty<A> {
-    /// The `head` property.
+    /// The guaranteed first element.
     public let head: A
-    /// The `tail` property.
+    /// The remaining elements, which may be empty.
     public let tail: [A]
 
-    /// Initializer for `NonEmpty<A>`.
+    /// Constructs a `NonEmpty` from a guaranteed `head` element plus an optional `tail`.
+    /// - Parameters:
+    ///   - head: The guaranteed first element.
+    ///   - tail: Any remaining elements. Defaults to empty.
     public init(head: A, tail: [A] = []) {
         self.head = head
         self.tail = tail

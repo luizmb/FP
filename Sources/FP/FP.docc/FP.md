@@ -29,11 +29,15 @@ let parsed = "42"
 
 ## Topics
 
+### Tutorials
+- <doc:FPTutorials>
+
 ### Error Handling & Sum Types
 - <doc:Either>
 - <doc:Result>
 - <doc:Optional>
 - <doc:Validation>
+- <doc:SumType>
 
 ### Collections & Sequences
 - <doc:Array>
@@ -50,3 +54,22 @@ let parsed = "42"
 
 ### SwiftUI Interop
 - <doc:Binding>
+
+### Lenses, Prisms & Isos
+- <doc:Optics>
+
+### Algebra
+- <doc:SemigroupMonoid>
+- <doc:EndoEndoMut>
+
+### Code Generation
+- <doc:Macros>
+
+### Foundations
+- <doc:PointFreeStyle>
+- <doc:Newtype>
+- <doc:Gen>
+
+### Concepts
+- <doc:MonadTransformers>
+- <doc:OperatorVocabulary>

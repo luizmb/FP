@@ -250,3 +250,21 @@ import EitherOperators
 import Reader
 import ReaderOperators
 ```
+
+---
+
+## For Haskell developers
+
+Combine's `Publisher<Output, Failure>` has no equivalent in `base` — it's a reactive-streams abstraction (push-based, multi-subscriber, with cancellation and backpressure) closer to FRP than to a plain lazy list. The closest well-known Haskell prior art is an FRP library like `reactive-banana` or `reflex`, which model time-varying, event-driven values the same way Combine models "a sequence of values over time that completes or fails." A looser, non-FRP-flavored alternative is `pipes`/`conduit`, the same effectful-streaming libraries referenced in the AsyncSequence article, since a `Publisher` can also just be read as "a lazy stream of values interleaved with an effect."
+
+| This library | Rough Haskell parallel |
+|---|---|
+| `AnyPublisher<Output, Failure>` | an FRP `Event`/`Behavior` (`reactive-banana`, `reflex`) or an effectful stream (`pipes`/`conduit`) |
+| `<£>` / `.map` | `fmap` over the FRP library's `Event`/`Behavior` functor |
+| `>>-` / `.flatMap` (via `.bind`) | the FRP library's event-switching bind, or streaming-library monadic bind |
+| `>=>` (Kleisli) | Kleisli composition of functions returning `Event`/`Behavior` |
+
+Treat this as directional inspiration, not a literal type correspondence — Combine's cold/hot publisher semantics and demand-driven backpressure don't line up cleanly with any single Haskell library.
+
+**References:**
+- [`reactive-banana`](https://hackage.haskell.org/package/reactive-banana) — the closest well-known FRP analog to Combine's reactive semantics

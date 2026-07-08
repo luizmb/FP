@@ -18,28 +18,41 @@ public extension Reader {
         }
     }
 
-    /// Declaration.
+    /// Widens the environment a `Reader` depends on — the `Contravariant.contramap` operation.
+    /// Lets a `Reader<LocalEnv, Output>` be used wherever a `Reader<GlobalEnv, Output>` is expected,
+    /// by extracting the local environment out of the global one first.
+    /// contramap :: (globalEnv -> env) -> Reader env a -> Reader globalEnv a
+    /// - Parameter fn: Extracts the local `Environment` from a larger `GlobalEnvironment`.
+    /// - Returns: A `Reader` that runs against `GlobalEnvironment` instead of `Environment`.
     func contramapEnvironment<GlobalEnvironment>(
         _ fn: @escaping @Sendable (GlobalEnvironment) -> Environment
     ) -> Reader<GlobalEnvironment, Output> {
         .init { @Sendable env in self.runReader(fn(env)) }
     }
 
-    /// The `property` property.
+    /// Curried, point-free form of ``contramapEnvironment(_:)``.
+    /// contramap :: (globalEnv -> env) -> Reader env a -> Reader globalEnv a
     static func contramapEnvironment<GlobalEnvironment>(
         _ fn: @escaping @Sendable (GlobalEnvironment) -> Environment
     ) -> (Reader<Environment, Output>) -> Reader<GlobalEnvironment, Output> {
         { $0.contramapEnvironment(fn) }
     }
 
-    /// Declaration.
+    /// Transforms the output value — same as ``map(_:)``, named after the classic Haskell Reader API.
+    /// fmap :: (a -> b) -> Reader env a -> Reader env b
     func mapReader<O1>(
         _ fn: @escaping @Sendable (Output) -> O1
     ) -> Reader<Environment, O1> {
         .init { @Sendable env in fn(self.runReader(env)) }
     }
 
-    /// Declaration.
+    /// Maps both the environment (contravariantly) and the output (covariantly) at once —
+    /// the `Profunctor.dimap` operation.
+    /// dimap :: (globalEnv -> env) -> (a -> b) -> Reader env a -> Reader globalEnv b
+    /// - Parameters:
+    ///   - contramapEnvironment: Extracts the local `Environment` from a larger `GlobalEnvironment`.
+    ///   - mapReader: Transforms the output value.
+    /// - Returns: A `Reader` from `GlobalEnvironment` to the transformed output type.
     func dimap<GlobalEnvironment, O1>(
         _ contramapEnvironment: @escaping @Sendable (GlobalEnvironment) -> Environment,
         _ mapReader: @escaping @Sendable (Output) -> O1
@@ -47,7 +60,8 @@ public extension Reader {
         .init { @Sendable env in mapReader(self.runReader(contramapEnvironment(env))) }
     }
 
-    /// The `property` property.
+    /// Curried, point-free form of ``dimap(_:_:)``.
+    /// dimap :: (globalEnv -> env) -> (a -> b) -> Reader env a -> Reader globalEnv b
     static func dimap<GlobalEnvironment, O1>(
         _ contramapEnv: @escaping @Sendable (GlobalEnvironment) -> Environment,
         _ mapOut: @escaping @Sendable (Output) -> O1

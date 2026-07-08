@@ -1,18 +1,19 @@
 // SPDX-License-Identifier: Apache-2.0
 /// A two-case sum type (coproduct) that can be eliminated via pattern matching.
 ///
-/// `SumType2` is the abstract interface shared by ``Either``, `Optional` (implicitly),
-/// `Result`, and `Validation`. It provides a uniform `match` eliminator that covers both
-/// cases without requiring `switch` statements.
+/// `SumType2` is the abstract interface shared by ``Either``, `Optional`, and `Result`.
+/// `Validation` does **not** conform — it has its own parallel `match(caseFailure:caseSuccess:)`
+/// eliminator, and bridges to `SumType2`-conforming types via `.toEither()`/`.toResult()`.
+/// `SumType2` provides a uniform `match` eliminator that covers both cases without requiring
+/// `switch` statements.
 ///
 /// ## Conforming types
 ///
 /// | Type | Left case | Right case |
 /// |------|-----------|------------|
 /// | `Either<A, B>` | `.left(A)` | `.right(B)` |
-/// | `Result<S, E>` | `.failure(E)` | `.success(S)` |
-/// | `Validation<E, A>` | `.failure(E)` | `.success(A)` |
-/// | `Optional<A>` | `.none` | `.some(A)` |
+/// | `Result<S, E>` | `.success(S)` | `.failure(E)` |
+/// | `Optional<A>` | `.some(A)` | `.none` |
 ///
 /// ## Convenience accessors
 ///
@@ -30,7 +31,7 @@
 /// e.isB     // true
 /// ```
 ///
-/// - SeeAlso: ``Either``, ``Validation``
+/// - SeeAlso: ``Either``
 public protocol SumType2<A, B>: Sendable {
     associatedtype A
     associatedtype B

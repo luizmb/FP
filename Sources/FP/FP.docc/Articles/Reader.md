@@ -227,3 +227,27 @@ duplicate(base)
 import Reader          // Reader type + named functions
 import ReaderOperators // Operators (<£>, <*>, >>-, >=>…)
 ```
+
+---
+
+## For Haskell developers
+
+| This library | Haskell equivalent |
+|---|---|
+| `Reader<Environment, Output>` | `mtl`'s `Reader r a` (`Control.Monad.Reader`), or `ReaderT r Identity a` in `transformers` |
+| `<£>` / `<&>` (`fmap`) | `fmap` / `<$>` |
+| `<*>` | `Applicative`'s `<*>` |
+| `>>-` / `-<<` (`flatMap`) | `>>=` / `=<<` |
+| `>=>` | `Control.Monad`'s `>=>` |
+| `ask` | `MonadReader`'s `ask` |
+| `asks` | `MonadReader`'s `asks` |
+| `local` | `MonadReader`'s `local` |
+| `contramapEnvironment` | `Control.Monad.Reader`'s `withReader` (adapts a reader to a different, related environment) |
+| `pure` | `Applicative`'s `pure` / `return` |
+| `ReaderT{Inner}` stacks | `mtl`'s `ReaderT r m a` |
+
+The `Comonad` instance (available when `Environment: Monoid`) has a real Haskell counterpart — Kmett's `comonad` package defines a `Comonad` instance for `(->) e` requiring `e: Monoid`, for exactly the same reason: `extract` needs an "empty" environment to run against, and `duplicate`/`extend` need to `combine` environments. It's a legitimate instance, but a niche, rarely-discussed one — most Haskell material treats `Reader` purely as a `Monad` and doesn't reach for its comonadic side. This library exposing it explicitly is something Haskell *can* do but rarely emphasizes in practice.
+
+External references:
+- [`Control.Monad.Reader`](https://hackage.haskell.org/package/mtl/docs/Control-Monad-Reader.html) — the `mtl` module this type mirrors
+- [`Control.Comonad`](https://hackage.haskell.org/package/comonad/docs/Control-Comonad.html) — Kmett's `comonad` package, source of the `(->) e` `Comonad` instance mentioned above

@@ -1,0 +1,186 @@
+@Tutorial(time: 15) {
+    @Intro(title: "Modeling Failures: Optional → Result → Either → Validation") {
+        You'll validate a username through four small iterations. At each
+        step the requirements grow just enough that the previous type stops
+        being sufficient — and a new one earns its place. By the end you'll
+        know exactly which of the four failure types to reach for, and why.
+    }
+
+    @Section(title: "Start with Optional") {
+        @ContentAndMedia {
+            The simplest possible question: is there a username at all? An
+            empty string means "nothing was entered." `Optional<String>`
+            models exactly that — no reason is needed yet, just presence or
+            absence.
+        }
+
+        @Steps {
+            @Step {
+                Write a function that treats an empty string as "no username
+                was given." `String?` (`Optional<String>`) is enough to
+                express that: either the value is there, or it isn't.
+
+                @Code(file: "step01.swift", name: "ParseUsername.swift")
+            }
+
+            @Step {
+                Transform the value inside the `Optional` without unwrapping
+                it manually. `<£>` (or the named `.map`) applies a function
+                only when a value is present, and leaves `nil` untouched.
+
+                @Code(file: "step02.swift", name: "ParseUsername.swift")
+            }
+
+            @Step {
+                Collapse the `Optional` to a plain value with `fold`, giving
+                a fallback for the `nil` case. This is where `Optional` runs
+                out of road: when parsing fails, all you know is that it
+                failed. There's no way to say *why* — was the input empty,
+                too short, malformed? The next section adds that missing
+                piece.
+
+                @Code(file: "step03.swift", name: "ParseUsername.swift")
+            }
+        }
+    }
+
+    @Section(title: "Add error context with Result") {
+        @ContentAndMedia {
+            Now the rule set grows: a username must not just be present, it
+            must also be at least three characters long. Two different
+            things can go wrong, and callers deserve to know which one
+            happened. `Result<Success, Failure: Error>` ties a real reason to
+            every failure.
+        }
+
+        @Steps {
+            @Step {
+                Introduce an error type describing everything that can go
+                wrong, and rewrite `parseUsername` to return a `Result`
+                instead of an `Optional`.
+
+                @Code(file: "step04.swift", name: "ParseUsername.swift")
+            }
+
+            @Step {
+                Add the second rule as its own small function, also
+                returning a `Result`.
+
+                @Code(file: "step05.swift", name: "ParseUsername.swift")
+            }
+
+            @Step {
+                Chain the two steps with `>>-` (bind / `flatMap`). If parsing
+                fails, `validateLength` never runs — the first failure
+                short-circuits the rest of the chain. Unlike `Optional`,
+                every failure now carries a concrete `UsernameError`
+                explaining what went wrong — that's the whole reason to
+                reach for `Result` once "it failed" isn't enough and you need
+                "it failed *because*…".
+
+                @Code(file: "step06.swift", name: "ParseUsername.swift")
+            }
+        }
+    }
+
+    @Section(title: "Go symmetric with Either") {
+        @ContentAndMedia {
+            `Result` requires its failure type to conform to `Error`. Most of
+            the time that's fine, but sometimes the "error" is just a plain
+            value — a `String`, an enum with no `Error` conformance, or even
+            another meaningful value that isn't a failure at all. `Either`
+            expresses the exact same two-way choice as `Result`, without
+            that constraint, and without privileging either side.
+        }
+
+        @Steps {
+            @Step {
+                Drop the `Error` conformance and express the same two rules
+                with `Either<UsernameError, String>` instead of `Result`.
+                `.left` plays the role `.failure` played; `.right` plays the
+                role `.success` played. Everything from the `Result` section
+                carries over unchanged — `>>-`, `.flatMap`, the
+                short-circuiting behavior — because `Either` and `Result`
+                share the same `Functor`/`Monad` shape.
+
+                @Code(file: "step07.swift", name: "ParseUsername.swift")
+            }
+
+            @Step {
+                Transform both sides at once with `bimap` — useful when you
+                want to present either outcome as a display string.
+
+                @Code(file: "step08.swift", name: "ParseUsername.swift")
+            }
+
+            @Step {
+                Collapse an `Either` to a single value with `match`, handling
+                both cases explicitly. Reach for `Either` instead of `Result`
+                when the failure type isn't (or shouldn't be) an `Error`, or
+                when both sides carry equally meaningful information rather
+                than one side being a clear "success" and the other a clear
+                "failure."
+
+                @Code(file: "step09.swift", name: "ParseUsername.swift")
+            }
+        }
+    }
+
+    @Section(title: "Accumulate every failure with Validation") {
+        @ContentAndMedia {
+            The username now has two *independent* rules: it must be at
+            least three characters long, and it must not contain spaces. An
+            input can violate both at once. `Result` and `Either` only ever
+            report the first failure they hit — `Validation` runs every rule
+            and reports all of them together.
+        }
+
+        @Steps {
+            @Step {
+                Reuse the `Result`-based approach from before, adding a
+                second rule for spaces. Chain both with `>>-` and watch what
+                happens when an input breaks both rules. `" a"` is both too
+                short *and* contains a space, but the chain stops at the
+                first failure — the caller never learns about the space
+                problem. For a form field, that means the user fixes one
+                mistake, resubmits, and immediately hits the next one.
+
+                @Code(file: "step10.swift", name: "ParseUsername.swift")
+            }
+
+            @Step {
+                Express the same two rules as `Validation<[String], String>`
+                instead. The shape is almost identical to `Result` — only the
+                failure case now holds a collection of messages.
+
+                @Code(file: "step11.swift", name: "ParseUsername.swift")
+            }
+
+            @Step {
+                Combine both validations with `Validation.zip`. Unlike
+                `flatMap`, this runs *both* rules regardless of whether the
+                first one failed, then merges their errors with
+                `Semigroup.combine` — for `[String]`, that's simply
+                concatenation. Both problems are reported in a single pass —
+                the exact outcome `Result`'s short-circuiting chain couldn't
+                produce.
+
+                @Code(file: "step12.swift", name: "ParseUsername.swift")
+            }
+
+            @Step {
+                When only one rule fails, only that one error appears; when
+                both succeed, `zip` collects both values into a tuple. This
+                is why `Validation` has no `flatMap`: accumulating every
+                error requires running all rules *independently*, which is
+                incompatible with `flatMap`'s inherently sequential,
+                short-circuiting nature. `Validation` is an `Applicative`,
+                not a `Monad` — and that trade-off is exactly what makes it
+                the right tool once "report everything wrong at once"
+                becomes a requirement.
+
+                @Code(file: "step13.swift", name: "ParseUsername.swift")
+            }
+        }
+    }
+}

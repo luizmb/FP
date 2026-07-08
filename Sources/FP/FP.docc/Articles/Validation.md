@@ -247,3 +247,25 @@ vs.map { $0.mapSuccess { $0 * 2 } }  // [.success(2), .failure(["e"]), .success(
 import DataStructure         // Validation type + named functions
 import DataStructureOperators // Operators (<£>, <*>, *>, <*…)
 ```
+
+---
+
+## For Haskell developers
+
+| This library | Haskell equivalent |
+|---|---|
+| `Validation<E: Semigroup, A>` | the [`validation`](https://hackage.haskell.org/package/validation) package's `Validation e a` (`Data.Validation`) |
+| `.failure` / `.success` | `Failure` / `Success` |
+| `<£>` / `<&>` (`fmap`) | `fmap` / `<$>` |
+| `<*>` (error-accumulating apply) | `Data.Validation`'s `<*>` — accumulates via the `Semigroup e` constraint, identically to this library |
+| `bimap` | `Data.Bifunctor`'s `bimap` |
+| `mapFailure` | `Data.Bifunctor`'s `first` |
+| `toEither` | `Data.Validation`'s `toEither` |
+| `validationFromEither` | `Data.Validation`'s `fromEither` |
+| `sequence` / `traverse` (Traversable) | `Data.Traversable`'s `sequence` / `traverse` |
+
+Haskell's `Validation` is, for the exact same reason as this library's, **Applicative but not Monad** — accumulating every error requires running both sides independently, which is incompatible with `flatMap`'s inherently sequential, short-circuiting nature. This is a rare case where the Swift and Haskell libraries independently arrived at the identical design constraint, rather than one copying the other.
+
+External references:
+- [`Data.Validation`](https://hackage.haskell.org/package/validation/docs/Data-Validation.html) — the `validation` package this type mirrors
+- McBride & Paterson, ["Applicative Programming with Effects"](http://www.staff.city.ac.uk/~ross/papers/Applicative.html) — the paper formalising the Applicative abstraction that makes accumulating validation possible without a Monad

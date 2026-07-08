@@ -283,3 +283,26 @@ import Operators  // Operators (<£>, <*>, >>-, >=>…)
 import Either
 import EitherOperators
 ```
+
+---
+
+## For Haskell developers
+
+| This library | Haskell equivalent |
+|---|---|
+| `[A]` | `[a]` / `Data.List` |
+| `<£>` / `<&>` (`fmap`) | `fmap` / `<$>` |
+| `<*>` | `Control.Applicative`'s list `<*>` — cartesian product of functions × values |
+| `liftA2` | `Control.Applicative`'s `liftA2` |
+| `>>-` / `-<<` (`flatMap`) | `>>=` / `=<<` (the list monad) |
+| `>=>` | `Control.Monad`'s `>=>` |
+| `<|>` | `Alternative`'s `<|>` for `[]` (list concatenation, same as `++`/`mplus`) |
+| `filterM` | **name collision, not the same function** — this library's `filterM` is just a curried `filter`; Haskell's `Control.Monad.filterM` is the monadic power-set-style filter, `(a -> m Bool) -> [a] -> m [a]` |
+| `foldLeft` | `Data.List`'s `foldl'` |
+| `foldRight` | `Data.List`'s `foldr` |
+| `foldMap` | `Data.Foldable`'s `foldMap` |
+| `sequence` / `traverse` | `Data.Traversable`'s `sequence` / `traverse` (`sequenceA`) |
+
+External references:
+- [`Data.List`](https://hackage.haskell.org/package/base/docs/Data-List.html) — Haskell's base module for list operations
+- [`Data.Traversable`](https://hackage.haskell.org/package/base/docs/Data-Traversable.html) — defines `traverse` and `sequenceA`

@@ -12,14 +12,16 @@ public extension NonEmpty {
         return NonEmpty<B>(head: headResult.head, tail: headResult.tail + tailResults)
     }
 
-    /// The `property` property.
+    /// Curried, point-free form of ``flatMap(_:)``.
+    /// (>>=) :: NonEmpty a -> (a -> NonEmpty b) -> NonEmpty b
     static func bind<B>(
         _ fn: @escaping @Sendable (A) -> NonEmpty<B>
     ) -> (NonEmpty<A>) -> NonEmpty<B> {
         { $0.flatMap(fn) }
     }
 
-    /// The `property` property.
+    /// Kleisli composition (left-to-right) for `NonEmpty`-producing functions.
+    /// (>=>) :: (o0 -> NonEmpty a) -> (a -> NonEmpty b) -> o0 -> NonEmpty b
     static func kleisli<O0, B>(
         _ fn1: @escaping @Sendable (O0) -> NonEmpty<A>,
         _ fn2: @escaping @Sendable (A) -> NonEmpty<B>
@@ -27,7 +29,8 @@ public extension NonEmpty {
         { fn1($0).flatMap(fn2) }
     }
 
-    /// The `property` property.
+    /// Kleisli composition (right-to-left) for `NonEmpty`-producing functions.
+    /// (<=<) :: (a -> NonEmpty b) -> (o0 -> NonEmpty a) -> o0 -> NonEmpty b
     static func kleisliBack<O0, B>(
         _ fn2: @escaping @Sendable (A) -> NonEmpty<B>,
         _ fn1: @escaping @Sendable (O0) -> NonEmpty<A>
@@ -35,14 +38,16 @@ public extension NonEmpty {
         { fn1($0).flatMap(fn2) }
     }
 
-    /// The `property` property.
+    /// Flattens a nested `NonEmpty`, concatenating every inner `NonEmpty` in order.
+    /// join :: NonEmpty (NonEmpty a) -> NonEmpty a
     static func join<O>(
         _ nested: NonEmpty<NonEmpty<O>>
     ) -> NonEmpty<O> where A == NonEmpty<O> {
         nested.flatMap(CoreFP.id)
     }
 
-    /// Declaration for `Monad`.
+    /// Discards every element's value, keeping only the structure (and its length).
+    /// void :: NonEmpty a -> NonEmpty ()
     func void() -> NonEmpty<Void> {
         map(ignore)
     }

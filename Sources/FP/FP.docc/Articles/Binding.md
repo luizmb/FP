@@ -206,3 +206,22 @@ Compose with `<<<` when you want right-to-left ordering, which can read more nat
 ```swift
 import CoreFP   // Binding+Optics subscripts are included here
 ```
+
+---
+
+## For Haskell developers
+
+SwiftUI's `Binding<Value>` has no Haskell equivalent in `base` — it's a UI-framework-specific type, not a general algebraic structure. But structurally it is exactly a `get`/`set` pair, which means it's a specialization of an idea this library already has a proper name for: it is isomorphic to this library's own `Lens<S, A>`, with `S` fixed at the moment of construction and `A` left as the only remaining variable. `binding.wrappedValue` plays the role of `lens.get(s)`, and assigning to `binding.wrappedValue` plays the role of `lens.set(s, newValue)`.
+
+That's exactly why the bridge in this article exists as a single `subscript(optic:)`: every optic in this library (`Lens`, `Iso`, `Prism`, `AffineTraversal`) already carries a `get`/`set`-shaped pair (total for `Lens`/`Iso`, partial for `Prism`/`AffineTraversal`), so bridging any of them into `Binding` is just re-packaging the same get/set pair behind SwiftUI's property-wrapper protocol — no new abstraction is introduced, only a change of vocabulary at the boundary.
+
+| This library | Haskell parallel |
+|---|---|
+| `Binding<Value>` (`get`/`set` pair) | no `base` equivalent; structurally a specialized `Lens' s a` (`lens` package) with `s` pre-applied |
+| `Lens<S, A>` | `Lens' s a` (`lens` package) |
+| `binding[optic: someLens]` | using a `Lens'` to `view`/`set` through a fixed root, re-exposed as a mutable reference |
+
+For the full treatment of `Lens`/`Iso`/`Prism`/`AffineTraversal` — their operations, composition via `>>>`/`<<<`, and the `@Lenses`/`@Prisms` derivation macros — see <doc:Optics>.
+
+**References:**
+- [`Control.Lens`](https://hackage.haskell.org/package/lens) — the `lens` package, whose `Lens'` is the closest Haskell analog to the get/set shape `Binding` specializes for SwiftUI

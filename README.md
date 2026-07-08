@@ -21,6 +21,7 @@ The library draws from Haskell and Scala Cats conventions and is designed to be 
     - [`DataStructure` — additional functional data structures](#datastructure--additional-functional-data-structures-optional)
     - [`DataStructureOperators` — operators for data structures](#datastructureoperators--operators-for-data-structures-optional)
   - [Choosing what to import](#choosing-what-to-import)
+- [Quick Start](#quick-start)
 - [Library Overview](#library-overview)
   - [Joining things together (Semigroup)](#joining-things-together-semigroup)
     - [Semigroup operator](#semigroup-operator-optional-requires-corefpoperators)
@@ -49,16 +50,20 @@ The library draws from Haskell and Scala Cats conventions and is designed to be 
   - [IdentifiedArray — ordered collection with O(1) by-id access](#identifiedarray--ordered-collection-with-o1-by-id-access)
   - [Bidirectional Conversions (Iso)](#bidirectional-conversions-iso)
     - [Iso operators](#iso-operators-optional-requires-corefpoperators)
-  - [Deriving Optics with Macros (@Lenses and @Prisms)](#deriving-optics-with-macros-lenses-and-prisms)
+  - [Newtype — Branded Values](#newtype--branded-values)
   - [Composing Transformations (Endo)](#composing-transformations-endo)
   - [Cost-Free Mutations (EndoMut)](#cost-free-mutations-endomut)
   - [SumType2 — Shared Interface for Two-Case Types](#sumtype2--shared-interface-for-two-case-types)
   - [Concurrency: Sendable-First](#concurrency-sendable-first)
   - [Utilities](#utilities)
   - [Operator Reference](#operator-reference)
+    - [Operator Precedence](#operator-precedence)
   - [Types](#types)
     - [CoreFP](#corefp)
     - [DataStructure](#datastructure)
+  - [Generating Code with Macros (@Lenses, @Prisms, @Iso, @DeriveMonoid, @Mock, @Witness)](#generating-code-with-macros-lenses-prisms-iso-derivemonoid-mock-witness)
+  - [Property-Based Testing (Gen)](#property-based-testing-gen)
+- [Coming from Haskell](#coming-from-haskell)
 - [Contributing](#contributing)
 - [Testing](#testing)
 - [Platform Support](#platform-support)
@@ -85,6 +90,10 @@ To open it:
 
 Each page contains ready-to-run functions with inline result comments. Uncomment one `learn(…)` call at a time to see its output in the console or inline results sidebar.
 
+### Standalone CLI Example
+
+Prefer the terminal to Xcode? `Examples/CLI` is a small, dependency-free SwiftPM executable target that imports `FP` and runs the same kind of point-free pipelines shown in this README. From that directory, `swift run` builds and executes it directly — no workspace or simulator required.
+
 ## API Documentation
 
 **[→ Full API Reference at ios.lu/FP](https://ios.lu/FP)**
@@ -98,7 +107,7 @@ FP is a Swift Package Manager library and is designed to be **modular**: import 
 ```swift
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/luizmb/FP.git", from: "1.14.0")
+    .package(url: "https://github.com/luizmb/FP.git", from: "1.13.0")
 ]
 ```
 
@@ -165,6 +174,34 @@ Add the chosen products to your target in `Package.swift`:
 ```
 
 ---
+
+## Quick Start
+
+The fastest way to get a feel for the library: parse, validate, and transform a value in one point-free pipeline.
+
+```swift
+import FP
+
+func parseAge(_ raw: String) -> Result<Int, String> {
+    Int(raw).fold(onNone: .failure("not a number"), onSome: { .success($0) })
+}
+
+func validateAdult(_ age: Int) -> Result<Int, String> {
+    age >= 18 ? .success(age) : .failure("must be 18 or older")
+}
+
+let greet: (Int) -> String = { "Welcome! You are \($0)." }
+
+let onboard: (String) -> Result<String, String> = { raw in
+    parseAge(raw) >>- validateAdult <&> greet
+}
+
+onboard("25")   // .success("Welcome! You are 25.")
+onboard("12")   // .failure("must be 18 or older")
+onboard("abc")  // .failure("not a number")
+```
+
+`>>-` is monadic bind (chains a step that can fail); `<&>` is functor map (transforms the success value once the chain has committed). See below for the full tour of every type and operator in the library.
 
 ## Library Overview
 
@@ -753,7 +790,7 @@ Optional(1)   <|> Optional(3)   // Optional(1) — first wins if present
 // Result — first success wins
 Result<Int, Error>.failure(err) <|> .success(3)   // .success(3)
 Result<Int, Error>.success(1)   <|> .success(3)   // .success(1)
-
+```
 
 ---
 
@@ -1420,6 +1457,50 @@ See [Binding](docs/types/Binding.md) for the full bridge API.
 
 ---
 
+### Newtype — Branded Values
+
+`Newtype<Tag, RawValue>` is this library's equivalent of Haskell's `newtype` keyword: a zero-cost wrapper that gives a `RawValue` a distinct nominal identity via a phantom `Tag`. Two `Newtype`s with different tags are entirely different types to the compiler — even when the underlying `RawValue` is identical — so mixing them up is a compile-time error, not a runtime bug.
+
+```swift
+enum UserTag {}
+enum OrderTag {}
+typealias UserID  = Newtype<UserTag, Int>
+typealias OrderID = Newtype<OrderTag, Int>
+
+func fetch(_ id: UserID) { /* ... */ }
+fetch(UserID(42))    // ✓ compiles
+fetch(OrderID(42))   // ✗ compile error — different type, even though both wrap Int
+```
+
+A common convention is to use the owning type itself as the tag, avoiding a separate empty enum:
+
+```swift
+struct User { let id: Newtype<User, Int> }
+```
+
+`Newtype` is also a `@propertyWrapper`, so a branded field still exposes its raw value through ordinary property access, with the wrapper itself reachable via `$`:
+
+```swift
+struct User {
+    @Newtype<UserTag, Int> var id: Int = 42
+}
+
+let user = User()
+user.id    // Int                   — the unwrapped raw value
+user.$id   // Newtype<UserTag, Int> — the branded wrapper
+```
+
+`Newtype` inherits `Equatable`, `Hashable`, `Comparable`, `Codable`, `Sendable`, `Identifiable`, the full numeric stack, every `ExpressibleBy*Literal` protocol, and `Semigroup`/`Monoid` from `RawValue` through conditional conformances — so it behaves like its `RawValue` everywhere except at the type-checker boundary that keeps different tags from being confused.
+
+**Bidirectional conversion.** Every `Newtype` ships a total, verified `Iso` back to its raw value:
+
+```swift
+UserID.iso.get(UserID(42))        // 42
+UserID.iso.reverseGet(42)         // UserID(42)
+```
+
+---
+
 ### Composing Transformations (Endo)
 
 `Endo<A>` wraps an endomorphism — a function `(A) -> A` — and gives it a `Monoid` instance under left-to-right composition. The identity element is the do-nothing function.
@@ -1628,10 +1709,10 @@ Either<String, Int>.left("oops").a   // Optional("oops")
 Either<String, Int>.right(42).b      // Optional(42)
 
 // .isA / .isB — predicate checks
-Result<Int, Error>.success(42).isB   // true
+Result<Int, String>.failure("oops").isB   // true (failure maps to the right/B case)
 
 // from — convert between any two conforming types with the same type parameters
-let r = Result<Int, String>.from(Either<String, Int>.right(42))  // .success(42)
+let r = Result<Int, String>.from(Either<Int, String>.left(42))  // .success(42)
 ```
 
 The protocol defines three requirements — `left(_:)`, `right(_:)`, `match(caseLeft:caseRight:)`, and `from(_:)` — and provides `.a`, `.b`, `.isA`, `.isB` as extensions. Use `SumType2` in your own generic functions to work over `Either`, `Result`, and any custom two-case type simultaneously.
@@ -2063,43 +2144,78 @@ All operators require `CoreFPOperators` (for built-in types) or `DataStructureOp
 | `±` / `+/-` | — | Symmetric range — `center ± delta` → `ClosedRange` | `Strideable` (`Int`, `Double`, `Float`, `Date`, …) |
 | `≅` | — | Flipped range match — `value ≅ range` (equivalent to `range ~= value`) | `Comparable` |
 
+#### Operator Precedence
+
+Every custom operator lives in one of the precedence groups defined in `Sources/CoreFPOperators/Utilities/PrecedenceGroups.swift`, interleaved with Swift's standard-library groups so custom and built-in operators combine predictably. From highest to lowest:
+
+| Level | Operators | Associativity | Precedence group |
+|---|---|---|---|
+| 9 | `>>>`, `<<<` | right | `FunctionCompositionForward` / `FunctionCompositionBackwards` |
+| 8.5 | `>>` _(stdlib)_ | left | `BitwiseShiftPrecedence` |
+| 8 | `^` _(infix power)_ | left | `BitwiseXorPrecedence` _(shared with stdlib `^`)_ |
+| 7 | `*`, `/` _(stdlib)_ | left | `MultiplicationPrecedence` |
+| 6 | `<>` | right | `ConcatPrecedence` |
+| 6 | `+`, `-` _(stdlib)_ | left | `AdditionPrecedence` |
+| 5 | `++` | right | `AppendToList` |
+| 4.8 | `...`, `..<` _(stdlib)_, `±` / `+/-` | none | `RangeFormationPrecedence` |
+| 4.5 | `as?` _(stdlib)_ | none | `CastingPrecedence` |
+| 4.2 | `??` _(stdlib)_ | right | `NilCoalescingPrecedence` |
+| 4 | `<£>`, `£>`, `<£`, `<*>`, `*>`, `<*` | left | `FunctorOps` |
+| 4 | `==`, `<=` _(stdlib)_, `≅` | none | `ComparisonPrecedence` |
+| 3 | `<\|>` | left | `AlternativePrecedence` |
+| 3 | `&&` _(stdlib)_ | left | `LogicalConjunctionPrecedence` |
+| 2 | `\|\|` _(stdlib)_ | left | `LogicalDisjunctionPrecedence` |
+| 1 | `>=>`, `<=<`, `-<<`, `<<-` | right | `KleisliCompositionRight` |
+| 1 | `>>-`, `<&>`, `->>` | left | `MonadBindLeft` |
+| 0.5 | `?:` _(stdlib)_ | right | `TernaryPrecedence` |
+| 0 | `£`, `<\|` | right | `LowPrecedenceFunctionCallRight` |
+| 0 | `\|>` | left | `LowPrecedenceFunctionCallLeft` |
+| -1 | `=` _(stdlib)_ | right | `AssignmentPrecedence` |
+
+Practical takeaways:
+- `>>>` / `<<<` bind tighter than everything else, so composed functions and optics never need parentheses next to arithmetic or comparisons.
+- `£` / `<|` / `|>` sit near the very bottom (just above assignment), which is what lets them wrap an entire expression without parentheses — `f £ a + b * c` parses as `f £ (a + b * c)`.
+- `>=>` / `<=<` / `-<<` / `<<-` (right-associative) and `>>-` / `<&>` / `->>` (left-associative) share precedence level 1 but different associativity groups — matching Haskell's `infixr 1` for Kleisli composition and `infixl 1` for bind.
+
 ---
 
 ### Types
 
 Each type in this library has a dedicated reference page with comprehensive examples covering every operation, operator, and transformer combination.
 
+Links below point at the DocC article source in this repository (`Sources/FP/FP.docc/Articles/`), which is the same content rendered at the hosted documentation site, [ios.lu/FP](https://ios.lu/FP).
+
 #### CoreFP
 
 | Type | Description |
 |------|-------------|
-| [Optional](docs/types/Optional.md) | Swift's built-in optional, extended with full Functor / Applicative / Monad instances |
-| [Array](docs/types/Array.md) | Swift's built-in array, extended — models nondeterminism and multiple results |
-| [Result](docs/types/Result.md) | Swift's built-in result, extended with `bimap`, Kleisli composition, and Monoid strategies |
-| [Publisher](docs/types/Publisher.md) | Combine's `AnyPublisher`, extended with functional operations |
-| [AsyncSequence](docs/types/AsyncSequence.md) | Swift's `AsyncSequence`, extended with functional operations |
-| [Binding](docs/types/Binding.md) | SwiftUI's `Binding`, extended with `[optic:]` subscripts for `Lens`, `Iso`, `Prism`, and `AffineTraversal` _(Apple platforms only)_ |
+| [Optional](Sources/FP/FP.docc/Articles/Optional.md) | Swift's built-in optional, extended with full Functor / Applicative / Monad instances |
+| [Array](Sources/FP/FP.docc/Articles/Array.md) | Swift's built-in array, extended — models nondeterminism and multiple results |
+| [Result](Sources/FP/FP.docc/Articles/Result.md) | Swift's built-in result, extended with `bimap`, Kleisli composition, and Monoid strategies |
+| [Publisher](Sources/FP/FP.docc/Articles/Publisher.md) | Combine's `AnyPublisher`, extended with functional operations |
+| [AsyncSequence](Sources/FP/FP.docc/Articles/AsyncSequence.md) | Swift's `AsyncSequence`, extended with functional operations |
+| [Binding](Sources/FP/FP.docc/Articles/Binding.md) | SwiftUI's `Binding`, extended with `[optic:]` subscripts for `Lens`, `Iso`, `Prism`, and `AffineTraversal` _(Apple platforms only)_ |
 
 #### DataStructure
 
 | Type | Description |
 |------|-------------|
-| [Either](docs/types/Either.md) | Unconstrained sum type — both sides are equal citizens, no `Error` requirement |
-| [Loading](docs/types/Loading.md) | Four-state async lifecycle — `idle` / `loading` / `loaded` / `failed`, with `previous` carried through for stale-data UIs |
-| [Validation](docs/types/Validation.md) | Accumulating applicative — errors collect instead of short-circuiting |
-| [Reader](docs/types/Reader.md) | Dependency injection monad — wraps `(Environment) -> Output` |
-| [Stateful](docs/types/Stateful.md) | State threading monad — wraps `(inout S) -> A` |
-| [Writer](docs/types/Writer.md) | Append-as-you-go monad — produces a value alongside an accumulated log |
-| [NonEmpty](docs/types/NonEmpty.md) | Statically guaranteed non-empty sequence — Semigroup (no Monoid), full FAM + Foldable + Traversable |
-| [IdentifiedArray](docs/types/IdentifiedArray.md) | Ordered, `Sendable` collection with O(1) by-id access via a custom open-addressing index — Semigroup, first-class optics (no Functor/Monad by design) |
+| [Either](Sources/FP/FP.docc/Articles/Either.md) | Unconstrained sum type — both sides are equal citizens, no `Error` requirement |
+| [Loading](Sources/FP/FP.docc/Articles/Loading.md) | Four-state async lifecycle — `idle` / `loading` / `loaded` / `failed`, with `previous` carried through for stale-data UIs |
+| [Validation](Sources/FP/FP.docc/Articles/Validation.md) | Accumulating applicative — errors collect instead of short-circuiting |
+| [Reader](Sources/FP/FP.docc/Articles/Reader.md) | Dependency injection monad — wraps `(Environment) -> Output` |
+| [Stateful](Sources/FP/FP.docc/Articles/Stateful.md) | State threading monad — wraps `(inout S) -> A` |
+| [Writer](Sources/FP/FP.docc/Articles/Writer.md) | Append-as-you-go monad — produces a value alongside an accumulated log |
+| [NonEmpty](Sources/FP/FP.docc/Articles/NonEmpty.md) | Statically guaranteed non-empty sequence — Semigroup (no Monoid), full FAM + Foldable + Traversable |
+| [IdentifiedArray](Sources/FP/FP.docc/Articles/IdentifiedArray.md) | Ordered, `Sendable` collection with O(1) by-id access via a custom open-addressing index — Semigroup, first-class optics (no Functor/Monad by design) |
 
 ---
 
 ---
 
-### Deriving Optics with Macros (`@Lenses` and `@Prisms`)
+### Generating Code with Macros (`@Lenses`, `@Prisms`, `@Iso`, `@DeriveMonoid`, `@Mock`, `@Witness`)
 
-Import `FPMacros` to generate `Lens` and `Prism` optics automatically from type declarations. Both macros use `@attached(member)` — they add code directly into the type body — so they work at any nesting level, including types nested inside other types.
+Import `FPMacros` to generate boilerplate directly from type and protocol declarations: `@Lenses` and `@Prisms` derive optics from structs and enums; `@Iso` derives a lossless struct ↔ tuple conversion; `@DeriveMonoid` derives a fieldwise `Monoid`; `@Mock` and `@Witness` derive protocol testing/DI scaffolding. All six are attached macros — they add code directly into (or alongside) the declaration body — so they work at any nesting level, including types nested inside other types.
 
 ```swift
 import FPMacros
@@ -2387,11 +2503,216 @@ The following library types already ship with `@Prisms`-equivalent surface (hand
 
 All five conform to `HasCases`, so they work with the polymorphic `is(_:)` extension. The legacy `isSuccess` / `isFailure` / `isSome` / `isNone` / `isLeft` / `isRight` boolean accessors have been removed — use `value.is(.success)` (etc.) instead.
 
+#### `@Iso` — struct ↔ tuple conversion
+
+`@Iso` generates a total, sound `static var iso` between a struct and a structural representation of its stored fields — the field's type itself for a single-field struct, or a tuple of the field types otherwise. It always round-trips through the struct's memberwise initialiser, so there's nothing to get wrong.
+
+```swift
+@Iso struct Point { var x: Int; var y: Int }
+// Point.iso : Iso<Point, (Int, Int)>
+
+@Iso struct Celsius { var value: Double }
+// Celsius.iso : Iso<Celsius, Double>
+```
+
+```swift
+Point.iso.get(Point(x: 1, y: 2))     // (1, 2)
+Point.iso.reverseGet((3, 4))         // Point(x: 3, y: 4)
+```
+
+`@Iso(Other.self)` maps field-by-field through another type's memberwise initialiser instead of a tuple — convenient, but unverified: the macro can only see `Other`'s name, not its fields, so a shape mismatch surfaces as a compile error in the generated code rather than a clean diagnostic.
+
+```swift
+@Iso struct PointDTO { var x: Int; var y: Int }
+
+@Iso(PointDTO.self)
+struct LabeledPoint { var x: Int; var y: Int }
+// LabeledPoint.iso : Iso<LabeledPoint, PointDTO>
+```
+
+For the library's own generic `Newtype`, prefer its built-in `Newtype.iso` (see [Newtype — Branded Values](#newtype--branded-values)) rather than applying this macro.
+
+#### `@DeriveMonoid` — fieldwise `Monoid`
+
+`@DeriveMonoid` derives `Semigroup` + `Monoid` for a struct as the **product** of its stored properties. Every stored property must itself already be a `Monoid` — `combine` combines the two values field-by-field, and `identity` is each field's `identity`:
+
+```swift
+@DeriveMonoid
+struct Stats {
+    var clicks: Int.Monoids.Sum
+    var ok: Bool.Monoids.And
+}
+```
+
+```swift
+Stats.identity.clicks.rawValue   // 0
+Stats.identity.ok.rawValue       // true
+
+let combined = Stats.combine(
+    Stats(clicks: .init(2), ok: .init(true)),
+    Stats(clicks: .init(3), ok: .init(false))
+)
+combined.clicks.rawValue   // 5     — summed
+combined.ok.rawValue       // false — AND-ed
+
+mconcat([
+    Stats(clicks: .init(1), ok: .init(true)),
+    Stats(clicks: .init(4), ok: .init(true)),
+]).clicks.rawValue   // 5
+```
+
+A bare `Int` field won't work — `Int` has no single canonical monoid; wrap it as `Int.Monoids.Sum` / `Int.Monoids.Product` first (see [Neutral element when joining (Monoid)](#neutral-element-when-joining-monoid)). The struct must keep its memberwise initialiser (synthesised or written).
+
+#### `@Mock` — configurable protocol test doubles
+
+`@Mock` emits a `struct <Protocol>Mock: <Protocol>` (wrapped in `#if DEBUG`) whose every requirement is backed by a stored `wrapped…` closure. The memberwise init lets a test override just the requirements it cares about; every other requirement defaults to a closure that crashes loudly the moment it's called un-overridden.
+
+```swift
+@Mock
+protocol Service {
+    func fetch(id: String) -> AnyPublisher<[Item], any Error>
+    var isReady: Bool { get }
+}
+```
+
+expands (behind `#if DEBUG`) to:
+
+```swift
+struct ServiceMock: Service {
+    var wrappedFetch: (String) -> AnyPublisher<[Item], any Error>
+    var wrappedIsReady: () -> Bool
+
+    init(
+        fetch: @escaping (String) -> AnyPublisher<[Item], any Error> = fail("Mock function not implemented for test case"),
+        isReady: @escaping () -> Bool = fail("Mock function not implemented for test case")
+    ) { self.wrappedFetch = fetch; self.wrappedIsReady = isReady }
+
+    func fetch(id: String) -> AnyPublisher<[Item], any Error> { wrappedFetch(id) }
+    var isReady: Bool { wrappedIsReady() }
+}
+```
+
+```swift
+// Only `isReady` is overridden; `fetch` defaults to a crashing stub but is never called:
+let mock = ServiceMock(isReady: { false })
+```
+
+`{ get set }` properties generate a getter closure plus a `wrapped<Name>Set` closure; overloaded methods are disambiguated by argument labels only on collision. Protocol inheritance, `mutating`/`static`/`init`/`subscript` requirements, and non-erasable generics are diagnosed rather than silently mishandled.
+
+#### `@Witness` — protocols as first-class values
+
+`@Witness` generates a **witness** struct — the protocol's requirements as `@Sendable` closure fields and nothing else — so a conforming instance becomes a plain, composable value instead of an existential (`any P`). This is the building block for dependency injection: construct, stub, and compose witnesses like any other value.
+
+```swift
+@Witness
+public protocol Repository<Item> {
+    associatedtype Item
+    associatedtype Failure: Error
+    func fetch(id: String) async -> Result<Item, Failure>
+    func all() -> [Item]
+    var count: Int { get }
+}
+```
+
+expands to:
+
+```swift
+public struct RepositoryWitness<Item, Failure: Error>: Sendable {
+    public var fetch: @Sendable (String) async -> Result<Item, Failure>
+    public var all: @Sendable () -> [Item]
+    public var count: @Sendable () -> Int
+    // memberwise init, plus an init from any conforming `Base: Repository & Sendable`
+}
+
+public extension Repository where Self: Sendable {
+    var witness: RepositoryWitness<Item, Failure> { .init(self) }
+}
+```
+
+```swift
+let w = MemoryRepo(store: ["a": 1]).witness   // RepositoryWitness<Int, RepoError>
+```
+
+`{ get set }` properties become a getter thunk plus a `set<Name>` closure; because the protocol setter is `mutating`, the from-instance `init` and `.witness` convenience are gated to `where …: AnyObject` whenever a settable member exists. Protocol inheritance composes by name (`ChildWitness` gains a `parent: ParentWitness` field, provided the parent is also `@Witness`).
+
+---
+
+### Property-Based Testing (Gen)
+
+`Gen<Value>` is a composable, seedable random-value generator — this library's counterpart to QuickCheck's `Gen a` (Haskell) and ScalaCheck's `Gen[A]`. It's defined as a `Stateful` computation threading a random-number generator:
+
+```swift
+public typealias Gen<Value> = Stateful<AnyRandomNumberGenerator, Value>
+```
+
+Because it's just `Stateful` under the hood, `Gen` inherits every Functor/Applicative/Monad operation — and every `Stateful` transformer combination — for free.
+
+**Primitives:**
+
+```swift
+let die:     Gen<Int>  = .int(in: 1...6)
+let coin:    Gen<Bool> = .bool()
+let userId:  Gen<UUID> = .uuid()
+```
+
+**Composing generators** with `map` / `flatMap` / `zip`, exactly like any other monad in this library:
+
+```swift
+let sumOfTwoDice = Gen.zip(die, die).map { $0 + $1 }   // 2...12
+
+struct User: Sendable { let id: UUID; let name: String; let age: Int }
+
+let userGen: Gen<User> = Gen.zip3(
+    .uuid(),
+    .string(of: .letter(), count: .int(in: 3...8)),
+    .int(in: 0...120)
+).map { User(id: $0.0, name: $0.1, age: $0.2) }
+```
+
+Other combinators include `.array(ofCount:)`, `.optional()`, `.one(of:)` (uniform choice over a `NonEmpty` list of generators), and `.frequency(_:)` (weighted choice) — see `Sources/DataStructure/Gen/` for the full set.
+
+**Running a generator:**
+
+```swift
+let value = die.generate(seed: 42)             // deterministic — same seed, same value
+let many  = die.samples(seed: 42, count: 100)  // deterministic sequence, replayable in a failing test
+let live  = die.generate()                     // system randomness, not reproducible
+```
+
+`generate(seed:)` and `samples(seed:count:)` thread a small seedable `SplitMix64` PRNG, so a failing property-test case can be replayed exactly by rerunning with the same seed.
+
+---
+
+## Coming from Haskell
+
+A quick-reference for readers coming from Haskell's `base` and common libraries. This is a compact, at-a-glance table — see the linked subsection above for the full treatment of each type or operator.
+
+| Haskell | This library | Notes |
+|---|---|---|
+| `Maybe a` | `Optional<A>` | Swift's built-in optional, extended with full Functor/Applicative/Monad — see [Map (Functor)](#map-functor) |
+| `Either a b` | `Either<A, B>` | Unconstrained sum type, no `Error` requirement on either side — see [SumType2](#sumtype2--shared-interface-for-two-case-types) |
+| `[a]` | `[A]` / `Array<A>` | Swift's built-in array — nondeterminism via `flatMap` — see [FlatMap (Monad)](#flatmap-monad) |
+| `IO a` | _not modelled_ | This library doesn't wrap side effects in a type; effects are pushed to the boundary instead — see [Concurrency: Sendable-First](#concurrency-sendable-first) |
+| `Reader r a` | `Reader<Env, A>` | Dependency injection monad — see [Covariance, contravariance, and contramap](#covariance-contravariance-and-contramap) |
+| `Writer w a` | `Writer<Log, A>` | Append-as-you-go monad, also a Comonad here — see [Comonad (Extend)](#comonad-extend) |
+| `State s a` | `Stateful<S, A>` | Named `Stateful` (not `State`) to avoid clashing with SwiftUI — see [Cost-Free Mutations (EndoMut)](#cost-free-mutations-endomut) |
+| `Semigroup` | `Semigroup` | Same name, same law — see [Joining things together (Semigroup)](#joining-things-together-semigroup) |
+| `Monoid` | `Monoid` | Same name, same law — see [Neutral element when joining (Monoid)](#neutral-element-when-joining-monoid) |
+| `newtype` | `Newtype<Tag, RawValue>` | Phantom-tagged wrapper instead of a language keyword — see [Newtype — Branded Values](#newtype--branded-values) |
+| `Gen a` (QuickCheck) | `Gen<A>` (`Stateful<AnyRandomNumberGenerator, A>`) | Seedable, composable random generator — see [Property-Based Testing (Gen)](#property-based-testing-gen) |
+| `<$>` | `<£>` | Functor map, function on the left |
+| `<*>` | `<*>` | Applicative apply — same symbol |
+| `>>=` | `>>-` | Monadic bind (renamed — Swift reserves `>>=` for bit-shift-assign) |
+| `>=>` | `>=>` | Kleisli composition — same symbol |
+| `.` | `>>>` / `<<<` | Function composition — Swift has no bare `.` operator available |
+
+See the [Operator Reference](#operator-reference) for the complete operator list and [Types](#types) for per-type reference pages.
+
 ---
 
 ## Contributing
 
-Contributions are welcome. The architecture has a few firm rules to keep the library consistent:
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide (setup, branch naming, and tooling). The architecture has a few firm rules to keep the library consistent:
 
 - Every operator must delegate to a named function in the core module — never implement logic directly inside an operator definition
 - Every directional operator has a flipped counterpart (e.g., `<£>` ↔ `<&>`); both must be added in the same commit
@@ -2404,6 +2725,8 @@ To contribute:
 3. Make your changes, including tests
 4. Run the full test suite to confirm nothing is broken
 5. Submit a pull request
+
+See [CHANGELOG.md](CHANGELOG.md) for the history of released versions.
 
 ## Testing
 

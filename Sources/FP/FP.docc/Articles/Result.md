@@ -246,3 +246,25 @@ Result<Int, String>.success(21).bimap({ $0 * 2 }, { "Error: \($0)" })
 import FP       // Named functions (fmap, apply, seqRight, bind, kleisli…)
 import Operators // Operators (<£>, <*>, >>-, >=>…)
 ```
+
+---
+
+## For Haskell developers
+
+Swift's `Result<Success, Failure>` has **no direct Haskell equivalent**. Haskell doesn't need a separate "result" type because `Either`'s two sides aren't semantically pinned to error/success — `Either e a` already fills this role, with `Left`/`Right` standing in for whatever convention the code adopts (usually `Left` = error). This library exists because Swift's standard library ships `Result` as a distinct, `Error`-constrained type; the functional idioms below are exactly what Haskell developers get "for free" from `Either`'s `Functor`/`Applicative`/`Monad` instances.
+
+| This library | Haskell equivalent |
+|---|---|
+| `Result<Success, Failure>` | no dedicated type — `Either e a` fills this role (`Left`/`Right` in place of `.failure`/`.success`) |
+| `<£>` / `<&>` (`fmap`) | `fmap` / `<$>` on `Either e` (maps the `Right`/success side) |
+| `bimap` | `Data.Bifunctor`'s `bimap` |
+| `<*>` | `Applicative`'s `<*>` |
+| `>>-` / `-<<` (`flatMap`) | `>>=` / `=<<` |
+| `>=>` | `Control.Monad`'s `>=>` |
+| `<|>` | not in `base` for `Either` — same caveat as `Either`'s article |
+| `sequence` / `traverse` | `Data.Traversable`'s `sequence` / `traverse`, specialised to `[Either e a]` or `Maybe (Either e a)` |
+| `Result.Monoids.{Optimistic,Pessimistic,…}` | no bespoke equivalent — a Haskell developer would reach for `newtype` wrappers over `Either` with hand-written `Semigroup`/`Monoid` instances to get the same "success wins" / "failure wins" choice |
+
+External references:
+- [`Data.Either`](https://hackage.haskell.org/package/base/docs/Data-Either.html) — the type this library's idioms are modeled after
+- [`Control.Monad.Trans.Except`](https://hackage.haskell.org/package/transformers/docs/Control-Monad-Trans-Except.html) — `ExceptT`, Haskell's error-handling transformer built on `Either`
