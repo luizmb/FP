@@ -76,23 +76,7 @@ New to functional programming? These are some of the best starting points:
 - [Functors, Applicatives, and Monads in Pictures](https://mokacoding.com/blog/functor-applicative-monads-in-pictures/) — a visual, intuition-first introduction to the core concepts
 - [Learn You a Haskell for Great Good!](https://learnyouahaskell.github.io/) — a beginner-friendly free book that explains the ideas behind this library
 
-### Interactive Playground
-
-The repository ships with an Xcode Playground that lets you experiment with every concept covered in this README — Functor, Applicative, Monad, Monoid, Optics, Transformers, and more — one page at a time.
-
-To open it:
-
-1. Open `Examples/Playground/Sandbox.xcworkspace` in Xcode (the workspace, not the playground file directly — the workspace resolves the FP package dependency).
-2. Select the **Sandbox** scheme and set the destination to **My Mac**.
-3. Build the scheme (**⌘B**) so the playground can resolve the FP module.
-4. In the Project Navigator, expand **Sandbox.playground** to see the numbered pages (01 – Functor, 02 – Applicative, …).
-5. Navigate to the page you want, uncomment the `learn(…)` call at the bottom of the section you want to run, and execute the playground.
-
-Each page contains ready-to-run functions with inline result comments. Uncomment one `learn(…)` call at a time to see its output in the console or inline results sidebar.
-
-### Standalone CLI Example
-
-Prefer the terminal to Xcode? `Examples/CLI` is a small, dependency-free SwiftPM executable target that imports `FP` and runs the same kind of point-free pipelines shown in this README. From that directory, `swift run` builds and executes it directly — no workspace or simulator required.
+For a hands-on, interactive walkthrough, see the "Modeling Failures" tutorial and the full article catalog at **[ios.lu/FP](https://ios.lu/FP)**, which includes a runnable example for every type and function.
 
 ## API Documentation
 
