@@ -6,6 +6,15 @@ import SwiftParser
 import SwiftSyntax
 import SwiftSyntaxMacros
 
+// MARK: - stderr
+
+/// Writes to standard error via `FileHandle`, not the raw C `stderr` global — the latter
+/// is not concurrency-safe under Swift 6 on Linux/Android (only silently tolerated by the
+/// Darwin toolchain).
+func eprint(_ message: String) {
+    FileHandle.standardError.write(Data((message + "\n").utf8))
+}
+
 // MARK: - Minimal context
 
 final class ExpandContext: MacroExpansionContext {
@@ -32,7 +41,7 @@ func expand(lenses structDecl: StructDeclSyntax, attribute: AttributeSyntax) -> 
         return "// @Lenses expansion error: \(error)"
     }
     for d in ctx.diagnostics where d.diagMessage.severity == .error {
-        fputs("error: \(d.message)\n", stderr)
+        eprint("error: \(d.message)")
     }
     let name = structDecl.name.trimmedDescription
     let body = members.map { "    \($0.trimmedDescription)" }.joined(separator: "\n\n")
@@ -48,7 +57,7 @@ func expand(prisms enumDecl: EnumDeclSyntax, attribute: AttributeSyntax) -> Stri
         return "// @Prisms expansion error: \(error)"
     }
     for d in ctx.diagnostics where d.diagMessage.severity == .error {
-        fputs("error: \(d.message)\n", stderr)
+        eprint("error: \(d.message)")
     }
     let name = enumDecl.name.trimmedDescription
     let body = members.map { "    \($0.trimmedDescription)" }.joined(separator: "\n\n")
@@ -84,8 +93,8 @@ final class OpticWalker: SyntaxVisitor {
 // MARK: - Entry point
 
 guard CommandLine.arguments.count > 1 else {
-    fputs("Usage: swift run ExpandOptic <file.swift> [file2.swift ...]\n", stderr)
-    fputs("  Prints the manual equivalents of @Lenses/@Prisms expansions.\n", stderr)
+    eprint("Usage: swift run ExpandOptic <file.swift> [file2.swift ...]")
+    eprint("  Prints the manual equivalents of @Lenses/@Prisms expansions.")
     exit(1)
 }
 
@@ -93,7 +102,7 @@ var allOutputs: [String] = []
 
 for path in CommandLine.arguments.dropFirst() {
     guard let source = try? String(contentsOfFile: path, encoding: .utf8) else {
-        fputs("Cannot read: \(path)\n", stderr)
+        eprint("Cannot read: \(path)")
         continue
     }
     let tree = Parser.parse(source: source)
@@ -103,7 +112,7 @@ for path in CommandLine.arguments.dropFirst() {
 }
 
 if allOutputs.isEmpty {
-    fputs("No @Lenses or @Prisms annotations found.\n", stderr)
+    eprint("No @Lenses or @Prisms annotations found.")
     exit(1)
 }
 
