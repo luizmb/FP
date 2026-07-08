@@ -44,14 +44,18 @@ jobs:
             --transform-for-static-hosting \
             --hosting-base-path FP
 
-      - name: Redirect site root to /documentation/
+      - name: Redirect site root to the FP module's landing page
         run: |
+          # /documentation/ (no module) is an empty shell in combined-documentation mode —
+          # each of the 5 targets gets its own /documentation/<module>/ page, and only
+          # /documentation/fp/ has a real Overview + Topics tree (it's this catalog's only
+          # curated landing page). Redirect there directly, not to the bare index.
           cat > .docs/index.html <<'EOF'
           <!doctype html>
-          <meta http-equiv="refresh" content="0; url=./documentation/">
-          <link rel="canonical" href="./documentation/">
+          <meta http-equiv="refresh" content="0; url=./documentation/fp/">
+          <link rel="canonical" href="./documentation/fp/">
           <title>FP — Documentation</title>
-          <a href="./documentation/">Redirecting to documentation…</a>
+          <a href="./documentation/fp/">Redirecting to documentation…</a>
           EOF
 
       - name: Configure Pages

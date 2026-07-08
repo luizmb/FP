@@ -177,8 +177,8 @@ var fetchUser: (String, Int) -> User = const(.guest)
 - [Library Documentation](../../README.md)
 - [Monad Transformers](../../Sources/FP/FP.docc/Articles/MonadTransformers.md)
 - [Operator Vocabulary & Precedence](../../Sources/FP/FP.docc/Articles/OperatorVocabulary.md)
-- [Optics](../../Sources/FP/FP.docc/Articles/Optics.md)
-- [Loading](../../Sources/FP/FP.docc/Articles/Loading.md)
+- [Optics](../../Sources/CoreFP/CoreFP.docc/Optics.md)
+- [Loading](../../Sources/DataStructure/DataStructure.docc/Loading.md)
 - [Haskell Typeclassopedia](https://wiki.haskell.org/Typeclassopedia)
 
 ## Remember
