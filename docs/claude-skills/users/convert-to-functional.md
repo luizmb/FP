@@ -10,9 +10,9 @@ You are helping a developer refactor imperative Swift code into functional style
 
 1. **Identify patterns**: Look for imperative patterns that can be replaced with functional equivalents
 2. **Use FP operators**: Replace imperative constructs with `<£>`, `<*>`, `>>-`, `>=>`, etc.
-3. **Leverage monads**: Use Optional, Result, Either, Reader, Array for effect handling
+3. **Leverage sum/effect types**: Use `Optional`, `Result`, `Either`, `Validation`, `Reader`, `Array` for effect handling
 4. **Compose functions**: Replace nested calls with function composition `>>>`, `<<<`, `|>`
-5. **Eliminate mutation**: Replace var with let, loops with map/flatMap/filter
+5. **Eliminate mutation**: Replace `var` with `let`, loops with `map`/`flatMap`/`filter`
 6. **Add types**: Make types explicit to leverage Swift's type inference with FP operators
 
 ### Common Patterns to Replace:
@@ -43,17 +43,15 @@ func processUser(id: String) -> String? {
     } >>- { profile in
         profile.name
     } >>- { name in
-        guard !name.isEmpty else { return nil }
-        return name.uppercased()
+        name.isEmpty ? nil : name.uppercased()
     }
 }
 
-// Or with kleisli composition:
-let processUser = findUser >=> (\.profile) >=> (\.name) >=> uppercasedIfValid
-
-func uppercasedIfValid(_ name: String) -> String? {
+// Or with Kleisli composition, if each step is already a standalone function:
+func nonEmptyUppercased(_ name: String) -> String? {
     name.isEmpty ? nil : name.uppercased()
 }
+let processUser = findUser >=> { $0.profile } >=> { $0.name } >=> nonEmptyUppercased
 ```
 
 #### Pattern 2: Multiple map/flatMap chains
@@ -70,12 +68,17 @@ let result = array
 **After (Functional)**:
 ```swift
 let result = array
-    <£> (\.value)
-    >>- { guard $0 > 5 else { return [] }; return [$0 * 2] }
-    |> { $0.reduce(0, +) }
+    <£> { $0.value }
+    >>- { x in x.map { $0 * 2 } }
+    .filter { $0 > 10 }
+    .reduce(0, +)
 
-// Or more readable:
-let transform = (\.value) >>> (*2) >>> { $0 > 10 ? [$0] : [] }
+// Or compose the pipeline once and reuse it:
+let transform: (Element) -> [Int] = { element in
+    guard let value = element.value else { return [] }
+    let doubled = value * 2
+    return doubled > 10 ? [doubled] : []
+}
 let result = array.flatMap(transform).reduce(0, +)
 ```
 
@@ -95,7 +98,7 @@ func processData() -> String {
 }
 ```
 
-**After (Functional)**:
+**After (Functional — `fetchData`/`parse`/`validate` return `Result`, not `throws`)**:
 ```swift
 func processData() -> String {
     let result: Result<String, Error> = fetchData()
@@ -104,13 +107,13 @@ func processData() -> String {
         <£> transform
 
     return result.match(
-        caseLeft: { $0 },
-        caseRight: { "Error: \($0)" }
+        caseFailure: { "Error: \($0)" },
+        caseSuccess: { $0 }
     )
 }
 
-// Or with kleisli composition:
-let pipeline = fetchData >=> parse >=> validate >=> (Result.success • transform)
+// Or with Kleisli composition:
+let pipeline = fetchData >=> parse >=> validate
 ```
 
 #### Pattern 4: Nested loops
@@ -132,15 +135,13 @@ func combinations(as: [Int], bs: [Int]) -> [Int] {
 ```swift
 func combinations(as: [Int], bs: [Int]) -> [Int] {
     as >>- { a in
-        bs <£> { b in
-            a + b
-        }
+        bs.map { b in a + b }
     }
 }
 
-// Or with liftA2:
+// Or with liftA2 (a static method on Array):
 func combinations(as: [Int], bs: [Int]) -> [Int] {
-    liftA2(+)(as, bs)
+    [Int].liftA2(+)(as, bs)
 }
 ```
 
@@ -176,13 +177,14 @@ let fetchUser: (String) -> Reader<Config, User?> = { id in
     }
 }
 
+// ReaderTOptional's mapT reaches through the Optional wrapped inside the Reader
 let processUser: (String) -> Reader<Config, String?> = { id in
     fetchUser(id).mapT { $0.name }
 }
 
 // Usage:
 let config = Config(apiKey: "key", baseURL: URL(string: "https://api.com")!)
-let userName = processUser("123")(config)
+let userName = processUser("123")(config)  // Reader has callAsFunction, so it's directly callable
 ```
 
 #### Pattern 6: State accumulation
@@ -213,19 +215,12 @@ func parseNumbers(_ input: String) -> ([Int], [String]) {
         .map { token -> Either<String, Int> in
             Int(token).map(Either.right) ?? .left("Invalid: \(token)")
         }
-        .partitionEithers()  // Separate lefts and rights
-}
-
-// Helper:
-extension Array where Element: EitherProtocol {
-    func partitionEithers() -> ([Element.LeftType], [Element.RightType]) {
-        reduce(into: ([], [])) { result, either in
+        .reduce(into: ([Int](), [String]())) { result, either in
             either.match(
-                caseLeft: { result.0.append($0) },
-                caseRight: { result.1.append($0) }
+                caseLeft: { result.1.append($0) },
+                caseRight: { result.0.append($0) }
             )
         }
-    }
 }
 ```
 
@@ -247,15 +242,8 @@ func validateUser(_ user: User) -> Result<User, ValidationError> {
 }
 ```
 
-**After (Functional)**:
+**After (Functional — short-circuits on the first failure, matching the original)**:
 ```swift
-func validateUser(_ user: User) -> Result<User, ValidationError> {
-    .success(user)
-        >>- validateName
-        >>- validateAge
-        >>- validateEmail
-}
-
 let validateName: (User) -> Result<User, ValidationError> = { user in
     user.name.isEmpty ? .failure(.emptyName) : .success(user)
 }
@@ -268,23 +256,115 @@ let validateEmail: (User) -> Result<User, ValidationError> = { user in
     user.email.contains("@") ? .success(user) : .failure(.invalidEmail)
 }
 
-// Or with kleisli composition:
 let validateUser = validateName >=> validateAge >=> validateEmail
 ```
+
+If the goal is to report **every** failing check at once instead of stopping at the first one, reach for `Validation<E, A>` instead of `Result` — see the `Validation` DocC article. `Validation`'s errors accumulate via `Semigroup`, so `E` is typically `[ValidationError]`, not a single case.
+
+#### Pattern 8: UI loading state that doesn't blank the screen on every refresh
+
+**Before (Imperative)**:
+```swift
+enum ScreenState {
+    case idle, loading, loaded([Movie]), failed(Error)
+}
+
+// Every refresh (pull-to-refresh, poll, retry) flips this to .loading,
+// which blanks whatever the user was looking at.
+var state: ScreenState = .idle
+
+switch state {
+case .idle, .loading:
+    ProgressView()
+case let .loaded(movies):
+    MovieList(movies)
+case .failed:
+    ErrorView()
+}
+```
+
+**After (Functional, with `Loading<Success, Failure>`)**:
+```swift
+import DataStructure
+
+var state: Loading<[Movie], NetworkError> = .idle
+
+state = state.startLoading()                          // .loading(previous: nil)
+state = state.applying(.success([movie1, movie2]))     // .loaded([movie1, movie2])
+state = state.startLoading()                           // .loading(previous: [movie1, movie2]) — old data preserved
+```
+
+`loadedOrPrevious` is the property to render from — it collapses `.loaded`, `.loading(previous:)`, and `.failed(_, previous:)` down to "the best value there is to show right now," so a refresh in flight or a failed retry doesn't wipe out a screen that already has good content on it:
+
+```swift
+if let movies = state.loadedOrPrevious {
+    MovieList(movies)          // stays on screen through .loading and .failed alike
+} else {
+    switch state {
+    case .idle: EmptyStateView()
+    case .loading: ProgressView()
+    case .failed: ErrorView()
+    case .loaded: EmptyView()  // unreachable — .loaded always has a loadedOrPrevious
+    }
+}
+```
+
+Pair `loadedOrPrevious` with a lighter-weight, non-blocking signal for the in-flight/error states instead of hiding the content underneath them — e.g. `state.loading != nil` to show a small inline spinner, or `state.failed != nil` to show a dismissible error banner over content that's still visible. See the `Loading` DocC article for the full case-by-case breakdown and the per-case `Prism`/plain-property access (`state.loaded`, `state.failed`, etc.).
+
+#### Pattern 9: Point-free stand-ins for default/ignored closures (especially in test fixtures)
+
+**Before (Imperative — a `{ _, _ in someValue }` lambda just to satisfy a default parameter)**:
+```swift
+struct ServiceMock {
+    var fetchUser: (String, Int) -> User = { _, _ in User(id: "default", name: "Guest") }
+    var onEvent: (Event) -> Void = { _ in }
+    var validate: (String) -> Bool = { _ in fatalError("validate not implemented in this test") }
+}
+```
+
+**After (Functional — `const`, `ignore`, and `fail` from `CoreFP` name the intent directly)**:
+```swift
+import CoreFP
+
+struct ServiceMock {
+    // const(value) ignores its arguments and always returns `value` — has overloads
+    // for 0 through 4+ ignored parameters, matching whatever arity you need.
+    var fetchUser: (String, Int) -> User = const(User(id: "default", name: "Guest"))
+
+    // ignore(...) accepts any arguments and returns Void — for "don't care, no-op" stubs.
+    var onEvent: (Event) -> Void = ignore
+
+    // fail(message) returns a function that traps with a clear message if it's
+    // ever actually called — better than a silent wrong-default in a fixture
+    // that's supposed to be overridden per-test.
+    var validate: (String) -> Bool = fail("validate not implemented in this test")
+}
+```
+
+`withArg(_:)` is the point-free way to adapt a single-argument function (including a bare KeyPath) to a multi-argument call site without writing a wrapping closure:
+```swift
+let firstCharacter: (String) -> Character? = \.first
+// Adapt to a 2-arg call site that only cares about the first element of a tuple:
+let firstCharacterOfPair: (String, Int) -> Character? = firstCharacter |> withArg(\.0)
+```
+
+Reach for these whenever you'd otherwise write `{ _ in ... }`/`{ _, _ in ... }` purely to discard arguments, or a lambda that just returns a constant — the named function documents *why* the arguments are ignored (default stub vs. genuinely a no-op vs. deliberately unimplemented) better than an anonymous closure does.
 
 ### Refactoring Checklist:
 
 - [ ] Replace if-let chains with `>>-` (bind)
 - [ ] Replace nested optionals with Kleisli composition `>=>`
-- [ ] Replace try/catch with Result monad
+- [ ] Replace try/catch with the `Result` monad
 - [ ] Replace guard/if-else with functional alternatives
 - [ ] Replace for loops with map/flatMap/filter
 - [ ] Replace var with let
 - [ ] Extract functions for better composition
 - [ ] Use function composition `>>>`, `<<<` instead of nested calls
 - [ ] Use pipe `|>` for better readability
-- [ ] Replace dependency passing with Reader monad
-- [ ] Use Either for validation with error accumulation
+- [ ] Replace dependency passing with the Reader monad — but only for actual environment/dependency context, not ordinary parameters (see `reader-monad-guide`)
+- [ ] Use `Validation` (not `Either`) when you need to accumulate every error instead of short-circuiting
+- [ ] Replace hand-rolled multi-state UI enums with `Loading<Success, Failure>` + `loadedOrPrevious`
+- [ ] Replace `{ _ in ... }` / `{ _, _ in ... }` default-closure stubs with `const`/`ignore`/`fail`
 - [ ] Add type annotations for clarity
 
 ### Guidelines:

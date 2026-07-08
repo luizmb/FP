@@ -78,6 +78,8 @@ New to functional programming? These are some of the best starting points:
 
 For a hands-on, interactive walkthrough, see the "Modeling Failures" tutorial and the full article catalog at **[ios.lu/FP](https://ios.lu/FP)**, which includes a runnable example for every type and function.
 
+Using Claude Code (or another AI assistant) with this library? [`docs/claude-skills`](docs/claude-skills/README.md) has task-oriented prompt templates for both using the library (operators, Reader, Prisms, refactoring imperative code) and extending it (adding a new type, building a transformer stack).
+
 ## API Documentation
 
 **[→ Full API Reference at ios.lu/FP](https://ios.lu/FP)**
@@ -942,7 +944,7 @@ let nameLens: Lens<User, String> = lens(\.name)
 TextField("Name", text: $user[optic: nameLens])
 ```
 
-See [Binding](docs/types/Binding.md) for the full bridge API.
+See [Binding](Sources/FP/FP.docc/Articles/Binding.md) for the full bridge API.
 
 ---
 
@@ -1047,7 +1049,7 @@ if let settingsBinding = $sheet[optic: settingsPrism] {
 }
 ```
 
-See [Binding](docs/types/Binding.md) for the full bridge API.
+See [Binding](Sources/FP/FP.docc/Articles/Binding.md) for the full bridge API.
 
 ---
 
@@ -1138,7 +1140,7 @@ if let cityBinding = $app[optic: loggedInPrism >>> ^\User.address >>> ^\Address.
 }
 ```
 
-See [Binding](docs/types/Binding.md) for the full bridge API.
+See [Binding](Sources/FP/FP.docc/Articles/Binding.md) for the full bridge API.
 
 **`affineTraversal` from a `WritableKeyPath` to an optional**
 
@@ -1437,7 +1439,7 @@ combined.reverseGet(12)  // 12/2 - 1 = 5
 TextField("Feet", value: $meters[optic: metersToFeet], format: .number)
 ```
 
-See [Binding](docs/types/Binding.md) for the full bridge API.
+See [Binding](Sources/FP/FP.docc/Articles/Binding.md) for the full bridge API.
 
 ---
 

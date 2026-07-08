@@ -15,24 +15,26 @@ You are helping a developer understand and debug functional operator composition
 5. **Suggest fixes**: If there's an error, explain what went wrong and how to fix it
 6. **Provide alternatives**: Show equivalent ways to write the same composition
 
-### Operator Reference:
+### Operator Reference
 
-#### Functor Operators (Precedence 4, left-associative)
+The precedence numbers below are the library's real, verified hierarchy (see `Sources/CoreFPOperators/Utilities/PrecedenceGroups.swift`, or `<doc:OperatorVocabulary>` for the full table with Swift stdlib groups interleaved).
+
+#### Functor / Applicative Operators (Precedence 4, left-associative — `FunctorOps`)
 - `<£>` - fmap: `(a -> b) -> f a -> f b`
 - `£>` - replace right: `f a -> b -> f b`
 - `<£` - replace left: `a -> f b -> f a`
-- `<&>` - flipped fmap (Precedence 1): `f a -> (a -> b) -> f b`
-
-#### Applicative Operators (Precedence 4, left-associative)
 - `<*>` - apply: `f (a -> b) -> f a -> f b`
 - `*>` - sequence right: `f a -> f b -> f b`
 - `<*` - sequence left: `f a -> f b -> f a`
 
-#### Monad Operators
-- `>>-` - bind (Precedence 1, left-associative): `m a -> (a -> m b) -> m b`
-- `-<<` - flipped bind (Precedence 1, right-associative): `(a -> m b) -> m a -> m b`
-- `>=>` - Kleisli composition (Precedence 1, right-associative): `(a -> m b) -> (b -> m c) -> (a -> m c)`
-- `<&>` - flipped Kleisli (Precedence 1, right-associative): `(b -> m c) -> (a -> m b) -> (a -> m c)`
+`<&>` (flipped fmap) is **not** in this group — it sits at precedence 1 (`MonadBindLeft`), alongside the monadic bind operators. That's a deliberate asymmetry documented in the library; don't assume `<&>` groups the same way as `<£>`.
+
+#### Monad Operators (Precedence 1)
+- `>>-` - bind (`MonadBindLeft`, left-associative): `m a -> (a -> m b) -> m b`
+- `<&>` - flipped fmap (`MonadBindLeft`, left-associative): `f a -> (a -> b) -> f b` — **not** flipped Kleisli, just flipped `<£>`
+- `-<<` - flipped bind (`KleisliCompositionRight`, right-associative): `(a -> m b) -> m a -> m b`
+- `>=>` - Kleisli composition (`KleisliCompositionRight`, right-associative): `(a -> m b) -> (b -> m c) -> (a -> m c)`
+- `<=<` - flipped Kleisli composition (`KleisliCompositionRight`, right-associative): `(b -> m c) -> (a -> m b) -> (a -> m c)`
 
 #### Alternative Operator (Precedence 3, left-associative)
 - `<|>` - alternative: `f a -> f a -> f a`
@@ -40,16 +42,16 @@ You are helping a developer understand and debug functional operator composition
 #### Function Composition (Precedence 9, right-associative)
 - `>>>` - forward composition: `(a -> b) -> (b -> c) -> (a -> c)`
 - `<<<` - backward composition: `(b -> c) -> (a -> b) -> (a -> c)`
-- `•` - alternative composition symbol
 
-#### Function Application
-- `|>` - forward pipe (Precedence 0, left-associative): `a -> (a -> b) -> b`
-- `<|` - backward application (Precedence 0, right-associative): `(a -> b) -> a -> b`
-- `£` - low-precedence application (Precedence 0)
+There is no `•` operator in this library — some older notes mention it, but it was never actually implemented. Use `>>>`/`<<<`.
 
-#### Semigroup (Precedence 6)
-- `<>` - append/concat
-- `++` - list concatenation (Precedence 5, right-associative)
+#### Function Application (Precedence 0)
+- `|>` - forward pipe (`LowPrecedenceFunctionCallLeft`, left-associative): `a -> (a -> b) -> b`
+- `<|` / `£` - backward application (`LowPrecedenceFunctionCallRight`, right-associative): `(a -> b) -> a -> b` — `£` and `<|` are two spellings of the same operator
+
+#### Semigroup (Precedence 6 / 5)
+- `<>` - append/concat (`ConcatPrecedence`, precedence 6, right-associative)
+- `++` - list concatenation (`AppendToList`, precedence 5, right-associative)
 
 ### Example Analysis Process:
 
@@ -63,21 +65,19 @@ let result = someOptional <£> { $0 * 2 } <£> { $0 + 1 }
 
 **Analysis**:
 1. Type of `someOptional`: `Optional<Int>`
-2. `<£>` is left-associative with precedence 4
-3. Groups as: `(someOptional <£> { $0 * 2 }) <£> { $0 + 1 }`
-4. Step 1: `someOptional <£> { $0 * 2 }` → `Optional<Int>`
-5. Step 2: `Optional<Int> <£> { $0 + 1 }` → **Error!** `<£>` expects function on the left
+2. `<£>` is left-associative with precedence 4, and its **first** argument must be the transforming function, not the container
+3. `someOptional <£> { $0 * 2 }` already puts the container on the left — that's backwards for `<£>`
 
 **Fix**:
 ```swift
-let result = { $0 * 2 } <£> someOptional <£> { $0 + 1 }
-// Groups as: ({ $0 * 2 } <£> someOptional) <£> { $0 + 1 }
-// Type flow: Optional<Int> -> Optional<Int> -> Optional<Int>
+let result = { $0 + 1 } <£> ({ $0 * 2 } <£> someOptional)
+// Or, reading left to right with the flipped operator instead:
+let result2 = someOptional <&> { $0 * 2 } <&> { $0 + 1 }
 ```
 
-Or use method syntax:
+Or use the named method:
 ```swift
-let result = someOptional.fmap { $0 * 2 }.fmap { $0 + 1 }
+let result3 = someOptional.map { $0 * 2 }.map { $0 + 1 }
 ```
 
 #### Example 2: Monad Bind vs Kleisli
@@ -102,45 +102,49 @@ let composed = f >=> g
 #### Example 3: Mixed Operators
 
 ```swift
-let result = array <£> { $0 * 2 } >>- { [$0, $0 + 1] }
+let result = { $0 * 2 } <£> array >>- { [$0, $0 + 1] }
 ```
 
 **Analysis**:
 1. `<£>` has precedence 4 (left-assoc)
 2. `>>-` has precedence 1 (left-assoc)
-3. Higher precedence binds tighter, so groups as: `(array <£> { $0 * 2 }) >>- { [$0, $0 + 1] }`
+3. Higher precedence binds tighter, so this groups as: `({ $0 * 2 } <£> array) >>- { [$0, $0 + 1] }`
 4. Step 1: `{ $0 * 2 } <£> array` → `[Int]` (doubled)
 5. Step 2: `[Int] >>- { [$0, $0 + 1] }` → `[Int]` (expanded)
 
 **Type flow**:
 ```
 [Int]                                    // [1, 2, 3]
-  <£> { $0 * 2 }    → [Int]             // [2, 4, 6]
+  <£> { $0 * 2 }     → [Int]             // [2, 4, 6]
   >>- { [$0, $0+1] } → [Int]             // [2, 3, 4, 5, 6, 7]
 ```
 
 #### Example 4: Function Composition
 
 ```swift
-let transform = (*2) >>> (+1) >>> String.init
+let double = curry(*)(2)
+let increment = curry(+)(1)
+let transform = increment >>> double >>> { String($0) }
 ```
 
 **Analysis**:
 1. `>>>` is right-associative with precedence 9
-2. Groups as: `(*2) >>> ((+1) >>> String.init)`
+2. Groups as: `increment >>> (double >>> { String($0) })`
 3. Type flow:
-   - `(*2)`: `(Int) -> Int`
-   - `(+1)`: `(Int) -> Int`
-   - `String.init`: `(Int) -> String`
+   - `increment`: `(Int) -> Int`
+   - `double`: `(Int) -> Int`
+   - `{ String($0) }`: `(Int) -> String`
    - Result: `(Int) -> String`
+
+Swift has no operator-section syntax — `(*2)`/`(+1)` are not valid Swift expressions. Use `curry(_:)` (partial-applied via `|>` or direct call) for the arithmetic pieces.
 
 **Usage**:
 ```swift
-let result = 5 |> transform  // "11"
+let result = 5 |> transform  // "12"
 // Or: transform(5)
 ```
 
-#### Example 5: Reader Composition
+#### Example 5: Reader + Optional (a transformer stack)
 
 ```swift
 let computation = fetchUser(id) >>- { user in
@@ -153,23 +157,15 @@ let computation = fetchUser(id) >>- { user in
 **Error**: Type mismatch!
 
 **Analysis**:
-1. `fetchUser(id)` returns `Reader<Config, User?>`
-2. `>>- { user in user.profile }` expects Reader monad, but we're in ReaderT + Optional
-3. Should use `mapT` instead of `<£>` for the second operation
+1. `fetchUser(id)` returns `Reader<Config, User?>` — this is the `ReaderTOptional` combo (Reader wrapping an Optional)
+2. `>>- { user in user.profile }` treats it like a plain `Reader<Config, User>`, but the value inside is actually `User?`
+3. Should use `mapT` — the transformer-specific operation that reaches *through* the inner `Optional` — instead of the base `<£>`/`>>-`
 
-**Fix**:
+**Fix** (assuming `User.profile: Profile` and `Profile.name: String`, both non-optional — `mapT` only wraps in `Optional` once, at the outermost level):
 ```swift
-// Using ReaderT operations:
 let computation: Reader<Config, String?> = fetchUser(id)
-    .mapT { user in user.profile }
-    .mapT { profile in profile.name }
-
-// Or with ReaderT bind:
-let computation = fetchUser(id) >>- { user in
-    Reader { _ in user.profile }
-} >>- { profile in
-    Reader { _ in profile.name }
-}
+    .mapT { user in user.profile }    // Reader<Config, Profile?>
+    .mapT { profile in profile.name } // Reader<Config, String?>
 ```
 
 ### Debugging Checklist:
@@ -178,7 +174,7 @@ When you encounter an error in operator composition:
 
 1. **Check precedence**: Are operators grouping as expected?
    - Use parentheses to force grouping
-   - Check precedence table
+   - Check the precedence table above, or `<doc:OperatorVocabulary>`
 
 2. **Trace types**: What's the type at each step?
    - Add type annotations to intermediate steps
@@ -189,35 +185,32 @@ When you encounter an error in operator composition:
    - `f >=> g >=> h` = `f >=> (g >=> h)` (right)
 
 4. **Verify monad type**: Are you mixing plain and transformer monads?
-   - `Optional` vs `Reader<Env, Optional>`
-   - Use `mapT`, `flatMapT` for transformers
+   - `Optional<A>` vs `Reader<Env, Optional<A>>`
+   - Use `mapT`, `flatMapT` for the transformer combo, not the base `<£>`/`>>-`
 
-5. **Check operator signature**: Does it match your types?
-   - Functor: operates on values inside
-   - Applicative: combines contexts
-   - Monad: sequences effects
+5. **Check operator direction**: `<£>` wants the function on the left; `<&>` wants the container on the left
 
 ### Common Mistakes:
 
 ❌ **Mistake 1**: Wrong operator direction
 ```swift
-optional <£> { $0 * 2 }  // ❌ Value on left
+optional <£> { $0 * 2 }  // ❌ <£> wants the function on the left
 ```
 ✅ **Fix**:
 ```swift
 { $0 * 2 } <£> optional  // ✅ Function on left
-// Or use flipped version:
-optional <&> { $0 * 2 }  // ✅ Flipped fmap
+// Or use the flipped version:
+optional <&> { $0 * 2 }  // ✅ Flipped fmap — container on the left
 ```
 
 ❌ **Mistake 2**: Mixing monad levels
 ```swift
 let reader: Reader<Env, Int?> = ...
-reader >>- { $0 * 2 }  // ❌ Expects Reader, not Int
+reader >>- { $0 * 2 }  // ❌ >>- expects the value to be a plain Int, not Int?
 ```
 ✅ **Fix**:
 ```swift
-reader.mapT { $0 * 2 }  // ✅ Use mapT for transformers
+reader.mapT { $0 * 2 }  // ✅ Use mapT to reach through the inner Optional
 ```
 
 ❌ **Mistake 3**: Wrong precedence assumption

@@ -23,50 +23,69 @@ For most container types, you'll implement:
 2. **Applicative** - Combine multiple wrapped values
 3. **Monad** - Chain dependent computations
 
-The library already has these operators defined; you just need to make your type conform to the expected patterns.
+The library follows one consistent naming convention throughout — match it so your type feels native alongside `Optional`, `Array`, `Reader`, etc.:
+
+| Role | Instance form | Static/curried form |
+|---|---|---|
+| Functor | `.map(_:)` | `static func fmap(_:) -> (Self) -> Self` |
+| Monad | `.flatMap(_:)` | `static func bind(_:) -> (Self) -> Self` |
+| Applicative | — | `static func pure(_:)`, `static func liftA2(_:)`, `static func apply(_:_:)` |
+
+The library already has the operators (`<£>`, `<*>`, `>>-`, `>=>`) defined generically-adjacent to each type — you just need to add the instance/static methods above and, if your type isn't already covered, the operator overloads that delegate to them.
 
 ### Implementation Guide
 
 #### Step 1: Implement Functor (Transform Values)
 
-Your type needs a `map`-like function:
-
 ```swift
-struct AsyncResult<T, E: Error> {
-    let run: (@escaping (Result<T, E>) -> Void) -> Void
+struct AsyncResult<T: Sendable, E: Error & Sendable>: Sendable {
+    let run: @Sendable (@escaping @Sendable (Result<T, E>) -> Void) -> Void
 
-    // Functor: transform success values
-    func fmap<U>(_ transform: @escaping (T) -> U) -> AsyncResult<U, E> {
+    // Instance method — what callers actually use most of the time
+    func map<U>(_ transform: @escaping @Sendable (T) -> U) -> AsyncResult<U, E> {
         AsyncResult<U, E> { callback in
             self.run { result in
                 callback(result.map(transform))
             }
         }
     }
+
+    // Static curried form — what the <£> operator delegates to
+    static func fmap<U>(
+        _ transform: @escaping @Sendable (T) -> U
+    ) -> @Sendable (AsyncResult<T, E>) -> AsyncResult<U, E> {
+        { $0.map(transform) }
+    }
 }
 
-// Now you can use <£> operator:
+// Operator — delegates to the static curried form, never re-implements the logic
+func <£> <T, U, E>(_ transform: @escaping @Sendable (T) -> U, _ async: AsyncResult<T, E>) -> AsyncResult<U, E> {
+    AsyncResult.fmap(transform)(async)
+}
+
+// Now you can use <£>:
 let doubled = { $0 * 2 } <£> asyncResult
 ```
 
 #### Step 2: Implement Applicative (Combine Effects)
 
-Provide ways to combine your wrapped values:
-
 ```swift
 extension AsyncResult {
     // Pure: wrap a value
-    static func pure(_ value: T) -> AsyncResult<T, E> {
+    static func pure(_ value: T) -> AsyncResult<T, E> where T: Sendable {
         AsyncResult { callback in
             callback(.success(value))
         }
     }
 
     // Apply: apply wrapped function to wrapped value
-    func apply<U>(_ transform: AsyncResult<(T) -> U, E>) -> AsyncResult<U, E> {
+    static func apply<U>(
+        _ transform: AsyncResult<@Sendable (T) -> U, E>,
+        _ value: AsyncResult<T, E>
+    ) -> AsyncResult<U, E> {
         AsyncResult<U, E> { callback in
             transform.run { fnResult in
-                self.run { valueResult in
+                value.run { valueResult in
                     callback(fnResult.flatMap { fn in
                         valueResult.map(fn)
                     })
@@ -76,56 +95,66 @@ extension AsyncResult {
     }
 }
 
-// Now you can use <*> operator (if defined for your type):
-// For types not in the library, you may need to define the operator yourself
+// Operator
+func <*> <T, U, E>(_ f: AsyncResult<@Sendable (T) -> U, E>, _ v: AsyncResult<T, E>) -> AsyncResult<U, E> {
+    AsyncResult.apply(f, v)
+}
 ```
 
 #### Step 3: Implement Monad (Chain Computations)
 
-Add flatMap for dependent computations:
-
 ```swift
 extension AsyncResult {
-    // Monad: flatMap for chaining
-    func flatMap<U>(_ transform: @escaping (T) -> AsyncResult<U, E>) -> AsyncResult<U, E> {
+    // Instance method
+    func flatMap<U>(_ transform: @escaping @Sendable (T) -> AsyncResult<U, E>) -> AsyncResult<U, E> {
         AsyncResult<U, E> { callback in
             self.run { result in
                 switch result {
-                case .success(let value):
+                case let .success(value):
                     transform(value).run(callback)
-                case .failure(let error):
+                case let .failure(error):
                     callback(.failure(error))
                 }
             }
         }
     }
+
+    // Static curried form — matches the library's own `bind`/kleisli naming
+    static func bind<U>(
+        _ transform: @escaping @Sendable (T) -> AsyncResult<U, E>
+    ) -> @Sendable (AsyncResult<T, E>) -> AsyncResult<U, E> {
+        { $0.flatMap(transform) }
+    }
+
+    static func kleisli<U, V>(
+        _ f: @escaping @Sendable (T) -> AsyncResult<U, E>,
+        _ g: @escaping @Sendable (U) -> AsyncResult<V, E>
+    ) -> @Sendable (T) -> AsyncResult<V, E> {
+        { t in f(t).flatMap(g) }
+    }
 }
 
-// Now you can use >>- operator (if defined for your type):
-// asyncResult >>- transform
-```
-
-#### Step 4: Define Operators for Your Type (If Needed)
-
-If the library doesn't already have operators for your type, define them:
-
-```swift
-// Functor operators
-func <£> <T, U, E>(_ transform: @escaping (T) -> U, _ async: AsyncResult<T, E>) -> AsyncResult<U, E> {
-    async.fmap(transform)
+// Operators — every forward operator needs its flipped counterpart added in the same change
+func >>- <T, U, E>(_ async: AsyncResult<T, E>, _ f: @escaping @Sendable (T) -> AsyncResult<U, E>) -> AsyncResult<U, E> {
+    async.flatMap(f)
 }
 
-// Monad operators
-func >>- <T, U, E>(_ async: AsyncResult<T, E>, _ transform: @escaping (T) -> AsyncResult<U, E>) -> AsyncResult<U, E> {
-    async.flatMap(transform)
+func -<< <T, U, E>(_ f: @escaping @Sendable (T) -> AsyncResult<U, E>, _ async: AsyncResult<T, E>) -> AsyncResult<U, E> {
+    async >>- f
 }
 
-// Kleisli composition
 func >=> <T, U, V, E>(
-    _ f: @escaping (T) -> AsyncResult<U, E>,
-    _ g: @escaping (U) -> AsyncResult<V, E>
-) -> (T) -> AsyncResult<V, E> {
-    { t in f(t) >>- g }
+    _ f: @escaping @Sendable (T) -> AsyncResult<U, E>,
+    _ g: @escaping @Sendable (U) -> AsyncResult<V, E>
+) -> @Sendable (T) -> AsyncResult<V, E> {
+    AsyncResult.kleisli(f, g)
+}
+
+func <=< <T, U, V, E>(
+    _ g: @escaping @Sendable (U) -> AsyncResult<V, E>,
+    _ f: @escaping @Sendable (T) -> AsyncResult<U, E>
+) -> @Sendable (T) -> AsyncResult<V, E> {
+    f >=> g
 }
 ```
 
@@ -137,87 +166,54 @@ struct Validated<T> {
     let value: T?
     let errors: [String]
 
-    // Functor
-    func fmap<U>(_ transform: (T) -> U) -> Validated<U> {
+    func map<U>(_ transform: (T) -> U) -> Validated<U> {
         Validated<U>(
             value: value.map(transform),
             errors: errors
         )
     }
 
-    // Applicative (combines errors from both)
+    // Applicative (combines errors from both — this is what makes it worth having
+    // alongside the library's own `Validation<E, A>`, which does the same thing generically)
     func apply<U>(_ transform: Validated<(T) -> U>) -> Validated<U> {
-        switch (transform.value, self.value) {
-        case (.some(let fn), .some(let val)):
-            return Validated<U>(
-                value: fn(val),
-                errors: transform.errors + self.errors
-            )
-        case _:
-            return Validated<U>(
-                value: nil,
-                errors: transform.errors + self.errors
-            )
+        switch (transform.value, value) {
+        case let (.some(fn), .some(val)):
+            Validated<U>(value: fn(val), errors: transform.errors + errors)
+        default:
+            Validated<U>(value: nil, errors: transform.errors + errors)
         }
-    }
-
-    // Monad (short-circuits on first error)
-    func flatMap<U>(_ transform: (T) -> Validated<U>) -> Validated<U> {
-        guard let val = value, errors.isEmpty else {
-            return Validated<U>(value: nil, errors: errors)
-        }
-        let result = transform(val)
-        return Validated<U>(
-            value: result.value,
-            errors: result.errors
-        )
     }
 }
 
-// Define operators
 func <£> <T, U>(_ transform: @escaping (T) -> U, _ validated: Validated<T>) -> Validated<U> {
-    validated.fmap(transform)
+    validated.map(transform)
 }
 
 func <*> <T, U>(_ transform: Validated<(T) -> U>, _ validated: Validated<T>) -> Validated<U> {
     validated.apply(transform)
 }
 
-func >>- <T, U>(_ validated: Validated<T>, _ transform: @escaping (T) -> Validated<U>) -> Validated<U> {
-    validated.flatMap(transform)
-}
-
 // Usage
-let nameValidation = validateName(input) // Validated<String>
-let ageValidation = validateAge(input)   // Validated<Int>
+let nameValidation = validateName(input)  // Validated<String>
+let ageValidation = validateAge(input)    // Validated<Int>
 
-let userValidation = liftA2 { (name: String, age: Int) in
-    User(name: name, age: age)
-} <£> nameValidation <*> ageValidation
-
-// Or with bind:
-let result = validateName(input) >>- { name in
-    validateAge(input) >>- { age in
-        .pure(User(name: name, age: age))
-    }
-}
+let makeUser: (String) -> (Int) -> User = { name in { age in User(name: name, age: age) } }
+let userValidation = makeUser <£> nameValidation <*> ageValidation
 ```
 
-### Integration with Library Types
+Before building a bespoke accumulating type like `Validated` above, check whether the library's own `Validation<E, A>` (with `E: Semigroup`) already covers the need — it has the same shape, a lawful Applicative instance, and full operator/transformer coverage already.
 
-Your custom type can compose with library types:
+### Integration with Library Types
 
 ```swift
 // Compose with Optional
 let maybeAsync: AsyncResult<Int?, Error> = ...
-let doubled = { $0 * 2 } <£> maybeAsync // Still AsyncResult<Int?, Error>
+let doubled = { $0.map { $0 * 2 } } <£> maybeAsync  // Still AsyncResult<Int?, Error>
 
-// Then use ReaderT if needed
+// Wrap with Reader if the computation also needs dependencies
 let withConfig: Reader<Config, AsyncResult<Int, Error>> = Reader { config in
     fetchData(config)
 }
-
-// Can use ReaderT operators if you implement them for AsyncResult
 ```
 
 ### Type Class Laws
@@ -226,20 +222,17 @@ Make sure your implementations satisfy the laws:
 
 **Functor Laws**:
 ```swift
-// Identity: fmap id = id
-customType.fmap { $0 } == customType
+// Identity: map id = id
+customType.map { $0 } == customType
 
-// Composition: fmap (g . f) = fmap g . fmap f
-customType.fmap { g(f($0)) } == customType.fmap(f).fmap(g)
+// Composition: map (g . f) = map g . map f
+customType.map { g(f($0)) } == customType.map(f).map(g)
 ```
 
 **Applicative Laws**:
 ```swift
 // Identity: pure id <*> v = v
-pure({ $0 }) <*> customValue == customValue
-
-// Composition: pure (.) <*> u <*> v <*> w = u <*> (v <*> w)
-// (Complex, but ensures associativity of effects)
+CustomType.pure({ $0 }) <*> customValue == customValue
 ```
 
 **Monad Laws**:
@@ -256,22 +249,23 @@ customValue >>- CustomType.pure == customValue
 
 ### Testing Your Implementation
 
-```swift
-import XCTest
+Use Swift Testing (`@Suite`/`@Test`/`#expect`), not XCTest — this matches the library's own test suite:
 
-class CustomTypeTests: XCTestCase {
-    func testFunctorIdentity() {
+```swift
+import Testing
+
+@Suite("CustomType — Functor/Monad laws")
+struct CustomTypeTests {
+    @Test func functorIdentity() {
         let value = CustomType(wrapped: 42)
-        XCTAssertEqual(value.fmap { $0 }, value)
+        #expect(value.map { $0 } == value)
     }
 
-    func testMonadLeftIdentity() {
+    @Test func monadLeftIdentity() {
         let a = 42
         let f: (Int) -> CustomType<Int> = { CustomType(wrapped: $0 * 2) }
-        XCTAssertEqual(CustomType.pure(a) >>- f, f(a))
+        #expect(CustomType.pure(a) >>- f == f(a))
     }
-
-    // ... more tests
 }
 ```
 
@@ -279,10 +273,10 @@ class CustomTypeTests: XCTestCase {
 
 **Async computations**:
 ```swift
-struct Future<T> {
-    let run: (@escaping (T) -> Void) -> Void
+struct Future<T: Sendable>: Sendable {
+    let run: @Sendable (@escaping @Sendable (T) -> Void) -> Void
 
-    func fmap<U>(_ transform: @escaping (T) -> U) -> Future<U> {
+    func map<U>(_ transform: @escaping @Sendable (T) -> U) -> Future<U> {
         Future<U> { callback in
             self.run { value in
                 callback(transform(value))
@@ -290,7 +284,7 @@ struct Future<T> {
         }
     }
 
-    func flatMap<U>(_ transform: @escaping (T) -> Future<U>) -> Future<U> {
+    func flatMap<U>(_ transform: @escaping @Sendable (T) -> Future<U>) -> Future<U> {
         Future<U> { callback in
             self.run { value in
                 transform(value).run(callback)
@@ -300,26 +294,7 @@ struct Future<T> {
 }
 ```
 
-**State management**:
-```swift
-struct State<S, A> {
-    let run: (S) -> (A, S)
-
-    func fmap<B>(_ transform: @escaping (A) -> B) -> State<S, B> {
-        State<S, B> { state in
-            let (value, newState) = self.run(state)
-            return (transform(value), newState)
-        }
-    }
-
-    func flatMap<B>(_ transform: @escaping (A) -> State<S, B>) -> State<S, B> {
-        State<S, B> { state in
-            let (value, newState) = self.run(state)
-            return transform(value).run(newState)
-        }
-    }
-}
-```
+Note: the library's own convention for lazy async work is `DeferredTask<A>`/`DeferredStream<A>` (eager `Task`/`AsyncStream` are avoided by design) — check whether that already covers what a custom `Future` type would do before building one.
 
 ### When NOT to Implement This
 
@@ -331,9 +306,8 @@ Don't force type class implementations on:
 ### Ask the developer:
 1. What is your custom type? (Show the definition)
 2. What does it wrap or represent?
-3. What should `map`/`fmap` do for your type?
-4. What should `flatMap` do for your type?
-5. How should errors/effects combine?
-6. Do you need to compose with Reader monad?
+3. What should `map`/`flatMap` do for your type?
+4. How should errors/effects combine?
+5. Do you need to compose with Reader monad?
 
 Provide complete, working implementations with clear operator definitions and usage examples.
