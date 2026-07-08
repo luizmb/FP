@@ -185,3 +185,24 @@ In-place, same-identity edits stay on the type via `subscript(id:)`, `ix(id:)`, 
 
 - [`NonEmpty`](NonEmpty.md) — the other constrained collection (Semigroup, no Monoid)
 - Safe Collection Access (`[safe:]`, `[id:]`, `ix`) in the [README](../../README.md#safe-collection-access-safe-id-and-ix)
+
+---
+
+## For Haskell developers
+
+`IdentifiedArray` doesn't map to a single Haskell type — it's a Swift-ecosystem-specific data structure solving a Swift-ecosystem-specific problem (SwiftUI's `ForEach`/diffing needs stable per-element identity *and* a user-controlled order, together, in one value). Its real-world inspiration is a Swift library, not a Haskell one: Point-Free's `swift-identified-collections`, which this type's API (`IdentifiedArrayOf<E>`, `subscript(id:)`, last-wins on duplicate insert) closely mirrors.
+
+The closest Haskell-side concept is a combination, not a single type: `Data.Map`/`Data.IntMap` (from `containers`) for O(log n) — not O(1), Haskell has no open-addressing hash map in `containers` — keyed lookup, paired with a separate insertion-order-tracking structure, since plain `Map`/`IntMap` are ordered by key, not by insertion. Nothing in `containers` or common Haskell collection packages combines both properties in one type the way `IdentifiedArray` does.
+
+| This library | Closest Haskell-ecosystem parallel |
+|---|---|
+| `IdentifiedArray<ID, Element>` | no single type; conceptually `Map k v` (`containers`) + a separate insertion-order list |
+| `subscript(id:)` lookup/update | `Data.Map.lookup` / `Data.Map.insert` (keyed access, different complexity/ordering) |
+| `.elements` (ordered `[Element]`) | `Data.Map.elems`, but note `elems` is key-ordered, not insertion-ordered |
+| `<>` (Semigroup, last-wins) | `Data.Map.union`, though `union` is **left**-biased where this type is **right/last**-biased — `Data.Map.unionWith (flip const)` is the closer match |
+| `ix(id:)` / `traversed` (optics) | no `containers` equivalent; closest is manual `Data.Map.adjust` / `at` from `lens` |
+| deliberately no `Functor`/`Monad`/`Monoid` | same reasoning `Data.Map` isn't a lawful `Functor` in its keys, only in `Functor (Map k)`'s values |
+
+**References:**
+- [`swift-identified-collections`](https://github.com/pointfreeco/swift-identified-collections) (Point-Free) — the direct real-world inspiration for this type's shape and API
+- [`Data.Map`](https://hackage.haskell.org/package/containers/docs/Data-Map.html) / [`Data.IntMap`](https://hackage.haskell.org/package/containers/docs/Data-IntMap.html) (`containers`) — the closest built-in Haskell parallel, modulo ordering and complexity differences noted above

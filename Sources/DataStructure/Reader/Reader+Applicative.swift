@@ -46,7 +46,14 @@ public extension Reader {
         }
     }
 
-    /// The `property` property.
+    /// Combines two or more `Reader`s into a single `Reader` producing a tuple of all their outputs,
+    /// running each against the same shared environment.
+    /// zip :: Reader e b1 -> Reader e b2 -> ... -> Reader e (b1, b2, ...)
+    /// - Parameters:
+    ///   - first: The first `Reader` to combine.
+    ///   - second: The second `Reader` to combine.
+    ///   - additional: Any further `Reader`s to combine, via variadic generics.
+    /// - Returns: A `Reader` that runs every argument against the same environment and tuples the results.
     static func zip<B1, B2, each Bx>(
         _ first: Reader<Environment, B1>,
         _ second: Reader<Environment, B2>,

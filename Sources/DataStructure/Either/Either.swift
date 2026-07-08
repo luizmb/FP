@@ -73,7 +73,12 @@ public enum Either<A, B>: SumType2 {
 }
 
 public extension Either {
-    /// Declaration.
+    /// Eliminates an `Either` by supplying a handler for each case, unifying both branches into a single result type.
+    /// either :: (a -> c) -> (b -> c) -> Either a b -> c
+    /// - Parameters:
+    ///   - caseLeft: Handler invoked with the wrapped value when `self` is `.left`.
+    ///   - caseRight: Handler invoked with the wrapped value when `self` is `.right`.
+    /// - Returns: The result of applying whichever handler corresponds to the current case.
     func match<C>(caseLeft: (A) -> C, caseRight: (B) -> C) -> C {
         switch self {
         case let .left(left):

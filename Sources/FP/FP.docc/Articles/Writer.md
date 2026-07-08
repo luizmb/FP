@@ -280,3 +280,26 @@ ws.map { $0.fmap { $0 * 10 } }  // [Writer(10, ["a"]), Writer(20, ["b"])]
 import DataStructure          // Writer type + named functions
 import DataStructureOperators // Operators (<£>, <*>, >>-, ->>, <<<…)
 ```
+
+---
+
+## For Haskell developers
+
+| This library | Haskell equivalent |
+|---|---|
+| `Writer<W: Monoid, A>` | `mtl`'s `Writer w a` (`Control.Monad.Writer`) |
+| `<£>` / `<&>` (`fmap`) | `fmap` / `<$>` |
+| `<*>` | `Applicative`'s `<*>` (logs combined via `Monoid`) |
+| `>>-` / `-<<` (`flatMap`) | `>>=` / `=<<` |
+| `>=>` | `Control.Monad`'s `>=>` |
+| `pure` | `Applicative`'s `pure` / `return` (empty log) |
+| `tell` | `MonadWriter`'s `tell` — exact naming parallel |
+| `listen` | `MonadWriter`'s `listen` — exact naming parallel |
+| `censor` | `MonadWriter`'s `censor` — exact naming parallel |
+| `WriterT{Inner}` / `{Outer}TWriter` stacks | `mtl`'s `WriterT w m a` |
+
+`Writer`'s `Comonad` instance (`extract`/`extend`/`duplicate`) corresponds to the `comonad` package's instance for `(,) w` — and unlike `Reader`, it needs **no extra constraint** beyond what this library already requires: `Writer`'s `W: Monoid` bound exists for `pure`/`flatMap`, not specifically for comonadic operations, so the `Comonad` instance here comes for free. This mirrors Haskell, where `(,) w`'s `Comonad` instance is unconditional (no `Semigroup`/`Monoid` needed at all) — a rare case where this library's constraint is actually *stricter* than Haskell's, simply because `W: Monoid` is already baked into the type.
+
+External references:
+- [`Control.Monad.Writer`](https://hackage.haskell.org/package/mtl/docs/Control-Monad-Writer.html) — the `mtl` module this type mirrors
+- Wadler, ["Monads for functional programming"](https://homepages.inf.ed.ac.uk/wadler/papers/marktoberdorf/baastad.pdf) — the classic paper that uses the Writer monad (as a logging/accumulation example) to motivate monadic programming

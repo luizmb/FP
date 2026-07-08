@@ -1,0 +1,24 @@
+@Tutorials(name: "Modeling Failures") {
+    @Intro(title: "Modeling Failures Without Exceptions") {
+        Swift's `throws` collapses every failure into a single channel — one
+        `Error` thrown up the call stack, with no way to express "this can fail
+        in two distinct ways" or "collect every problem instead of stopping at
+        the first." This library instead models failure explicitly as data,
+        and offers four types to pick from depending on what you need to say:
+        `Optional` when you only need to know *whether* a value exists,
+        `Result` when you need to say *why* it failed, `Either` when the
+        failure type shouldn't be forced to conform to `Error`, and
+        `Validation` when you need to report *every* failure at once instead
+        of just the first one encountered.
+    }
+
+    @Chapter(name: "From Optional to Validation") {
+        @Image(source: "modeling-failures-chapter.svg", alt: "Optional leads to Result, which leads to Either, which leads to Validation")
+
+        Follow one small, concrete example — validating a username — as its
+        requirements grow step by step, and watch which type this library
+        reaches for at each stage.
+
+        @TutorialReference(tutorial: "doc:ModelingFailures")
+    }
+}

@@ -42,7 +42,14 @@ public extension Either {
         let left: L
     }
 
-    /// The `property` property.
+    /// Combines two or more `Either` values into a single `Either` wrapping a tuple of all the right values,
+    /// short-circuiting on the first `.left` encountered (in argument order).
+    /// zip :: Either a b1 -> Either a b2 -> ... -> Either a (b1, b2, ...)
+    /// - Parameters:
+    ///   - first: The first `Either` to combine.
+    ///   - second: The second `Either` to combine.
+    ///   - additional: Any further `Either` values to combine, via variadic generics.
+    /// - Returns: `.right` with a tuple of all wrapped values if every argument is `.right`, otherwise the first `.left`.
     static func zip<B1, B2, each Bx>(
         _ first: Either<A, B1>,
         _ second: Either<A, B2>,

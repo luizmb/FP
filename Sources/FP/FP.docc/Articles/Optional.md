@@ -335,3 +335,27 @@ import Operators  // Operators (<£>, <*>, >>-, >=>…)
 import Either
 import EitherOperators
 ```
+
+---
+
+## For Haskell developers
+
+| This library | Haskell equivalent |
+|---|---|
+| `Optional<A>` | `Maybe a` |
+| `.none` / `.some` | `Nothing` / `Just` |
+| `<£>` / `<&>` (`fmap`) | `fmap` / `<$>` |
+| `<*>` | `Applicative`'s `<*>` |
+| `>>-` / `-<<` (`flatMap`) | `>>=` / `=<<` |
+| `>=>` | `Control.Monad`'s `>=>` |
+| `<|>` | `Alternative`'s `<|>` for `Maybe` |
+| `fold(onNone:onSome:)` | `Data.Maybe`'s `maybe` |
+| `withDefault` | `Data.Maybe`'s `fromMaybe` |
+| `toList` | `Data.Maybe`'s `maybeToList` |
+| `filter` | `Control.Monad`'s `mfilter` |
+| `foldMap` | `Data.Foldable`'s `foldMap` |
+| `sequence` / `traverse` | `Data.Traversable`'s `sequence` / `traverse` |
+
+External references:
+- [`Data.Maybe`](https://hackage.haskell.org/package/base/docs/Data-Maybe.html) — Haskell's base module for `Maybe`
+- [`Control.Applicative`](https://hackage.haskell.org/package/base/docs/Control-Applicative.html) — defines `Alternative` and its `<|>` operator

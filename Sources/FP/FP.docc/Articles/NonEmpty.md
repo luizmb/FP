@@ -276,3 +276,35 @@ import DataStructure             // named functions only
 import DataStructureOperators    // adds <£>, <&>, >>-, <=<, <>, <£^>, <&^>, …
 import FP                        // re-exports both + CoreFP + CoreFPOperators
 ```
+
+---
+
+## For Haskell developers
+
+`NonEmpty<A>` is one of the closest 1:1 mappings in this library — it is the same idea as `Data.List.NonEmpty`'s `NonEmpty a` in `base`, right down to the head/tail split.
+
+| This library | Haskell (`Data.List.NonEmpty`, `base`) |
+|---|---|
+| `NonEmpty<A>` | `NonEmpty a` |
+| `NonEmpty(head:tail:)` | `:\|` constructor (`a :\| [a]`) |
+| `.head` | `head` (record field, via `NonEmpty.Internal`) |
+| `.tail` | `tail` |
+| `nonEmpty(_:)` (`[A] -> NonEmpty<A>?`) | `nonEmpty :: [a] -> Maybe (NonEmpty a)` |
+| `.toArray` / `.toList` | `toList` |
+| `<>` / `.combine` (Semigroup, no Monoid) | `<>` (`Semigroup`, also no `Monoid` instance — same reasoning: no empty identity) |
+| `sconcat` | `sconcat` |
+| `<£>` / `.map` (Functor) | `fmap` / `<$>` |
+| `<*>` / `.apply` / `.liftA2` (Applicative, cartesian) | `<*>` / `liftA2` |
+| `>>-` / `.flatMap` (Monad) | `>>=` |
+| `>=>` | `>=>` |
+| `.foldLeft` / `.foldRight` / `.foldMap` | `foldl'` / `foldr` / `foldMap` (via `Foldable1`) |
+| `.traverse` / `.sequence` | `traverse` / `sequence` (via `Traversable`) |
+| `extract(_:)` | `extract` (`Comonad`) |
+| `.extend` / `.coflatMap` | `extend` / `=>>` (`Comonad`) |
+| `duplicate(_:)` | `duplicate` (`Comonad`) |
+
+The one gap: `base` does not ship a `Comonad` instance for `NonEmpty` — that lives in the ecosystem, not the standard library. The `comonad` package (via `semigroupoids`'s `Foldable1`/`Traversable1` machinery) is what supplies `extract`/`duplicate`/`extend` for `NonEmpty` in idiomatic Haskell code, which is the closest real analog to the `extract`/`.extend`/`duplicate` trio this library ships.
+
+**References:**
+- [`Data.List.NonEmpty`](https://hackage.haskell.org/package/base/docs/Data-List-NonEmpty.html) (`base`)
+- [`comonad`](https://hackage.haskell.org/package/comonad) — supplies the `Comonad NonEmpty` instance `base` omits

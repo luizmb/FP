@@ -75,7 +75,12 @@ public enum Validation<E: Semigroup, A> {
 }
 
 public extension Validation {
-    /// Declaration.
+    /// Eliminates a `Validation` by supplying a handler for each case, unifying both branches into a single result type.
+    /// either :: (e -> c) -> (a -> c) -> Validation e a -> c
+    /// - Parameters:
+    ///   - caseFailure: Handler invoked with the accumulated errors when `self` is `.failure`.
+    ///   - caseSuccess: Handler invoked with the wrapped value when `self` is `.success`.
+    /// - Returns: The result of applying whichever handler corresponds to the current case.
     func match<C>(caseFailure: (E) -> C, caseSuccess: (A) -> C) -> C {
         switch self {
         case let .failure(e):

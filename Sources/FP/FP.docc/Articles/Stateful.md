@@ -231,3 +231,34 @@ combined.exec(0)  // 3
 import DataStructure          // Stateful type + named functions
 import DataStructureOperators // Operators (<£>, <*>, >>-, >=>…)
 ```
+
+---
+
+## For Haskell developers
+
+`Stateful<S, A>` is the same state-threading monad as `Control.Monad.State`'s `State s a` — a wrapper for `s -> (a, s)`, just with the return order flipped to `(inout S) -> A` to match Swift's mutation idiom. Where a Haskell codebase reaches for `StateT s m a` to combine state with another effect, this library instead exposes the transformer stacks below as named types (`StatefulTOptional`, `StatefulTEither`, …) rather than a general `StateT` — Swift's lack of higher-kinded types rules out a fully generic transformer, so each combination is written out concretely.
+
+| This library | Haskell (`Control.Monad.State` / `mtl`) |
+|---|---|
+| `Stateful<S, A>` | `State s a` (or `StateT s m a`) |
+| `.eval(_:)` | `evalState` |
+| `.exec(_:)` | `execState` |
+| `.runStateful(_:)` | `runState` |
+| `Stateful.get` | `get` |
+| `Stateful.gets` | `gets` |
+| `Stateful.put` | `put` |
+| `Stateful.modify` / `.modifyInPlace` | `modify` / `modify'` |
+| `<£>` / `<&>` (`.fmap`) | `fmap` / `<$>` |
+| `<*>` (`.apply`, `.zip`, `.liftA2`) | `<*>` / `liftA2` |
+| `*>` / `<*` | `*>` / `<*` |
+| `>>-` / `-<<` (`.flatMap`) | `>>=` / `=<<` |
+| `>=>` (`.kleisli`) | `>=>` |
+| `Lens.zoom(_:)` / `Prism.zoom(_:)` / `AffineTraversal.zoom(_:)` | the `lens` package's `zoom` for composing an optic with `State` |
+
+The naming parallel between `get`/`put`/`modify`/`gets` here and the `MonadState` methods in `mtl` is exact and intentional — code written against one reads almost line-for-line against the other.
+
+One structural difference worth flagging: `Stateful` is **not** a Profunctor here — the state type `S` appears in both the input and output position of the wrapped function (`inout S`), so it's invariant rather than contravariant/covariant in the way `Reader`'s environment is. Haskell's `State` is in the same boat (it isn't a `Profunctor` either, for the same reason); only the *pair* `(->) s` used contravariantly and the result type used covariantly separately would justify calling it profunctor-like, but the "threaded" shape of `State`/`Stateful` doesn't decompose that way.
+
+**References:**
+- [`Control.Monad.State`](https://hackage.haskell.org/package/mtl/docs/Control-Monad-State.html) (`mtl`)
+- [`Control.Lens.zoom`](https://hackage.haskell.org/package/lens/docs/Control-Lens-Zoom.html) (`lens`)

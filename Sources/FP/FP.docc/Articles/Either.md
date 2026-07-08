@@ -251,3 +251,24 @@ es.flatMapT { n in [.right(n), .right(n * 10)] }
 import Either          // Either type + named functions + transformer implementations
 import EitherOperators // Operators (<£>, <*>, >>-, >=>…) for Either and all EitherT stacks
 ```
+
+---
+
+## For Haskell developers
+
+| This library | Haskell equivalent |
+|---|---|
+| `Either<Left, Right>` | `Data.Either`'s `Either a b` |
+| `.left` / `.right` | `Left` / `Right` |
+| `<£>` / `<&>` (`fmap`) | `fmap` / `<$>` — note: Haskell's `Functor` instance for `Either a` maps over `Right` only, exactly matching this library's `mapRight` |
+| `bimap` | `Data.Bifunctor`'s `bimap` |
+| `mapLeft` | `Data.Bifunctor`'s `first` |
+| `<*>` | `Applicative`'s `<*>` (short-circuits on the first `Left`) |
+| `>>-` / `-<<` (`flatMap`) | `>>=` / `=<<` |
+| `>=>` | `Control.Monad`'s `>=>` (and `<=<` for the flipped direction) |
+| `<|>` | not in `base` — `Either`'s `Applicative`/`Monad` has no canonical identity element, so `base` doesn't define `Alternative` for it; some ecosystems (e.g. `semigroupoids`' `Alt`) add an equivalent choice operator without requiring one |
+| `EitherTOptional`, `EitherTArray`, `EitherTResult`, `OptionalTEither`, `ArrayTEither` | `transformers`' `ExceptT e m a` — the modern replacement for the older, now-deprecated `EitherT` from the `either` package |
+
+External references:
+- [`Data.Either`](https://hackage.haskell.org/package/base/docs/Data-Either.html) — Haskell's base module for `Either`
+- [`Control.Monad.Trans.Except`](https://hackage.haskell.org/package/transformers/docs/Control-Monad-Trans-Except.html) — `ExceptT`, the transformer this library's `EitherT*`/`*TEither` stacks correspond to

@@ -13,7 +13,8 @@ public extension Stateful {
         }
     }
 
-    /// Declaration.
+    /// seqRight :: Stateful<s, a> -> Stateful<s, b> -> Stateful<s, b>
+    /// Runs both left-to-right, threading state through both, and keeps only the right-hand value.
     func seqRight<B>(_ other: Stateful<S, B>) -> Stateful<S, B> {
         Stateful<S, B> { s in
             _ = self.run(&s)
@@ -21,7 +22,8 @@ public extension Stateful {
         }
     }
 
-    /// Declaration.
+    /// seqLeft :: Stateful<s, a> -> Stateful<s, b> -> Stateful<s, a>
+    /// Runs both left-to-right, threading state through both, and keeps only the left-hand value.
     func seqLeft<B>(_ other: Stateful<S, B>) -> Stateful<S, A> {
         Stateful<S, A> { s in
             let a = self.run(&s)
@@ -30,7 +32,8 @@ public extension Stateful {
         }
     }
 
-    /// The `property` property.
+    /// Combines two `Stateful` computations with a binary function, threading the state left-to-right through both.
+    /// liftA2 :: (a -> b -> c) -> Stateful s a -> Stateful s b -> Stateful s c
     static func liftA2<B, C>(
         _ fn: @escaping @Sendable (A, B) -> C
     ) -> @Sendable (Stateful<S, A>, Stateful<S, B>) -> Stateful<S, C> {

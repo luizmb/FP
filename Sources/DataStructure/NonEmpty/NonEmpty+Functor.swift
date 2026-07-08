@@ -8,7 +8,8 @@ public extension NonEmpty {
         NonEmpty<B>(head: fn(head), tail: tail.map(fn))
     }
 
-    /// The `property` property.
+    /// Curried, point-free form of ``map(_:)``.
+    /// fmap :: (a -> b) -> NonEmpty a -> NonEmpty b
     static func fmap<B>(
         _ fn: @escaping @Sendable (A) -> B
     ) -> @Sendable (NonEmpty<A>) -> NonEmpty<B> {
@@ -18,7 +19,8 @@ public extension NonEmpty {
 
 // MARK: - Free functions
 
-/// `fmap` for `Free functions`.
+/// Transforms every element of a `NonEmpty` — free-function form of ``NonEmpty/map(_:)``.
+/// fmap :: (a -> b) -> NonEmpty a -> NonEmpty b
 public func fmap<A, B>(
     _ fn: @escaping @Sendable (A) -> B,
     _ ne: NonEmpty<A>

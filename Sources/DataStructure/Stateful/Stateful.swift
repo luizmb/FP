@@ -65,6 +65,8 @@ public struct Stateful<S, A>: Sendable {
     /// The underlying state-transforming function.
     public let run: @Sendable (inout S) -> A
 
+    /// Wraps a state-transforming function `(inout S) -> A` as a `Stateful` computation.
+    /// - Parameter fn: A function that mutates the state in place and produces a value.
     public init(_ fn: @escaping @Sendable (inout S) -> A) {
         run = fn
     }

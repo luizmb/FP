@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="600" viewBox="0 0 1200 600">
+  <rect width="1200" height="600" fill="#1d1d1f"/>
+  <g font-family="Menlo, Consolas, monospace" font-size="40" font-weight="600">
+    <text x="90" y="320" fill="#f5f5f7">Optional</text>
+    <text x="360" y="320" fill="#8e8e93">→</text>
+    <text x="430" y="320" fill="#f5f5f7">Result</text>
+    <text x="650" y="320" fill="#8e8e93">→</text>
+    <text x="720" y="320" fill="#f5f5f7">Either</text>
+    <text x="920" y="320" fill="#8e8e93">→</text>
+    <text x="990" y="320" fill="#f5f5f7">Validation</text>
+  </g>
+  <g font-family="Menlo, Consolas, monospace" font-size="22" fill="#8e8e93">
+    <text x="90" y="380">is it there?</text>
+    <text x="430" y="380">what went wrong?</text>
+    <text x="720" y="380">a symmetric choice</text>
+    <text x="990" y="380">every failure at once</text>
+  </g>
+</svg>
