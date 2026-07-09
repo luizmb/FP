@@ -163,7 +163,7 @@ While XCFrameworks are provided, **the recommended way to use FP is still via Sw
 
 ```swift
 // In Package.swift
-.package(url: "https://github.com/luizmb/FP.git", from: "2.0.0")
+.package(url: "https://github.com/luizmb/FP.git", from: "2.0.1")
 ```
 
 This provides:
