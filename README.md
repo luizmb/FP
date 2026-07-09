@@ -2727,15 +2727,19 @@ swift test --filter "CoreFP"
 
 ## Platform Support
 
-| Platform | Minimum Version |
-|----------|----------------|
-| macOS    | 10.15+         |
-| iOS      | 13.0+          |
-| tvOS     | 13.0+          |
-| watchOS  | 6.0+           |
+| Platform | Minimum Version      |
+|----------|----------------------|
+| macOS    | 10.15+               |
+| iOS      | 13.0+                |
+| tvOS     | 13.0+                |
+| watchOS  | 6.0+                 |
+| visionOS | 1.0+                 |
+| Linux    | Swift 6.3+ toolchain |
+| Windows  | Swift 6.3+ toolchain |
+| Android  | Swift 6.3+ toolchain |
 
-Combine-based features (`Publisher` extensions) require macOS 13.0+ / iOS 16.0+. All non-Combine modules are supported on Linux.
+Combine-based features (`Publisher` extensions) and SwiftUI `Binding` bridging are Apple-only and require macOS 13.0+ / iOS 16.0+. All other modules are supported on Linux, Windows, and Android — each built and tested in CI.
 
 ## License
 
-MIT
+Apache-2.0

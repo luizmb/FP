@@ -2,13 +2,24 @@
 import CompilerPluginSupport
 import PackageDescription
 
+// swift-docc-plugin only generates documentation (run on macOS in CI via the Documentation
+// workflow). Its command plugin is built by `swift build` on Windows and fails there, so exclude
+// the dependency on Windows hosts — it is not needed to build or test the package.
+var dependencies: [Package.Dependency] = [
+    .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "603.0.1"),
+]
+#if !os(Windows)
+    dependencies.append(.package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.4.0"))
+#endif
+
 let package = Package(
     name: "FP",
     platforms: [
         .macOS(.v10_15),
         .iOS(.v13),
         .tvOS(.v13),
-        .watchOS(.v6)
+        .watchOS(.v6),
+        .visionOS(.v1)
     ],
     products: [
         .library(name: "FP", targets: ["FP"]),
@@ -18,10 +29,7 @@ let package = Package(
         .library(name: "DataStructureOperators", targets: ["DataStructureOperators"]),
         .library(name: "FPMacros", targets: ["FPMacros"])
     ],
-    dependencies: [
-        .package(url: "https://github.com/swiftlang/swift-syntax.git", from: "603.0.1"),
-        .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.4.0")
-    ],
+    dependencies: dependencies,
     targets: [
         .target(name: "CoreFP"),
         .target(name: "CoreFPOperators", dependencies: ["CoreFP"]),
