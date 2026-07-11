@@ -119,38 +119,42 @@ public struct PrismsMacro: MemberMacro {
             context.diagnose(Diagnostic(node: node, message: PrismsDiagnostic.notAnEnum))
             return []
         }
-
-        let access = accessKeyword(from: enumDecl.modifiers)
-
-        // Reject `private` hosts. `private` is the only declared access where Swift's
-        // type-reference rules block both the struct namespace and the dynamic-member
-        // subscript. `fileprivate` is functionally equivalent at file scope and works
-        // everywhere we need.
-        guard access != "private" else {
-            context.diagnose(Diagnostic(node: node, message: PrismsDiagnostic.privateHostUnsupported))
-            return []
-        }
-
-        let enumName = enumDecl.name.trimmed.text
-        let isGeneric = enumDecl.genericParameterClause != nil
-        let cases = collectCases(from: enumDecl)
-        let flags = parseOptions(from: node)
-
-        var members: [DeclSyntax] = []
-
-        if flags.emitsPrismStruct {
-            members.append(makePrismsStruct(enumName: enumName, access: access, cases: cases))
-            members.append(makeStaticPrism(enumName: enumName, access: access, isGeneric: isGeneric))
-            members.append(contentsOf: makeCaseProperties(access: access, cases: cases))
-        }
-
-        if flags.cases {
-            members.append(makeCasesEnum(enumName: enumName, access: access, cases: cases))
-            members.append(makeIsFunc(access: access, hasCases: !cases.isEmpty))
-        }
-
-        return members
+        return generatePrismMembers(enumDecl: enumDecl, flags: parseOptions(from: node), node: node, context: context)
     }
+}
+
+/// The member-generation core of `@Prisms`, factored out so `@ApplyOptics` can drive it. Assumes the
+/// caller already dispatched on enum-ness; still guards `private`.
+func generatePrismMembers(
+    enumDecl: EnumDeclSyntax,
+    flags: PrismsEmitFlags,
+    node: AttributeSyntax,
+    context: some MacroExpansionContext
+) -> [DeclSyntax] {
+    let access = accessKeyword(from: enumDecl.modifiers)
+    guard access != "private" else {
+        context.diagnose(Diagnostic(node: node, message: PrismsDiagnostic.privateHostUnsupported))
+        return []
+    }
+
+    let enumName = enumDecl.name.trimmed.text
+    let isGeneric = enumDecl.genericParameterClause != nil
+    let cases = collectCases(from: enumDecl)
+
+    var members: [DeclSyntax] = []
+
+    if flags.emitsPrismStruct {
+        members.append(makePrismsStruct(enumName: enumName, access: access, cases: cases))
+        members.append(makeStaticPrism(enumName: enumName, access: access, isGeneric: isGeneric))
+        members.append(contentsOf: makeCaseProperties(access: access, cases: cases))
+    }
+
+    if flags.cases {
+        members.append(makeCasesEnum(enumName: enumName, access: access, cases: cases))
+        members.append(makeIsFunc(access: access, hasCases: !cases.isEmpty))
+    }
+
+    return members
 }
 
 // MARK: - Prismatic conformance
@@ -166,19 +170,34 @@ extension PrismsMacro: ExtensionMacro {
         // Only enums, only when the prism namespace is emitted (`static var prism` is the
         // conformance witness), and only when the compiler actually asked for the conformance
         // (`protocols` is empty when the type already conforms).
-        guard let enumDecl = declaration.as(EnumDeclSyntax.self),
-              accessKeyword(from: enumDecl.modifiers) != "private",
-              parseOptions(from: node).emitsPrismStruct,
-              !protocols.isEmpty
-        else { return [] }
-
-        return [try ExtensionDeclSyntax("extension \(type.trimmed): Prismatic {}")]
+        guard let enumDecl = declaration.as(EnumDeclSyntax.self) else { return [] }
+        return try prismaticExtensionDecls(
+            enumDecl: enumDecl,
+            type: type,
+            flags: parseOptions(from: node),
+            protocols: protocols
+        )
     }
+}
+
+/// The `Prismatic`-conformance extension of `@Prisms`, factored out for `@ApplyOptics`. Emits only when
+/// the prism namespace is present and the compiler asked for the conformance (`protocols` non-empty).
+func prismaticExtensionDecls(
+    enumDecl: EnumDeclSyntax,
+    type: some TypeSyntaxProtocol,
+    flags: PrismsEmitFlags,
+    protocols: [TypeSyntax]
+) throws -> [ExtensionDeclSyntax] {
+    guard accessKeyword(from: enumDecl.modifiers) != "private",
+          flags.emitsPrismStruct,
+          !protocols.isEmpty
+    else { return [] }
+    return [try ExtensionDeclSyntax("extension \(type.trimmed): Prismatic {}")]
 }
 
 // MARK: - Parsing
 
-private func collectCases(from enumDecl: EnumDeclSyntax) -> [CaseInfo] {
+func collectCases(from enumDecl: EnumDeclSyntax) -> [CaseInfo] {
     enumDecl.memberBlock.members.flatMap { member -> [CaseInfo] in
         guard let caseDecl = member.decl.as(EnumCaseDeclSyntax.self) else { return [] }
         return caseDecl.elements.map { element in

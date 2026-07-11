@@ -157,74 +157,89 @@ public struct LensesMacro: MemberMacro {
             context.diagnose(Diagnostic(node: node, message: LensesDiagnostic.notAStruct))
             return []
         }
-
-        let structAccess = declaredAccessLevel(from: structDecl.modifiers)
-
-        // Reject `private` hosts. `private` is the only declared access where Swift's
-        // type-reference rules block the struct namespace from being constructed and read
-        // outside the host's body. `fileprivate` is functionally equivalent at file scope.
-        guard structAccess != .private else {
-            context.diagnose(Diagnostic(node: node, message: LensesDiagnostic.privateHostUnsupported))
-            return []
-        }
-
-        let structName = structDecl.name.trimmed.text
-        let isGeneric = structDecl.genericParameterClause != nil
-        let initAccess = parseInitAccess(from: node)
-        let flags = parseEmit(from: node)
-        let properties = collectProperties(from: structDecl, context: context)
-        let initParams = properties.filter(\.isInitParam)
-        let lensProps = properties
-            .filter(\.hasLens)
-            .filter { prop in
-                // Skip only when property has an *explicit* access modifier that is lower
-                // than the struct's. Unmarked properties (no modifier) mirror the struct
-                // and are kept.
-                guard let explicit = prop.explicitAccess else { return true }
-                return !(explicit < structAccess)
-            }
-        let skippedProps = properties
-            .filter(\.hasLens)
-            .filter { prop in !lensProps.contains(where: { $0.name == prop.name }) }
-
-        for skipped in skippedProps {
-            context.diagnose(Diagnostic(
-                node: node,
-                message: LensesDiagnostic.skippedProperty(
-                    name: skipped.name,
-                    propertyAccess: (skipped.explicitAccess ?? .internal).keyword,
-                    structAccess: structAccess.keyword
-                )
-            ))
-        }
-
-        var members: [DeclSyntax] = []
-
-        if flags.emitInit,
-           !hasConflictingInit(in: structDecl, params: initParams) {
-            members.append(makeInit(access: initAccess, structAccess: structAccess, params: initParams))
-        }
-
-        if flags.emitLenses {
-            members.append(makeLensesStruct(
-                structName: structName,
-                access: structAccess,
-                lensProps: lensProps
-            ))
-            members.append(makeStaticLens(
-                access: structAccess,
-                isGeneric: isGeneric
-            ))
-            members.append(makeWithFunc(
-                structName: structName,
-                access: structAccess,
-                initParams: initParams,
-                withProps: lensProps
-            ))
-        }
-
-        return members
+        return generateLensMembers(
+            structDecl: structDecl,
+            flags: parseEmit(from: node),
+            initAccess: parseInitAccess(from: node),
+            node: node,
+            context: context
+        )
     }
+}
+
+/// The member-generation core of `@Lenses`, factored out so `@ApplyOptics` can drive it with its own
+/// parsed options. Diagnostics anchor to `node`.
+func generateLensMembers(
+    structDecl: StructDeclSyntax,
+    flags: LensesEmitFlags,
+    initAccess: AccessLevel,
+    node: AttributeSyntax,
+    context: some MacroExpansionContext
+) -> [DeclSyntax] {
+    let structAccess = declaredAccessLevel(from: structDecl.modifiers)
+
+    // Reject `private` hosts. `private` is the only declared access where Swift's
+    // type-reference rules block the struct namespace from being constructed and read
+    // outside the host's body. `fileprivate` is functionally equivalent at file scope.
+    guard structAccess != .private else {
+        context.diagnose(Diagnostic(node: node, message: LensesDiagnostic.privateHostUnsupported))
+        return []
+    }
+
+    let structName = structDecl.name.trimmed.text
+    let isGeneric = structDecl.genericParameterClause != nil
+    let properties = collectProperties(from: structDecl, context: context)
+    let initParams = properties.filter(\.isInitParam)
+    let lensProps = properties
+        .filter(\.hasLens)
+        .filter { prop in
+            // Skip only when property has an *explicit* access modifier that is lower
+            // than the struct's. Unmarked properties (no modifier) mirror the struct
+            // and are kept.
+            guard let explicit = prop.explicitAccess else { return true }
+            return !(explicit < structAccess)
+        }
+    let skippedProps = properties
+        .filter(\.hasLens)
+        .filter { prop in !lensProps.contains(where: { $0.name == prop.name }) }
+
+    for skipped in skippedProps {
+        context.diagnose(Diagnostic(
+            node: node,
+            message: LensesDiagnostic.skippedProperty(
+                name: skipped.name,
+                propertyAccess: (skipped.explicitAccess ?? .internal).keyword,
+                structAccess: structAccess.keyword
+            )
+        ))
+    }
+
+    var members: [DeclSyntax] = []
+
+    if flags.emitInit,
+       !hasConflictingInit(in: structDecl, params: initParams) {
+        members.append(makeInit(access: initAccess, structAccess: structAccess, params: initParams))
+    }
+
+    if flags.emitLenses {
+        members.append(makeLensesStruct(
+            structName: structName,
+            access: structAccess,
+            lensProps: lensProps
+        ))
+        members.append(makeStaticLens(
+            access: structAccess,
+            isGeneric: isGeneric
+        ))
+        members.append(makeWithFunc(
+            structName: structName,
+            access: structAccess,
+            initParams: initParams,
+            withProps: lensProps
+        ))
+    }
+
+    return members
 }
 
 // MARK: - Helpers
