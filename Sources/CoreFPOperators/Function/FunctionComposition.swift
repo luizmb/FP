@@ -55,6 +55,45 @@ public func <<< <A, B, C>(
     { a in g(f(a)) }
 }
 
+// MARK: - Variadic (fan-out) Composition
+
+/// Left-to-right composition of a **tuple-producing** function with a **multi-argument** function.
+///
+/// The natural companion to ``fanout(_:)``: `fanout` gives you `Root -> (A, B, C)`, and this overload
+/// feeds that tuple into a function of the matching arity `(A, B, C) -> Out` — recovering the composition
+/// that plain `>>>` can't express because Swift (since SE-0110) treats a tuple argument `((A, B, C)) -> Out`
+/// and a multi-argument arrow `(A, B, C) -> Out` as distinct types. The variadic pack bridges the two,
+/// so `fanout(\.a, \.b, \.c) >>> Thing.init` type-checks even though the tuple is never spelled out.
+///
+/// It coexists with the single-argument ``>>>(_:_:)`` overload without ambiguity: a single-output `f`
+/// resolves to the plain overload, while a pack-output `f` (a `fanout`) resolves here.
+///
+/// ```swift
+/// struct Env: Sendable { init(badge: Int, save: Int) { … } }
+/// let narrow: @Sendable (World) -> Env = fanout(\.badge, \.save) >>> Env.init
+/// ```
+public func >>> <Root, each T, Output>(
+    _ f: @escaping @Sendable (Root) -> (repeat each T),
+    _ g: @escaping @Sendable (repeat each T) -> Output
+) -> @Sendable (Root) -> Output {
+    { root in
+        let values = f(root)
+        return g(repeat each values)
+    }
+}
+
+/// Right-to-left composition of a **multi-argument** function with a **tuple-producing** function — the
+/// mirror of ``>>>(_:_:)-fanout``. `make <<< fanout(\.a, \.b)` equals `fanout(\.a, \.b) >>> make`.
+public func <<< <Root, each T, Output>(
+    _ g: @escaping @Sendable (repeat each T) -> Output,
+    _ f: @escaping @Sendable (Root) -> (repeat each T)
+) -> @Sendable (Root) -> Output {
+    { root in
+        let values = f(root)
+        return g(repeat each values)
+    }
+}
+
 // MARK: - Function Application
 
 /// Function application operator — applies `fn` to `value` with low precedence.

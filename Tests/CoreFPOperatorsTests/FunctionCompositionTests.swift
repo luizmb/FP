@@ -87,4 +87,31 @@ import Testing
         // id >>> f = f
         #expect((id >>> f)(5) == f(5))
     }
+
+    // MARK: - Variadic (fan-out) Composition
+
+    private struct World: Sendable { let badge: Int; let save: Int }
+    private struct Env: Sendable, Equatable {
+        let badge: Int
+        let save: Int
+    }
+
+    @Test func forwardFanoutComposition() {
+        // `fanout` (tuple-producing) >>> a multi-argument initializer — bridges SE-0110.
+        let narrow: @Sendable (World) -> Env = fanout(\.badge, \.save) >>> Env.init
+        #expect(narrow(World(badge: 3, save: 4)) == Env(badge: 3, save: 4))
+    }
+
+    @Test func backwardFanoutComposition() {
+        // Mirror: `make <<< fanout` equals `fanout >>> make`.
+        let narrow: @Sendable (World) -> Env = Env.init <<< fanout(\.badge, \.save)
+        #expect(narrow(World(badge: 5, save: 6)) == Env(badge: 5, save: 6))
+    }
+
+    @Test func variadicOverloadDoesNotBreakSingleArg() {
+        // The single-argument `>>>` still resolves with the variadic overload in scope.
+        let addOne: @Sendable (Int) -> Int = { $0 + 1 }
+        let double: @Sendable (Int) -> Int = { $0 * 2 }
+        #expect((addOne >>> double)(5) == 12)
+    }
 }

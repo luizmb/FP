@@ -693,6 +693,32 @@ This is function composition for container-returning functions. `<<<` and `>>>` 
 let parseAndDouble = doubleIt <=< parseInt
 ```
 
+**`fanout` — apply one input to many functions.** `fanout` runs several functions that share an input type
+and collects the results into a tuple (n-ary, via parameter packs). Key path literals work directly, since
+they convert to `@Sendable` getters:
+
+```swift
+let bounds: @Sendable ([Int]) -> (Int?, Int?) = fanout(\.min, \.max)
+bounds([9, 3, 5, 1, 16])   // (1, 16)
+```
+
+A frequent use is narrowing a big value into a smaller one whose `init` takes the parts as separate
+arguments — e.g. a feature's `Environment` from a `World`. Because Swift (SE-0110) treats a tuple argument
+and a multi-argument parameter list as distinct types, there are two point-free spellings:
+
+```swift
+struct Env: Sendable { init(badge: Int, save: Int) { … } }
+
+// A variadic `>>>` overload bridges the fanout tuple to the multi-argument init:
+let a: @Sendable (World) -> Env = fanout(\.badge, \.save) >>> Env.init
+
+// Symbol-free, one call — `fanout(keypaths:into:)` (key paths are constrained to `Sendable`):
+let b: @Sendable (World) -> Env = fanout(keypaths: \.badge, \.save, into: Env.init)
+```
+
+The variadic `>>>` coexists with the single-argument overload without ambiguity, and the mirror `<<<` works
+too (`Env.init <<< fanout(\.badge, \.save)`).
+
 ---
 
 ### Fold (Foldable)

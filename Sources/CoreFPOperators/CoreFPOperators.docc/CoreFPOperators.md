@@ -194,6 +194,11 @@ Transformer (nested) functor map:
 
 `>>>`/`<<<` are also heavily overloaded for optics (`Lens`, `Prism`, `Iso`, `AffineTraversal`, `Traversal`, `IndexedTraversal` — 26 combinations each direction) — see [Optics](../corefp/optics) for the full composition matrix rather than a flat list here.
 
+A **variadic** overload of each direction composes a tuple-producing function (a `fanout`) with a
+multi-argument function, bridging the SE-0110 gap between a tuple argument and a multi-argument parameter
+list: `fanout(\.badge, \.save) >>> Env.init`. It coexists with the single-argument overload without
+ambiguity — see [Point-Free Style](../corefp/pointfreestyle) for the worked example.
+
 ### Function Application — `£` / `<|` (fn-left), `|>` (value-left)
 
 - ``£(_:_:)``
