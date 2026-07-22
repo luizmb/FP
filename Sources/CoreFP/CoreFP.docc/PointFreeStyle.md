@@ -106,9 +106,32 @@ Every function below is a **named function** in `CoreFP`; each has a correspondi
 | `compose3` / `compose4` | 3-/4-step chains | `compose3(trim, uppercased, exclaim)(" hi ")` |
 | `call` | `((A)->B, A) -> B` | `call(uppercased, "hi") // "HI"` |
 | `fanout` | `(repeat (Input)->Output) -> (Input) -> (repeat Output)` | `fanout(\.min, \.max)([3,1,4]) // (1, 4)` (n-ary, via parameter packs) |
+| `fanout(keypaths:into:)` | `(repeat KeyPath<Root, T>, (repeat T)->Out) -> (Root)->Out` | `fanout(keypaths: \.badge, \.save, into: Env.init)` (fan-out straight into a multi-arg `init`) |
 | `mapTuple2` / `mapTuple3` | `((A)->B) -> (A,A)->(B,B)` (or 3-ary) | `mapTuple2(uppercased)("a", "b") // ("A", "B")` |
 
 `curry`, `partialApply`, `flip`, `partialApplyFlip`, and `lazy` each ship an additional `Sendable`-constrained overload (see the root `CLAUDE.md` Sendable Contract) — the compiler picks whichever one type-checks at the call site, so no extra syntax is needed to opt in.
+
+### Fanning a value into a multi-argument initializer
+
+A common shape is narrowing one large value into a smaller one whose `init` takes the pieces as separate
+arguments — e.g. deriving a feature's `Environment` from a big `World`. `fanout` produces the tuple; a
+multi-argument `init` consumes the arguments. Because Swift (since SE-0110) treats a *tuple* argument and a
+*multi-argument* parameter list as distinct types, plain composition would need a manual splat — so there
+are two point-free spellings, pick by taste:
+
+```swift
+struct Env: Sendable { init(badge: Int, save: Int) { … } }
+
+// With the operator — a variadic `>>>` overload bridges the tuple to the multi-arg init:
+let a: @Sendable (World) -> Env = fanout(\.badge, \.save) >>> Env.init
+
+// Symbol-free — `fanout(keypaths:into:)` closes the loop in one call:
+let b: @Sendable (World) -> Env = fanout(keypaths: \.badge, \.save, into: Env.init)
+```
+
+The variadic `>>>` coexists with the single-argument overload without ambiguity: a single-output function
+composes through the plain overload, a tuple-output `fanout` through the variadic one. The mirror `<<<`
+works too (`Env.init <<< fanout(\.badge, \.save)`).
 
 ---
 
