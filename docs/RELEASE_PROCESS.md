@@ -107,7 +107,7 @@ FP is used via Swift Package Manager only — depend on the git tag:
 
 ```swift
 // In Package.swift
-.package(url: "https://github.com/luizmb/FP.git", from: "2.1.0")
+.package(url: "https://github.com/luizmb/FP.git", from: "2.2.0")
 ```
 
 Then import the products you need:
