@@ -28,6 +28,13 @@ fileprivate struct Session {
     var note: Optional<String> // the spelled-out form defaults too
 }
 
+@Lenses(init: .internal)
+fileprivate struct Handlers {
+    var transform: @Sendable (Int) -> Int
+    var lookup: @Sendable (Int) -> String? // function returning Optional, not an Optional property
+    var callback: (@Sendable () -> Void)? // genuinely Optional function
+}
+
 // MARK: - Generated init
 
 @Suite("@Lenses — generated init")
@@ -322,5 +329,35 @@ struct LensesInitConflictTests {
         let updated = UserHasMatchingInit.lens.name.set(v, "xyz")
         // Reconstruction lens calls Self(name:count:) → resolves to user's init
         #expect(updated.name == "XYZ")
+    }
+}
+
+// MARK: - Function-typed properties
+
+@Suite("@Lenses — function-typed properties")
+struct LensesFunctionPropertyTests {
+    private let handlers = Handlers(transform: { $0 + 1 }, lookup: { $0 > 0 ? "\($0)" : nil })
+
+    @Test func init_takes_escaping_functions_and_defaults_optional_function_to_nil() {
+        #expect(handlers.transform(1) == 2)
+        #expect(handlers.lookup(1) == "1")
+        #expect(handlers.lookup(0) == nil)
+        #expect(handlers.callback == nil)
+    }
+
+    @Test func with_replaces_function_property() {
+        #expect(handlers.with(transform: { $0 * 10 }).transform(2) == 20)
+        #expect(handlers.with().transform(2) == 3)
+    }
+
+    @Test func with_keeps_or_clears_optional_function() {
+        let withCallback = handlers.with(callback: {})
+        #expect(withCallback.callback != nil)
+        #expect(withCallback.with().callback != nil)
+        #expect(withCallback.with(callback: nil).callback == nil)
+    }
+
+    @Test func lens_focuses_function_property() {
+        #expect(Handlers.lens.lookup.get(handlers)(2) == "2")
     }
 }

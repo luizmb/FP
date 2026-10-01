@@ -341,3 +341,38 @@ struct PrismsCaseKeyPathTests {
         }
     }
 }
+
+// MARK: - Function-typed payloads (issue #101)
+
+fileprivate struct Counter: Sendable { var count = 0 }
+
+fileprivate protocol Named: Sendable { var name: String { get } }
+fileprivate struct Person: Named { let name: String }
+
+@Prisms
+fileprivate enum FunctionPayload: Sendable {
+    case mutate(@Sendable (inout Counter) -> Void)
+    case transform(@Sendable (Int) -> Int?)
+    case named(any Named)
+}
+
+@Suite("@Prisms — non-trivial payload types")
+struct PrismsPayloadTypeTests {
+    @Test func functionPayloadAccessorReturnsOptionalFunction() {
+        let action = FunctionPayload.mutate { $0.count += 1 }
+        var counter = Counter()
+        action.mutate?(&counter)
+        #expect(counter.count == 1)
+        #expect(action.transform == nil)
+    }
+
+    @Test func functionReturningOptionalPayloadAccessor() {
+        let action = FunctionPayload.transform { $0 > 0 ? $0 * 2 : nil }
+        #expect(action.transform?(3) == .some(.some(6)))
+        #expect(action.mutate == nil)
+    }
+
+    @Test func existentialPayloadAccessor() {
+        #expect(FunctionPayload.named(Person(name: "Ada")).named?.name == "Ada")
+    }
+}
