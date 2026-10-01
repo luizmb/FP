@@ -382,7 +382,7 @@ func witnessAccess(_ modifiers: DeclModifierListSyntax) -> AccessLevel {
 
 /// Whole-identifier check: does `name` appear as a standalone token in `text`?
 func appears(_ name: String, in text: String) -> Bool {
-    substitute(name, with: " {0}", in: text).contains(" {0}")
+    substitute(name, with: "\u{0}", in: text).contains("\u{0}")
 }
 
 /// Replace standalone occurrences of identifier `name` with `replacement`, respecting
