@@ -372,15 +372,13 @@ private func topLevelSkeleton(of type: String) -> String {
     var previous: Character = " "
     var skeleton = ""
     for char in type {
-        switch char {
-        case "(", "[", "<":
+        let isArrowHead = char == ">" && previous == "-"
+        if "([<".contains(char) {
             depth += 1
-        case ">" where previous == "-":
-            if depth == 0 { skeleton.append(char) }
-        case ")", "]", ">":
+        } else if ")]>".contains(char), !isArrowHead {
             depth -= 1
-        default:
-            if depth == 0 { skeleton.append(char) }
+        } else if depth == 0 {
+            skeleton.append(char)
         }
         previous = char
     }
