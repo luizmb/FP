@@ -92,8 +92,8 @@ import Testing
 struct KleisliChainNamedTests {
     @Test func optionalKleisliOfKleisli() {
         let half: @Sendable (Int) -> Int? = { $0.isMultiple(of: 2) ? $0 / 2 : nil }
-        let twice = Optional<Int>.kleisli(half, half)
-        #expect(Optional<Int>.kleisli(twice, half)(16) == 2)
+        let twice = Int?.kleisli(half, half)
+        #expect(Int?.kleisli(twice, half)(16) == 2)
     }
 
     @Test func arrayKleisliOfKleisli() {

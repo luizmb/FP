@@ -445,6 +445,6 @@ struct AffineSetAbsentTests {
     @Test func set_agrees_with_over_on_miss() {
         let circleInWorld = lens(\World.shape).compose(circlePrism)
         let world = World(shape: .rectangle(1.0, 2.0))
-        #expect(circleInWorld.set(world, 5.0).shape.circleRadius == circleInWorld.over { _ in 5.0 }(world).shape.circleRadius)
+        #expect(circleInWorld.set(world, 5.0).shape.circleRadius == circleInWorld.over(const(5.0))(world).shape.circleRadius)
     }
 }

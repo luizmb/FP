@@ -135,7 +135,7 @@ public struct Prism<S, A>: Sendable {
 
     /// Replaces the focused value if present; no-op otherwise.
     public func set(_ s: S, _ a: A) -> S {
-        preview(s).map { _ in review(a) } ?? s
+        preview(s) == nil ? s : review(a)
     }
 
     /// Lifts an `EndoMut<A>` into an `EndoMut<S>` focused through this prism.

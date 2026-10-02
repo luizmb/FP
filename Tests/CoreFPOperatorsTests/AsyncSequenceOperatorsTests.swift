@@ -225,7 +225,8 @@ import Testing
         }
 
         #expect(values == [1, 2])
-        #expect(await Array(log.entries.prefix(4)) == ["l", "r", "l", "r"])
+        let pulls = await log.entries
+        #expect(Array(pulls.prefix(4)) == ["l", "r", "l", "r"])
     }
 }
 

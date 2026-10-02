@@ -123,7 +123,7 @@ import Testing
 
     @Test func powerLargeExponentBySquaring() {
         #expect(power(2, 62) == 4_611_686_018_427_387_904)
-        #expect(power(1.5, 20) == 3_325.256_730_079_651)
+        #expect(power(1.5, 20) == 3_325.256730079651)
         #expect(power(3, 13) == 1_594_323)
     }
 }
