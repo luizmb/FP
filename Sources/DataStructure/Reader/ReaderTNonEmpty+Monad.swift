@@ -11,7 +11,7 @@ public extension Reader {
             let results = self.runReader(env).toArray.map { fn($0).runReader(env) }
             let nonEmpties = results.compactMap(\.self)
             return nonEmpties.first.map { first in
-                nonEmpties.dropFirst().reduce(first, NonEmpty.combine)
+                NonEmpty.sconcat(first, Array(nonEmpties.dropFirst()))
             }
         }
     }
@@ -42,7 +42,7 @@ public func kleisliT<Env, A, B, C>(
             let results = nonEmptyB.toArray.map { fn2($0).runReader(env) }
             let nonEmpties = results.compactMap(\.self)
             return nonEmpties.first.map { first in
-                nonEmpties.dropFirst().reduce(first, NonEmpty.combine)
+                NonEmpty.sconcat(first, Array(nonEmpties.dropFirst()))
             }
         }
     }

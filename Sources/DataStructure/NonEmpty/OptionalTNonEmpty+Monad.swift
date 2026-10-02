@@ -11,8 +11,7 @@ public extension Optional {
         flatMap { ne in
             let results = ne.toArray.compactMap(fn)
             guard let first = results.first else { return nil }
-            let combined = results.dropFirst().reduce(first, NonEmpty.combine)
-            return combined
+            return NonEmpty.sconcat(first, Array(results.dropFirst()))
         }
     }
 

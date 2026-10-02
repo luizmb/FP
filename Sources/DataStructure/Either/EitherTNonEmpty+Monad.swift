@@ -10,19 +10,17 @@ public func flatMapTEitherNonEmpty<L, A, B>(
     _ fn: @escaping @Sendable (A) -> Either<L, NonEmpty<B>?>
 ) -> Either<L, NonEmpty<B>?> {
     either.flatMap { ne in
-        var accumulated: NonEmpty<B>?
+        var collected: [NonEmpty<B>] = []
         for element in ne.toArray {
             switch fn(element) {
             case let .left(l):
                 return .left(l)
 
             case let .right(nbOpt):
-                if let nb = nbOpt {
-                    accumulated = accumulated.map { NonEmpty.combine($0, nb) } ?? nb
-                }
+                if let nb = nbOpt { collected.append(nb) }
             }
         }
-        return .right(accumulated)
+        return .right(collected.first.map { NonEmpty.sconcat($0, Array(collected.dropFirst())) })
     }
 }
 

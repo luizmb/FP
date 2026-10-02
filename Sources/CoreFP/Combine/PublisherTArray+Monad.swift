@@ -21,10 +21,23 @@
                 guard !publishers.isEmpty else {
                     return Just([]).setFailureType(to: E.self).eraseToAnyPublisher()
                 }
-                return publishers.dropFirst().reduce(publishers[0]) { acc, next in
-                    acc.zip(next).map { $0 + $1 }.eraseToAnyPublisher()
-                }
+                return zipConcatenating(publishers[...])
             }
+            .eraseToAnyPublisher()
+    }
+
+    /// Zips the publishers and concatenates each round of arrays, in order. Splits the
+    /// slice in halves so the zip tree is log(n) deep (a left fold nests n deep) and
+    /// each element is copied log(n) times instead of up to n times.
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+    private func zipConcatenating<B, E: Error>(_ publishers: ArraySlice<AnyPublisher<[B], E>>) -> AnyPublisher<[B], E> {
+        guard publishers.count > 1 else {
+            return publishers.first ?? Just([]).setFailureType(to: E.self).eraseToAnyPublisher()
+        }
+        let middle = publishers.startIndex + publishers.count / 2
+        return zipConcatenating(publishers[..<middle])
+            .zip(zipConcatenating(publishers[middle...]))
+            .map { $0 + $1 }
             .eraseToAnyPublisher()
     }
 

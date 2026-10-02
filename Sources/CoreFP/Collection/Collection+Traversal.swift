@@ -38,8 +38,9 @@ public extension MutableCollection where Element: Sendable {
 public extension Dictionary where Key: Sendable, Value: Sendable {
     /// A ``Traversal`` focusing on **every** value of the dictionary.
     ///
-    /// `modifyMut` copies each `Value` once (extracted from the subscript), then writes it back —
-    /// mirroring ``ix(key:)``. Key order follows the dictionary's own iteration order.
+    /// `modifyMut` mutates each value in place through `values`' own subscript: no per-value
+    /// copy (a `[String: [Int]]` doesn't copy its arrays) and no re-hashing. Key order follows
+    /// the dictionary's own iteration order.
     ///
     /// ```swift
     /// [String: Int].eachValue.over { $0 + 1 }(["a": 1, "b": 2])   // ["a": 2, "b": 3]
@@ -48,10 +49,10 @@ public extension Dictionary where Key: Sendable, Value: Sendable {
         Traversal(
             getAll: { @Sendable in Array($0.values) },
             modifyMut: { @Sendable dict, f in
-                for key in dict.keys {
-                    guard var value = dict[key] else { continue }
-                    f(&value)
-                    dict[key] = value
+                var i = dict.values.startIndex
+                while i != dict.values.endIndex {
+                    f(&dict.values[i])
+                    dict.values.formIndex(after: &i)
                 }
             }
         )
@@ -89,10 +90,10 @@ public extension Dictionary where Key: Sendable, Value: Sendable {
         IndexedTraversal(
             getAll: { @Sendable dict in dict.map { ($0.key, $0.value) } },
             modifyMut: { @Sendable dict, f in
-                for key in dict.keys {
-                    guard var value = dict[key] else { continue }
-                    f(key, &value)
-                    dict[key] = value
+                var i = dict.values.startIndex
+                while i != dict.values.endIndex {
+                    f(dict.keys[i], &dict.values[i])
+                    dict.values.formIndex(after: &i)
                 }
             }
         )

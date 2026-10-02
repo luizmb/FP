@@ -82,27 +82,28 @@ public extension NonEmpty {
 
     /// Map each element to a `Validation`; accumulate ALL failures.
     func traverse<E: Semigroup, B>(_ fn: (A) -> Validation<E, B>) -> Validation<E, NonEmpty<B>> {
-        let headResult: Validation<E, NonEmpty<B>> = switch fn(head) {
-        case let .failure(e):
-            .failure(e)
+        // One pass: successes go into a pre-sized buffer, failures into a list
+        // folded once with `sconcat` (O(n) for concatenative error types like `[String]`).
+        let headResult = fn(head)
+        var values: [B] = []
+        values.reserveCapacity(tail.count)
+        var errors: [E] = []
+        for element in tail {
+            switch fn(element) {
+            case let .success(b):
+                values.append(b)
 
-        case let .success(b):
-            .success(NonEmpty<B>(head: b))
-        }
-        return tail.map(fn).reduce(headResult) { acc, next in
-            switch (acc, next) {
-            case let (.success(ne), .success(b)):
-                .success(ne.append(b))
-
-            case let (.failure(e1), .failure(e2)):
-                .failure(E.combine(e1, e2))
-
-            case let (.success, .failure(e)):
-                .failure(e)
-
-            case let (.failure(e), .success):
-                .failure(e)
+            case let .failure(e):
+                errors.append(e)
             }
+        }
+        switch headResult {
+        case let .success(b):
+            guard let firstError = errors.first else { return .success(NonEmpty<B>(head: b, tail: values)) }
+            return .failure(E.sconcat(firstError, Array(errors.dropFirst())))
+
+        case let .failure(e):
+            return .failure(E.sconcat(e, errors))
         }
     }
 
