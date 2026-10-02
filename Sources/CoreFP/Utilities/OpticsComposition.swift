@@ -54,7 +54,7 @@ public extension Lens {
     func compose<B>(_ other: Prism<A, B>) -> AffineTraversal<S, B> {
         AffineTraversal<S, B>(
             preview: { @Sendable s in other.preview(get(s)) },
-            set: { @Sendable s, b in set(s, other.review(b)) },
+            set: { @Sendable s, b in other.preview(get(s)).map { _ in set(s, other.review(b)) } ?? s },
             tryModifyMut: { @Sendable s, f in modifyMut(&s) { a in other.tryModifyMut(&a, f) } }
         )
     }
@@ -119,7 +119,7 @@ public extension AffineTraversal {
     func compose<B>(_ other: Prism<A, B>) -> AffineTraversal<S, B> {
         AffineTraversal<S, B>(
             preview: { @Sendable s in preview(s).flatMap(other.preview) },
-            set: { @Sendable s, b in preview(s).map(const(set(s, other.review(b)))) ?? s },
+            set: { @Sendable s, b in preview(s).flatMap(other.preview).map { _ in set(s, other.review(b)) } ?? s },
             tryModifyMut: { @Sendable s, f in tryModifyMut(&s) { a in other.tryModifyMut(&a, f) } }
         )
     }

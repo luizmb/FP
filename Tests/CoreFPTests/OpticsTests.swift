@@ -403,3 +403,48 @@ struct ComposeTests {
         #expect(state.items == [10, 25, 30])
     }
 }
+
+// MARK: - set is a no-op when the focus is absent (AffineTraversal laws)
+
+@Suite("AffineTraversal set on absent focus")
+struct AffineSetAbsentTests {
+    private struct World { var shape: Shape }
+    private struct MaybeWorld { var shape: Shape? }
+    private struct Holder { var value: Int? }
+
+    private let circlePrism = prism(\Shape.circleRadius, review: Shape.circle)
+
+    @Test func lensComposePrism_set_onMiss_isNoop() {
+        let circleInWorld = lens(\World.shape).compose(circlePrism)
+        let world = World(shape: .rectangle(1.0, 2.0))
+        #expect(circleInWorld.set(world, 5.0).shape.circleRadius == nil)
+    }
+
+    @Test func lensComposePrism_set_onHit_replaces() {
+        let circleInWorld = lens(\World.shape).compose(circlePrism)
+        #expect(circleInWorld.set(World(shape: .circle(1.0)), 5.0).shape.circleRadius == 5.0)
+    }
+
+    @Test func affineComposePrism_set_onInnerMiss_isNoop() {
+        let circleInMaybe = affineTraversal(\MaybeWorld.shape).compose(circlePrism)
+        let world = MaybeWorld(shape: .rectangle(1.0, 2.0))
+        #expect(circleInMaybe.set(world, 5.0).shape?.circleRadius == nil)
+    }
+
+    @Test func affineComposePrism_set_onHit_replaces() {
+        let circleInMaybe = affineTraversal(\MaybeWorld.shape).compose(circlePrism)
+        #expect(circleInMaybe.set(MaybeWorld(shape: .circle(1.0)), 5.0).shape?.circleRadius == 5.0)
+    }
+
+    @Test func optionalKeyPathAffine_set_onNil_staysNil() {
+        let value = affineTraversal(\Holder.value)
+        #expect(value.set(Holder(value: nil), 7).value == nil)
+        #expect(value.set(Holder(value: 1), 7).value == 7)
+    }
+
+    @Test func set_agrees_with_over_on_miss() {
+        let circleInWorld = lens(\World.shape).compose(circlePrism)
+        let world = World(shape: .rectangle(1.0, 2.0))
+        #expect(circleInWorld.set(world, 5.0).shape.circleRadius == circleInWorld.over { _ in 5.0 }(world).shape.circleRadius)
+    }
+}
