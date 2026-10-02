@@ -25,64 +25,73 @@ Workflow: one step per PR, each with regression tests in both the core and opera
 - `@Witness` / `@Mock` throws: **preserve `throws(E)`** in closure types and forwards; `rethrows` becomes `throws` in the mock closure type, and is diagnosed in `@Witness`.
 - `castOptionally` → `<From, T>(T.Type) -> (From) -> T?` and drop `@discardableResult` from `Mutable.mutate`: **both in the patch release**.
 
+### Status (2026-10-02)
+All Step 1 items done on `bugfix/review-findings`. Caveats:
+- `@Witness` settable-property parents work only when the child protocol is class-bound (`protocol Child: AnyObject, Parent`); the macro can't see parent members. A user-written parent with associated types still fails in generated code (undetectable from syntax).
+- `@Mock` `rethrows` requirements call the closure through an immediately-applied closure to stay `rethrows`; that relies on a compiler-checker leniency a future Swift could close.
+- `@Lenses` now has an extension role, so (like `@Prisms`) it can't be used on a type declared inside a function body.
+- IdentifiedArray: final decision was **last wins, zero-copy** (not "revert"): reverting needs a per-element snapshot because ids are a read-only closure / `let`.
+- `affineTraversal(\.optional).set` follows the standard law (no-op on nil); `OpticLawTests` updated.
+- Kleisli/bind `@Sendable` returns applied library-wide, including Publisher/AsyncSequence.
+
 ### 1.1 Optics laws
-- [ ] `CoreFP/Utilities/OpticsComposition.swift:57`, Lens ∘ Prism `set: { s, b in set(s, other.review(b)) }` writes even when the prism misses. `S{ r: .failure }` → `set(s, 5).r == .success(5)` while `over` is a no-op. Fix: guard `other.preview(get(s)) != nil`.
-- [ ] `OpticsComposition.swift:122`, AffineTraversal ∘ Prism checks only the outer preview. Fix: `preview(s).flatMap(other.preview).map { _ in set(s, other.review(b)) } ?? s` (also removes eager `const(...)`).
-- [ ] `CoreFP/Utilities/AffineTraversal.swift:198`, `affineTraversal(_: WritableKeyPath<S, A?>)` `set` is unconditional (its own `tryModifyMut` at :200 is guarded). Fix: guard non-nil.
-- [ ] Laws above also leak into `WritableFocus[optic:]` (`WritableFocus.swift:85`) and `Binding[optic:]` (`Binding+Optics.swift:109`); add tests there.
-- [ ] `CoreFP/Utilities/Prism.swift:138`, `Prism.set` builds `review(a)` eagerly via `const`. Make lazy.
+- [x] `CoreFP/Utilities/OpticsComposition.swift:57`, Lens ∘ Prism `set: { s, b in set(s, other.review(b)) }` writes even when the prism misses. `S{ r: .failure }` → `set(s, 5).r == .success(5)` while `over` is a no-op. Fix: guard `other.preview(get(s)) != nil`.
+- [x] `OpticsComposition.swift:122`, AffineTraversal ∘ Prism checks only the outer preview. Fix: `preview(s).flatMap(other.preview).map { _ in set(s, other.review(b)) } ?? s` (also removes eager `const(...)`).
+- [x] `CoreFP/Utilities/AffineTraversal.swift:198`, `affineTraversal(_: WritableKeyPath<S, A?>)` `set` is unconditional (its own `tryModifyMut` at :200 is guarded). Fix: guard non-nil.
+- [x] Laws above also leak into `WritableFocus[optic:]` (`WritableFocus.swift:85`) and `Binding[optic:]` (`Binding+Optics.swift:109`); add tests there.
+- [x] `CoreFP/Utilities/Prism.swift:138`, `Prism.set` builds `review(a)` eagerly via `const`. Make lazy.
 
 ### 1.2 IdentifiedArray invariants
-- [ ] `DataStructure/IdentifiedArray/IdentifiedArray+Optics.swift:75-100`, `traversed` / `traversed(where:)` call `rebuildIndex()` (`IdentifiedArray.swift:278`) which doesn't dedupe; mapping two ids to the same value then `remove(at:)` + `[id:]` traps "Index out of range". Fix: last-wins dedupe on rebuild (mirror `append`).
-- [ ] `IdentifiedArray+Optics.swift:32-41`, `ix(id:)` `tryModifyMut` doesn't rekey when `f` changes the id (`set` does guard). Fix: `rekeyIfNeeded` or revert like `set`.
-- [ ] `IdentifiedArray.swift:51-67`, `ix(position)` documents duplicate ids as a precondition but never enforces it.
+- [x] `DataStructure/IdentifiedArray/IdentifiedArray+Optics.swift:75-100`, `traversed` / `traversed(where:)` call `rebuildIndex()` (`IdentifiedArray.swift:278`) which doesn't dedupe; mapping two ids to the same value then `remove(at:)` + `[id:]` traps "Index out of range". Fix: last-wins dedupe on rebuild (mirror `append`).
+- [x] `IdentifiedArray+Optics.swift:32-41`, `ix(id:)` `tryModifyMut` doesn't rekey when `f` changes the id (`set` does guard). Fix: `rekeyIfNeeded` or revert like `set`.
+- [x] `IdentifiedArray.swift:51-67`, `ix(position)` documents duplicate ids as a precondition but never enforces it.
 
 ### 1.3 Numeric
-- [ ] `CoreFP/Utilities/NumericOperations.swift:71-74`, `power`: `guard exp > 0 else { return 1 }` → `2.0 ^ -1 == 1`. Handle negative exponents (fractional types: `1 / power(base, -exp)`), use exponentiation by squaring.
-- [ ] `^` precedence: stdlib's `^` is `AdditionPrecedence`, not what `PrecedenceGroups.swift:48` says; `2.0 * 3.0 ^ 2 == 36`. At minimum fix the docs. **Decision needed:** keep `^` or add `**` with a proper precedence group.
-- [ ] `CoreFP/Monoid/NumericMonoid.swift:221-269`, Float/Double/CGFloat `HasMin`/`HasMax` use `±greatestFiniteMagnitude`; identity fails at `±.infinity`. Use `±.infinity`.
+- [x] `CoreFP/Utilities/NumericOperations.swift:71-74`, `power`: `guard exp > 0 else { return 1 }` → `2.0 ^ -1 == 1`. Handle negative exponents (fractional types: `1 / power(base, -exp)`), use exponentiation by squaring.
+- [x] `^` precedence: stdlib's `^` is `AdditionPrecedence`, not what `PrecedenceGroups.swift:48` says; `2.0 * 3.0 ^ 2 == 36`. At minimum fix the docs. **Decision needed:** keep `^` or add `**` with a proper precedence group.
+- [x] `CoreFP/Monoid/NumericMonoid.swift:221-269`, Float/Double/CGFloat `HasMin`/`HasMax` use `±greatestFiniteMagnitude`; identity fails at `±.infinity`. Use `±.infinity`.
 
 ### 1.4 Concurrency leaks and ordering
-- [ ] `CoreFP/ModernConcurrency/AsyncThrowingStream+Result.swift:29,55` and `DataStructure/Either/AsyncThrowingStream+Either.swift:20-61`: inner `Task` never cancelled; add `continuation.onTermination = { _ in task.cancel() }`. `toEitherStream` also swallows non-`Failure` errors (:31-33).
-- [ ] `CoreFPOperators/Combine/Publisher+ApplicativeOperators.swift:28` and `ModernConcurrency/AsyncSequence+ApplicativeOperators.swift:32`: `<*` is `rhs *> lhs`, which runs effects right-first. Delegate to `Publisher.seqLeft`; add a named `AsyncStream.seqLeft`.
-- [ ] `CoreFP/Combine/Publisher+Alternative.swift:13`, `altPublisher` calls `rhs()` eagerly. Use `Deferred`.
+- [x] `CoreFP/ModernConcurrency/AsyncThrowingStream+Result.swift:29,55` and `DataStructure/Either/AsyncThrowingStream+Either.swift:20-61`: inner `Task` never cancelled; add `continuation.onTermination = { _ in task.cancel() }`. `toEitherStream` also swallows non-`Failure` errors (:31-33).
+- [x] `CoreFPOperators/Combine/Publisher+ApplicativeOperators.swift:28` and `ModernConcurrency/AsyncSequence+ApplicativeOperators.swift:32`: `<*` is `rhs *> lhs`, which runs effects right-first. Delegate to `Publisher.seqLeft`; add a named `AsyncStream.seqLeft`.
+- [x] `CoreFP/Combine/Publisher+Alternative.swift:13`, `altPublisher` calls `rhs()` eagerly. Use `Deferred`.
 
 ### 1.5 Misc
-- [ ] `CoreFP/Utilities/Mutable.swift:34,41`, `mutate` is `@discardableResult` but returns a copy, so `x.mutate { … }` silently does nothing. Remove the attribute.
-- [ ] `CoreFP/Utilities/Cast.swift:9`, `castOptionally<T>(_:) -> (T) -> T?` can't fail. Make it `<From, T>(_: T.Type) -> (From) -> T?`.
-- [ ] Kleisli `>=>`/`kleisliBack` for `Array+Monad.swift:20`, `Optional+Monad.swift:20`, `Result+Monad.swift:20`, `ArrayTOptional+Monad.swift:27`, `ArrayTResult+Monad.swift:38`, `OptionalTArray+Monad.swift:33`, `OptionalTResult+Monad.swift:37` return non-`@Sendable` closures, so `f >=> g >=> h` doesn't compile in Swift 6. Return `@Sendable`. Same for `Array/Optional/Result.bind`, `Result.foldMap`, `Array.foldLeft/foldRight/foldMap`, `bindT`.
-- [ ] `DataStructure/Reader/ReaderTWriter+Applicative.swift:21`, `liftA2` calls each reader twice. Bind locals once.
+- [x] `CoreFP/Utilities/Mutable.swift:34,41`, `mutate` is `@discardableResult` but returns a copy, so `x.mutate { … }` silently does nothing. Remove the attribute.
+- [x] `CoreFP/Utilities/Cast.swift:9`, `castOptionally<T>(_:) -> (T) -> T?` can't fail. Make it `<From, T>(_: T.Type) -> (From) -> T?`.
+- [x] Kleisli `>=>`/`kleisliBack` for `Array+Monad.swift:20`, `Optional+Monad.swift:20`, `Result+Monad.swift:20`, `ArrayTOptional+Monad.swift:27`, `ArrayTResult+Monad.swift:38`, `OptionalTArray+Monad.swift:33`, `OptionalTResult+Monad.swift:37` return non-`@Sendable` closures, so `f >=> g >=> h` doesn't compile in Swift 6. Return `@Sendable`. Same for `Array/Optional/Result.bind`, `Result.foldMap`, `Array.foldLeft/foldRight/foldMap`, `bindT`.
+- [x] `DataStructure/Reader/ReaderTWriter+Applicative.swift:21`, `liftA2` calls each reader twice. Bind locals once.
 
 ### 1.6 Macros
-- [ ] Nested in a generic type: `LensesMacro.swift:190,370-376`, `PrismsMacro.swift:141,277-283` emit `static let` → "static stored properties not supported in generic types" (`struct Outer<T> { @Lenses struct Inner {…} }`, also `@ApplyOptics(recursively:)` on generic roots). Fix: always `static var lens: Lenses { Lenses() }`.
-- [ ] `@Lenses` requires `Sendable` host/properties (`CoreFP.lens` is `<S: Sendable, A: Sendable>`); the `Macros.md:33-39` headline `public struct Config` example doesn't compile. Diagnose or document; fix the doc example.
-- [ ] Property observers (`var x: Int { didSet {} }`) treated as computed: `LensesMacro.swift:277`, `DeriveMonoidMacro.swift:21`, `@Iso`. Count `willSet`/`didSet`-only accessor blocks as stored.
-- [ ] Multi-binding `var a, b: Int` loses `a`: `LensesMacro.swift:283-300`, `DeriveMonoidMacro.swift:23`, `@Iso`. Take the type from the last annotated binding.
-- [ ] Un-annotated stored props are silently skipped by `@DeriveMonoid` (identity law breaks: `var b = Sum(5)` → `combine(identity, x).b == 5`) and `@Iso` (round-trip breaks). Diagnose like `@Lenses` does.
-- [ ] Initialised `let` included in `@DeriveMonoid`/`@Iso` memberwise call ("extra argument"); exclude like Lenses' `isConstant`.
-- [ ] IUO `T!` in type positions (`@Lenses`, `@Iso`): rewrite to `T?`.
-- [ ] `private` hosts break `@Iso`, `@DeriveMonoid`, `@Witness`, `@Mock` (`WitnessMacro.swift:373`). Map to `fileprivate` or diagnose like Lenses/Prisms.
-- [ ] `private(set)` read as `private` (`LensesMacro.swift:41-67` ignores `modifier.detail`): lens silently dropped; `public private(set)` gets a public writable lens.
-- [ ] `@Witness`:
-  - [ ] Inherited protocols forwarded as raw names (`WitnessMacro.swift:158-160,242-244,278-280`): `Equatable`, `Sendable & AnyObject` compositions, parents with associated types, parents with settable props.
-  - [ ] `some P` parameters not erased (`:187-197`).
-  - [ ] Generic erasure unsound when `T` appears more than once or nested (`[T]`, `(T, T)`); `Macros.md:13` promises a diagnostic.
-  - [ ] Property `{ get async throws }` drops `try await` (`:208-225,271`).
-  - [ ] Typed `throws(E)` erased to untyped `throws` (`:203-204`).
-  - [ ] Overload names collide (`f(id: Int)` / `f(id: String)` → both `fWithId`) (`:319-330`).
-  - [ ] `Self` in requirements resolves to the witness struct. Diagnose.
-  - [ ] Variadic params become single-element (`:178-183`). Diagnose.
-  - [ ] `var target = instance` "never mutated" warning (`:275`).
-- [ ] `@Mock` (`MockMacro.swift`):
-  - [ ] `AnyObject` / `Sendable` protocols (`:22-24`): emit class / `@Sendable` closures, or diagnose.
-  - [ ] Non-escaping closure params, `inout`, variadic, `_:` unnamed, `@autoclosure` (`:156,165,172`).
-  - [ ] `throws(E)` and `rethrows` (`:153-156,166`).
-  - [ ] Overload collisions (`:158-159`).
-- [ ] `ExpandOptic` / `FPMacrosExpander` drift:
-  - [ ] Expander has no `Prismatic` `ExtensionMacro`.
-  - [ ] `ExpandOptic/main.swift:46-64` wraps members in `extension Name {}`, so the printed `init` redeclares the synthesized memberwise init, and nested types print `extension Inner` not `extension Outer.Inner`.
-  - [ ] Walker (`main.swift:72-90`) ignores `@ApplyOptics` and `@FPMacros.Lenses`.
-  - [ ] Stop the manual copy: share sources between Plugin and Expander (symlink / shared target), or add a test diffing outputs. Fix the "always in sync" claims in the fp-optics skill `SKILL.md:214` and `CONTRIBUTING.md:52`.
+- [x] Nested in a generic type: `LensesMacro.swift:190,370-376`, `PrismsMacro.swift:141,277-283` emit `static let` → "static stored properties not supported in generic types" (`struct Outer<T> { @Lenses struct Inner {…} }`, also `@ApplyOptics(recursively:)` on generic roots). Fix: always `static var lens: Lenses { Lenses() }`.
+- [x] `@Lenses` requires `Sendable` host/properties (`CoreFP.lens` is `<S: Sendable, A: Sendable>`); the `Macros.md:33-39` headline `public struct Config` example doesn't compile. Diagnose or document; fix the doc example.
+- [x] Property observers (`var x: Int { didSet {} }`) treated as computed: `LensesMacro.swift:277`, `DeriveMonoidMacro.swift:21`, `@Iso`. Count `willSet`/`didSet`-only accessor blocks as stored.
+- [x] Multi-binding `var a, b: Int` loses `a`: `LensesMacro.swift:283-300`, `DeriveMonoidMacro.swift:23`, `@Iso`. Take the type from the last annotated binding.
+- [x] Un-annotated stored props are silently skipped by `@DeriveMonoid` (identity law breaks: `var b = Sum(5)` → `combine(identity, x).b == 5`) and `@Iso` (round-trip breaks). Diagnose like `@Lenses` does.
+- [x] Initialised `let` included in `@DeriveMonoid`/`@Iso` memberwise call ("extra argument"); exclude like Lenses' `isConstant`.
+- [x] IUO `T!` in type positions (`@Lenses`, `@Iso`): rewrite to `T?`.
+- [x] `private` hosts break `@Iso`, `@DeriveMonoid`, `@Witness`, `@Mock` (`WitnessMacro.swift:373`). Map to `fileprivate` or diagnose like Lenses/Prisms.
+- [x] `private(set)` read as `private` (`LensesMacro.swift:41-67` ignores `modifier.detail`): lens silently dropped; `public private(set)` gets a public writable lens.
+- [x] `@Witness`:
+  - [x] (partial) Inherited protocols forwarded as raw names (`WitnessMacro.swift:158-160,242-244,278-280`): `Equatable`, `Sendable & AnyObject` compositions, parents with associated types, parents with settable props.
+  - [x] `some P` parameters not erased (`:187-197`).
+  - [x] Generic erasure unsound when `T` appears more than once or nested (`[T]`, `(T, T)`); `Macros.md:13` promises a diagnostic.
+  - [x] Property `{ get async throws }` drops `try await` (`:208-225,271`).
+  - [x] Typed `throws(E)` erased to untyped `throws` (`:203-204`).
+  - [x] Overload names collide (`f(id: Int)` / `f(id: String)` → both `fWithId`) (`:319-330`).
+  - [x] `Self` in requirements resolves to the witness struct. Diagnose.
+  - [x] Variadic params become single-element (`:178-183`). Diagnose.
+  - [x] `var target = instance` "never mutated" warning (`:275`).
+- [x] `@Mock` (`MockMacro.swift`):
+  - [x] `AnyObject` / `Sendable` protocols (`:22-24`): emit class / `@Sendable` closures, or diagnose.
+  - [x] Non-escaping closure params, `inout`, variadic, `_:` unnamed, `@autoclosure` (`:156,165,172`).
+  - [x] `throws(E)` and `rethrows` (`:153-156,166`).
+  - [x] Overload collisions (`:158-159`).
+- [x] `ExpandOptic` / `FPMacrosExpander` drift:
+  - [x] Expander has no `Prismatic` `ExtensionMacro`.
+  - [x] `ExpandOptic/main.swift:46-64` wraps members in `extension Name {}`, so the printed `init` redeclares the synthesized memberwise init, and nested types print `extension Inner` not `extension Outer.Inner`.
+  - [x] Walker (`main.swift:72-90`) ignores `@ApplyOptics` and `@FPMacros.Lenses`.
+  - [x] Stop the manual copy: share sources between Plugin and Expander (symlink / shared target), or add a test diffing outputs. Fix the "always in sync" claims in the fp-optics skill `SKILL.md:214` and `CONTRIBUTING.md:52`.
 
 ---
 
