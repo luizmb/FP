@@ -36,11 +36,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   are now closure literals calling `fail(...)`, which also fit non-escaping, `@autoclosure` and
   `inout` parameter types.
 
-### Deprecated
-- **Infix `^` (floating-point power)**: Swift's stdlib declares `^` in `AdditionPrecedence`, so it
-  bound like `+` (`2.0 * 3.0 ^ 2 == 36`). Use `power(_:_:)`; the operator goes in 3.0.
-
 ### Removed
+- **Infix `^` (floating-point power)**: Swift's stdlib declares `^` in `AdditionPrecedence`, so it
+  bound like `+` (`2.0 * 3.0 ^ 2 == 36`). Use `power(_:_:)`.
 - **`ExpandOptic` and `FPMacrosExpander`**: the expander was a hand-copied fork of the macro
   plugin that had already drifted (no `Prismatic` extension, an `init` that redeclared the
   memberwise one, nested types printed as `extension Inner`, `@ApplyOptics` ignored). Xcode's

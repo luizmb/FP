@@ -42,7 +42,6 @@ let parsed = "42"
 | `<<<` | `<<<` (`Control.Category`) | Function/optic composition, right to left | `FunctionCompositionBackwards` | right |
 | `£` / `<\|` | `$` | Function application, function on the left | `LowPrecedenceFunctionCallRight` | right |
 | `\|>` | — (F#/Elixir pipeline) | Function application, value on the left (pipeline) | `LowPrecedenceFunctionCallLeft` | left |
-| `^` (infix) | `^` | **Deprecated** numeric power, `BinaryFloatingPoint` only; use `power(_:_:)` | `AdditionPrecedence` (stdlib — shared with `+`/`-`/`\|`/bitwise XOR) | left |
 | `^` (prefix) | — | Lift a `KeyPath`/`WritableKeyPath` into a `Lens` (or a `@Sendable` getter) | n/a (prefix) | n/a |
 | `≅` | — | Flipped pattern match / range membership (`value ≅ range`) | `ComparisonPrecedence` (stdlib) | none (non-associative) |
 | `±` / `+/-` | — | Symmetric range construction, `center ± delta` | `RangeFormationPrecedence` (stdlib) | none (non-associative) |
@@ -62,11 +61,10 @@ A few things worth calling out explicitly:
   tripped up SourceKit (the editor's live type checker) with false-positive errors on code that
   `swift build`/`swift test` compile and pass without issue — giving transformer `fmap` its own
   symbol sidesteps that too.
-- **`^` the infix operator is deprecated and will be removed in 3.0.** Swift's standard library
-  declares `^` (bitwise XOR) in `AdditionPrecedence`, and a second declaration with another
-  precedence group is an "ambiguous operator declarations" error, so the power overload binds
-  like `+` (`2.0 * 3.0 ^ 2 == 36`). It also only works on `BinaryFloatingPoint`, since integers
-  already own `^` as XOR. Use the named function `power(_:_:)` for every numeric type.
+- **There is no infix power operator.** Swift's standard library declares `^` (bitwise XOR) in
+  `AdditionPrecedence`, and a second declaration with another precedence group is an
+  "ambiguous operator declarations" error, so a power `^` would bind like `+`
+  (`2.0 * 3.0 ^ 2 == 36`). Use the named function `power(_:_:)` for every numeric type.
 - **`≅` and `±`/`+/-` are not in Haskell.** `≅` is a flipped alias of Swift's pattern-matching
   `~=` (`value ≅ range` reads better than `range ~= value` at a call site); `±`/`+/-` build a
   `ClosedRange` from a center and a delta (`5.0 ± 0.5` → `4.5...5.5`), generalized over
@@ -89,7 +87,7 @@ fixed and cannot be changed; the custom groups slot around them):
 8.5   BitwiseShiftPrecedence          (stdlib: >>, <<)
 7     MultiplicationPrecedence        (stdlib: *, /, %)
 6     ConcatPrecedence                <>                      right
-6     AdditionPrecedence              (stdlib: +, -, |)  ^ (infix, floating-point only)   left
+6     AdditionPrecedence              (stdlib: +, -, |, ^)                 left
 5     AppendToList                    ++                      right
 4.8   RangeFormationPrecedence        (stdlib: ..., ..<)  ±  +/-
 4.5   CastingPrecedence               (stdlib: as?)
@@ -179,18 +177,16 @@ up.
 declares `infixr 3 &&` and `infixr 2 ||`; Swift's standard library declares
 `LogicalConjunctionPrecedence`/`LogicalDisjunctionPrecedence` as left-associative, and this is a
 Swift standard-library default this codebase cannot override (redeclaring `&&`/`||` would
-conflict with the existing stdlib declarations, the same conflict that blocks a custom
-integer-`^`). In practice the impact is minimal: `&&` and `||` are each associative operations in
+conflict with the existing stdlib declarations, the same conflict that rules out a
+power `^`). In practice the impact is minimal: `&&` and `||` are each associative operations in
 the boolean case (`(a && b) && c` and `a && (b && c)` always agree), so the difference in grouping
 never changes the result — it only matters if you were relying on short-circuit *evaluation
 order* in a context with side effects, which this library's purity rules discourage in the first
 place.
 
-**`^` is narrower here than Haskell's `^`.** Haskell's `(^) :: (Num a, Integral b) => a -> b -> a`
-works for any numeric base with an integral exponent, including `Int`. Here, `^` only exists for
-`BinaryFloatingPoint` bases, because Swift's stdlib already owns `^` as bitwise XOR on
-`BinaryInteger` types and a second declaration would be ambiguous — so `2 ^ 10` (integers) isn't
-available as an operator at all; reach for `power(_:_:)` there.
+**There is no `^` power operator here.** Haskell's `(^) :: (Num a, Integral b) => a -> b -> a`
+is an operator; in this library exponentiation is only the named function `power(_:_:)`, because
+Swift's stdlib owns `^` as bitwise XOR in `AdditionPrecedence`.
 
 For the canonical fixity reference this library's precedence groups were checked against, see:
 - [The Haskell 2010 Report §4.4.2 (fixity declarations)](https://www.haskell.org/onlinereport/haskell2010/haskellch4.html#x10-820061) — the standard's table of `infixl`/`infixr`/`infix` declarations for every base operator this library mirrors.

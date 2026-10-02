@@ -17,7 +17,7 @@ Workflow: one step per PR, each with regression tests in both the core and opera
 
 ### Decisions (2026-10-02)
 - IdentifiedArray id changes through optics (`traversed`, `traversed(where:)`, `ix(id:)` `tryModifyMut`, `ix(position)`): **revert id changes** per element (ids immutable through optics, like `ix(id:).set` already does). Update the `traversed` docs that say ids MAY change.
-- Power: **remove the `^` operator**: deprecate it now (pointing at `power(_:_:)`), delete in 3.0. Still fix `power` (negative exponents, squaring).
+- Power: **remove the `^` operator** outright (no deprecation cycle). Still fix `power` (negative exponents, squaring).
 - `private` hosts for `@Iso`/`@DeriveMonoid`/`@Witness`/`@Mock`: **diagnose like `@Lenses`** ("use `fileprivate`").
 - `@Lenses` Sendable: **emit `extension S: Sendable {}`** via an extension role when not already declared; fix the `Macros.md` example accordingly.
 - `@Mock` on `AnyObject` / `Sendable` protocols: **adapt the output** (`final class` mock for `AnyObject`, `@Sendable` stored closures for `Sendable`).

@@ -45,11 +45,6 @@ precedencegroup FunctionCompositionBackwards {
 
 // 8.5: BitwiseShiftPrecedence >>
 
-// Swift stdlib declares `infix operator ^: AdditionPrecedence` (bitwise XOR binds
-// like `+`). We cannot redeclare `^` in a higher group (two declarations are an
-// "ambiguous operator declarations" error), which is why the deprecated floating
-// point `^` power overload binds like `+`. Use `power(_:_:)`.
-
 // 7: MultiplicationPrecedence * /
 
 // 6: ConcatPrecedence <>

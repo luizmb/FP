@@ -2152,7 +2152,6 @@ All operators require `CoreFPOperators` (for built-in types) or `DataStructureOp
 | `<>` | — | Semigroup append | `String`, `Array`, `Optional`, `Dictionary`, `Set`, `Result`, `Int.Monoids.*`, `Bool.Monoids.*`, `SIMD4<Int>.Monoids.*`, … |
 | `++` | — | Concatenation | `String`, `Array` |
 | `^` _(prefix)_ | — | Lift `WritableKeyPath` → `Lens`; `KeyPath` → partial `Lens` builder | `WritableKeyPath`, `KeyPath` |
-| `^` _(infix)_ | — | **Deprecated** numeric power, binds like `+`; use `power(_:_:)` | `BinaryFloatingPoint` |
 | `±` / `+/-` | — | Symmetric range — `center ± delta` → `ClosedRange` | `Strideable` (`Int`, `Double`, `Float`, `Date`, …) |
 | `≅` | — | Flipped range match — `value ≅ range` (equivalent to `range ~= value`) | `Comparable` |
 

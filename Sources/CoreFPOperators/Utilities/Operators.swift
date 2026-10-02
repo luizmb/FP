@@ -323,11 +323,9 @@ infix operator <£^>: FunctorOps
 /// so Swift resolves the overload from the container type directly.
 infix operator <&^>: MonadBindLeft
 
-// `^` is already declared by the Swift standard library as `infix operator ^: AdditionPrecedence`.
-// Re-declaring it with a different precedence group would cause an "ambiguous operator declarations"
-// error, so we intentionally omit the declaration here and provide only the function overloads
-// in NumericOperators.swift. For BinaryFloatingPoint types (where XOR doesn't exist) the power
-// semantics are unambiguous.
+// There is no infix power operator: Swift's stdlib owns `infix operator ^: AdditionPrecedence`
+// (bitwise XOR) and a redeclaration in a higher group is an "ambiguous operator declarations"
+// error, so a power `^` would bind like `+`. Use the named function `power(_:_:)`.
 
 /// Lift prefix operator — promotes a `WritableKeyPath` or `KeyPath` into a ``Lens``.
 ///

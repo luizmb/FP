@@ -63,28 +63,3 @@ public func ± <T: Strideable>(_ center: T, _ delta: T.Stride) -> ClosedRange<T>
 public func +/- <T: Strideable>(_ center: T, _ delta: T.Stride) -> ClosedRange<T> {
     symmetricRange(center, delta: delta)
 }
-
-// MARK: - Power
-
-//
-// Note: `^` cannot be defined for types conforming to `BinaryInteger` because
-// Swift already defines `^` as bitwise XOR on those types, creating an
-// irresolvable ambiguity. The operator is therefore limited to
-// `BinaryFloatingPoint` types (Double, Float, Float16, etc.) which have no
-// built-in `^`. For integer exponentiation use the named function `power(_:_:)`.
-
-/// Raises a floating-point `base` to an integer `exp`.
-///
-/// Deprecated: Swift's stdlib declares `^` in `AdditionPrecedence`, so it binds like
-/// `+` (`2.0 * 3.0 ^ 2 == 36`, not `18`). Use ``power(_:_:)`` instead; the operator
-/// will be removed in 3.0.
-///
-/// ```swift
-/// 2.0 ^ 10   // 1024.0
-/// 3.0 ^ 3    // 27.0
-/// 5.0 ^ 0    // 1.0
-/// ```
-@available(*, deprecated, message: "`^` binds like `+` (stdlib AdditionPrecedence); use power(_:_:) instead")
-public func ^ <T: BinaryFloatingPoint>(_ base: T, _ exp: Int) -> T {
-    power(base, exp)
-}
