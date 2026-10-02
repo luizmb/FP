@@ -29,5 +29,5 @@ public func <* <A: Sendable, B: Sendable>(
     _ lhs: AsyncStream<A>,
     _ rhs: AsyncStream<B>
 ) -> AsyncStream<A> {
-    rhs *> lhs
+    AsyncStream<A>.seqLeft(lhs, rhs)
 }

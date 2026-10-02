@@ -94,4 +94,38 @@ import Testing
 
         #expect(results == [1, 10, 2, 20])
     }
+
+    // MARK: - seqLeft
+
+    @Test func seqLeftKeepsLeftValuesAndPullsLeftFirst() async {
+        let log = PullLog()
+        let result = AsyncStream<Int>.seqLeft(loggedStream("l", [1, 2], log), loggedStream("r", [10, 20], log))
+
+        var values: [Int] = []
+        for await value in result {
+            values.append(value)
+        }
+
+        #expect(values == [1, 2])
+        #expect(await Array(log.entries.prefix(4)) == ["l", "r", "l", "r"])
+    }
+}
+
+private actor PullLog {
+    private(set) var entries: [String] = []
+    func record(_ entry: String) { entries.append(entry) }
+}
+
+private func loggedStream(_ label: String, _ values: [Int], _ log: PullLog) -> AsyncStream<Int> {
+    let box = UnfoldCursor(values)
+    return AsyncStream(unfolding: {
+        await log.record(label)
+        return await box.next()
+    })
+}
+
+private actor UnfoldCursor {
+    private var remaining: [Int]
+    init(_ values: [Int]) { remaining = values }
+    func next() -> Int? { remaining.isEmpty ? nil : remaining.removeFirst() }
 }

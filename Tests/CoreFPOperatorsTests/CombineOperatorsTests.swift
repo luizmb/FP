@@ -302,6 +302,51 @@
             #expect(results == [1, 2])
         }
 
+        @Test func sequenceLeftSubscribesLeftFirst() {
+            var cancellables = Set<AnyCancellable>()
+            var subscriptions: [String] = []
+            let left = Deferred { subscriptions.append("l"); return [1].publisher }
+            let right = Deferred { subscriptions.append("r"); return [10].publisher }
+
+            (left <* right)
+                .sink(receiveCompletion: ignore, receiveValue: ignore)
+                .store(in: &cancellables)
+
+            #expect(subscriptions == ["l", "r"])
+        }
+
+        // MARK: - Alternative Tests
+
+        private struct AltError: Error {}
+
+        @Test func altFallsBackOnFailure() {
+            var cancellables = Set<AnyCancellable>()
+            var results: [Int] = []
+            let failing: any Publisher<Int, AltError> = Fail(error: AltError())
+
+            (failing <|> [42].publisher.setFailureType(to: AltError.self))
+                .sink(receiveCompletion: ignore, receiveValue: { results.append($0) })
+                .store(in: &cancellables)
+
+            #expect(results == [42])
+        }
+
+        @Test func altDoesNotBuildRhsWhenLhsSucceeds() {
+            var cancellables = Set<AnyCancellable>()
+            var rhsBuilt = false
+            func fallback() -> any Publisher<Int, AltError> {
+                rhsBuilt = true
+                return [0].publisher.setFailureType(to: AltError.self)
+            }
+            let succeeding: any Publisher<Int, AltError> = [1].publisher.setFailureType(to: AltError.self)
+
+            (succeeding <|> fallback())
+                .sink(receiveCompletion: ignore, receiveValue: ignore)
+                .store(in: &cancellables)
+
+            #expect(rhsBuilt == false)
+        }
+
         // MARK: - Monad Tests
 
         @Test func bind() {

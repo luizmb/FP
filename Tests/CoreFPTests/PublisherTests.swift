@@ -142,5 +142,21 @@
 
             #expect(results == [42])
         }
+
+        @Test func altDoesNotBuildRhsWhenLhsSucceeds() {
+            var cancellables = Set<AnyCancellable>()
+            var rhsBuilt = false
+            func fallback() -> any Publisher<Int, TestError> {
+                rhsBuilt = true
+                return [0].publisher.setFailureType(to: TestError.self)
+            }
+
+            let lhs: any Publisher<Int, TestError> = [1].publisher.setFailureType(to: TestError.self)
+            altPublisher(lhs, fallback())
+                .sink(receiveCompletion: ignore, receiveValue: ignore)
+                .store(in: &cancellables)
+
+            #expect(rhsBuilt == false)
+        }
     }
 #endif
