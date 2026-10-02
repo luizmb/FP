@@ -5,26 +5,37 @@ import SwiftSyntaxMacros
 
 // MARK: - Shared struct-field parsing
 
-struct StoredField {
-    let name: String
-    let type: String
-}
-
-/// Stored (name, type) properties of a struct — skips `static`/`lazy`/computed and any binding
-/// without an explicit type annotation.
-func storedFields(of structDecl: StructDeclSyntax) -> [StoredField] {
-    structDecl.memberBlock.members.flatMap { member -> [StoredField] in
-        guard let varDecl = member.decl.as(VariableDeclSyntax.self) else { return [] }
-        let modifiers = Set(varDecl.modifiers.map(\.name.text))
-        if modifiers.contains("static") || modifiers.contains("lazy") { return [] }
-        return varDecl.bindings.compactMap { binding -> StoredField? in
-            guard binding.accessorBlock == nil,
-                  let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
-                  let type = binding.typeAnnotation?.type.trimmedDescription
-            else { return nil }
-            return StoredField(name: name, type: type)
-        }
+/// The fields of the struct's memberwise initialiser, for the product macros (`@DeriveMonoid`, `@Iso`).
+/// Skips `static`/`lazy`/computed properties and initialised `let` constants (they aren't memberwise
+/// parameters). Diagnoses — and returns `nil` for — non-struct and `private` hosts, stored properties
+/// whose type can't be read off the declaration, and structs with no fields at all.
+func productFields(
+    of declaration: some DeclGroupSyntax,
+    macro: String,
+    node: AttributeSyntax,
+    context: some MacroExpansionContext
+) -> (structDecl: StructDeclSyntax, fields: [StoredProperty])? {
+    guard let structDecl = declaration.as(StructDeclSyntax.self) else {
+        context.diagnose(Diagnostic(node: node, message: ProductMacroDiagnostic.notAStruct(macro)))
+        return nil
     }
+    if rejectPrivateHost(structDecl.modifiers, macro: macro, kind: "structs", node: node, context: context) {
+        return nil
+    }
+    let scan = scanStoredProperties(of: structDecl)
+    for untyped in scan.untyped {
+        context.diagnose(Diagnostic(
+            node: untyped.binding,
+            message: ProductMacroDiagnostic.cannotInferType(macro, name: untyped.name)
+        ))
+    }
+    guard scan.untyped.isEmpty else { return nil }
+    let fields = scan.properties.filter(\.isInitParam)
+    guard !fields.isEmpty else {
+        context.diagnose(Diagnostic(node: node, message: ProductMacroDiagnostic.noStoredFields(macro)))
+        return nil
+    }
+    return (structDecl, fields)
 }
 
 // MARK: - @DeriveMonoid
@@ -37,15 +48,8 @@ public struct DeriveMonoidMacro: ExtensionMacro {
         conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [ExtensionDeclSyntax] {
-        guard let structDecl = declaration.as(StructDeclSyntax.self) else {
-            context.diagnose(Diagnostic(node: node, message: ProductMacroDiagnostic.notAStruct("@DeriveMonoid")))
-            return []
-        }
-        let fields = storedFields(of: structDecl)
-        guard !fields.isEmpty else {
-            context.diagnose(Diagnostic(node: node, message: ProductMacroDiagnostic.noStoredFields("@DeriveMonoid")))
-            return []
-        }
+        guard let (structDecl, fields) = productFields(of: declaration, macro: "@DeriveMonoid", node: node, context: context)
+        else { return [] }
 
         let access = witnessAccess(structDecl.modifiers)
         let name = type.trimmedDescription
@@ -55,10 +59,10 @@ public struct DeriveMonoidMacro: ExtensionMacro {
             : " where " + genericParams.map { "\($0): CoreFP.Monoid" }.joined(separator: ", ")
 
         let combineArgs = fields
-            .map { "\($0.name): \($0.type).combine(lhs.\($0.name), rhs.\($0.name))" }
+            .map { "\($0.name): \(metatypeSpelling($0.type)).combine(lhs.\($0.name), rhs.\($0.name))" }
             .joined(separator: ", ")
         let identityArgs = fields
-            .map { "\($0.name): \($0.type).identity" }
+            .map { "\($0.name): \(metatypeSpelling($0.type)).identity" }
             .joined(separator: ", ")
 
         let ext: DeclSyntax = """
@@ -73,11 +77,19 @@ public struct DeriveMonoidMacro: ExtensionMacro {
     }
 }
 
+/// A type spelled so `.combine` / `.identity` can follow it: sugared types (`T?`, `[T]`) are fine as
+/// they are, anything else that isn't a plain nominal path is parenthesised.
+private func metatypeSpelling(_ type: String) -> String {
+    let isPlainPath = type.allSatisfy { $0.isLetter || $0.isNumber || "_.<>, ".contains($0) }
+    return isPlainPath ? type : "(\(type))"
+}
+
 // MARK: - Diagnostics
 
 enum ProductMacroDiagnostic: DiagnosticMessage {
     case notAStruct(String)
     case noStoredFields(String)
+    case cannotInferType(String, name: String)
 
     var message: String {
         switch self {
@@ -86,6 +98,10 @@ enum ProductMacroDiagnostic: DiagnosticMessage {
 
         case let .noStoredFields(macro):
             "\(macro) needs at least one stored property with an explicit type"
+
+        case let .cannotInferType(macro, name):
+            "\(macro) can't read the type of stored property '\(name)'. "
+                + "Add an explicit type annotation (e.g. `var \(name): SomeType = ...`)."
         }
     }
 
@@ -96,6 +112,9 @@ enum ProductMacroDiagnostic: DiagnosticMessage {
 
         case .noStoredFields:
             .init(domain: "FPMacrosPlugin", id: "Product.noStoredFields")
+
+        case .cannotInferType:
+            .init(domain: "FPMacrosPlugin", id: "Product.cannotInferType")
         }
     }
 

@@ -6,7 +6,7 @@ public extension Result {
     /// (>>=) :: m a -> (a -> m b) -> m b
     static func bind<A1>(
         _ fn: @escaping @Sendable (Success) -> Result<A1, Failure>
-    ) -> (Result<Success, Failure>) -> Result<A1, Failure> {
+    ) -> @Sendable (Result<Success, Failure>) -> Result<A1, Failure> {
         { result in
             result.flatMap(fn)
         }
@@ -17,7 +17,7 @@ public extension Result {
     static func kleisli<A0, A1>(
         _ fn1: @escaping @Sendable (A0) -> Result<Success, Failure>,
         _ fn2: @escaping @Sendable (Success) -> Result<A1, Failure>
-    ) -> (A0) -> Result<A1, Failure> {
+    ) -> @Sendable (A0) -> Result<A1, Failure> {
         { a0 in
             fn1(a0).flatMap(fn2)
         }
@@ -28,7 +28,7 @@ public extension Result {
     static func kleisliBack<A0, A1>(
         _ fn2: @escaping @Sendable (Success) -> Result<A1, Failure>,
         _ fn1: @escaping @Sendable (A0) -> Result<Success, Failure>
-    ) -> (A0) -> Result<A1, Failure> {
+    ) -> @Sendable (A0) -> Result<A1, Failure> {
         { a0 in
             fn1(a0).flatMap(fn2)
         }

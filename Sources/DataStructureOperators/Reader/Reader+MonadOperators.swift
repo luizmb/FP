@@ -22,7 +22,7 @@ public func -<< <Env, O, O1>(
 public func >=> <Env, O0, O, O1>(
     _ fn1: @escaping @Sendable (O0) -> Reader<Env, O>,
     _ fn2: @escaping @Sendable (O) -> Reader<Env, O1>
-) -> (O0) -> Reader<Env, O1> {
+) -> @Sendable (O0) -> Reader<Env, O1> {
     Reader.kleisli(fn1, fn2)
 }
 

@@ -17,7 +17,7 @@ public extension Result {
     /// The `property` property.
     static func bindT<W: Monoid, A, B>(
         _ fn: @escaping @Sendable (A) -> Writer<W, B>
-    ) -> (Result<Writer<W, A>, Failure>) -> Result<Writer<W, B>, Failure> {
+    ) -> @Sendable (Result<Writer<W, A>, Failure>) -> Result<Writer<W, B>, Failure> {
         { result in result.flatMapT(fn) }
     }
 }
@@ -27,6 +27,6 @@ public extension Result {
 public func kleisliT<W: Monoid, A, B, C, E: Error>(
     _ fn1: @escaping @Sendable (A) -> Result<Writer<W, B>, E>,
     _ fn2: @escaping @Sendable (B) -> Writer<W, C>
-) -> (A) -> Result<Writer<W, C>, E> {
+) -> @Sendable (A) -> Result<Writer<W, C>, E> {
     { a in fn1(a).flatMapT(fn2) }
 }

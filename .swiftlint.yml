@@ -263,7 +263,7 @@ custom_rules:
     severity: error
   crash_functions:
     included: "Sources/"
-    excluded: "(FPMacros|ExpandOptic)"  # FPMacros: local func named `abort`; ExpandOptic: CLI uses exit()
+    excluded: "FPMacros"  # FPMacros: local func named `abort`
     name: "Other Crash Functions"
     regex: '\b(exit|abort|trap)\s*\('
     message: "Never use crash functions (exit, abort, trap). Return error values instead."

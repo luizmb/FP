@@ -6,7 +6,7 @@ public extension Optional {
     /// (>>=) :: m a -> (a -> m b) -> m b
     static func bind<A1>(
         _ fn: @escaping @Sendable (A) -> A1?
-    ) -> (A?) -> A1? {
+    ) -> @Sendable (A?) -> A1? {
         { optional in
             optional.flatMap(fn)
         }
@@ -17,7 +17,7 @@ public extension Optional {
     static func kleisli<A0, A1>(
         _ fn1: @escaping @Sendable (A0) -> A?,
         _ fn2: @escaping @Sendable (A) -> A1?
-    ) -> (A0) -> A1? {
+    ) -> @Sendable (A0) -> A1? {
         { a0 in
             fn1(a0).flatMap(fn2)
         }
@@ -28,7 +28,7 @@ public extension Optional {
     static func kleisliBack<A0, A1>(
         _ fn2: @escaping @Sendable (A) -> A1?,
         _ fn1: @escaping @Sendable (A0) -> A?
-    ) -> (A0) -> A1? {
+    ) -> @Sendable (A0) -> A1? {
         { a0 in
             fn1(a0).flatMap(fn2)
         }

@@ -14,7 +14,7 @@ public extension Writer {
     /// (>>=) :: Writer w a -> (a -> Writer w b) -> Writer w b
     static func bind<B>(
         _ fn: @escaping @Sendable (A) -> Writer<W, B>
-    ) -> (Writer<W, A>) -> Writer<W, B> {
+    ) -> @Sendable (Writer<W, A>) -> Writer<W, B> {
         { $0.flatMap(fn) }
     }
 
@@ -23,7 +23,7 @@ public extension Writer {
     static func kleisli<O0, B>(
         _ fn1: @escaping @Sendable (O0) -> Writer<W, A>,
         _ fn2: @escaping @Sendable (A) -> Writer<W, B>
-    ) -> (O0) -> Writer<W, B> {
+    ) -> @Sendable (O0) -> Writer<W, B> {
         { o0 in fn1(o0).flatMap(fn2) }
     }
 
@@ -32,7 +32,7 @@ public extension Writer {
     static func kleisliBack<O0, B>(
         _ fn2: @escaping @Sendable (A) -> Writer<W, B>,
         _ fn1: @escaping @Sendable (O0) -> Writer<W, A>
-    ) -> (O0) -> Writer<W, B> {
+    ) -> @Sendable (O0) -> Writer<W, B> {
         { o0 in fn1(o0).flatMap(fn2) }
     }
 

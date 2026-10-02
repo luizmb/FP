@@ -32,7 +32,7 @@ import DataStructure
     public func >=> <Env, A, B, C, E: Error>(
         _ fn1: @escaping @Sendable (A) -> Reader<Env, any Publisher<B, E>>,
         _ fn2: @escaping @Sendable (B) -> Reader<Env, any Publisher<C, E>>
-    ) -> (A) -> Reader<Env, any Publisher<C, E>> {
+    ) -> @Sendable (A) -> Reader<Env, any Publisher<C, E>> {
         kleisliT(fn1, fn2)
     }
 

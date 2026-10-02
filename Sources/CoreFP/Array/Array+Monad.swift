@@ -6,7 +6,7 @@ public extension Array {
     /// (>>=) :: m a -> (a -> m b) -> m b
     static func bind<A1>(
         _ fn: @escaping @Sendable (Element) -> [A1]
-    ) -> ([Element]) -> [A1] {
+    ) -> @Sendable ([Element]) -> [A1] {
         { array in
             array.flatMap(fn)
         }
@@ -17,7 +17,7 @@ public extension Array {
     static func kleisli<A0, A1>(
         _ fn1: @escaping @Sendable (A0) -> [Element],
         _ fn2: @escaping @Sendable (Element) -> [A1]
-    ) -> (A0) -> [A1] {
+    ) -> @Sendable (A0) -> [A1] {
         { a0 in
             fn1(a0).flatMap(fn2)
         }
@@ -28,7 +28,7 @@ public extension Array {
     static func kleisliBack<A0, A1>(
         _ fn2: @escaping @Sendable (Element) -> [A1],
         _ fn1: @escaping @Sendable (A0) -> [Element]
-    ) -> (A0) -> [A1] {
+    ) -> @Sendable (A0) -> [A1] {
         { a0 in
             fn1(a0).flatMap(fn2)
         }

@@ -17,7 +17,7 @@
         /// The `property` property.
         static func bindT<S, A, B>(
             _ fn: @escaping @Sendable (A) -> Stateful<S, B>
-        ) -> (AnyPublisher<Stateful<S, A>, Failure>) -> AnyPublisher<Stateful<S, B>, Failure> {
+        ) -> @Sendable (AnyPublisher<Stateful<S, A>, Failure>) -> AnyPublisher<Stateful<S, B>, Failure> {
             { publisher in publisher.flatMapT(fn) }
         }
     }

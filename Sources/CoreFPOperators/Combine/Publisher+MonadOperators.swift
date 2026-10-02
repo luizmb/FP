@@ -32,7 +32,7 @@
     public func >=> <A0, A, A1, B: Error, P1: Publisher, P2: Publisher>(
         _ fn1: @escaping @Sendable (A0) -> P1,
         _ fn2: @escaping @Sendable (A) -> P2
-    ) -> (A0) -> any Publisher<A1, B>
+    ) -> @Sendable (A0) -> any Publisher<A1, B>
     where P1.Output == A, P1.Failure == B, P2.Output == A1, P2.Failure == B {
         AnyPublisher<A, B>.kleisli(fn1, fn2)
     }

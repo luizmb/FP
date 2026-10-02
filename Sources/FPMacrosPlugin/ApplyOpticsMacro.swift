@@ -53,8 +53,8 @@ extension CyclicOpticsMacro {
         return []
     }
 
-    /// The enum `Prismatic` conformance — a self-extension of the attached type (the compiler supplies
-    /// its qualified name), never an extension of a nested type.
+    /// The enum `Prismatic` / struct `Sendable` conformance — a self-extension of the attached type (the
+    /// compiler supplies its qualified name), never an extension of a nested type.
     public static func expansion(
         of node: AttributeSyntax,
         attachedTo declaration: some DeclGroupSyntax,
@@ -62,6 +62,15 @@ extension CyclicOpticsMacro {
         conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [ExtensionDeclSyntax] {
+        if let structDecl = declaration.as(StructDeclSyntax.self) {
+            guard !hasAttribute("Lenses", on: structDecl.attributes) else { return [] } // manual override owns it
+            return try sendableExtensionDecls(
+                structDecl: structDecl,
+                type: type,
+                flags: ApplyOpticsConfig(node: node).lensFlags,
+                protocols: protocols
+            )
+        }
         guard let enumDecl = declaration.as(EnumDeclSyntax.self),
               !collectCases(from: enumDecl).isEmpty,
               !hasAttribute("Prisms", on: enumDecl.attributes)

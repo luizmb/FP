@@ -144,4 +144,43 @@ import Testing
         #expect(results == [10])
         #expect(caughtError == .fail)
     }
+
+    // MARK: - cancellation
+
+    @Test(.timeLimit(.minutes(1)))
+    func toEitherStreamCancelsUpstreamWhenConsumerStops() async {
+        let (terminated, signal) = AsyncStream<Void>.makeStream()
+        let upstream = AsyncThrowingStream<Int, any Error> { continuation in
+            continuation.yield(1)
+            // swiftlint:disable:next closure_ignoring_args
+            continuation.onTermination = { _ in signal.yield(); signal.finish() }
+        }
+
+        for await _ in upstream.toEitherStream() {
+            break
+        }
+
+        // Hangs (and hits the time limit) if the bridge never cancels its inner Task.
+        for await _ in terminated {
+            break
+        }
+    }
+
+    @Test(.timeLimit(.minutes(1)))
+    func toThrowingStreamCancelsUpstreamWhenConsumerStops() async throws {
+        let (terminated, signal) = AsyncStream<Void>.makeStream()
+        let upstream = AsyncStream<Either<TestError, Int>> { continuation in
+            continuation.yield(.right(1))
+            // swiftlint:disable:next closure_ignoring_args
+            continuation.onTermination = { _ in signal.yield(); signal.finish() }
+        }
+
+        for try await _ in upstream.toThrowingStream() {
+            break
+        }
+
+        for await _ in terminated {
+            break
+        }
+    }
 }

@@ -15,7 +15,7 @@ public extension Array {
     }
 
     /// The `property` property.
-    static func bindT<S, A, B>(_ fn: @escaping @Sendable (A) -> Stateful<S, B>) -> ([Stateful<S, A>]) -> [Stateful<S, B>] {
+    static func bindT<S, A, B>(_ fn: @escaping @Sendable (A) -> Stateful<S, B>) -> @Sendable ([Stateful<S, A>]) -> [Stateful<S, B>] {
         { arr in arr.flatMapT(fn) }
     }
 }
@@ -25,6 +25,6 @@ public extension Array {
 public func kleisliT<S, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> [Stateful<S, B>],
     _ fn2: @escaping @Sendable (B) -> Stateful<S, C>
-) -> (A) -> [Stateful<S, C>] {
+) -> @Sendable (A) -> [Stateful<S, C>] {
     { a in fn1(a).flatMapT(fn2) }
 }

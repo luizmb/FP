@@ -20,7 +20,7 @@ public extension Optional {
     }
 
     /// Curried bindT for Optional<[A]>
-    static func bindT<A, B>(_ fn: @escaping @Sendable (A) -> [B]?) -> ([A]?) -> [B]? {
+    static func bindT<A, B>(_ fn: @escaping @Sendable (A) -> [B]?) -> @Sendable ([A]?) -> [B]? {
         { opt in opt.flatMapT(fn) }
     }
 }
@@ -30,7 +30,7 @@ public extension Optional {
 public func kleisliT<A, B, C>(
     _ fn1: @escaping @Sendable (A) -> [B]?,
     _ fn2: @escaping @Sendable (B) -> [C]?
-) -> (A) -> [C]? {
+) -> @Sendable (A) -> [C]? {
     { a in fn1(a).flatMapT(fn2) }
 }
 

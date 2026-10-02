@@ -6,8 +6,9 @@
 /// By default (`@Prisms` or `@Prisms(.all)`) the macro emits:
 /// - `MyEnum.Prisms` — a `Sendable` struct holding one `Prism<MyEnum, AssociatedValue>`
 ///   per case as a stored property with a default value.
-/// - `MyEnum.prism` — a `static let` (or `static var` for generic enums) returning the
-///   `Prisms` instance. Access via `MyEnum.prism.caseName`.
+/// - `MyEnum.prism` — a computed `static var` returning the `Prisms` instance (computed, so it
+///   also works on generic enums and enums nested in a generic type). Access via
+///   `MyEnum.prism.caseName`.
 /// - `Prismatic` conformance — which unlocks composable `\.case` key paths via `PrismFocus`:
 ///   `Prism(\.caseName)` recovers a concrete prism, and `\.a.b.c` composes through nested cases.
 /// - A plain per-case property named after the case (`myEnum.caseName`), typed

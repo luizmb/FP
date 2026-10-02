@@ -22,6 +22,6 @@ public func -<< <S, A, B>(
 public func >=> <S, O0, A, B>(
     _ fn1: @escaping @Sendable (O0) -> Stateful<S, A>,
     _ fn2: @escaping @Sendable (A) -> Stateful<S, B>
-) -> (O0) -> Stateful<S, B> {
+) -> @Sendable (O0) -> Stateful<S, B> {
     Stateful.kleisli(fn1, fn2)
 }

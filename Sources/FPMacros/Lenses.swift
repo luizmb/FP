@@ -8,10 +8,15 @@
 /// - `init(...)` — a memberwise initializer.
 /// - `Foo.Lenses` — a `Sendable` struct holding one `Lens<Foo, Property>` per stored
 ///   property as a stored field with a default value.
-/// - `Foo.lens` — a `static let` (or `static var` for generic structs) returning the
-///   `Lenses` instance. Access via `Foo.lens.property`.
+/// - `Foo.lens` — a computed `static var` returning the `Lenses` instance (computed, so it
+///   also works on generic structs and on structs nested in a generic type). Access via
+///   `Foo.lens.property`.
 /// - `foo.with(property: ...)` — a copy-with-overrides helper that calls the init once,
 ///   collapsing the O(N²) reconstruction-closure footprint of the previous codegen to O(N).
+/// - `extension Foo: Sendable {}` — `CoreFP.lens` needs a `Sendable` host, and a `public`
+///   struct never gets one implicitly. Emitted only when lenses are and the struct doesn't
+///   already declare `Sendable`; a generic struct gets `where T: Sendable` for each generic
+///   parameter its stored properties use.
 ///
 /// ## Optional properties and `with(...)`
 ///
@@ -32,6 +37,9 @@
 /// - `let name = value` → excluded from init, no `Lens` (immutable constant)
 /// - `var name: T`      → required init parameter + `WritableKeyPath`-based `Lens`
 /// - `var name: T = v`  → init parameter with default `v` + `WritableKeyPath`-based `Lens`
+/// - `var name: T { didSet { … } }` → stored (observers don't make a property computed)
+/// - `var a, b: T`      → both properties, typed `T`
+/// - `var name: T!`     → treated as `T?`
 /// - Computed / lazy    → skipped
 ///
 /// ## Access levels
@@ -45,6 +53,11 @@
 /// `with(...)` helper mirror the host's declared visibility. Properties whose declared
 /// visibility is *lower* than the struct's are skipped from both with a diagnostic note
 /// — Swift's access rules forbid exposing them via a more visible API.
+///
+/// A restricted setter (`private(set)`, `public internal(set)`, …) caps the property's lens
+/// to the setter's access (`private(set)` → `fileprivate`), and the property is left out of
+/// `with(...)` when that is more visible than the setter — neither may write the property
+/// from where its setter is hidden.
 ///
 /// The init's visibility is configurable via `init access:` because an init can legally
 /// assign lower-visibility properties (a `public init` may write `internal var port`).
@@ -81,6 +94,7 @@
 /// c.with(port: 9090)               // same effect, no lens needed
 /// ```
 @attached(member, names: arbitrary)
+@attached(extension, conformances: Sendable)
 public macro Lenses(
     _ emit: LensesEmit = .all,
     init access: LensesAccess = .internal

@@ -268,6 +268,12 @@ extension IdentifiedArray {
     mutating func rekeyIfNeeded(at position: Int, previousKey oldKey: ID) {
         let newKey = id(storage[position])
         guard newKey != oldKey else { return }
+        guard bucketSlot(of: newKey) == nil else {
+            // The new id is already taken by another element: fall back to a full
+            // rebuild, which resolves the collision last-wins (same as `append`).
+            self = IdentifiedArray(storage, id: id)
+            return
+        }
         if let slot = bucketSlot(of: oldKey) { tableRemoveSlot(slot) }
         keys[position] = newKey
         tableInsert(newKey, position)
@@ -275,13 +281,57 @@ extension IdentifiedArray {
 
     /// Recomputes `keys` from `storage` and rebuilds the table. O(n). Used after
     /// bulk mutations (e.g. `traversed`) that may have changed identifiers.
+    ///
+    /// If the mutation made two elements share an id, the collection is rebuilt
+    /// last-wins, exactly as appending the elements in order would: the later
+    /// element replaces the earlier one at the earlier position. Ids stay unique.
+    ///
+    /// When no id changed (the common case) the table is left untouched, so the
+    /// cost is one `id` call per element and no hashing.
     mutating func rebuildIndex() {
+        var anyChanged = false
         var i = 0
         while i < storage.count {
-            keys[i] = id(storage[i])
+            let newKey = id(storage[i])
+            if newKey != keys[i] {
+                keys[i] = newKey
+                anyChanged = true
+            }
             i &+= 1
         }
-        rebuildTable(capacity: buckets.isEmpty ? 0 : buckets.count)
+        guard anyChanged else { return }
+        guard rebuildTableRejectingDuplicates(capacity: buckets.count) else {
+            self = IdentifiedArray(storage, id: id)
+            return
+        }
+    }
+
+    /// Like ``rebuildTable(capacity:)``, but compares keys while probing and stops at
+    /// the first duplicate. Returns `false` when `keys` holds a duplicate (the table
+    /// is then partial and must be discarded). Kept separate so the growth path in
+    /// `reserveTable`, where keys are known to be unique, pays no comparisons.
+    mutating func rebuildTableRejectingDuplicates(capacity: Int) -> Bool {
+        buckets = [UInt32](repeating: Self.empty, count: capacity)
+        guard capacity > 0 else { return keys.isEmpty }
+        let mask = capacity &- 1
+        let localKeys = keys
+        return localKeys.withUnsafeBufferPointer { keyBuffer in
+            buckets.withUnsafeMutableBufferPointer { bucketBuffer in
+                guard let keyBase = keyBuffer.baseAddress, let bucketBase = bucketBuffer.baseAddress else { return true }
+                var i = 0
+                let count = keyBuffer.count
+                while i < count {
+                    var slot = Int(UInt(bitPattern: keyBase[i].hashValue) & UInt(bitPattern: mask))
+                    while bucketBase[slot] != Self.empty {
+                        if keyBase[Int(bucketBase[slot])] == keyBase[i] { return false }
+                        slot = (slot &+ 1) & mask
+                    }
+                    bucketBase[slot] = UInt32(i)
+                    i &+= 1
+                }
+                return true
+            }
+        }
     }
 }
 

@@ -19,7 +19,7 @@ public extension AsyncThrowingStream where Element: Sendable, Failure: Sendable 
     /// The stream never throws — errors surface as .left elements instead.
     func toEitherStream() -> AsyncStream<Either<Failure, Element>> {
         AsyncStream { continuation in
-            Task {
+            let task = Task {
                 do {
                     for try await element in self {
                         continuation.yield(.right(element))
@@ -32,6 +32,8 @@ public extension AsyncThrowingStream where Element: Sendable, Failure: Sendable 
                     continuation.finish()
                 }
             }
+            // swiftlint:disable:next closure_ignoring_args
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }
@@ -44,7 +46,7 @@ public extension AsyncStream {
     /// .right elements are yielded normally; the first .left element throws and ends the stream.
     func toThrowingStream<L: Error & Sendable, R: Sendable>() -> AsyncThrowingStream<R, any Error> where Element == Either<L, R> {
         AsyncThrowingStream { continuation in
-            Task {
+            let task = Task {
                 for await element in self {
                     switch element {
                     case let .right(value):
@@ -57,6 +59,8 @@ public extension AsyncStream {
                 }
                 continuation.finish()
             }
+            // swiftlint:disable:next closure_ignoring_args
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }

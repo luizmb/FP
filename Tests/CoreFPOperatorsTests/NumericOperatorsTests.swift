@@ -118,29 +118,6 @@ import Testing
         #expect(viaOperator == viaContains)
     }
 
-    // MARK: - Power
-
-    // ^ is limited to BinaryFloatingPoint to avoid conflict with Swift's built-in
-    // XOR operator on BinaryInteger types. Use power(_:_:) for integers.
-
-    @Test func powerFloatOperator() {
-        let a = 2.0 ^ 10
-        let b = 3.0 ^ 3
-        let c = 5.0 ^ 0
-        let d = 7.0 ^ 1
-        #expect(a == 1_024.0)
-        #expect(b == 27.0)
-        #expect(c == 1.0)
-        #expect(d == 7.0)
-    }
-
-    @Test func powerOperatorMatchesNamedFunction() {
-        let r1 = 2.0 ^ 8
-        let r2 = 3.0 ^ 4
-        #expect(r1 == power(2.0, 8))
-        #expect(r2 == power(3.0, 4))
-    }
-
     @Test func plusMinusMatchesNamedFunction() {
         #expect((5 ± 2) == symmetricRange(5, delta: 2))
         #expect((5.0 ± 0.5) == symmetricRange(5.0, delta: 0.5))

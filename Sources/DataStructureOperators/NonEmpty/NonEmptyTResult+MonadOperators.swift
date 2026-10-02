@@ -24,6 +24,6 @@ public func -<< <A, B, E>(
 public func >=> <A, B, C, E>(
     _ fn1: @escaping @Sendable (A) -> NonEmpty<Result<B, E>>,
     _ fn2: @escaping @Sendable (B) -> NonEmpty<Result<C, E>>
-) -> (A) -> NonEmpty<Result<C, E>> {
+) -> @Sendable (A) -> NonEmpty<Result<C, E>> {
     kleisliT(fn1, fn2)
 }

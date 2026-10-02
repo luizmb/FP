@@ -18,7 +18,7 @@ public extension Reader {
     /// Curried bind for ReaderT Result
     static func bindT<A, B, E: Error>(
         _ fn: @escaping @Sendable (A) -> Reader<Environment, Result<B, E>>
-    ) -> (Reader<Environment, Result<A, E>>) -> Reader<Environment, Result<B, E>>
+    ) -> @Sendable (Reader<Environment, Result<A, E>>) -> Reader<Environment, Result<B, E>>
     where Output == Result<A, E> {
         { reader in
             reader.flatMapT(fn)
@@ -31,6 +31,6 @@ public extension Reader {
 public func kleisliT<Env, A, B, C, E: Error>(
     _ fn1: @escaping @Sendable (A) -> Reader<Env, Result<B, E>>,
     _ fn2: @escaping @Sendable (B) -> Reader<Env, Result<C, E>>
-) -> (A) -> Reader<Env, Result<C, E>> {
+) -> @Sendable (A) -> Reader<Env, Result<C, E>> {
     { a in fn1(a).flatMapT(fn2) }
 }

@@ -25,7 +25,7 @@ public extension Array {
     /// Curried bindT for [Result<A,E>]
     static func bindT<A, B, E: Error>(
         _ fn: @escaping @Sendable (A) -> [Result<B, E>]
-    ) -> ([Result<A, E>]) -> [Result<B, E>] {
+    ) -> @Sendable ([Result<A, E>]) -> [Result<B, E>] {
         { arr in arr.flatMapT(fn) }
     }
 }
@@ -35,6 +35,6 @@ public extension Array {
 public func kleisliT<A, B, C, E: Error>(
     _ fn1: @escaping @Sendable (A) -> [Result<B, E>],
     _ fn2: @escaping @Sendable (B) -> [Result<C, E>]
-) -> (A) -> [Result<C, E>] {
+) -> @Sendable (A) -> [Result<C, E>] {
     { a in fn1(a).flatMapT(fn2) }
 }

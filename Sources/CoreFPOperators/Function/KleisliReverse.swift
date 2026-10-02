@@ -29,7 +29,7 @@ import CoreFP
 public func <=< <A0, A, A1>(
     _ fn2: @escaping @Sendable (A) -> A1?,
     _ fn1: @escaping @Sendable (A0) -> A?
-) -> (A0) -> A1? { fn1 >=> fn2 }
+) -> @Sendable (A0) -> A1? { fn1 >=> fn2 }
 
 // MARK: - Array
 
@@ -37,7 +37,7 @@ public func <=< <A0, A, A1>(
 public func <=< <A0, A, A1>(
     _ fn2: @escaping @Sendable (A) -> [A1],
     _ fn1: @escaping @Sendable (A0) -> [A]
-) -> (A0) -> [A1] { fn1 >=> fn2 }
+) -> @Sendable (A0) -> [A1] { fn1 >=> fn2 }
 
 // MARK: - Result
 
@@ -45,7 +45,7 @@ public func <=< <A0, A, A1>(
 public func <=< <A0, A, A1, B>(
     _ fn2: @escaping @Sendable (A) -> Result<A1, B>,
     _ fn1: @escaping @Sendable (A0) -> Result<A, B>
-) -> (A0) -> Result<A1, B> { fn1 >=> fn2 }
+) -> @Sendable (A0) -> Result<A1, B> { fn1 >=> fn2 }
 
 // MARK: - ArrayTOptional
 
@@ -53,7 +53,7 @@ public func <=< <A0, A, A1, B>(
 public func <=< <A, B, C>(
     _ fn2: @escaping @Sendable (B) -> [C?],
     _ fn1: @escaping @Sendable (A) -> [B?]
-) -> (A) -> [C?] { fn1 >=> fn2 }
+) -> @Sendable (A) -> [C?] { fn1 >=> fn2 }
 
 // MARK: - ArrayTResult
 
@@ -61,7 +61,7 @@ public func <=< <A, B, C>(
 public func <=< <A, B, C, E: Error>(
     _ fn2: @escaping @Sendable (B) -> [Result<C, E>],
     _ fn1: @escaping @Sendable (A) -> [Result<B, E>]
-) -> (A) -> [Result<C, E>] { fn1 >=> fn2 }
+) -> @Sendable (A) -> [Result<C, E>] { fn1 >=> fn2 }
 
 // MARK: - OptionalTArray
 
@@ -71,7 +71,7 @@ public func <=< <A, B, C, E: Error>(
 public func <=< <A, B, C>(
     _ fn2: @escaping @Sendable (B) -> [C]?,
     _ fn1: @escaping @Sendable (A) -> [B]?
-) -> (A) -> [C]? { fn1 >=> fn2 }
+) -> @Sendable (A) -> [C]? { fn1 >=> fn2 }
 
 // swiftlint:enable discouraged_optional_collection
 
@@ -81,7 +81,7 @@ public func <=< <A, B, C>(
 public func <=< <A, B, C, E: Error>(
     _ fn2: @escaping @Sendable (B) -> Result<C, E>?,
     _ fn1: @escaping @Sendable (A) -> Result<B, E>?
-) -> (A) -> Result<C, E>? { fn1 >=> fn2 }
+) -> @Sendable (A) -> Result<C, E>? { fn1 >=> fn2 }
 
 // MARK: - Publisher
 
@@ -93,7 +93,7 @@ public func <=< <A, B, C, E: Error>(
     public func <=< <A0, A, A1, B: Error, P1: Publisher, P2: Publisher>(
         _ fn2: @escaping @Sendable (A) -> P2,
         _ fn1: @escaping @Sendable (A0) -> P1
-    ) -> (A0) -> any Publisher<A1, B>
+    ) -> @Sendable (A0) -> any Publisher<A1, B>
     where P1.Output == A, P1.Failure == B, P2.Output == A1, P2.Failure == B { fn1 >=> fn2 }
 
 #endif
@@ -105,4 +105,4 @@ public func <=< <A, B, C, E: Error>(
 public func <=< <A, B: AsyncSequence, C: AsyncSequence>(
     _ fn2: @escaping @Sendable (B.Element) async throws -> C,
     _ fn1: @escaping @Sendable (A) async throws -> B
-) -> (A) async throws -> AsyncThrowingFlatMapSequence<AsyncThrowingMapSequence<B, C>, C> { fn1 >=> fn2 }
+) -> @Sendable (A) async throws -> AsyncThrowingFlatMapSequence<AsyncThrowingMapSequence<B, C>, C> { fn1 >=> fn2 }

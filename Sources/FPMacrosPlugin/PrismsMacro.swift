@@ -138,14 +138,13 @@ func generatePrismMembers(
     }
 
     let enumName = enumDecl.name.trimmed.text
-    let isGeneric = enumDecl.genericParameterClause != nil
     let cases = collectCases(from: enumDecl)
 
     var members: [DeclSyntax] = []
 
     if flags.emitsPrismStruct {
         members.append(makePrismsStruct(enumName: enumName, access: access, cases: cases))
-        members.append(makeStaticPrism(enumName: enumName, access: access, isGeneric: isGeneric))
+        members.append(makeStaticPrism(access: access))
         members.append(contentsOf: makeCaseProperties(access: access, cases: cases))
     }
 
@@ -190,7 +189,7 @@ func prismaticExtensionDecls(
 ) throws -> [ExtensionDeclSyntax] {
     guard accessKeyword(from: enumDecl.modifiers) != "private",
           flags.emitsPrismStruct,
-          !protocols.isEmpty
+          protocols.contains(where: { isProtocol("Prismatic", $0) })
     else { return [] }
     return [try ExtensionDeclSyntax("extension \(type.trimmed): Prismatic {}")]
 }
@@ -271,16 +270,11 @@ private func makeCaseProperties(access: String, cases: [CaseInfo]) -> [DeclSynta
     }
 }
 
-/// For non-generic hosts emit `static let prism = Prisms()` — a one-time allocation,
-/// cached for the program's lifetime. For generic hosts Swift forbids `static let` in a
-/// generic context, so we fall back to a computed `static var prism: Prisms { Prisms() }`
-/// which allocates per access. Same call-site syntax in both cases.
-private func makeStaticPrism(enumName: String, access: String, isGeneric: Bool) -> DeclSyntax {
-    let prefix = accessPrefix(access)
-    if isGeneric {
-        return DeclSyntax(stringLiteral: "\(prefix)static var prism: Prisms { Prisms() }")
-    }
-    return DeclSyntax(stringLiteral: "\(prefix)static let prism = Prisms()")
+/// Always a computed `static var prism: Prisms { Prisms() }`: a `static let` is rejected in any
+/// generic context, which includes an enum nested in a generic type (invisible to the macro).
+/// `Prisms` is a struct of stored prisms, so building one per access is cheap.
+private func makeStaticPrism(access: String) -> DeclSyntax {
+    DeclSyntax(stringLiteral: "\(accessPrefix(access))static var prism: Prisms { Prisms() }")
 }
 
 private func makeIsFunc(access: String, hasCases: Bool) -> DeclSyntax {

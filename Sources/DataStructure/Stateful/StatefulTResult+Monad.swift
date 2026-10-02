@@ -15,7 +15,7 @@ public extension Stateful {
     /// The `property` property.
     static func bindT<Inner, B, E: Error>(
         _ fn: @escaping @Sendable (Inner) -> Stateful<S, Result<B, E>>
-    ) -> (Stateful<S, Result<Inner, E>>) -> Stateful<S, Result<B, E>>
+    ) -> @Sendable (Stateful<S, Result<Inner, E>>) -> Stateful<S, Result<B, E>>
     where A == Result<Inner, E> {
         { $0.flatMapT(fn) }
     }
@@ -26,6 +26,6 @@ public extension Stateful {
 public func kleisliT<S, A, B, C, E: Error>(
     _ fn1: @escaping @Sendable (A) -> Stateful<S, Result<B, E>>,
     _ fn2: @escaping @Sendable (B) -> Stateful<S, Result<C, E>>
-) -> (A) -> Stateful<S, Result<C, E>> {
+) -> @Sendable (A) -> Stateful<S, Result<C, E>> {
     { a in fn1(a).flatMapT(fn2) }
 }

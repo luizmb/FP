@@ -45,11 +45,6 @@ precedencegroup FunctionCompositionBackwards {
 
 // 8.5: BitwiseShiftPrecedence >>
 
-// 8: Swift stdlib `^` uses BitwiseXorPrecedence (same level as bitwise XOR).
-// We cannot declare a separate PowerPrecedence for `^` because the stdlib already
-// declares `infix operator ^: BitwiseXorPrecedence` — having two declarations
-// with different precedences causes an "ambiguous operator declarations" error.
-
 // 7: MultiplicationPrecedence * /
 
 // 6: ConcatPrecedence <>

@@ -19,8 +19,10 @@ public extension IdentifiedArray where ID: Sendable, Element: Sendable {
     /// `tryModifyMut` mutates `&storage[i]` directly after an O(1) index lookup —
     /// zero-copy on the element buffer when the whole value is uniquely referenced.
     ///
-    /// - Precondition: the mutation must not change the element's id; the id keys
-    ///   the lookup table. Re-key with `remove(id:)` + `append` instead.
+    /// `set` ignores a replacement whose id differs from `key` (the focus is "the
+    /// element with this id"). A mutation through `tryModifyMut` that changes the id
+    /// re-keys the element; if the new id collides with another element, the
+    /// collision resolves last-wins, as with `append`.
     ///
     /// ```swift
     /// IdentifiedArray.ix(id: 2).preview(items)?.name   // O(1)
@@ -38,6 +40,7 @@ public extension IdentifiedArray where ID: Sendable, Element: Sendable {
             tryModifyMut: { @Sendable whole, f in
                 guard let i = whole.position(of: key) else { return }
                 f(&whole.storage[i])
+                whole.rekeyIfNeeded(at: i, previousKey: key)
             }
         )
     }
@@ -46,8 +49,8 @@ public extension IdentifiedArray where ID: Sendable, Element: Sendable {
     ///
     /// Unlike ``ix(id:)``, replacing or mutating through a position may change the
     /// element's id; the lookup table for that single slot is patched accordingly
-    /// (O(1)). Colliding with an id already present elsewhere is a precondition
-    /// violation (ids must stay unique).
+    /// (O(1)). Colliding with an id already present elsewhere triggers an O(n)
+    /// rebuild that resolves the collision last-wins, as with `append`.
     static func ix(_ position: Int) -> AffineTraversal<IdentifiedArray, Element> {
         AffineTraversal(
             preview: { @Sendable whole in whole.storage.indices.contains(position) ? whole.storage[position] : nil },
@@ -71,7 +74,8 @@ public extension IdentifiedArray where ID: Sendable, Element: Sendable {
     /// A ``Traversal`` over every element, in order. `modifyMut` mutates each
     /// element in place (zero-copy on the buffer when uniquely referenced), then
     /// rebuilds the lookup table — so mutations through this traversal MAY change
-    /// ids (unlike ``ix(id:)``).
+    /// ids (unlike ``ix(id:)``). Ids that end up colliding resolve last-wins, as
+    /// with `append`.
     static var traversed: Traversal<IdentifiedArray, Element> {
         Traversal(
             getAll: { @Sendable whole in whole.storage },

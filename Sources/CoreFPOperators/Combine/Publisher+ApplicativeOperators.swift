@@ -25,7 +25,7 @@
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
     public func <* <A, B: Error, Ignore>(_ lhs: any Publisher<A, B>, _ rhs: any Publisher<Ignore, B>)
     -> any Publisher<A, B> {
-        rhs *> lhs
+        AnyPublisher<A, B>.seqLeft(lhs, rhs)
     }
 
 #endif

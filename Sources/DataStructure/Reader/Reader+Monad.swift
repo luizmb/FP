@@ -15,7 +15,7 @@ public extension Reader {
     /// (>>=) :: m a -> (a -> m b) -> m b
     static func bind<O1>(
         _ fn: @escaping @Sendable (Output) -> Reader<Environment, O1>
-    ) -> (Reader<Environment, Output>) -> Reader<Environment, O1> {
+    ) -> @Sendable (Reader<Environment, Output>) -> Reader<Environment, O1> {
         { reader in
             reader.flatMap(fn)
         }
@@ -26,7 +26,7 @@ public extension Reader {
     static func kleisli<O0, O1>(
         _ fn1: @escaping @Sendable (O0) -> Reader<Environment, Output>,
         _ fn2: @escaping @Sendable (Output) -> Reader<Environment, O1>
-    ) -> (O0) -> Reader<Environment, O1> {
+    ) -> @Sendable (O0) -> Reader<Environment, O1> {
         { o0 in
             fn1(o0).flatMap(fn2)
         }
@@ -37,7 +37,7 @@ public extension Reader {
     static func kleisliBack<O0, O1>(
         _ fn2: @escaping @Sendable (Output) -> Reader<Environment, O1>,
         _ fn1: @escaping @Sendable (O0) -> Reader<Environment, Output>
-    ) -> (O0) -> Reader<Environment, O1> {
+    ) -> @Sendable (O0) -> Reader<Environment, O1> {
         { o0 in
             fn1(o0).flatMap(fn2)
         }

@@ -106,4 +106,24 @@ import Testing
         #expect(power(-2, 3) == -8)
         #expect(power(-3, 2) == 9)
     }
+
+    @Test func powerNegativeExponentFloatingPoint() {
+        #expect(power(2.0, -1) == 0.5)
+        #expect(power(-2.0, -3) == -0.125)
+        #expect(power(0.0, -1) == .infinity)
+    }
+
+    @Test func powerNegativeExponentIntegerTruncates() {
+        #expect(power(2, -1) == 0)
+        #expect(power(1, -5) == 1)
+        #expect(power(-1, -3) == -1)
+        #expect(power(-1, -4) == 1)
+        #expect(power(0, -1) == 0)
+    }
+
+    @Test func powerLargeExponentBySquaring() {
+        #expect(power(2, 62) == 4_611_686_018_427_387_904)
+        #expect(power(1.5, 20) == 3_325.256730079651)
+        #expect(power(3, 13) == 1_594_323)
+    }
 }

@@ -18,7 +18,7 @@ public extension Stateful {
     /// (>>=) :: Stateful s a -> (a -> Stateful s b) -> Stateful s b
     static func bind<B>(
         _ fn: @escaping @Sendable (A) -> Stateful<S, B>
-    ) -> (Stateful<S, A>) -> Stateful<S, B> {
+    ) -> @Sendable (Stateful<S, A>) -> Stateful<S, B> {
         { $0.flatMap(fn) }
     }
 
@@ -27,7 +27,7 @@ public extension Stateful {
     static func kleisli<O0, B>(
         _ fn1: @escaping @Sendable (O0) -> Stateful<S, A>,
         _ fn2: @escaping @Sendable (A) -> Stateful<S, B>
-    ) -> (O0) -> Stateful<S, B> {
+    ) -> @Sendable (O0) -> Stateful<S, B> {
         { o0 in fn1(o0).flatMap(fn2) }
     }
 
@@ -36,7 +36,7 @@ public extension Stateful {
     static func kleisliBack<O0, B>(
         _ fn2: @escaping @Sendable (A) -> Stateful<S, B>,
         _ fn1: @escaping @Sendable (O0) -> Stateful<S, A>
-    ) -> (O0) -> Stateful<S, B> {
+    ) -> @Sendable (O0) -> Stateful<S, B> {
         { o0 in fn1(o0).flatMap(fn2) }
     }
 

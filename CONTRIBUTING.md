@@ -43,16 +43,13 @@ This library follows strict functional programming principles. See the README an
 what `@Prisms` would generate (Swift can't retroactively apply macros to `Optional`/`Result`,
 and the others predate the macro or need custom access-level handling). If you change
 `PrismsMacro`/`LensesMacro`'s codegen, verify these five stay in sync by diffing against
-what the macro actually emits for a shape-matching scratch enum/struct:
+what the macro actually emits for a shape-matching scratch enum/struct.
 
-```bash
-swift run ExpandOptic path/to/scratch/file.swift
-```
-
-`ExpandOptic` parses a file, finds any `@Lenses`/`@Prisms`-annotated declaration, and prints
-what the macro would generate — without needing to actually apply the macro to the real
-library type. Write a throwaway file with the same case/property shape as the type you're
-checking, annotate it, run the tool, and diff the output against the hand-written source.
+To see that output, annotate a throwaway declaration with the same case/property shape as the
+type you're checking (a scratch file in `Tests/FPMacrosTests` works) and use Xcode's
+**Expand Macro** on the attribute, or the `expand(_:)` helper in
+`Tests/FPMacrosTests/MacroExpansionSupport.swift`, which runs the real plugin and returns
+the expanded source. Diff that against the hand-written source.
 
 ## Pull Request Process
 

@@ -26,6 +26,6 @@ public func -<< <Env, W: Monoid, A, B>(
 public func >=> <Env, W: Monoid, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Reader<Env, Writer<W, B>>,
     _ fn2: @escaping @Sendable (B) -> Writer<W, C>
-) -> (A) -> Reader<Env, Writer<W, C>> {
+) -> @Sendable (A) -> Reader<Env, Writer<W, C>> {
     kleisliT(fn1, fn2)
 }

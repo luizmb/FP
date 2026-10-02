@@ -30,6 +30,6 @@ public extension Optional {
 public func kleisliT<L, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Either<L, B>?,
     _ fn2: @escaping @Sendable (B) -> Either<L, C>?
-) -> (A) -> Either<L, C>? {
+) -> @Sendable (A) -> Either<L, C>? {
     { a in fn1(a).flatMapT(fn2) }
 }

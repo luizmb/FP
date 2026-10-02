@@ -18,7 +18,7 @@ public extension Stateful {
     /// The `property` property.
     static func bindT<W: Monoid, Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> Writer<W, B>
-    ) -> (Stateful<S, Writer<W, Inner>>) -> Stateful<S, Writer<W, B>>
+    ) -> @Sendable (Stateful<S, Writer<W, Inner>>) -> Stateful<S, Writer<W, B>>
     where A == Writer<W, Inner> {
         { $0.flatMapT(fn) }
     }

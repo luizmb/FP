@@ -28,7 +28,7 @@ public func -<< <S: AsyncSequence, T: AsyncSequence>(
 public func >=> <A, B: AsyncSequence, C: AsyncSequence>(
     _ fn1: @escaping @Sendable (A) async throws -> B,
     _ fn2: @escaping @Sendable (B.Element) async throws -> C
-) -> (A) async throws -> AsyncThrowingFlatMapSequence<AsyncThrowingMapSequence<B, C>, C> {
+) -> @Sendable (A) async throws -> AsyncThrowingFlatMapSequence<AsyncThrowingMapSequence<B, C>, C> {
     { a in
         try await fn1(a).bind(fn2)
     }

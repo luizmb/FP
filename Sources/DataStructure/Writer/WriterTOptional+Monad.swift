@@ -17,7 +17,7 @@ public extension Writer {
     /// The `property` property.
     static func bindT<Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> Writer<W, B?>
-    ) -> (Writer<W, Inner?>) -> Writer<W, B?> where A == Inner? {
+    ) -> @Sendable (Writer<W, Inner?>) -> Writer<W, B?> where A == Inner? {
         { $0.flatMapT(fn) }
     }
 }
@@ -27,6 +27,6 @@ public extension Writer {
 public func kleisliT<W: Monoid, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Writer<W, B?>,
     _ fn2: @escaping @Sendable (B) -> Writer<W, C?>
-) -> (A) -> Writer<W, C?> {
+) -> @Sendable (A) -> Writer<W, C?> {
     { a in fn1(a).flatMapT(fn2) }
 }

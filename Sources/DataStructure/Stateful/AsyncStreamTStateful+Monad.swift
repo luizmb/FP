@@ -15,7 +15,7 @@ public extension AsyncStream {
     /// The `property` property.
     static func bindT<S, A, B>(
         _ fn: @escaping @Sendable (A) -> Stateful<S, B>
-    ) -> (AsyncStream<Stateful<S, A>>) -> AsyncMapSequence<AsyncStream<Stateful<S, A>>, Stateful<S, B>> {
+    ) -> @Sendable (AsyncStream<Stateful<S, A>>) -> AsyncMapSequence<AsyncStream<Stateful<S, A>>, Stateful<S, B>> {
         { stream in stream.flatMapT(fn) }
     }
 }

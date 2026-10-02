@@ -58,10 +58,13 @@ public func rangeMatch<T: Comparable>(_ value: T, in range: PartialRangeUpTo<T>)
 
 // MARK: - Integer Power
 
-/// Raises `base` to the `exp` power using repeated multiplication.
-/// Returns `1` for a zero exponent. Behaviour for negative exponents matches
-/// repeated multiplication (integer truncation — use `Foundation.pow` for
-/// fractional results).
+/// Raises `base` to a non-negative `exp` by squaring, O(log exp) multiplications.
+/// Returns `1` for a zero exponent.
+///
+/// `SignedNumeric` has no division, so a negative exponent can't be expressed for
+/// an arbitrary numeric type: this overload returns `1` for it. Integer and
+/// floating-point bases pick the more specific overloads below, which handle
+/// negative exponents properly.
 ///
 /// ```swift
 /// power(2, 10)   // 1024
@@ -69,6 +72,54 @@ public func rangeMatch<T: Comparable>(_ value: T, in range: PartialRangeUpTo<T>)
 /// power(5, 3)    // 125
 /// ```
 public func power<T: SignedNumeric>(_ base: T, _ exp: Int) -> T {
-    guard exp > 0 else { return 1 }
-    return (1..<exp).reduce(base) { acc, _ in acc * base }
+    exp > 0 ? powerBySquaring(base, exp) : 1
+}
+
+/// Raises an integer `base` to `exp`. A negative exponent follows integer division
+/// truncation of `1 / base^|exp|`: `1` for a base of `1`, `±1` for a base of `-1`
+/// (sign by parity) and `0` for any other base, including `0`.
+///
+/// ```swift
+/// power(2, 10)    // 1024
+/// power(2, -1)    // 0
+/// power(-1, -3)   // -1
+/// ```
+public func power<T: SignedInteger>(_ base: T, _ exp: Int) -> T {
+    guard exp < 0 else { return exp == 0 ? 1 : powerBySquaring(base, exp) }
+    switch base {
+    case 1:
+        return 1
+
+    case -1:
+        return exp.isMultiple(of: 2) ? 1 : -1
+
+    default:
+        return 0
+    }
+}
+
+/// Raises a floating-point `base` to an integer `exp`. A negative exponent yields
+/// the reciprocal, `1 / base^|exp|`.
+///
+/// ```swift
+/// power(2.0, 10)   // 1024.0
+/// power(2.0, -1)   // 0.5
+/// power(0.0, -1)   // +infinity
+/// ```
+public func power<T: FloatingPoint>(_ base: T, _ exp: Int) -> T {
+    guard exp < 0 else { return exp == 0 ? 1 : powerBySquaring(base, exp) }
+    return 1 / powerBySquaring(base, exp.magnitude)
+}
+
+/// `base^exp` for `exp > 0`, by repeated squaring.
+private func powerBySquaring<T: Numeric, E: BinaryInteger>(_ base: T, _ exp: E) -> T {
+    var result: T = 1
+    var factor = base
+    var remaining = exp
+    while remaining > 0 {
+        if remaining & 1 == 1 { result *= factor }
+        remaining >>= 1
+        if remaining > 0 { factor *= factor }
+    }
+    return result
 }

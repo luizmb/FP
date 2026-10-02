@@ -17,7 +17,7 @@ public extension AsyncStream {
     /// The `property` property.
     static func bindT<W: Monoid, A, B>(
         _ fn: @escaping @Sendable (A) -> Writer<W, B>
-    ) -> (AsyncStream<Writer<W, A>>) -> AsyncMapSequence<AsyncStream<Writer<W, A>>, Writer<W, B>> {
+    ) -> @Sendable (AsyncStream<Writer<W, A>>) -> AsyncMapSequence<AsyncStream<Writer<W, A>>, Writer<W, B>> {
         { stream in stream.flatMapT(fn) }
     }
 }

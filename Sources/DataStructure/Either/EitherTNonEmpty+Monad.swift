@@ -29,7 +29,7 @@ public func flatMapTEitherNonEmpty<L, A, B>(
 /// Curried version
 public func bindTEitherNonEmpty<L, A, B>(
     _ fn: @escaping @Sendable (A) -> Either<L, NonEmpty<B>?>
-) -> (Either<L, NonEmpty<A>>) -> Either<L, NonEmpty<B>?> {
+) -> @Sendable (Either<L, NonEmpty<A>>) -> Either<L, NonEmpty<B>?> {
     { flatMapTEitherNonEmpty($0, fn) }
 }
 
@@ -38,7 +38,7 @@ public func bindTEitherNonEmpty<L, A, B>(
 public func kleisliT<L, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Either<L, NonEmpty<B>?>,
     _ fn2: @escaping @Sendable (B) -> Either<L, NonEmpty<C>?>
-) -> (A) -> Either<L, NonEmpty<C>?> {
+) -> @Sendable (A) -> Either<L, NonEmpty<C>?> {
     { a in
         fn1(a).flatMap { nbOpt in
             guard let nb = nbOpt else { return .right(nil) }

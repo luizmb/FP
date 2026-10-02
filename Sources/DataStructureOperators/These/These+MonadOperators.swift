@@ -17,7 +17,7 @@ public func -<< <A: Semigroup, B, C>(_ fn: @escaping @Sendable (B) -> These<A, C
 public func >=> <A: Semigroup, B0, B, C>(
     _ fn1: @escaping @Sendable (B0) -> These<A, B>,
     _ fn2: @escaping @Sendable (B) -> These<A, C>
-) -> (B0) -> These<A, C> {
+) -> @Sendable (B0) -> These<A, C> {
     These.kleisli(fn1, fn2)
 }
 

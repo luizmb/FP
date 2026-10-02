@@ -33,7 +33,7 @@
         @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
         static func bindT<Inner, B, E: Error>(
             _ fn: @escaping @Sendable (Inner) -> Writer<W, any Publisher<B, E>>
-        ) -> (Writer<W, any Publisher<Inner, E>>) -> Writer<W, any Publisher<B, E>>
+        ) -> @Sendable (Writer<W, any Publisher<Inner, E>>) -> Writer<W, any Publisher<B, E>>
         where A == any Publisher<Inner, E> {
             { $0.flatMapT(fn) }
         }
@@ -45,7 +45,7 @@
     public func kleisliT<W: Monoid, A, B, C, E: Error>(
         _ fn1: @escaping @Sendable (A) -> Writer<W, any Publisher<B, E>>,
         _ fn2: @escaping @Sendable (B) -> Writer<W, any Publisher<C, E>>
-    ) -> (A) -> Writer<W, any Publisher<C, E>> {
+    ) -> @Sendable (A) -> Writer<W, any Publisher<C, E>> {
         { a in fn1(a).flatMapT(fn2) }
     }
 

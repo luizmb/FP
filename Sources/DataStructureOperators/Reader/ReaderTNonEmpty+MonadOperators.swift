@@ -26,6 +26,6 @@ public func -<< <Env, A, B>(
 public func >=> <Env, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Reader<Env, NonEmpty<B>?>,
     _ fn2: @escaping @Sendable (B) -> Reader<Env, NonEmpty<C>?>
-) -> (A) -> Reader<Env, NonEmpty<C>?> {
+) -> @Sendable (A) -> Reader<Env, NonEmpty<C>?> {
     kleisliT(fn1, fn2)
 }

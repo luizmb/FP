@@ -184,7 +184,8 @@ public extension AffineTraversal where S == A {
 }
 
 /// Lifts a `WritableKeyPath` to an optional property into an `AffineTraversal`.
-/// Preview reads the optional; set writes the non-nil focus back as `.some`.
+/// Preview reads the optional; set replaces the focus only when it is present
+/// (a `nil` property stays `nil`, like every other affine traversal).
 ///
 /// `tryModifyMut` copies `A` once (extracted from the optional) then writes
 /// back into `inout S` — no CoW on `S`.
@@ -195,7 +196,10 @@ public extension AffineTraversal where S == A {
 public func affineTraversal<S: Sendable, A: Sendable>(_ keyPath: WritableKeyPath<S, A?>) -> AffineTraversal<S, A> {
     AffineTraversal(
         preview: { @Sendable s in s[keyPath: keyPath] },
-        set: { @Sendable s, a in var c = s; c[keyPath: keyPath] = a; return c },
+        set: { @Sendable s, a in
+            guard s[keyPath: keyPath] != nil else { return s }
+            var c = s; c[keyPath: keyPath] = a; return c
+        },
         tryModifyMut: { @Sendable s, f in
             guard var value = s[keyPath: keyPath] else { return }
             f(&value)

@@ -15,7 +15,7 @@ public func -<< <A, A1, B>(_ fn: @escaping @Sendable (A) -> Result<A1, B>, _ res
 public func >=> <A0, A, A1, B>(
     _ fn1: @escaping @Sendable (A0) -> Result<A, B>,
     _ fn2: @escaping @Sendable (A) -> Result<A1, B>
-) -> (A0) -> Result<A1, B> {
+) -> @Sendable (A0) -> Result<A1, B> {
     Result.kleisli(fn1, fn2)
 }
 

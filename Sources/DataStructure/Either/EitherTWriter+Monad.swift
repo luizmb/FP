@@ -20,7 +20,7 @@ public extension Either {
     /// The `property` property.
     static func bindT<W: Monoid, Inner, C>(
         _ fn: @escaping @Sendable (Inner) -> Writer<W, C>
-    ) -> (Either<A, Writer<W, Inner>>) -> Either<A, Writer<W, C>> {
+    ) -> @Sendable (Either<A, Writer<W, Inner>>) -> Either<A, Writer<W, C>> {
         { either in either.flatMapT(fn) }
     }
 }
@@ -30,6 +30,6 @@ public extension Either {
 public func kleisliT<L, W: Monoid, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Either<L, Writer<W, B>>,
     _ fn2: @escaping @Sendable (B) -> Writer<W, C>
-) -> (A) -> Either<L, Writer<W, C>> {
+) -> @Sendable (A) -> Either<L, Writer<W, C>> {
     { a in fn1(a).flatMapT(fn2) }
 }

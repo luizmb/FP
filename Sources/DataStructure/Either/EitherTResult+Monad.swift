@@ -27,7 +27,7 @@ public func flatMapTEitherResult<L, A, B, E: Error>(
 /// Curried version
 public func bindTEitherResult<L, A, B, E: Error>(
     _ fn: @escaping @Sendable (A) -> Either<L, Result<B, E>>
-) -> (Either<L, Result<A, E>>) -> Either<L, Result<B, E>> {
+) -> @Sendable (Either<L, Result<A, E>>) -> Either<L, Result<B, E>> {
     { either in flatMapTEitherResult(either, fn) }
 }
 
@@ -36,6 +36,6 @@ public func bindTEitherResult<L, A, B, E: Error>(
 public func kleisliT<L, A, B, C, E: Error>(
     _ fn1: @escaping @Sendable (A) -> Either<L, Result<B, E>>,
     _ fn2: @escaping @Sendable (B) -> Either<L, Result<C, E>>
-) -> (A) -> Either<L, Result<C, E>> {
+) -> @Sendable (A) -> Either<L, Result<C, E>> {
     { a in flatMapTEitherResult(fn1(a), fn2) }
 }

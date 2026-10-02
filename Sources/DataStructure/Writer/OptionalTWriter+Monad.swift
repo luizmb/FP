@@ -25,6 +25,6 @@ public extension Optional {
 public func kleisliT<W: Monoid, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Writer<W, B>?,
     _ fn2: @escaping @Sendable (B) -> Writer<W, C>
-) -> (A) -> Writer<W, C>? {
+) -> @Sendable (A) -> Writer<W, C>? {
     { a in fn1(a).flatMapT(fn2) }
 }

@@ -71,6 +71,29 @@ public extension AsyncStream where Element: Sendable {
         }
     }
 
+    /// seqLeft :: AsyncStream<a> -> AsyncStream<b> -> AsyncStream<a>
+    /// Pull left then right on each step, yield left values, discard right values.
+    /// Effects run in the same order as ``seqRight(_:_:)``: left first.
+    static func seqLeft<A: Sendable, B: Sendable>(
+        _ lhs: AsyncStream<A>,
+        _ rhs: AsyncStream<B>
+    ) -> AsyncStream<A> {
+        AsyncStream<A> { continuation in
+            let task = Task { @Sendable in
+                var lhsIter = lhs.makeAsyncIterator()
+                var rhsIter = rhs.makeAsyncIterator()
+
+                while let a = await lhsIter.next(),
+                      await rhsIter.next() != nil {
+                    continuation.yield(a)
+                }
+                continuation.finish()
+            }
+            // swiftlint:disable:next closure_ignoring_args
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
     /// Zip two streams into a stream of tuples
     static func zip<A: Sendable, B: Sendable>(
         _ streamA: AsyncStream<A>,

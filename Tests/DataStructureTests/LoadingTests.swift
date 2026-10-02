@@ -526,7 +526,7 @@ struct LoadingMonadTests {
     }
 
     @Test func associativity() {
-        // (m >>= f) >>= g == m >>= ( > f x >>= g)
+        // (m >>= f) >>= g == m >>= (\x -> f x >>= g)
         let m: Sut = .loaded(2)
         let f: @Sendable (Int) -> Sut = { .loaded($0 + 1) }
         let g: @Sendable (Int) -> Sut = { .loaded($0 * 10) }
