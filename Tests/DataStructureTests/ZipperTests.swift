@@ -14,23 +14,23 @@ private let middle = Zipper(left: [2, 1], focus: 3, right: [4, 5])
 
     @Test func init_focusOnly() {
         let z = Zipper(focus: 42)
-        #expect(z.left == [])
+        #expect(z.left.isEmpty)
         #expect(z.focus == 42)
-        #expect(z.right == [])
+        #expect(z.right.isEmpty)
     }
 
     @Test func init_leftFocusRight() {
         let z = Zipper(left: [2, 1], focus: 3, right: [4, 5])
-        #expect(z.left == [2, 1])
+        #expect(Array(z.left) == [2, 1])
         #expect(z.focus == 3)
-        #expect(z.right == [4, 5])
+        #expect(Array(z.right) == [4, 5])
     }
 
     @Test func init_fromArray_nonEmpty() {
         let z = Zipper([1, 2, 3])
         #expect(z?.focus == 1)
-        #expect(z?.left == [])
-        #expect(z?.right == [2, 3])
+        #expect(z.map { Array($0.left) } == [])
+        #expect(z.map { Array($0.right) } == [2, 3])
     }
 
     @Test func init_fromArray_empty() {
@@ -84,17 +84,17 @@ private let middle = Zipper(left: [2, 1], focus: 3, right: [4, 5])
 
     @Test func moveLeft_midSequence() {
         let moved = middle.moveLeft()
-        #expect(moved?.left == [1])
+        #expect(moved.map { Array($0.left) } == [1])
         #expect(moved?.focus == 2)
-        #expect(moved?.right == [3, 4, 5])
+        #expect(moved.map { Array($0.right) } == [3, 4, 5])
         #expect(moved?.toArray() == [1, 2, 3, 4, 5])
     }
 
     @Test func moveRight_midSequence() {
         let moved = middle.moveRight()
-        #expect(moved?.left == [3, 2, 1])
+        #expect(moved.map { Array($0.left) } == [3, 2, 1])
         #expect(moved?.focus == 4)
-        #expect(moved?.right == [5])
+        #expect(moved.map { Array($0.right) } == [5])
         #expect(moved?.toArray() == [1, 2, 3, 4, 5])
     }
 
@@ -128,8 +128,8 @@ private let middle = Zipper(left: [2, 1], focus: 3, right: [4, 5])
         let ne = NonEmpty(head: 1, tail: [2, 3])
         let z = Zipper.fromNonEmpty(ne)
         #expect(z.focus == 1)
-        #expect(z.left == [])
-        #expect(z.right == [2, 3])
+        #expect(z.left.isEmpty)
+        #expect(Array(z.right) == [2, 3])
     }
 
     @Test func toNonEmpty_fromStart() {
@@ -154,9 +154,9 @@ private let middle = Zipper(left: [2, 1], focus: 3, right: [4, 5])
 
     @Test func map_preservesFocusPosition() {
         let mapped = middle.map { $0 * 0 }
-        #expect(mapped.left == [0, 0])
+        #expect(Array(mapped.left) == [0, 0])
         #expect(mapped.focus == 0)
-        #expect(mapped.right == [0, 0])
+        #expect(Array(mapped.right) == [0, 0])
     }
 
     @Test func fmap_static() {
@@ -202,7 +202,7 @@ private let middle = Zipper(left: [2, 1], focus: 3, right: [4, 5])
     @Test func duplicate_atStart() {
         let z = Zipper(left: [], focus: 1, right: [2, 3])
         let dup = z.duplicate()
-        #expect(dup.left == [])
+        #expect(dup.left.isEmpty)
         #expect(dup.right.map(\.focus) == [2, 3])
     }
 
@@ -210,13 +210,13 @@ private let middle = Zipper(left: [2, 1], focus: 3, right: [4, 5])
         let z = Zipper(left: [2, 1], focus: 3, right: [])
         let dup = z.duplicate()
         #expect(dup.left.map(\.focus) == [2, 1])
-        #expect(dup.right == [])
+        #expect(dup.right.isEmpty)
     }
 
     @Test func duplicate_singleElement() {
         let dup = single.duplicate()
-        #expect(dup.left == [])
-        #expect(dup.right == [])
+        #expect(dup.left.isEmpty)
+        #expect(dup.right.isEmpty)
         #expect(dup.focus == single)
     }
 
@@ -245,5 +245,71 @@ private let middle = Zipper(left: [2, 1], focus: 3, right: [4, 5])
         let result = duplicate(middle).map(\.extract)
         #expect(result == middle)
         #expect(result.toArray() == middle.toArray())
+    }
+}
+
+// MARK: - Shared storage (elements + focusedIndex)
+
+private func address<A>(_ array: [A]) -> UnsafeRawPointer? {
+    array.withUnsafeBufferPointer { UnsafeRawPointer($0.baseAddress) }
+}
+
+@Suite("Zipper — shared storage")
+struct ZipperSharedStorageTests {
+    @Test func movesShareTheBuffer() {
+        let z = Zipper(Array(0..<1_000)).flatMap { $0.moveRight() }.flatMap { $0.moveRight() }
+        let back = z.flatMap { $0.moveLeft() }
+        #expect(z?.focus == 2)
+        #expect(back?.focus == 1)
+        #expect(z.map { address($0.elements) } == back.map { address($0.elements) })
+    }
+
+    @Test func sidesAreViewsIntoTheBuffer() {
+        let elements = Array(0..<10)
+        let z = Zipper(elements, focusedAt: 4)
+        #expect(z.map { Array($0.left) } == [3, 2, 1, 0])
+        #expect(z.map { Array($0.right) } == [5, 6, 7, 8, 9])
+        #expect(z?.right.startIndex == 5)
+        #expect(z.map { address($0.elements) } == address(elements))
+    }
+
+    @Test func focusedAtRejectsInvalidIndices() {
+        #expect(Zipper([1, 2, 3], focusedAt: 3) == nil)
+        #expect(Zipper([1, 2, 3], focusedAt: -1) == nil)
+        #expect(Zipper([Int](), focusedAt: 0) == nil)
+        #expect(Zipper([1, 2, 3], focusedAt: 2)?.isAtEnd == true)
+    }
+
+    @Test func triplesInitBuildsTheSequenceInOrder() {
+        let z = Zipper(left: [2, 1], focus: 3, right: [4, 5])
+        #expect(z.elements == [1, 2, 3, 4, 5])
+        #expect(z.focusedIndex == 2)
+    }
+
+    @Test func duplicateSharesTheBuffer() {
+        let z = Zipper(left: [2, 1], focus: 3, right: [4, 5])
+        let dup = z.duplicate()
+        #expect(dup.elements.map(\.focusedIndex) == [0, 1, 2, 3, 4])
+        #expect(Set(dup.elements.map { address($0.elements) }).count == 1)
+    }
+
+    @Test func codableKeepsTheLeftFocusRightFormat() throws {
+        let json = #"{"left":[2,1],"focus":3,"right":[4,5]}"#
+        let decoded = try JSONDecoder().decode(Zipper<Int>.self, from: Data(json.utf8))
+        #expect(decoded == Zipper(left: [2, 1], focus: 3, right: [4, 5]))
+        let reencoded = try JSONDecoder().decode([String: AnyCodableInt].self, from: JSONEncoder().encode(decoded))
+        #expect(reencoded["left"] == .array([2, 1]))
+        #expect(reencoded["focus"] == .int(3))
+        #expect(reencoded["right"] == .array([4, 5]))
+    }
+}
+
+private enum AnyCodableInt: Decodable, Equatable {
+    case int(Int)
+    case array([Int])
+
+    init(from decoder: any Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        self = try (try? container.decode(Int.self)).map(AnyCodableInt.int) ?? .array(container.decode([Int].self))
     }
 }

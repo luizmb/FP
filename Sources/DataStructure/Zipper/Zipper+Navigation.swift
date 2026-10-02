@@ -5,25 +5,21 @@
 public extension Zipper {
     /// Move the focus one step to the left. Returns `nil` when already ``Zipper/isAtStart``.
     ///
-    /// The first element of ``left`` becomes the new focus, and the old focus is
-    /// pushed onto the front of ``right``.
+    /// O(1): the new zipper shares ``Zipper/elements`` with this one; only the index moves.
     func moveLeft() -> Zipper<A>? {
-        guard let newFocus = left.first else { return nil }
-        return Zipper(left: Array(left.dropFirst()), focus: newFocus, right: [focus] + right)
+        isAtStart ? nil : Zipper(uncheckedElements: elements, focusedIndex: focusedIndex - 1)
     }
 
     /// Move the focus one step to the right. Returns `nil` when already ``Zipper/isAtEnd``.
     ///
-    /// The first element of ``right`` becomes the new focus, and the old focus is
-    /// pushed onto the front of ``left``.
+    /// O(1): the new zipper shares ``Zipper/elements`` with this one; only the index moves.
     func moveRight() -> Zipper<A>? {
-        guard let newFocus = right.first else { return nil }
-        return Zipper(left: [focus] + left, focus: newFocus, right: Array(right.dropFirst()))
+        isAtEnd ? nil : Zipper(uncheckedElements: elements, focusedIndex: focusedIndex + 1)
     }
 
-    /// The full sequence in natural order: ``left`` (un-reversed), the ``focus``, then ``right``.
+    /// The full sequence in natural order. O(1): returns the shared ``Zipper/elements``.
     func toArray() -> [A] {
-        left.reversed() + [focus] + right
+        elements
     }
 }
 

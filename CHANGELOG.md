@@ -8,6 +8,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Performance
+- **`Zipper` moves are O(1)** (they were O(n), despite the docs): a zipper is now one shared
+  `elements` array plus `focusedIndex`. `moveLeft()`/`moveRight()` stay non-mutating and return a
+  new zipper over the same buffer, so old zippers remain valid and copy-on-write never triggers.
+  `toArray()` is O(1), `duplicate()`/`extend` are O(n) instead of O(n²). New
+  `Zipper(_:focusedAt:)`. Codable keeps the `left`/`focus`/`right` format.
 - **Linear-time folds and traversals**: `Array.traverse` (Optional / Result), `OptionalTArray`
   and `EitherTArray` bind, NonEmpty `traverse` (Validation), the NonEmpty transformer binds and
   Writer log folds no longer rebuild a growing array per element (O(n²) → O(n)).
@@ -46,6 +51,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   mock, a `Sendable` protocol gets `@Sendable` closures (immutable ones in a class mock). Defaults
   are now closure literals calling `fail(...)`, which also fit non-escaping, `@autoclosure` and
   `inout` parameter types.
+
+### Changed
+- **`Zipper.left` / `Zipper.right` are lazy views** instead of copied arrays:
+  `ReversedCollection<ArraySlice<A>>` and `ArraySlice<A>`, still closest-to-focus first. Source
+  break for code that expects `[A]`; wrap in `Array(...)` where an array is needed.
 
 ### Removed
 - **Infix `^` (floating-point power)**: Swift's stdlib declares `^` in `AdditionPrecedence`, so it
