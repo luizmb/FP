@@ -26,6 +26,6 @@ public func -<< <L, W: Monoid, A, B>(
 public func >=> <L, W: Monoid, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Either<L, Writer<W, B>>,
     _ fn2: @escaping @Sendable (B) -> Writer<W, C>
-) -> (A) -> Either<L, Writer<W, C>> {
+) -> @Sendable (A) -> Either<L, Writer<W, C>> {
     kleisliT(fn1, fn2)
 }

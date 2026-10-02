@@ -19,7 +19,7 @@ public func -<< <A, B>(_ fn: @escaping @Sendable (A) -> NonEmpty<B>?, _ opt: Non
 public func >=> <A, B, C>(
     _ fn1: @escaping @Sendable (A) -> NonEmpty<B>?,
     _ fn2: @escaping @Sendable (B) -> NonEmpty<C>?
-) -> (A) -> NonEmpty<C>? {
+) -> @Sendable (A) -> NonEmpty<C>? {
     kleisliT(fn1, fn2)
 }
 
@@ -27,6 +27,6 @@ public func >=> <A, B, C>(
 public func <=< <A, B, C>(
     _ fn2: @escaping @Sendable (B) -> NonEmpty<C>?,
     _ fn1: @escaping @Sendable (A) -> NonEmpty<B>?
-) -> (A) -> NonEmpty<C>? {
+) -> @Sendable (A) -> NonEmpty<C>? {
     fn1 >=> fn2
 }

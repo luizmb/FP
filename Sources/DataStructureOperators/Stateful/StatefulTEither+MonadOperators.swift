@@ -22,6 +22,6 @@ public func -<< <S, L, A, B>(
 public func >=> <S, L, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Stateful<S, Either<L, B>>,
     _ fn2: @escaping @Sendable (B) -> Stateful<S, Either<L, C>>
-) -> (A) -> Stateful<S, Either<L, C>> {
+) -> @Sendable (A) -> Stateful<S, Either<L, C>> {
     kleisliT(fn1, fn2)
 }

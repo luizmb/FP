@@ -19,7 +19,7 @@ public extension Either {
     /// The `property` property.
     static func bindT<S, Inner, C>(
         _ fn: @escaping @Sendable (Inner) -> Stateful<S, C>
-    ) -> (Either<A, Stateful<S, Inner>>) -> Either<A, Stateful<S, C>> {
+    ) -> @Sendable (Either<A, Stateful<S, Inner>>) -> Either<A, Stateful<S, C>> {
         { either in either.flatMapT(fn) }
     }
 }
@@ -29,6 +29,6 @@ public extension Either {
 public func kleisliT<L, S, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Either<L, Stateful<S, B>>,
     _ fn2: @escaping @Sendable (B) -> Stateful<S, C>
-) -> (A) -> Either<L, Stateful<S, C>> {
+) -> @Sendable (A) -> Either<L, Stateful<S, C>> {
     { a in fn1(a).flatMapT(fn2) }
 }

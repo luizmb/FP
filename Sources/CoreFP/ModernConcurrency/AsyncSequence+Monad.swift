@@ -14,7 +14,7 @@ public extension AsyncSequence {
     /// Curried bind for functional composition
     static func bind<T: AsyncSequence>(
         _ transform: @escaping @Sendable (Element) async throws -> T
-    ) -> (Self) -> AsyncThrowingFlatMapSequence<AsyncThrowingMapSequence<Self, T>, T> {
+    ) -> @Sendable (Self) -> AsyncThrowingFlatMapSequence<AsyncThrowingMapSequence<Self, T>, T> {
         { sequence in
             sequence.bind(transform)
         }
@@ -25,7 +25,7 @@ public extension AsyncSequence {
     static func kleisli<B: AsyncSequence, C: AsyncSequence>(
         _ fn1: @escaping @Sendable (Element) async throws -> B,
         _ fn2: @escaping @Sendable (B.Element) async throws -> C
-    ) -> (Element) async throws -> AsyncThrowingFlatMapSequence<AsyncThrowingMapSequence<B, C>, C> {
+    ) -> @Sendable (Element) async throws -> AsyncThrowingFlatMapSequence<AsyncThrowingMapSequence<B, C>, C> {
         { element in
             try await fn1(element).bind(fn2)
         }
@@ -36,7 +36,7 @@ public extension AsyncSequence {
     static func kleisliBack<B: AsyncSequence, C: AsyncSequence>(
         _ fn2: @escaping @Sendable (B.Element) async throws -> C,
         _ fn1: @escaping @Sendable (Element) async throws -> B
-    ) -> (Element) async throws -> AsyncThrowingFlatMapSequence<AsyncThrowingMapSequence<B, C>, C> {
+    ) -> @Sendable (Element) async throws -> AsyncThrowingFlatMapSequence<AsyncThrowingMapSequence<B, C>, C> {
         { element in
             try await fn1(element).bind(fn2)
         }

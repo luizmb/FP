@@ -16,7 +16,7 @@ public extension NonEmpty {
     /// (>>=) :: NonEmpty a -> (a -> NonEmpty b) -> NonEmpty b
     static func bind<B>(
         _ fn: @escaping @Sendable (A) -> NonEmpty<B>
-    ) -> (NonEmpty<A>) -> NonEmpty<B> {
+    ) -> @Sendable (NonEmpty<A>) -> NonEmpty<B> {
         { $0.flatMap(fn) }
     }
 
@@ -25,7 +25,7 @@ public extension NonEmpty {
     static func kleisli<O0, B>(
         _ fn1: @escaping @Sendable (O0) -> NonEmpty<A>,
         _ fn2: @escaping @Sendable (A) -> NonEmpty<B>
-    ) -> (O0) -> NonEmpty<B> {
+    ) -> @Sendable (O0) -> NonEmpty<B> {
         { fn1($0).flatMap(fn2) }
     }
 
@@ -34,7 +34,7 @@ public extension NonEmpty {
     static func kleisliBack<O0, B>(
         _ fn2: @escaping @Sendable (A) -> NonEmpty<B>,
         _ fn1: @escaping @Sendable (O0) -> NonEmpty<A>
-    ) -> (O0) -> NonEmpty<B> {
+    ) -> @Sendable (O0) -> NonEmpty<B> {
         { fn1($0).flatMap(fn2) }
     }
 

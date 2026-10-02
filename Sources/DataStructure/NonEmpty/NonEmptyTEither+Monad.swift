@@ -28,7 +28,7 @@ public extension NonEmpty {
     /// The `property` property.
     static func bindT<L, Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> NonEmpty<Either<L, B>>
-    ) -> (NonEmpty<Either<L, Inner>>) -> NonEmpty<Either<L, B>> {
+    ) -> @Sendable (NonEmpty<Either<L, Inner>>) -> NonEmpty<Either<L, B>> {
         { $0.flatMapT(fn) }
     }
 }
@@ -38,6 +38,6 @@ public extension NonEmpty {
 public func kleisliT<L, A0, A, B>(
     _ fn1: @escaping @Sendable (A0) -> NonEmpty<Either<L, A>>,
     _ fn2: @escaping @Sendable (A) -> NonEmpty<Either<L, B>>
-) -> (A0) -> NonEmpty<Either<L, B>> {
+) -> @Sendable (A0) -> NonEmpty<Either<L, B>> {
     { a0 in fn1(a0).flatMapT(fn2) }
 }

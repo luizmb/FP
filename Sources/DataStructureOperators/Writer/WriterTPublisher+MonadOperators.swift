@@ -31,7 +31,7 @@
     public func >=> <W: Monoid, A, B, C, E: Error>(
         _ fn1: @escaping @Sendable (A) -> Writer<W, any Publisher<B, E>>,
         _ fn2: @escaping @Sendable (B) -> Writer<W, any Publisher<C, E>>
-    ) -> (A) -> Writer<W, any Publisher<C, E>> {
+    ) -> @Sendable (A) -> Writer<W, any Publisher<C, E>> {
         kleisliT(fn1, fn2)
     }
 

@@ -22,7 +22,7 @@ public func flatMapTEitherArray<L: Sendable, A, B: Sendable>(
 /// Curried version
 public func bindTEitherArray<L: Sendable, A, B: Sendable>(
     _ fn: @escaping @Sendable (A) -> Either<L, [B]>
-) -> (Either<L, [A]>) -> Either<L, [B]> {
+) -> @Sendable (Either<L, [A]>) -> Either<L, [B]> {
     { either in flatMapTEitherArray(either, fn) }
 }
 
@@ -31,6 +31,6 @@ public func bindTEitherArray<L: Sendable, A, B: Sendable>(
 public func kleisliT<L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
     _ fn1: @escaping @Sendable (A) -> Either<L, [B]>,
     _ fn2: @escaping @Sendable (B) -> Either<L, [C]>
-) -> (A) -> Either<L, [C]> {
+) -> @Sendable (A) -> Either<L, [C]> {
     { a in flatMapTEitherArray(fn1(a), fn2) }
 }

@@ -19,7 +19,7 @@ public extension Optional {
     /// The `property` property.
     static func bindT<A, B>(
         _ fn: @escaping @Sendable (A) -> NonEmpty<B>?
-    ) -> (NonEmpty<A>?) -> NonEmpty<B>? {
+    ) -> @Sendable (NonEmpty<A>?) -> NonEmpty<B>? {
         { opt in opt.flatMapT(fn) }
     }
 }
@@ -29,6 +29,6 @@ public extension Optional {
 public func kleisliT<A, B, C>(
     _ fn1: @escaping @Sendable (A) -> NonEmpty<B>?,
     _ fn2: @escaping @Sendable (B) -> NonEmpty<C>?
-) -> (A) -> NonEmpty<C>? {
+) -> @Sendable (A) -> NonEmpty<C>? {
     { a in fn1(a).flatMapT(fn2) }
 }

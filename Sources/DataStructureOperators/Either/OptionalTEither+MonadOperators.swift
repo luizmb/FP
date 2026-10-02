@@ -19,6 +19,6 @@ public func -<< <L, A, B>(_ fn: @escaping @Sendable (A) -> Either<L, B>?, _ opt:
 public func >=> <L, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Either<L, B>?,
     _ fn2: @escaping @Sendable (B) -> Either<L, C>?
-) -> (A) -> Either<L, C>? {
+) -> @Sendable (A) -> Either<L, C>? {
     kleisliT(fn1, fn2)
 }

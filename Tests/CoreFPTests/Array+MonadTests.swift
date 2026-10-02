@@ -87,3 +87,18 @@ import Testing
         #expect(CoreFP.void([Int]()).isEmpty)
     }
 }
+
+@Suite("Kleisli named functions chain")
+struct KleisliChainNamedTests {
+    @Test func optionalKleisliOfKleisli() {
+        let half: @Sendable (Int) -> Int? = { $0.isMultiple(of: 2) ? $0 / 2 : nil }
+        let twice = Optional<Int>.kleisli(half, half)
+        #expect(Optional<Int>.kleisli(twice, half)(16) == 2)
+    }
+
+    @Test func arrayKleisliOfKleisli() {
+        let around: @Sendable (Int) -> [Int] = { [$0 - 1, $0 + 1] }
+        let twice = [Int].kleisli(around, around)
+        #expect([Int].kleisli(twice, around)(0).count == 8)
+    }
+}

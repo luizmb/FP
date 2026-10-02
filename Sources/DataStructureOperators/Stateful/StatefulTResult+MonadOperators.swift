@@ -22,6 +22,6 @@ public func -<< <S, A, B, E: Error>(
 public func >=> <S, A, B, C, E: Error>(
     _ fn1: @escaping @Sendable (A) -> Stateful<S, Result<B, E>>,
     _ fn2: @escaping @Sendable (B) -> Stateful<S, Result<C, E>>
-) -> (A) -> Stateful<S, Result<C, E>> {
+) -> @Sendable (A) -> Stateful<S, Result<C, E>> {
     kleisliT(fn1, fn2)
 }

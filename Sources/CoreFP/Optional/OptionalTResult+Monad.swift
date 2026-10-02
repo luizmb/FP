@@ -34,6 +34,6 @@ public extension Optional {
 public func kleisliT<A, B, C, E: Error>(
     _ fn1: @escaping @Sendable (A) -> Result<B, E>?,
     _ fn2: @escaping @Sendable (B) -> Result<C, E>?
-) -> (A) -> Result<C, E>? {
+) -> @Sendable (A) -> Result<C, E>? {
     { a in fn1(a).flatMapT(fn2) }
 }

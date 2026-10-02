@@ -19,7 +19,7 @@ public extension Result {
     /// The `property` property.
     static func bindT<S, A, B>(
         _ fn: @escaping @Sendable (A) -> Stateful<S, B>
-    ) -> (Result<Stateful<S, A>, Failure>) -> Result<Stateful<S, B>, Failure> {
+    ) -> @Sendable (Result<Stateful<S, A>, Failure>) -> Result<Stateful<S, B>, Failure> {
         { result in result.flatMapT(fn) }
     }
 }
@@ -29,6 +29,6 @@ public extension Result {
 public func kleisliT<S, A, B, C, E: Error>(
     _ fn1: @escaping @Sendable (A) -> Result<Stateful<S, B>, E>,
     _ fn2: @escaping @Sendable (B) -> Stateful<S, C>
-) -> (A) -> Result<Stateful<S, C>, E> {
+) -> @Sendable (A) -> Result<Stateful<S, C>, E> {
     { a in fn1(a).flatMapT(fn2) }
 }

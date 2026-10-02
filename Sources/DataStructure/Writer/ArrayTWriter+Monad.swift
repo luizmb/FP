@@ -13,7 +13,7 @@ public extension Array {
     }
 
     /// The `property` property.
-    static func bindT<W: Monoid, A, B>(_ fn: @escaping @Sendable (A) -> Writer<W, B>) -> ([Writer<W, A>]) -> [Writer<W, B>] {
+    static func bindT<W: Monoid, A, B>(_ fn: @escaping @Sendable (A) -> Writer<W, B>) -> @Sendable ([Writer<W, A>]) -> [Writer<W, B>] {
         { arr in arr.flatMapT(fn) }
     }
 }
@@ -23,6 +23,6 @@ public extension Array {
 public func kleisliT<W: Monoid, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> [Writer<W, B>],
     _ fn2: @escaping @Sendable (B) -> Writer<W, C>
-) -> (A) -> [Writer<W, C>] {
+) -> @Sendable (A) -> [Writer<W, C>] {
     { a in fn1(a).flatMapT(fn2) }
 }

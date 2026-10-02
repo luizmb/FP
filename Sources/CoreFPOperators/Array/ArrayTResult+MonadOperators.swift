@@ -18,6 +18,6 @@ public func -<< <A, B, E: Error>(_ fn: @escaping @Sendable (A) -> [Result<B, E>]
 public func >=> <A, B, C, E: Error>(
     _ fn1: @escaping @Sendable (A) -> [Result<B, E>],
     _ fn2: @escaping @Sendable (B) -> [Result<C, E>]
-) -> (A) -> [Result<C, E>] {
+) -> @Sendable (A) -> [Result<C, E>] {
     kleisliT(fn1, fn2)
 }

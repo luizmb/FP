@@ -45,7 +45,7 @@ public extension These {
     /// (>>=) :: m a -> (a -> m b) -> m b
     static func bind<C>(
         _ fn: @escaping @Sendable (B) -> These<A, C>
-    ) -> (These<A, B>) -> These<A, C> where A: Semigroup {
+    ) -> @Sendable (These<A, B>) -> These<A, C> where A: Semigroup {
         { these in
             these.flatMap(fn)
         }
@@ -56,7 +56,7 @@ public extension These {
     static func kleisli<B0, C>(
         _ fn1: @escaping @Sendable (B0) -> These<A, B>,
         _ fn2: @escaping @Sendable (B) -> These<A, C>
-    ) -> (B0) -> These<A, C> where A: Semigroup {
+    ) -> @Sendable (B0) -> These<A, C> where A: Semigroup {
         { b0 in
             fn1(b0).flatMap(fn2)
         }
@@ -67,7 +67,7 @@ public extension These {
     static func kleisliBack<B0, C>(
         _ fn2: @escaping @Sendable (B) -> These<A, C>,
         _ fn1: @escaping @Sendable (B0) -> These<A, B>
-    ) -> (B0) -> These<A, C> where A: Semigroup {
+    ) -> @Sendable (B0) -> These<A, C> where A: Semigroup {
         { b0 in
             fn1(b0).flatMap(fn2)
         }

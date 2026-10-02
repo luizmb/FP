@@ -16,7 +16,7 @@ public extension Either {
     /// (>>=) :: m a -> (a -> m b) -> m b
     static func bind<B1>(
         _ fn: @escaping @Sendable (B) -> Either<A, B1>
-    ) -> (Either<A, B>) -> Either<A, B1> {
+    ) -> @Sendable (Either<A, B>) -> Either<A, B1> {
         { either in
             either.flatMap(fn)
         }
@@ -27,7 +27,7 @@ public extension Either {
     static func kleisli<B0, B1>(
         _ fn1: @escaping @Sendable (B0) -> Either<A, B>,
         _ fn2: @escaping @Sendable (B) -> Either<A, B1>
-    ) -> (B0) -> Either<A, B1> {
+    ) -> @Sendable (B0) -> Either<A, B1> {
         { b0 in
             fn1(b0).flatMap(fn2)
         }
@@ -38,7 +38,7 @@ public extension Either {
     static func kleisliBack<B0, B1>(
         _ fn2: @escaping @Sendable (B) -> Either<A, B1>,
         _ fn1: @escaping @Sendable (B0) -> Either<A, B>
-    ) -> (B0) -> Either<A, B1> {
+    ) -> @Sendable (B0) -> Either<A, B1> {
         { b0 in
             fn1(b0).flatMap(fn2)
         }

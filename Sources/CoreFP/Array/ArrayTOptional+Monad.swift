@@ -14,7 +14,7 @@ public extension Array {
     }
 
     /// Curried bindT for [A?]
-    static func bindT<A, B>(_ fn: @escaping @Sendable (A) -> [B?]) -> ([A?]) -> [B?] {
+    static func bindT<A, B>(_ fn: @escaping @Sendable (A) -> [B?]) -> @Sendable ([A?]) -> [B?] {
         { arr in arr.flatMapT(fn) }
     }
 }
@@ -24,6 +24,6 @@ public extension Array {
 public func kleisliT<A, B, C>(
     _ fn1: @escaping @Sendable (A) -> [B?],
     _ fn2: @escaping @Sendable (B) -> [C?]
-) -> (A) -> [C?] {
+) -> @Sendable (A) -> [C?] {
     { a in fn1(a).flatMapT(fn2) }
 }

@@ -32,7 +32,7 @@
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
     public func bindTPublisherArray<A, B, E: Error>(
         _ fn: @escaping @Sendable (A) -> AnyPublisher<[B], E>
-    ) -> (AnyPublisher<[A], E>) -> AnyPublisher<[B], E> {
+    ) -> @Sendable (AnyPublisher<[A], E>) -> AnyPublisher<[B], E> {
         { publisher in flatMapTPublisherArray(publisher, fn) }
     }
 

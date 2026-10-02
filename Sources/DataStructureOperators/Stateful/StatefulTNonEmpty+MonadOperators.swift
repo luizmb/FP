@@ -22,6 +22,6 @@ public func -<< <S, A, B>(
 public func >=> <S, A: Sendable, B: Sendable, C>(
     _ fn1: @escaping @Sendable (A) -> Stateful<S, NonEmpty<B>?>,
     _ fn2: @escaping @Sendable (B) -> Stateful<S, NonEmpty<C>?>
-) -> (A) -> Stateful<S, NonEmpty<C>?> {
+) -> @Sendable (A) -> Stateful<S, NonEmpty<C>?> {
     kleisliT(fn1, fn2)
 }

@@ -24,7 +24,7 @@ public func -<< <A, B>(
 public func >=> <O, A, B>(
     _ fn1: @escaping @Sendable (O) -> NonEmpty<A>,
     _ fn2: @escaping @Sendable (A) -> NonEmpty<B>
-) -> (O) -> NonEmpty<B> {
+) -> @Sendable (O) -> NonEmpty<B> {
     NonEmpty.kleisli(fn1, fn2)
 }
 
@@ -32,6 +32,6 @@ public func >=> <O, A, B>(
 public func <=< <O, A, B>(
     _ fn2: @escaping @Sendable (A) -> NonEmpty<B>,
     _ fn1: @escaping @Sendable (O) -> NonEmpty<A>
-) -> (O) -> NonEmpty<B> {
+) -> @Sendable (O) -> NonEmpty<B> {
     NonEmpty.kleisliBack(fn2, fn1)
 }

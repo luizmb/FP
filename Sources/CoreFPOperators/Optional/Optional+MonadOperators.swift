@@ -15,7 +15,7 @@ public func -<< <A, A1>(_ fn: @escaping @Sendable (A) -> A1?, _ optional: A?) ->
 public func >=> <A0, A, A1>(
     _ fn1: @escaping @Sendable (A0) -> A?,
     _ fn2: @escaping @Sendable (A) -> A1?
-) -> (A0) -> A1? {
+) -> @Sendable (A0) -> A1? {
     Optional.kleisli(fn1, fn2)
 }
 

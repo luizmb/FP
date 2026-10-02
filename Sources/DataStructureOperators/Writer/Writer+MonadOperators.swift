@@ -24,6 +24,6 @@ public func -<< <W: Monoid, A, B>(
 public func >=> <W: Monoid, O0, A, B>(
     _ fn1: @escaping @Sendable (O0) -> Writer<W, A>,
     _ fn2: @escaping @Sendable (A) -> Writer<W, B>
-) -> (O0) -> Writer<W, B> {
+) -> @Sendable (O0) -> Writer<W, B> {
     Writer.kleisli(fn1, fn2)
 }
