@@ -10,6 +10,18 @@ extension NonEmpty: Semigroup {
     public static func combine(_ lhs: NonEmpty<A>, _ rhs: NonEmpty<A>) -> NonEmpty<A> {
         NonEmpty(head: lhs.head, tail: lhs.tail + rhs.toArray)
     }
+
+    /// Single-pass fold: the tail is built once with its final capacity, so concatenating
+    /// `n` values is O(total elements) instead of the default left fold's O(n²) copying.
+    public static func sconcat(_ first: NonEmpty<A>, _ rest: [NonEmpty<A>]) -> NonEmpty<A> {
+        var tail = first.tail
+        tail.reserveCapacity(rest.reduce(into: first.tail.count) { $0 += 1 + $1.tail.count })
+        for next in rest {
+            tail.append(next.head)
+            tail.append(contentsOf: next.tail)
+        }
+        return NonEmpty(head: first.head, tail: tail)
+    }
 }
 
 // MARK: - sconcat convenience

@@ -13,9 +13,17 @@ public func flatMapTEitherArray<L: Sendable, A, B: Sendable>(
     _ fn: @escaping @Sendable (A) -> Either<L, [B]>
 ) -> Either<L, [B]> {
     either.flatMap { arr in
-        arr.map(fn).reduce(.right([])) { acc, next in
-            acc.flatMap { combined in next.mapRight { combined + $0 } }
+        var result: [B] = []
+        for element in arr {
+            switch fn(element) {
+            case let .left(l):
+                return .left(l)
+
+            case let .right(chunk):
+                result.append(contentsOf: chunk)
+            }
         }
+        return .right(result)
     }
 }
 

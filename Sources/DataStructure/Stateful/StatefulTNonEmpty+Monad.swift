@@ -11,7 +11,7 @@ public extension Stateful {
             let results = self.run(&s).toArray.map { fn($0).run(&s) }
             let nonEmpties = results.compactMap(\.self)
             let combined: NonEmpty<B>? = nonEmpties.first.map { first in
-                nonEmpties.dropFirst().reduce(first, NonEmpty.combine)
+                NonEmpty.sconcat(first, Array(nonEmpties.dropFirst()))
             }
             return combined
         }

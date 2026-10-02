@@ -9,10 +9,10 @@ import CoreFP
 //
 // ## Copy cost
 //
-// The outer `Whole` is always passed by `inout`, so no CoW copy occurs on
-// `Whole` itself. `Part` is extracted via the optic's `get` (one copy), the
-// computation runs against `inout Part`, then `Part` is written back via `set`.
-// This is equivalent to using the synthesised `modifyMut` path.
+// The outer `Whole` is always passed by `inout`, and the computation runs against
+// the focus through the optic's own `modifyMut` / `tryModifyMut`. For key-path
+// optics that is a true in-place mutation: zooming into `\.items` and appending
+// doesn't copy `items` or `Whole`.
 //
 // For the Void-result case this is identical to `lift` — prefer `lift` when
 // the computation does not need to return a value:
@@ -36,12 +36,19 @@ import CoreFP
 public extension Lens {
     /// Lifts a `Stateful<A, Result>` to `Stateful<S, Result>` through this lens.
     ///
-    /// `S` is `inout` throughout; `A` is copied once via `get`+`set`.
+    /// Runs through the lens's `modifyMut`, so a key-path lens mutates the focus in place.
     func zoom<Result>(_ s: Stateful<A, Result>) -> Stateful<S, Result> {
         Stateful<S, Result> { whole in
-            var part = get(whole)
-            let result = s.run(&part)
-            whole = set(whole, part)
+            var result: Result?
+            modifyMut(&whole) { part in result = s.run(&part) }
+            // A lawful lens's modifyMut calls its body exactly once. Fall back to get/set for
+            // a hand-built one that doesn't, rather than trapping.
+            guard let result else {
+                var part = get(whole)
+                let fallback = s.run(&part)
+                whole = set(whole, part)
+                return fallback
+            }
             return result
         }
     }
@@ -51,12 +58,11 @@ public extension Prism {
     /// Lifts a `Stateful<A, Result>` to `Stateful<S, Result?>` through this prism.
     ///
     /// Returns `nil` and leaves `S` unchanged when the focus is absent.
-    /// When present, copies the enum case value once; `S` is `inout` throughout.
+    /// Runs through the prism's `tryModifyMut`.
     func zoom<Result>(_ s: Stateful<A, Result>) -> Stateful<S, Result?> {
         Stateful<S, Result?> { whole in
-            guard var part = preview(whole) else { return nil }
-            let result = s.run(&part)
-            whole = review(part)
+            var result: Result?
+            tryModifyMut(&whole) { part in result = s.run(&part) }
             return result
         }
     }
@@ -66,12 +72,11 @@ public extension AffineTraversal {
     /// Lifts a `Stateful<A, Result>` to `Stateful<S, Result?>` through this traversal.
     ///
     /// Returns `nil` and leaves `S` unchanged when the focus is absent.
-    /// When present, copies `A` once via `preview`+`set`; `S` is `inout` throughout.
+    /// Runs through the traversal's `tryModifyMut`, so a key-path traversal mutates in place.
     func zoom<Result>(_ s: Stateful<A, Result>) -> Stateful<S, Result?> {
         Stateful<S, Result?> { whole in
-            guard var part = preview(whole) else { return nil }
-            let result = s.run(&part)
-            whole = set(whole, part)
+            var result: Result?
+            tryModifyMut(&whole) { part in result = s.run(&part) }
             return result
         }
     }

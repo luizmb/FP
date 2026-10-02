@@ -12,9 +12,9 @@ public extension Writer {
     ) -> Writer<W, NonEmpty<B>?> where A == NonEmpty<Inner> {
         let results = value.toArray.map(fn)
         let nonEmpties = results.compactMap(\.value)
-        let combinedLog = results.reduce(log) { acc, wb in W.combine(acc, wb.log) }
+        let combinedLog = W.sconcat(log, results.map(\.log))
         let combined: NonEmpty<B>? = nonEmpties.first.map { first in
-            nonEmpties.dropFirst().reduce(first, NonEmpty.combine)
+            NonEmpty.sconcat(first, Array(nonEmpties.dropFirst()))
         }
         return Writer<W, NonEmpty<B>?>(combined, combinedLog)
     }
@@ -44,9 +44,9 @@ public func kleisliT<W: Monoid, A, B, C>(
         guard let nonEmptyB = wb.value else { return Writer<W, NonEmpty<C>?>(nil, wb.log) }
         let results = nonEmptyB.toArray.map(fn2)
         let nonEmpties = results.compactMap(\.value)
-        let combinedLog = results.reduce(wb.log) { acc, wc in W.combine(acc, wc.log) }
+        let combinedLog = W.sconcat(wb.log, results.map(\.log))
         let combined: NonEmpty<C>? = nonEmpties.first.map { first in
-            nonEmpties.dropFirst().reduce(first, NonEmpty.combine)
+            NonEmpty.sconcat(first, Array(nonEmpties.dropFirst()))
         }
         return Writer<W, NonEmpty<C>?>(combined, combinedLog)
     }

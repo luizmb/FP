@@ -97,14 +97,21 @@ All Step 1 items done on `bugfix/review-findings`. Caveats:
 
 ## Step 2: performance (non-breaking)
 
-- [ ] Quadratic `acc + [x]` in `reduce`: `ArrayTOptional+Traversable.swift:9`, `ArrayTResult+Traversable.swift:8`, `ArrayTArray+Traversable.swift:8` (measured 4× time for 2× input; also keeps calling `f` after failure), `OptionalTArray+Monad.swift:16-18`, `PublisherTArray+Monad.swift:24-26` (n-deep zip chain), `DataStructure/Either/EitherTArray+Monad.swift:16-17`. Use a loop with `reserveCapacity` and early exit.
-- [ ] NonEmpty: `NonEmpty+Traversable.swift:92-95` (`ne.append(b)` per element), `OptionalTNonEmpty+Monad.swift:14`, `EitherTNonEmpty+Monad.swift:21`, and `nonEmpties.dropFirst().reduce(first, NonEmpty.combine)` in Reader/Stateful/Writer NonEmpty files. Build once from an array.
-- [ ] Writer log folds `results.reduce(log) { W.combine($0, $1.log) }` (`WriterTArray+Monad.swift:13`, `WriterTNonEmpty+Monad.swift:15,47`): use `W.sconcat`.
-- [ ] Default `sconcat`/`mconcat` (`Monoid/Semigroup.swift:65`, `Monoid/Monoid.swift:66` extra `Array(dropFirst())` copy): override for `Set` (`formUnion`) and `Dictionary` (`merge`) with `reduce(into:)`.
-- [ ] Zero-copy optics:
-  - [ ] `CoreFP/Utilities/Traversal.swift:118,127`, `Lens.traversal` / `Prism.traversal` use get/set instead of `modifyMut` / `tryModifyMut` (`^\S.items >>> [Item].each` copies the array).
-  - [ ] `Collection/Collection+Traversal.swift:51-55,92-96`, `Dictionary.eachValue(Indexed)` copies each value and double-hashes. Iterate `dict.values` indices in place.
-  - [ ] `DataStructure/Stateful/Stateful+Optics.swift:42-44,74`, `zoom` copies the focus (measured ~1700× slower than `lens.lift`); its comment at :15 claims otherwise. Route through `modifyMut`.
+Items 1–3 (everything except the Zipper) done on `feature/review-step2-performance`. Notes: the
+old `reduce` traversals already stopped calling `f` after a failure (only the copying was
+quadratic); `ArrayTArray.traverse` is a cartesian product whose output is inherently that large,
+so it was left alone; `mconcat`'s `Array(dropFirst())` is an O(n) pointer copy imposed by the
+`sconcat(_:_:)` requirement's `[Self]` parameter and was left alone. **Zipper: decision pending**
+(fix docs to O(n), or store `left` closest-last, which is source-breaking).
+
+- [x] Quadratic `acc + [x]` in `reduce`: `ArrayTOptional+Traversable.swift:9`, `ArrayTResult+Traversable.swift:8`, `ArrayTArray+Traversable.swift:8` (measured 4× time for 2× input; also keeps calling `f` after failure), `OptionalTArray+Monad.swift:16-18`, `PublisherTArray+Monad.swift:24-26` (n-deep zip chain), `DataStructure/Either/EitherTArray+Monad.swift:16-17`. Use a loop with `reserveCapacity` and early exit.
+- [x] NonEmpty: `NonEmpty+Traversable.swift:92-95` (`ne.append(b)` per element), `OptionalTNonEmpty+Monad.swift:14`, `EitherTNonEmpty+Monad.swift:21`, and `nonEmpties.dropFirst().reduce(first, NonEmpty.combine)` in Reader/Stateful/Writer NonEmpty files. Build once from an array.
+- [x] Writer log folds `results.reduce(log) { W.combine($0, $1.log) }` (`WriterTArray+Monad.swift:13`, `WriterTNonEmpty+Monad.swift:15,47`): use `W.sconcat`.
+- [x] Default `sconcat`/`mconcat` (`Monoid/Semigroup.swift:65`, `Monoid/Monoid.swift:66` extra `Array(dropFirst())` copy): override for `Set` (`formUnion`) and `Dictionary` (`merge`) with `reduce(into:)`.
+- [x] Zero-copy optics:
+  - [x] `CoreFP/Utilities/Traversal.swift:118,127`, `Lens.traversal` / `Prism.traversal` use get/set instead of `modifyMut` / `tryModifyMut` (`^\S.items >>> [Item].each` copies the array).
+  - [x] `Collection/Collection+Traversal.swift:51-55,92-96`, `Dictionary.eachValue(Indexed)` copies each value and double-hashes. Iterate `dict.values` indices in place.
+  - [x] `DataStructure/Stateful/Stateful+Optics.swift:42-44,74`, `zoom` copies the focus (measured ~1700× slower than `lens.lift`); its comment at :15 claims otherwise. Route through `modifyMut`.
 - [ ] Zipper moves O(n), documented O(1) (`Zipper.swift:8,23-25`, `Zipper+Navigation.swift:12,21`; `duplicate()` O(n²)). Store `left` reversed (closest last) or fix the docs.
 
 ---

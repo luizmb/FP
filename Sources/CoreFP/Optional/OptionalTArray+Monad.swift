@@ -11,11 +11,16 @@ public extension Optional {
     /// (>>=) :: [a]? -> (a -> [b]?) -> [b]?
     /// nil → nil
     /// .some(arr) → mapM fn arr (sequence the results, concatenating on success)
+    ///
+    /// O(total output): appends into one buffer and stops calling `fn` at the first `nil`.
     func flatMapT<A, B>(_ fn: @escaping @Sendable (A) -> [B]?) -> [B]? where Wrapped == [A] {
         flatMap { arr in
-            arr.map(fn).reduce(.some([])) { (acc: [B]?, next: [B]?) in
-                acc.flatMap { combined in next.map { combined + $0 } }
+            var result: [B] = []
+            for element in arr {
+                guard let chunk = fn(element) else { return nil }
+                result.append(contentsOf: chunk)
             }
+            return result
         }
     }
 

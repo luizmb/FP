@@ -10,7 +10,7 @@ public extension Writer {
     func flatMapT<Inner, B>(_ fn: (Inner) -> Writer<W, [B]>) -> Writer<W, [B]> where A == [Inner] {
         let results = value.map(fn)
         let values = results.flatMap(\.value)
-        let combinedLog = results.reduce(log) { acc, wb in W.combine(acc, wb.log) }
+        let combinedLog = W.sconcat(log, results.map(\.log))
         return Writer<W, [B]>(values, combinedLog)
     }
 

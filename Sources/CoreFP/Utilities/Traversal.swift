@@ -113,9 +113,11 @@ public extension Traversal where S == A {
 // MARK: - Widening other optics to Traversal
 
 public extension Lens {
-    /// Widens this lens to a single-focus ``Traversal``.
+    /// Widens this lens to a single-focus ``Traversal``. Mutation goes through the lens's own
+    /// `modifyMut`, so a key-path lens stays zero-copy (`^\S.items >>> [Item].each` mutates
+    /// the array in place).
     var traversal: Traversal<S, A> {
-        Traversal(getAll: { [get($0)] }, modifyMut: { s, f in var a = get(s); f(&a); s = set(s, a) })
+        Traversal(getAll: { [get($0)] }, modifyMut: modifyMut)
     }
 }
 
@@ -124,7 +126,7 @@ public extension Prism {
     var traversal: Traversal<S, A> {
         Traversal(
             getAll: { preview($0).map { [$0] } ?? [] },
-            modifyMut: { s, f in guard var a = preview(s) else { return }; f(&a); s = review(a) }
+            modifyMut: tryModifyMut
         )
     }
 }

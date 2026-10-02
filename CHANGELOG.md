@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Performance
+- **Linear-time folds and traversals**: `Array.traverse` (Optional / Result), `OptionalTArray`
+  and `EitherTArray` bind, NonEmpty `traverse` (Validation), the NonEmpty transformer binds and
+  Writer log folds no longer rebuild a growing array per element (O(n²) → O(n)).
+  `PublisherTArray` bind zips as a balanced tree (log n deep instead of n).
+- **`sconcat` overrides** for `NonEmpty`, `Set` and `Dictionary` fold into one accumulator in
+  place, so `mconcat`/`sconcat` of many values is linear.
+- **In-place optics**: `Lens.traversal`, `Prism.traversal`, `Dictionary.eachValue(Indexed)` and
+  `Stateful` `zoom` (Lens, Prism, AffineTraversal) now go through the optic's own
+  `modifyMut`/`tryModifyMut`, so key-path optics mutate the focused buffer without copying it.
+
 ### Added
 - **`@Prisms` now generates one plain per-case property per case** (`shape.circle: Double?`,
   `loading.loaded: Success?`, etc.), typed `Payload?` and delegating to the `Prism` the macro

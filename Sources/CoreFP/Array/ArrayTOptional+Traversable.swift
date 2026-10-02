@@ -4,10 +4,16 @@ public extension Array {
     /// traverse :: (a -> b?) -> [a] -> [b]?
     /// traverse _ []     = Just []
     /// traverse f (x:xs) = liftA2 (:) (f x) (traverse f xs)
+    ///
+    /// O(n): appends into one buffer and stops calling `f` at the first `nil`.
     func traverse<B>(_ f: (Element) -> B?) -> [B]? {
-        reduce(.some([])) { acc, x in
-            acc.flatMap { arr in f(x).map { arr + [$0] } }
+        var result: [B] = []
+        result.reserveCapacity(count)
+        for element in self {
+            guard let b = f(element) else { return nil }
+            result.append(b)
         }
+        return result
     }
 
     /// sequence :: [a?] -> [a]?
