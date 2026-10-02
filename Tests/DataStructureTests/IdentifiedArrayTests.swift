@@ -341,3 +341,64 @@ struct IdentifiedArrayOpticsTests {
         #expect(dict[2]?.name == "Bob")
     }
 }
+
+@Suite("IdentifiedArray — id changes through optics")
+struct IdentifiedArrayIdChangeTests {
+    private func assertConsistent(_ users: IdentifiedArrayOf<User>) {
+        #expect(Set(users.ids).count == users.count)
+        for (position, user) in users.elements.enumerated() {
+            #expect(users[id: user.id] == user)
+            #expect(users.ids[position] == user.id)
+        }
+    }
+
+    @Test func traversedCollidingIdsResolveLastWins() {
+        let collapsed = IdentifiedArrayOf<User>.traversed.over { User(id: 0, name: $0.name) }(sampleUsers())
+        #expect(collapsed.elements == [User(id: 0, name: "Carol")])
+        assertConsistent(collapsed)
+    }
+
+    @Test func traversedThenRemoveAndLookupDoesNotTrap() {
+        var users = IdentifiedArrayOf<User>.traversed.over { User(id: $0.id == 3 ? 1 : $0.id, name: $0.name) }(sampleUsers())
+        #expect(users.elements == [User(id: 1, name: "Carol"), User(id: 2, name: "Bob")])
+        users.remove(at: 1)
+        #expect(users[id: 1] == User(id: 1, name: "Carol"))
+        #expect(users[id: 2] == nil)
+        assertConsistent(users)
+    }
+
+    @Test func traversedNonCollidingIdChangeRekeys() {
+        let shifted = IdentifiedArrayOf<User>.traversed.over { User(id: $0.id * 10, name: $0.name) }(sampleUsers())
+        #expect(shifted.ids == [10, 20, 30])
+        #expect(shifted[id: 20]?.name == "Bob")
+        #expect(shifted[id: 2] == nil)
+        assertConsistent(shifted)
+    }
+
+    @Test func traversedWithoutIdChangeKeepsLookups() {
+        let renamed = IdentifiedArrayOf<User>.traversed.over { User(id: $0.id, name: $0.name + "!") }(sampleUsers())
+        #expect(renamed[id: 2]?.name == "Bob!")
+        assertConsistent(renamed)
+    }
+
+    @Test func ixIdModifyChangingIdRekeys() {
+        var users = sampleUsers()
+        IdentifiedArrayOf<User>.ix(id: 2).lift(EndoMut { $0 = User(id: 7, name: $0.name) })(&users)
+        #expect(users[id: 7]?.name == "Bob")
+        #expect(users[id: 2] == nil)
+        assertConsistent(users)
+    }
+
+    @Test func ixIdModifyCollidingIdResolvesLastWins() {
+        var users = sampleUsers()
+        IdentifiedArrayOf<User>.ix(id: 3).lift(EndoMut { $0 = User(id: 1, name: $0.name) })(&users)
+        #expect(users.elements == [User(id: 1, name: "Carol"), User(id: 2, name: "Bob")])
+        assertConsistent(users)
+    }
+
+    @Test func ixPositionSetCollidingIdResolvesLastWins() {
+        let users = IdentifiedArrayOf<User>.ix(0).set(sampleUsers(), User(id: 3, name: "Zed"))
+        #expect(users.elements == [User(id: 3, name: "Carol"), User(id: 2, name: "Bob")])
+        assertConsistent(users)
+    }
+}
