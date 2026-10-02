@@ -26,7 +26,7 @@ public extension AsyncThrowingStream where Element: Sendable, Failure: Sendable 
     /// The stream never throws — errors surface as .failure elements instead.
     func toResultStream() -> AsyncStream<Result<Element, Failure>> {
         AsyncStream { continuation in
-            Task {
+            let task = Task {
                 do {
                     for try await element in self {
                         continuation.yield(.success(element))
@@ -39,6 +39,8 @@ public extension AsyncThrowingStream where Element: Sendable, Failure: Sendable 
                     continuation.finish()
                 }
             }
+            // swiftlint:disable:next closure_ignoring_args
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }
@@ -52,7 +54,7 @@ public extension AsyncStream {
     func toThrowingStream<Success: Sendable, E: Error & Sendable>() -> AsyncThrowingStream<Success, any Error>
     where Element == Result<Success, E> {
         AsyncThrowingStream { continuation in
-            Task {
+            let task = Task {
                 for await element in self {
                     switch element {
                     case let .success(value):
@@ -65,6 +67,8 @@ public extension AsyncStream {
                 }
                 continuation.finish()
             }
+            // swiftlint:disable:next closure_ignoring_args
+            continuation.onTermination = { _ in task.cancel() }
         }
     }
 }
