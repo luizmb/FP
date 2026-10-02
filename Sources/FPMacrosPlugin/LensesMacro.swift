@@ -328,11 +328,14 @@ private func makeInit(access: AccessLevel, structAccess: AccessLevel, params: [S
     let prefix = effective.prefix
     let paramList = params
         .map { p -> String in
-            if let value = p.defaultValue { return "\(p.name): \(p.type) = \(value)" }
+            // A function-typed parameter is stored, so it must be `@escaping` (Optional-wrapped
+            // functions already escape implicitly).
+            let type = isFunctionType(p.type) ? "@escaping \(p.type)" : p.type
+            if let value = p.defaultValue { return "\(p.name): \(type) = \(value)" }
             // Optionals get an implicit `= nil` (matching Swift's own memberwise init, SE-0242), so a
             // caller can omit them without writing `= nil` on the property — which SwiftLint flags.
-            if p.type.hasSuffix("?") || p.type.hasPrefix("Optional<") { return "\(p.name): \(p.type) = nil" }
-            return "\(p.name): \(p.type)"
+            if isOptionalType(p.type) { return "\(p.name): \(type) = nil" }
+            return "\(p.name): \(type)"
         }
         .joined(separator: ", ")
     let body = params.map { "self.\($0.name) = \($0.name)" }.joined(separator: "; ")
@@ -377,8 +380,50 @@ private func makeStaticLens(access: AccessLevel, isGeneric: Bool) -> DeclSyntax 
 
 /// Whether the macro should treat the property's type as `Optional`. Detected
 /// syntactically: `T?`, `Optional<T>`, and `Swift.Optional<T>` all qualify.
+/// The characters of `type` that sit outside any `()`, `[]` or `<>` nesting. The `>` of a
+/// function arrow is not a closing bracket, so `->` survives at whatever level it appears.
+private func topLevelSkeleton(of type: String) -> String {
+    var depth = 0
+    var previous: Character = " "
+    var skeleton = ""
+    for char in type {
+        let isArrowHead = char == ">" && previous == "-"
+        if "([<".contains(char) {
+            depth += 1
+        } else if ")]>".contains(char), !isArrowHead {
+            depth -= 1
+        } else if depth == 0 {
+            skeleton.append(char)
+        }
+        previous = char
+    }
+    return skeleton
+}
+
+/// `true` when `type` is a function type at the top level (`(A) -> B`, `@Sendable () -> B?`).
+private func isFunctionType(_ type: String) -> Bool {
+    topLevelSkeleton(of: type).contains("->")
+}
+
+/// Spells `type` wrapped in `Optional` using the `?` sugar, parenthesising when appending `?`
+/// directly would bind to the wrong part of the type: function types (`() -> Void?` returns an
+/// optional), attributed types (`@Sendable ...`), existentials/opaque types (`any P?` is rejected)
+/// and protocol compositions (`A & B?` makes only `B` optional).
+func optionalTypeString(_ type: String) -> String {
+    let trimmed = type.trimmingCharacters(in: .whitespaces)
+    let skeleton = topLevelSkeleton(of: trimmed)
+    let needsParentheses = skeleton.contains("->")
+        || skeleton.contains("&")
+        || trimmed.hasPrefix("@")
+        || trimmed.hasPrefix("any ")
+        || trimmed.hasPrefix("some ")
+    return needsParentheses ? "(\(trimmed))?" : "\(trimmed)?"
+}
+
 private func isOptionalType(_ type: String) -> Bool {
     let trimmed = type.trimmingCharacters(in: .whitespaces)
+    // `() -> Int?` ends in `?` but is a function returning an Optional, not an Optional.
+    if isFunctionType(trimmed) { return false }
     if trimmed.hasSuffix("?") { return true }
     if trimmed.hasPrefix("Optional<") { return true }
     if trimmed.hasPrefix("Swift.Optional<") { return true }
@@ -410,9 +455,9 @@ private func makeWithFunc(
     let params = withProps
         .map { p -> String in
             if isOptionalType(p.type) {
-                return "\(p.name): \(p.type)? = .some(nil)"
+                return "\(p.name): \(optionalTypeString(p.type)) = .some(nil)"
             }
-            return "\(p.name): \(p.type)? = nil"
+            return "\(p.name): \(optionalTypeString(p.type)) = nil"
         }
         .joined(separator: ", ")
 

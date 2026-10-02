@@ -266,7 +266,8 @@ private func makePrismsStruct(enumName: String, access: String, cases: [CaseInfo
 private func makeCaseProperties(access: String, cases: [CaseInfo]) -> [DeclSyntax] {
     let prefix = accessPrefix(access)
     return cases.map { info in
-        DeclSyntax(stringLiteral: "\(prefix)var \(info.name): \(info.focusType)? { Self.prism.\(info.name).preview(self) }")
+        let type = optionalTypeString(info.focusType)
+        return DeclSyntax(stringLiteral: "\(prefix)var \(info.name): \(type) { Self.prism.\(info.name).preview(self) }")
     }
 }
 
