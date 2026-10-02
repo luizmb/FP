@@ -31,14 +31,14 @@ public extension Mutable where Self: Any {
     ///     $0.size.width = 100
     /// }
     /// ```
-    @discardableResult func mutate(_ transform: (inout Self) -> Void) -> Self {
+    func mutate(_ transform: (inout Self) -> Void) -> Self {
         var copy = self
         transform(&copy)
         return copy
     }
 
     /// Returns a transformed copy of `self` by applying the pure function.
-    @discardableResult func mutate(_ transform: (Self) -> Self) -> Self {
+    func mutate(_ transform: (Self) -> Self) -> Self {
         transform(self)
     }
 }

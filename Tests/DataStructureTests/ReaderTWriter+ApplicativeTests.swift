@@ -55,4 +55,28 @@ import Testing
         #expect(w.value == 12)
         #expect(w.log == ["a", "b"])
     }
+
+    // MARK: - liftA2 runs each reader once
+
+    @Test func liftA2RunsEachReaderOnce() {
+        let counter = CallCounter()
+        let ra: Reader<CallCounter, Writer<[String], Int>> = Reader { env in env.tick(); return Writer(1, ["a"]) }
+        let rb: Reader<CallCounter, Writer<[String], Int>> = Reader { env in env.tick(); return Writer(2, ["b"]) }
+        let w = liftA2ReaderWriter { (a: Int, b: Int) in a + b }(ra, rb)(counter)
+        #expect(w.value == 3)
+        #expect(w.log == ["a", "b"])
+        #expect(counter.count == 2)
+    }
+}
+
+import Foundation
+
+// Test-only invocation counter. `@unchecked Sendable` is sound: every access goes
+// through `lock`.
+private final class CallCounter: @unchecked Sendable {
+    private let lock = NSLock()
+    private var calls = 0
+
+    var count: Int { lock.withLock { calls } }
+    func tick() { lock.withLock { calls += 1 } }
 }

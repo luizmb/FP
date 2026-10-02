@@ -6,6 +6,11 @@ public func cast<T>(_: T.Type) -> (_ originObject: T) -> T {
 }
 
 /// Cast an object to the desired type if possible. Otherwise returns nil.
-public func castOptionally<T>(_: T.Type) -> (_ originObject: T) -> T? {
+///
+/// ```swift
+/// let ints = [1, "two", 3] as [Any]
+/// ints.compactMap(castOptionally(Int.self))   // [1, 3]
+/// ```
+public func castOptionally<From, T>(_: T.Type) -> (_ originObject: From) -> T? {
     { $0 as? T }
 }
