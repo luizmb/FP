@@ -5,49 +5,34 @@ import SwiftSyntaxMacros
 
 // MARK: - Parsed model
 
-private struct WitnessParam {
-    let label: String? // nil when the parameter label is `_`
-    let type: String
-}
-
 private struct WitnessMethod {
-    let baseName: String
-    let params: [WitnessParam]
-    let returnType: String // "Void" when absent
-    let isAsync: Bool
-    let isThrows: Bool
-
-    var effects: String {
-        (isAsync ? " async" : "") + (isThrows ? " throws" : "")
-    }
+    let requirement: RequirementMethod
+    let fieldName: String
 
     /// The closure-field type, e.g. `@Sendable (String, Int) async -> Bool`.
-    var closureType: String {
-        "@Sendable (\(params.map(\.type).joined(separator: ", ")))\(effects) -> \(returnType)"
-    }
+    var closureType: String { "@Sendable \(requirement.closureType)" }
 
-    /// The closure body that forwards to a captured `instance`, threading labels.
+    /// The closure that forwards to a captured `instance`, threading labels, `&` and effects. A typed
+    /// `throws(E)` must be spelled on the closure literal, or it would be inferred as untyped `throws`.
     func forwarding(to instance: String) -> String {
-        let args = params.enumerated()
-            .map { index, param in (param.label.map { "\($0): " } ?? "") + "$\(index)" }
-            .joined(separator: ", ")
-        let call = "\(instance).\(baseName)(\(args))"
-        let prefix = (isThrows ? "try " : "") + (isAsync ? "await " : "")
-        return "{ \(prefix)\(call) }"
+        let params = requirement.params
+        let call = "\(requirement.callMarkers)\(instance).\(requirement.baseName)("
+            + params.enumerated().map { index, param in param.argument("p\(index)", labelled: true) }.joined(separator: ", ")
+            + ")"
+        let names = params.indices.map { "p\($0)" }.joined(separator: ", ")
+        guard let error = requirement.throwsKind.typedError else {
+            return params.isEmpty ? "{ \(call) }" : "{ \(names) in \(call) }"
+        }
+        return "{ (\(names))\(requirement.isAsync ? " async" : "") throws(\(error)) in \(call) }"
     }
-}
-
-private struct WitnessProperty {
-    let name: String
-    let type: String
-    let isSettable: Bool
 }
 
 private struct WitnessModel {
     let methods: [WitnessMethod]
-    let properties: [WitnessProperty]
+    let properties: [RequirementProperty]
     let associatedTypes: [(name: String, constraint: String?)]
     let inheritedWitnesses: [String] // parent protocol names (already filtered of markers)
+    let isClassBound: Bool
 
     var hasSettable: Bool { properties.contains(where: \.isSettable) }
 }
@@ -61,10 +46,10 @@ public struct WitnessMacro: PeerMacro {
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
         guard let proto = declaration.as(ProtocolDeclSyntax.self) else {
-            context.diagnose(Diagnostic(node: node, message: WitnessDiagnostic.notAProtocol))
+            context.diagnose(Diagnostic(node: node, message: ProtocolMacroDiagnostic(macro: .witness, kind: .notAProtocol)))
             return []
         }
-        guard let model = parseModel(proto, node: node, in: context) else { return [] }
+        guard let model = parseModel(proto, node: node, in: context, diagnoses: true) else { return [] }
 
         let access = witnessAccess(proto.modifiers)
         let name = proto.name.trimmed.text
@@ -73,13 +58,7 @@ public struct WitnessMacro: PeerMacro {
 
         let fields = makeFields(model, access: access)
         let memberwiseInit = makeMemberwiseInit(model, access: access)
-        let fromInstanceInit = makeFromInstanceInit(
-            model,
-            protocolName: name,
-            witnessName: witnessName,
-            generics: generics,
-            access: access
-        )
+        let fromInstanceInit = makeFromInstanceInit(model, protocolName: name, access: access)
 
         let body = (fields + [memberwiseInit, fromInstanceInit]).joined(separator: "\n    ")
         let decl: DeclSyntax = """
@@ -101,8 +80,9 @@ extension WitnessMacro: ExtensionMacro {
         conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [ExtensionDeclSyntax] {
+        // The peer role already reported every diagnostic; don't repeat them here.
         guard let proto = declaration.as(ProtocolDeclSyntax.self),
-              let model = parseModel(proto, node: node, in: context)
+              let model = parseModel(proto, node: node, in: context, diagnoses: false)
         else { return [] }
 
         let access = witnessAccess(proto.modifiers)
@@ -123,126 +103,103 @@ extension WitnessMacro: ExtensionMacro {
 
 // MARK: - Parsing
 
+/// Inherited protocols that carry no `@Witness`-able requirements of their own (markers, or stdlib
+/// protocols whose requirements are `static`/operators); they're satisfied by `Base` and not composed.
+private let nonWitnessParents: Set<String> = [
+    "Any", "AnyObject", "class", "Sendable", "Copyable", "Escapable", "BitwiseCopyable", "SendableMetatype",
+    "Equatable", "Hashable", "Comparable", "Identifiable", "Codable", "Encodable", "Decodable",
+    "CustomStringConvertible", "CustomDebugStringConvertible", "LosslessStringConvertible", "Error"
+]
+
+/// Standard-library protocols with associated types: their witness would need generic arguments.
+private let associatedTypeParents: Set<String> = [
+    "Sequence", "Collection", "BidirectionalCollection", "RandomAccessCollection", "MutableCollection",
+    "RangeReplaceableCollection", "IteratorProtocol", "RawRepresentable", "AsyncSequence",
+    "AsyncIteratorProtocol", "SetAlgebra", "OptionSet", "Strideable", "Numeric", "SignedNumeric",
+    "BinaryInteger", "FixedWidthInteger", "FloatingPoint", "BinaryFloatingPoint", "ExpressibleByArrayLiteral",
+    "ExpressibleByDictionaryLiteral", "ExpressibleByIntegerLiteral", "ExpressibleByFloatLiteral",
+    "ExpressibleByStringLiteral", "ExpressibleByBooleanLiteral"
+]
+
 private func parseModel(
     _ proto: ProtocolDeclSyntax,
     node: AttributeSyntax,
-    in context: some MacroExpansionContext
+    in context: some MacroExpansionContext,
+    diagnoses: Bool
 ) -> WitnessModel? {
-    var methods: [WitnessMethod] = []
-    var properties: [WitnessProperty] = []
-    var associatedTypes: [(name: String, constraint: String?)] = []
     var aborted = false
-
-    func abort(_ message: WitnessDiagnostic, at syntax: some SyntaxProtocol) {
-        context.diagnose(Diagnostic(node: syntax, message: message))
+    func abort(_ kind: ProtocolMacroDiagnostic.Kind, at syntax: Syntax) {
+        if diagnoses { context.diagnose(Diagnostic(node: syntax, message: ProtocolMacroDiagnostic(macro: .witness, kind: kind))) }
         aborted = true
     }
 
+    if explicitAccessLevel(from: proto.modifiers) == .private {
+        if diagnoses {
+            context.diagnose(Diagnostic(node: node, message: HostDiagnostic.privateHostUnsupported(macro: "@Witness", kind: "protocols")))
+        }
+        return nil
+    }
+
+    var requirements: [RequirementMethod] = []
+    var properties: [RequirementProperty] = []
     for member in proto.memberBlock.members {
         let decl = member.decl
-        if let assoc = decl.as(AssociatedTypeDeclSyntax.self) {
-            let constraint = assoc.inheritanceClause?.inheritedTypes
-                .map(\.type.trimmedDescription).joined(separator: " & ")
-            associatedTypes.append((assoc.name.text, constraint))
-        } else if let function = decl.as(FunctionDeclSyntax.self) {
-            if let method = parseMethod(function, abort: abort) { methods.append(method) }
+        if let function = decl.as(FunctionDeclSyntax.self) {
+            if let method = parseRequirementMethod(function, macro: .witness, diagnose: abort) { requirements.append(method) }
         } else if let variable = decl.as(VariableDeclSyntax.self) {
-            if let property = parseProperty(variable, abort: abort) { properties.append(property) }
+            if let property = parseRequirementProperty(variable, macro: .witness, diagnose: abort) { properties.append(property) }
         } else if decl.is(InitializerDeclSyntax.self) {
-            abort(.initRequirement, at: decl)
+            abort(.initRequirement, at: Syntax(decl))
         } else if decl.is(SubscriptDeclSyntax.self) {
-            abort(.subscriptRequirement, at: decl)
+            abort(.subscriptRequirement, at: Syntax(decl))
         }
     }
 
-    let inherited = (proto.inheritanceClause?.inheritedTypes ?? [])
-        .map(\.type.trimmedDescription)
-        .filter { !markerProtocols.contains($0) }
+    let inherited = inheritedTypeNames(of: proto)
+    let parents = inherited.filter { !nonWitnessParents.contains(unqualified($0)) && !$0.hasPrefix("~") }
+    for parent in parents where parent.contains("<") || associatedTypeParents.contains(unqualified(parent)) {
+        abort(.unsupportedParent(parent), at: Syntax(proto.name))
+    }
+
+    let names = disambiguatedNames(requirements)
+    for (method, name) in zip(requirements, names) where name == nil {
+        abort(.overloadCollision(method.baseName), at: Syntax(method.function))
+    }
 
     return aborted ? nil : WitnessModel(
-        methods: methods,
+        methods: zip(requirements, names).compactMap { method, name in name.map { WitnessMethod(requirement: method, fieldName: $0) } },
         properties: properties,
-        associatedTypes: associatedTypes,
-        inheritedWitnesses: inherited
+        associatedTypes: associatedTypes(of: proto),
+        inheritedWitnesses: parents,
+        isClassBound: isClassBound(inherited)
     )
-}
-
-private func parseMethod(
-    _ function: FunctionDeclSyntax,
-    abort: (WitnessDiagnostic, FunctionDeclSyntax) -> Void
-) -> WitnessMethod? {
-    let modifiers = Set(function.modifiers.map(\.name.text))
-    if modifiers.contains("static") { abort(.staticRequirement, function); return nil }
-    if modifiers.contains("mutating") { abort(.mutatingRequirement, function); return nil }
-
-    var paramTypes = function.signature.parameterClause.parameters.map { param in
-        WitnessParam(
-            label: param.firstName.text == "_" ? nil : param.firstName.text,
-            type: param.type.trimmedDescription
-        )
-    }
-    let returnType = function.signature.returnClause?.type.trimmedDescription ?? "Void"
-
-    // Generic parameters → erase each to its existential constraint when sound, else abort.
-    if let genericClause = function.genericParameterClause {
-        for genericParam in genericClause.parameters {
-            let paramName = genericParam.name.text
-            guard let constraint = genericParam.inheritedType?.trimmedDescription else {
-                abort(.unconstrainedGeneric, function); return nil
-            }
-            if appears(paramName, in: returnType) { abort(.genericInReturn, function); return nil }
-            let existential = "any \(constraint)"
-            paramTypes = paramTypes.map { WitnessParam(label: $0.label, type: substitute(paramName, with: existential, in: $0.type)) }
-        }
-    }
-
-    return WitnessMethod(
-        baseName: function.name.text,
-        params: paramTypes,
-        returnType: returnType,
-        isAsync: function.signature.effectSpecifiers?.asyncSpecifier != nil,
-        isThrows: function.signature.effectSpecifiers?.throwsClause != nil
-    )
-}
-
-private func parseProperty(
-    _ variable: VariableDeclSyntax,
-    abort: (WitnessDiagnostic, VariableDeclSyntax) -> Void
-) -> WitnessProperty? {
-    if variable.modifiers.contains(where: { $0.name.text == "static" }) {
-        abort(.staticRequirement, variable); return nil
-    }
-    guard let binding = variable.bindings.first,
-          let identifier = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
-          let type = binding.typeAnnotation?.type.trimmedDescription
-    else { return nil }
-
-    var isSettable = false
-    if case let .accessors(accessors) = binding.accessorBlock?.accessors {
-        isSettable = accessors.contains { $0.accessorSpecifier.text == "set" }
-    }
-    return WitnessProperty(name: identifier, type: type, isSettable: isSettable)
 }
 
 // MARK: - Field & init generation
 
+private func propertyClosureType(_ property: RequirementProperty) -> String {
+    "@Sendable ()\(property.effects) -> \(property.type)"
+}
+
 private func makeFields(_ model: WitnessModel, access: AccessLevel) -> [String] {
     var fields: [String] = []
-    let names = disambiguatedNames(model.methods)
-
-    for (method, fieldName) in zip(model.methods, names) {
-        fields.append("\(access.prefix)var \(fieldName): \(method.closureType)")
+    for method in model.methods {
+        fields.append("\(access.prefix)var \(method.fieldName): \(method.closureType)")
     }
     for property in model.properties {
-        fields.append("\(access.prefix)var \(property.name): @Sendable () -> \(property.type)")
+        fields.append("\(access.prefix)var \(property.name): \(propertyClosureType(property))")
         if property.isSettable {
             fields.append("\(access.prefix)var set\(property.name.capitalizedFirst): @Sendable (\(property.type)) -> Void")
         }
     }
     for parent in model.inheritedWitnesses {
-        fields.append("\(access.prefix)var \(parent.lowercasedFirst): \(parent)Witness")
+        fields.append("\(access.prefix)var \(parentFieldName(parent)): \(parent)Witness")
     }
     return fields
+}
+
+private func parentFieldName(_ parent: String) -> String {
+    (parent.split(separator: ".").last.map(String.init) ?? parent).lowercasedFirst
 }
 
 private func makeMemberwiseInit(_ model: WitnessModel, access: AccessLevel) -> String {
@@ -251,32 +208,34 @@ private func makeMemberwiseInit(_ model: WitnessModel, access: AccessLevel) -> S
     return "\(access.prefix)init(\(params.joined(separator: ", "))) { \(assignments) }"
 }
 
-private func makeFromInstanceInit(
-    _ model: WitnessModel,
-    protocolName: String,
-    witnessName: String,
-    generics: GenericClause,
-    access: AccessLevel
-) -> String {
+private func makeFromInstanceInit(_ model: WitnessModel, protocolName: String, access: AccessLevel) -> String {
     let whereClause = model.associatedTypes.isEmpty
         ? ""
         : " where " + model.associatedTypes.map { "Base.\($0.name) == \($0.name)" }.joined(separator: ", ")
-    let names = disambiguatedNames(model.methods)
 
     var args: [String] = []
-    for (method, fieldName) in zip(model.methods, names) {
-        args.append("\(fieldName): \(method.forwarding(to: "instance"))")
+    for method in model.methods {
+        args.append("\(method.fieldName): \(method.forwarding(to: "instance"))")
     }
     for property in model.properties {
-        args.append("\(property.name): { instance.\(property.name) }")
+        let read = "\(property.callMarkers)instance.\(property.name)"
+        if let error = property.throwsKind.typedError {
+            args.append("\(property.name): { ()\(property.isAsync ? " async" : "") throws(\(error)) in \(read) }")
+        } else {
+            args.append("\(property.name): { \(read) }")
+        }
         if property.isSettable {
-            // The protocol's setter is `mutating`, so it needs a `var`; `instance` is `AnyObject`-gated,
-            // so the rebound `target` is the same object and the write lands on the shared instance.
-            args.append("set\(property.name.capitalizedFirst): { var target = instance; target.\(property.name) = $0 }")
+            // A class-bound protocol's setter is non-mutating, so it writes through `instance` directly.
+            // Otherwise the protocol's setter is `mutating` and needs a `var`; `instance` is
+            // `AnyObject`-gated, so the rebound `target` is the same object and the write lands on it.
+            let write = model.isClassBound
+                ? "{ instance.\(property.name) = $0 }"
+                : "{ var target = instance; target.\(property.name) = $0 }"
+            args.append("set\(property.name.capitalizedFirst): \(write)")
         }
     }
     for parent in model.inheritedWitnesses {
-        args.append("\(parent.lowercasedFirst): \(parent)Witness(instance)")
+        args.append("\(parentFieldName(parent)): \(parent)Witness(instance)")
     }
 
     // A settable property's setter mutates through `instance`; that needs a reference type,
@@ -287,177 +246,28 @@ private func makeFromInstanceInit(
 }
 
 private func initParams(_ model: WitnessModel) -> [String] {
-    let names = disambiguatedNames(model.methods)
     var params: [String] = []
-    for (method, fieldName) in zip(model.methods, names) {
-        params.append("\(fieldName): @escaping \(method.closureType)")
+    for method in model.methods {
+        params.append("\(method.fieldName): @escaping \(method.closureType)")
     }
     for property in model.properties {
-        params.append("\(property.name): @escaping @Sendable () -> \(property.type)")
+        params.append("\(property.name): @escaping \(propertyClosureType(property))")
         if property.isSettable {
             params.append("set\(property.name.capitalizedFirst): @escaping @Sendable (\(property.type)) -> Void")
         }
     }
     for parent in model.inheritedWitnesses {
-        params.append("\(parent.lowercasedFirst): \(parent)Witness")
+        params.append("\(parentFieldName(parent)): \(parent)Witness")
     }
     return params
 }
 
 private func initFieldNames(_ model: WitnessModel) -> [String] {
-    var names = disambiguatedNames(model.methods)
+    var names = model.methods.map(\.fieldName)
     for property in model.properties {
         names.append(property.name)
         if property.isSettable { names.append("set\(property.name.capitalizedFirst)") }
     }
-    names.append(contentsOf: model.inheritedWitnesses.map(\.lowercasedFirst))
+    names.append(contentsOf: model.inheritedWitnesses.map(parentFieldName))
     return names
-}
-
-// MARK: - Overload disambiguation
-
-private func disambiguatedNames(_ methods: [WitnessMethod]) -> [String] {
-    var counts: [String: Int] = [:]
-    for method in methods {
-        counts[method.baseName, default: 0] += 1
-    }
-
-    return methods.map { method in
-        guard counts[method.baseName, default: 0] > 1 else { return method.baseName }
-        let parts = method.params.map { ($0.label ?? typeToken($0.type)).capitalizedFirst }
-        return method.baseName + "With" + parts.joined(separator: "And")
-    }
-}
-
-func typeToken(_ type: String) -> String {
-    let cleaned = type.filter { $0.isLetter || $0.isNumber }
-    return cleaned.isEmpty ? "Value" : cleaned
-}
-
-// MARK: - Generics
-
-struct GenericClause {
-    let declaration: String // e.g. "<Item, Failure: Error>" or ""
-    let usage: String // e.g. "<Item, Failure>" or ""
-}
-
-func genericClause(_ associatedTypes: [(name: String, constraint: String?)]) -> GenericClause {
-    guard !associatedTypes.isEmpty else { return GenericClause(declaration: "", usage: "") }
-    let decl = associatedTypes
-        .map { entry in entry.constraint.map { "\(entry.name): \($0)" } ?? entry.name }
-        .joined(separator: ", ")
-    let use = associatedTypes.map(\.name).joined(separator: ", ")
-    return GenericClause(declaration: "<\(decl)>", usage: "<\(use)>")
-}
-
-// MARK: - Helpers
-
-let markerProtocols: Set<String> = ["Sendable", "AnyObject", "Any"]
-
-func witnessAccess(_ modifiers: DeclModifierListSyntax) -> AccessLevel {
-    for modifier in modifiers {
-        switch modifier.name.text {
-        case "open",
-             "public":
-            return .public // `open` structs are illegal → public witness
-
-        case "package":
-            return .package
-
-        case "internal":
-            return .internal
-
-        case "fileprivate":
-            return .fileprivate
-
-        case "private":
-            return .private
-
-        default:
-            continue
-        }
-    }
-    return .internal
-}
-
-/// Whole-identifier check: does `name` appear as a standalone token in `text`?
-func appears(_ name: String, in text: String) -> Bool {
-    substitute(name, with: "\u{0}", in: text).contains("\u{0}")
-}
-
-/// Replace standalone occurrences of identifier `name` with `replacement`, respecting
-/// identifier boundaries so `T` doesn't match inside `Tally`.
-func substitute(_ name: String, with replacement: String, in text: String) -> String {
-    func isIdentifierChar(_ c: Character) -> Bool { c.isLetter || c.isNumber || c == "_" }
-    var result = ""
-    let chars = Array(text)
-    var i = 0
-    while i < chars.count {
-        let leftBoundary = i == 0 || !isIdentifierChar(chars[i - 1])
-        let rightBoundary = i + name.count >= chars.count || !isIdentifierChar(chars[i + name.count])
-        if chars[i] == name.first, matches(name, in: chars, at: i), leftBoundary, rightBoundary {
-            result += replacement
-            i += name.count
-        } else {
-            result.append(chars[i])
-            i += 1
-        }
-    }
-    return result
-}
-
-func matches(_ name: String, in chars: [Character], at index: Int) -> Bool {
-    let target = Array(name)
-    guard index + target.count <= chars.count else { return false }
-    for offset in 0..<target.count where chars[index + offset] != target[offset] {
-        return false
-    }
-    return true
-}
-
-extension String {
-    var capitalizedFirst: String { isEmpty ? self : prefix(1).uppercased() + dropFirst() }
-    var lowercasedFirst: String { isEmpty ? self : prefix(1).lowercased() + dropFirst() }
-}
-
-// MARK: - Diagnostics
-
-private enum WitnessDiagnostic: DiagnosticMessage {
-    case notAProtocol
-    case staticRequirement
-    case mutatingRequirement
-    case initRequirement
-    case subscriptRequirement
-    case unconstrainedGeneric
-    case genericInReturn
-
-    var message: String {
-        switch self {
-        case .notAProtocol:
-            "@Witness can only be applied to protocols"
-
-        case .staticRequirement:
-            "@Witness can't witness `static` requirements (a value witness has no Self)"
-
-        case .mutatingRequirement:
-            "@Witness can't witness `mutating` requirements in a value witness"
-
-        case .initRequirement:
-            "@Witness can't witness `init` requirements"
-
-        case .subscriptRequirement:
-            "@Witness can't witness `subscript` requirements"
-
-        case .unconstrainedGeneric:
-            "@Witness can't witness a method with an unconstrained generic parameter "
-                + "(no protocol/class constraint to erase to `any`). Add a constraint or remove the requirement."
-
-        case .genericInReturn:
-            "@Witness can't witness a method whose generic parameter appears in the return type "
-                + "(e.g. `decode<T>(_: T.Type) -> T`) — it can't be lowered to an existential."
-        }
-    }
-
-    var diagnosticID: MessageID { .init(domain: "FPMacrosPlugin", id: "Witness.\(self)") }
-    var severity: DiagnosticSeverity { .error }
 }

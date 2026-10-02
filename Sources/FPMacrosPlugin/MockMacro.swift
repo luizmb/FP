@@ -5,6 +5,9 @@ import SwiftSyntaxMacros
 
 private let notImplementedMessage = "Mock function not implemented for test case"
 
+/// Inherited protocols a mock satisfies without synthesising anything.
+private let markerParents: Set<String> = ["Any", "AnyObject", "class", "Sendable", "Copyable", "Escapable"]
+
 // MARK: - Macro
 
 public struct MockMacro: PeerMacro {
@@ -14,52 +17,42 @@ public struct MockMacro: PeerMacro {
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
         guard let proto = declaration.as(ProtocolDeclSyntax.self) else {
-            context.diagnose(Diagnostic(node: node, message: MockDiagnostic.notAProtocol))
+            context.diagnose(Diagnostic(node: node, message: ProtocolMacroDiagnostic(macro: .mock, kind: .notAProtocol)))
             return []
         }
+        if rejectPrivateHost(proto.modifiers, macro: "@Mock", kind: "protocols", node: node, context: context) { return [] }
+
         // The mock must *conform* to the protocol, but a syntactic macro can't see an inherited
         // protocol's requirements — so it can't synthesise them. Reject inheritance.
-        let inherited = (proto.inheritanceClause?.inheritedTypes ?? [])
-            .map(\.type.trimmedDescription)
-            .filter { !markerProtocols.contains($0) }
-        guard inherited.isEmpty else {
-            context.diagnose(Diagnostic(node: node, message: MockDiagnostic.inheritanceUnsupported))
+        let inherited = inheritedTypeNames(of: proto)
+        guard inherited.allSatisfy({ markerParents.contains(unqualified($0)) || $0.hasPrefix("~") }) else {
+            context.diagnose(Diagnostic(node: node, message: ProtocolMacroDiagnostic(macro: .mock, kind: .inheritanceUnsupported)))
             return []
         }
 
         guard let parsed = collectMembers(proto, in: context) else { return [] }
 
-        let access = witnessAccess(proto.modifiers)
-        let collisions = baseNameCollisions(parsed.functions)
-
-        var aborted = false
-        func abort(_ message: MockDiagnostic, at function: FunctionDeclSyntax) {
-            context.diagnose(Diagnostic(node: function, message: message))
-            aborted = true
-        }
-
-        var pieces: [MockMember] = []
-        for function in parsed.functions {
-            let collides = collisions.contains(function.name.text)
-            guard let member = mockMethod(function, access: access, collides: collides, abort: abort) else { return [] }
-            pieces.append(member)
-        }
-        guard !aborted else { return [] }
-        for variable in parsed.variables {
-            if let member = mockProperty(variable, access: access) { pieces.append(member) }
-        }
+        let style = MockStyle(
+            access: witnessAccess(proto.modifiers),
+            isClass: isClassBound(inherited),
+            isSendable: isSendableProtocol(inherited)
+        )
+        let pieces = zip(parsed.methods, parsed.fieldNames).map { mockMethod($0, fieldName: $1, style: style) }
+            + parsed.properties.map { mockProperty($0, style: style) }
 
         let generics = genericClause(parsed.associatedTypes)
         let storedVars = pieces.map(\.storedVar).joined(separator: "\n    ")
         let initParams = pieces.flatMap(\.initParams).joined(separator: ", ")
         let assignments = pieces.flatMap(\.assignments).joined(separator: "; ")
         let conforming = pieces.map(\.conforming).joined(separator: "\n    ")
+        let name = proto.name.trimmed.text
+        let kind = style.isClass ? "final class" : "struct"
 
         let decl: DeclSyntax = """
         #if DEBUG
-        \(raw: access.prefix)struct \(raw: proto.name.trimmed.text)Mock\(raw: generics.declaration): \(raw: proto.name.trimmed.text) {
+        \(raw: style.access.prefix)\(raw: kind) \(raw: name)Mock\(raw: generics.declaration): \(raw: name) {
             \(raw: storedVars)
-            \(raw: access.prefix)init(\(raw: initParams)) { \(raw: assignments) }
+            \(raw: style.access.prefix)init(\(raw: initParams)) { \(raw: assignments) }
             \(raw: conforming)
         }
         #endif
@@ -68,54 +61,60 @@ public struct MockMacro: PeerMacro {
     }
 }
 
+/// How the mock is shaped: a `final class` for class-bound protocols (with immutable storage when it
+/// must also be `Sendable`), `@Sendable` closures for `Sendable` protocols.
+private struct MockStyle {
+    let access: AccessLevel
+    let isClass: Bool
+    let isSendable: Bool
+
+    var binding: String { isClass && isSendable ? "let" : "var" }
+    var closureAttribute: String { isSendable ? "@Sendable " : "" }
+}
+
 // MARK: - Member collection
 
 private struct ParsedMembers {
     let associatedTypes: [(name: String, constraint: String?)]
-    let functions: [FunctionDeclSyntax]
-    let variables: [VariableDeclSyntax]
+    let methods: [RequirementMethod]
+    let fieldNames: [String]
+    let properties: [RequirementProperty]
 }
 
 private func collectMembers(_ proto: ProtocolDeclSyntax, in context: some MacroExpansionContext) -> ParsedMembers? {
-    var associatedTypes: [(name: String, constraint: String?)] = []
-    var functions: [FunctionDeclSyntax] = []
-    var variables: [VariableDeclSyntax] = []
+    var methods: [RequirementMethod] = []
+    var properties: [RequirementProperty] = []
     var aborted = false
 
-    func abort(_ message: MockDiagnostic, at syntax: some SyntaxProtocol) {
-        context.diagnose(Diagnostic(node: syntax, message: message))
+    func abort(_ kind: ProtocolMacroDiagnostic.Kind, at syntax: Syntax) {
+        context.diagnose(Diagnostic(node: syntax, message: ProtocolMacroDiagnostic(macro: .mock, kind: kind)))
         aborted = true
     }
 
     for member in proto.memberBlock.members {
         let decl = member.decl
-        if let assoc = decl.as(AssociatedTypeDeclSyntax.self) {
-            let constraint = assoc.inheritanceClause?.inheritedTypes
-                .map(\.type.trimmedDescription).joined(separator: " & ")
-            associatedTypes.append((assoc.name.text, constraint))
-        } else if let function = decl.as(FunctionDeclSyntax.self) {
-            let modifiers = Set(function.modifiers.map(\.name.text))
-            if modifiers.contains("static") {
-                abort(.staticRequirement, at: function)
-            } else if modifiers.contains("mutating") {
-                abort(.mutatingRequirement, at: function)
-            } else {
-                functions.append(function)
-            }
+        if let function = decl.as(FunctionDeclSyntax.self) {
+            if let method = parseRequirementMethod(function, macro: .mock, diagnose: abort) { methods.append(method) }
         } else if let variable = decl.as(VariableDeclSyntax.self) {
-            if variable.modifiers.contains(where: { $0.name.text == "static" }) {
-                abort(.staticRequirement, at: variable)
-            } else {
-                variables.append(variable)
-            }
+            if let property = parseRequirementProperty(variable, macro: .mock, diagnose: abort) { properties.append(property) }
         } else if decl.is(InitializerDeclSyntax.self) {
-            abort(.initRequirement, at: decl)
+            abort(.initRequirement, at: Syntax(decl))
         } else if decl.is(SubscriptDeclSyntax.self) {
-            abort(.subscriptRequirement, at: decl)
+            abort(.subscriptRequirement, at: Syntax(decl))
         }
     }
 
-    return aborted ? nil : ParsedMembers(associatedTypes: associatedTypes, functions: functions, variables: variables)
+    let names = disambiguatedNames(methods)
+    for (method, name) in zip(methods, names) where name == nil {
+        abort(.overloadCollision(method.baseName), at: Syntax(method.function))
+    }
+
+    return aborted ? nil : ParsedMembers(
+        associatedTypes: associatedTypes(of: proto),
+        methods: methods,
+        fieldNames: names.compactMap(\.self),
+        properties: properties
+    )
 }
 
 // MARK: - Per-member generation
@@ -127,141 +126,74 @@ private struct MockMember {
     let conforming: String
 }
 
-private func mockMethod(
-    _ function: FunctionDeclSyntax,
-    access: AccessLevel,
-    collides: Bool,
-    abort: (MockDiagnostic, FunctionDeclSyntax) -> Void
-) -> MockMember? {
-    let baseName = function.name.text
-    let params = function.signature.parameterClause.parameters
-    var paramTypes = params.map(\.type.trimmedDescription)
-    let returnType = function.signature.returnClause?.type.trimmedDescription ?? "Void"
+/// A default that crashes when called: a closure literal (rather than `fail(...)` itself), so it also
+/// fits closure types a generic can't stand for — non-escaping or `@autoclosure` parameters, `inout` —
+/// and is `@Sendable` when the mock needs it to be.
+private func failingDefault(arity: Int) -> String {
+    let call = "CoreFP.fail(\"\(notImplementedMessage)\")()"
+    guard arity > 0 else { return "{ \(call) }" }
+    return "{ \(Array(repeating: "_", count: arity).joined(separator: ", ")) in \(call) }"
+}
 
-    // Erase each sound method generic to its existential constraint, else abort.
-    if let genericClause = function.genericParameterClause {
-        for genericParam in genericClause.parameters {
-            let paramName = genericParam.name.text
-            guard let constraint = genericParam.inheritedType?.trimmedDescription else {
-                abort(.unconstrainedGeneric, function); return nil
-            }
-            if appears(paramName, in: returnType) { abort(.genericInReturn, function); return nil }
-            paramTypes = paramTypes.map { substitute(paramName, with: "any \(constraint)", in: $0) }
-        }
+private func mockMethod(_ method: RequirementMethod, fieldName: String, style: MockStyle) -> MockMember {
+    let function = method.function
+    let stored = "wrapped\(fieldName.capitalizedFirst)"
+    let closureType = style.closureAttribute + method.closureType
+
+    let args = method.params.map { $0.argument($0.internalName, labelled: false) }.joined(separator: ", ")
+    let call = "\(stored)(\(args))"
+    let body: String
+    if case .rethrows = method.throwsKind {
+        // A `rethrows` method may only throw through its closure arguments, so a direct call to the
+        // throwing stored closure is rejected; an immediately-applied closure is accepted and rethrows.
+        let effects = method.isAsync ? " async throws" : " throws"
+        body = "\(method.callMarkers){ ()\(effects) -> \(method.returnType) in \(method.callMarkers)\(call) }()"
+    } else {
+        body = method.callMarkers + call
     }
 
-    let isAsync = function.signature.effectSpecifiers?.asyncSpecifier != nil
-    let isThrows = function.signature.effectSpecifiers?.throwsClause != nil
-    let effects = (isAsync ? " async" : "") + (isThrows ? " throws" : "")
-    let closureType = "(\(paramTypes.joined(separator: ", ")))\(effects) -> \(returnType)"
-
-    let labels = params.map { ($0.firstName.text == "_" ? typeToken($0.type.trimmedDescription) : $0.firstName.text).capitalizedFirst }
-    let name = collides ? baseName + "With" + labels.joined(separator: "And") : baseName
-    let stored = "wrapped\(name.capitalizedFirst)"
-
-    // Conforming method reproduces the protocol signature verbatim and delegates to the closure.
-    let genericDecl = function.genericParameterClause?.trimmedDescription ?? ""
+    // The conforming method reproduces the requirement, naming any unnamed parameter so it can forward it.
+    let generics = function.genericParameterClause?.trimmedDescription ?? ""
+    let effects = function.signature.effectSpecifiers.map { " \($0.trimmedDescription)" } ?? ""
+    let returnClause = function.signature.returnClause.map { " \($0.trimmedDescription)" } ?? ""
     let whereClause = function.genericWhereClause.map { " \($0.trimmedDescription)" } ?? ""
-    let forwardArgs = params.map { ($0.secondName ?? $0.firstName).text }.joined(separator: ", ")
-    let callPrefix = (isThrows ? "try " : "") + (isAsync ? "await " : "")
-    let conforming = "\(access.prefix)func \(baseName)\(genericDecl)\(function.signature.trimmedDescription)\(whereClause)"
-        + " { \(callPrefix)\(stored)(\(forwardArgs)) }"
+    let params = method.params.map(\.signature).joined(separator: ", ")
+    let conforming = "\(style.access.prefix)func \(method.baseName)\(generics)(\(params))\(effects)\(returnClause)\(whereClause)"
+        + " { \(body) }"
 
     return MockMember(
-        storedVar: "\(access.prefix)var \(stored): \(closureType)",
-        initParams: ["\(name): @escaping \(closureType) = fail(\"\(notImplementedMessage)\")"],
-        assignments: ["self.\(stored) = \(name)"],
+        storedVar: "\(style.access.prefix)\(style.binding) \(stored): \(closureType)",
+        initParams: ["\(fieldName): @escaping \(closureType) = \(failingDefault(arity: method.params.count))"],
+        assignments: ["self.\(stored) = \(fieldName)"],
         conforming: conforming
     )
 }
 
-private func mockProperty(_ variable: VariableDeclSyntax, access: AccessLevel) -> MockMember? {
-    guard let binding = variable.bindings.first,
-          let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text,
-          let type = binding.typeAnnotation?.type.trimmedDescription
-    else { return nil }
-
-    var isSettable = false
-    if case let .accessors(accessors) = binding.accessorBlock?.accessors {
-        isSettable = accessors.contains { $0.accessorSpecifier.text == "set" }
-    }
+private func mockProperty(_ property: RequirementProperty, style: MockStyle) -> MockMember {
+    let name = property.name
     let cap = name.capitalizedFirst
     let getStored = "wrapped\(cap)"
+    let getterType = "\(style.closureAttribute)()\(property.effects) -> \(property.type)"
+    let read = "\(property.callMarkers)\(getStored)()"
 
-    var storedVars = ["\(access.prefix)var \(getStored): () -> \(type)"]
-    var initParams = ["\(name): @escaping () -> \(type) = fail(\"\(notImplementedMessage)\")"]
+    var storedVars = ["\(style.access.prefix)\(style.binding) \(getStored): \(getterType)"]
+    var initParams = ["\(name): @escaping \(getterType) = \(failingDefault(arity: 0))"]
     var assignments = ["self.\(getStored) = \(name)"]
-    var accessor = "{ \(getStored)() }"
+    var accessor = property.accessorEffects.isEmpty ? "{ \(read) }" : "{ get \(property.accessorEffects) { \(read) } }"
 
-    if isSettable {
+    if property.isSettable {
         let setStored = "wrapped\(cap)Set"
-        storedVars.append("\(access.prefix)var \(setStored): (\(type)) -> Void")
-        initParams.append("set\(cap): @escaping (\(type)) -> Void = fail(\"\(notImplementedMessage)\")")
+        let setterType = "\(style.closureAttribute)(\(property.type)) -> Void"
+        storedVars.append("\(style.access.prefix)\(style.binding) \(setStored): \(setterType)")
+        initParams.append("set\(cap): @escaping \(setterType) = \(failingDefault(arity: 1))")
         assignments.append("self.\(setStored) = set\(cap)")
-        accessor = "{ get { \(getStored)() } set { \(setStored)(newValue) } }"
+        accessor = "{ get { \(read) } set { \(setStored)(newValue) } }"
     }
 
     return MockMember(
         storedVar: storedVars.joined(separator: "\n    "),
         initParams: initParams,
         assignments: assignments,
-        conforming: "\(access.prefix)var \(name): \(type) \(accessor)"
+        conforming: "\(style.access.prefix)var \(name): \(property.type) \(accessor)"
     )
-}
-
-// MARK: - Helpers
-
-private func baseNameCollisions(_ functions: [FunctionDeclSyntax]) -> Set<String> {
-    var counts: [String: Int] = [:]
-    for function in functions {
-        counts[function.name.text, default: 0] += 1
-    }
-    return Set(counts.filter { $0.value > 1 }.keys)
-}
-
-// MARK: - Diagnostics
-
-private enum MockDiagnostic: DiagnosticMessage {
-    case notAProtocol
-    case inheritanceUnsupported
-    case staticRequirement
-    case mutatingRequirement
-    case initRequirement
-    case subscriptRequirement
-    case unconstrainedGeneric
-    case genericInReturn
-
-    var message: String {
-        switch self {
-        case .notAProtocol:
-            "@Mock can only be applied to protocols"
-
-        case .inheritanceUnsupported:
-            "@Mock can't mock a protocol that inherits another protocol — the macro can't see the parent's "
-                + "requirements to synthesise them. Flatten the protocol or conform the inherited part by hand."
-
-        case .staticRequirement:
-            "@Mock can't mock `static` requirements"
-
-        case .mutatingRequirement:
-            "@Mock can't mock `mutating` requirements"
-
-        case .initRequirement:
-            "@Mock can't mock `init` requirements"
-
-        case .subscriptRequirement:
-            "@Mock can't mock `subscript` requirements"
-
-        case .unconstrainedGeneric:
-            "@Mock can't mock a method with an unconstrained generic parameter "
-                + "(no protocol/class constraint to erase to `any`)."
-
-        case .genericInReturn:
-            "@Mock can't mock a method whose generic parameter appears in the return type "
-                + "(e.g. `decode<T>(_: T.Type) -> T`)."
-        }
-    }
-
-    var diagnosticID: MessageID { .init(domain: "FPMacrosPlugin", id: "Mock.\(self)") }
-    var severity: DiagnosticSeverity { .error }
 }
