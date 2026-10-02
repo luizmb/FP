@@ -2234,7 +2234,7 @@ import FPMacros
 
 #### `@Lenses` — struct lenses
 
-`@Lenses(_:init:)` generates a memberwise initializer, a `Lenses` struct + `static let lens` accessor holding one `Lens` per stored property, and a `with(...)` copy-with-overrides helper.
+`@Lenses(_:init:)` generates a memberwise initializer, a `Lenses` struct + `static var lens` accessor holding one `Lens` per stored property, a `with(...)` copy-with-overrides helper, and `Sendable` conformance when the struct doesn't declare it (`CoreFP.lens` needs a `Sendable` host, and a `public` struct never gets one implicitly).
 
 **Property rules:**
 
@@ -2244,6 +2244,10 @@ import FPMacros
 | `let version = 1` | no | no | immutable constant |
 | `var port: Int` | yes — required | yes | `WritableKeyPath` |
 | `var timeout = 30` | yes — default `= 30` | yes | `WritableKeyPath` |
+| `var count: Int { didSet { … } }` | yes — required | yes | `WritableKeyPath` (observers keep it stored) |
+| `var a, b: Int` | yes — both | yes — both | `WritableKeyPath` |
+| `var name: String!` | yes — default `= nil` | yes, typed `String?` | `WritableKeyPath` |
+| `public private(set) var total: Int` | yes — required | yes, capped to `fileprivate` | `WritableKeyPath`; left out of the public `with(...)` |
 
 ```swift
 @Lenses(init: .public)
@@ -2273,7 +2277,7 @@ public struct Config {
         public let port:    Lens<Config, Int>    = CoreFP.lens(\Config.port)
         public let timeout: Lens<Config, Int>    = CoreFP.lens(\Config.timeout)
     }
-    public static let lens = Lenses()
+    public static var lens: Lenses { Lenses() }
 
     public func with(host: String? = nil, port: Int? = nil, timeout: Int? = nil) -> Config {
         Config(
@@ -2283,11 +2287,12 @@ public struct Config {
         )
     }
 }
+extension Config: Sendable {}
 ```
 
 The `Lens<Config, String>` for `host` (a `let` property) calls `s.with(host: a)` rather than inlining all field references — the `with(...)` helper is the single source of truth for reconstruction, keeping the codegen O(N) in the number of properties instead of O(N²).
 
-For *generic* hosts (e.g. `Container<T>`), Swift forbids `static let` in a generic context. The macro automatically falls back to a computed `static var lens: Lenses { Lenses() }`. Same call-site syntax; allocates per access.
+`lens` is always computed: Swift forbids `static let` in any generic context, which includes generic hosts (`Container<T>`) and structs nested in a generic type (which the macro can't see). Building `Lenses()` is cheap. A generic host gets `extension Container: Sendable where T: Sendable {}` for the generic parameters its stored properties use.
 
 **Usage:**
 
@@ -2347,7 +2352,7 @@ Properties whose declared visibility is *lower* than the struct's are excluded f
 
 `@Prisms` generates three things for the annotated enum:
 
-1. A `Prisms` struct + `static let prism` accessor holding a typed `Prism` for each case, plus `Prismatic` conformance (unlocks composable `\.case` key paths).
+1. A `Prisms` struct + `static var prism` accessor holding a typed `Prism` for each case, plus `Prismatic` conformance (unlocks composable `\.case` key paths).
 2. One plain per-case property per case (`shape.circle`, `shape.rectangle`, …), typed `AssociatedValue?` — `nil` unless `self` is that case. Each delegates to the `Prism` from (1), so there's no duplicated pattern-matching logic.
 3. A nested `enum Cases: CaseMatchable` (which inherits `CaseIterable`) whose cases mirror the case *names* of the original enum (no associated values), plus a `func is(_:) -> Bool` predicate.
 
@@ -2382,7 +2387,7 @@ public enum Shape {
             review: { (_: Void) in Shape.empty }
         )
     }
-    public static let prism = Prisms()
+    public static var prism: Prisms { Prisms() }
 
     // One plain property per case — no @dynamicMemberLookup involved:
     public var circle: Double? { Self.prism.circle.preview(self) }
@@ -2400,7 +2405,7 @@ public enum Shape {
 
 Multi-payload cases (like `.rectangle`) get an **unlabeled** tuple type — access with `.0`/`.1`, not the original parameter labels.
 
-For *generic* enums (e.g. `Loading<Success, Failure>`), Swift forbids `static let` in a generic context. The macro automatically falls back to `static var prism: Prisms { Prisms() }`. Same call-site syntax; allocates per access.
+`prism` is always computed: Swift forbids `static let` in any generic context, which includes generic enums (`Loading<Success, Failure>`) and enums nested in a generic type.
 
 **Usage:**
 
@@ -2492,7 +2497,7 @@ var retryPolicy: RetryPolicy = .exponential  // explicit annotation required
 
 #### Access-level restriction
 
-`@Lenses` and `@Prisms` **cannot** be applied to `private` declarations — the macros refuse with a compile-time error. `private`'s type-scope semantics break the generated namespace (its stored `Lens<Host, X>` / `Prism<Host, X>` fields can't be exposed outside the host's body). Use `fileprivate` instead; it's functionally identical at file scope and works everywhere the macros need to. `fileprivate`, `internal`, `package`, `public`, and `open` all work uniformly, at file level or nested.
+`@Lenses` and `@Prisms` **cannot** be applied to `private` declarations — the macros refuse with a compile-time error. `private`'s type-scope semantics break the generated namespace (its stored `Lens<Host, X>` / `Prism<Host, X>` fields can't be exposed outside the host's body). Use `fileprivate` instead; it's functionally identical at file scope and works everywhere the macros need to. `fileprivate`, `internal`, `package`, `public`, and `open` all work uniformly, at file level or nested. The same rule applies to `@Iso`, `@DeriveMonoid`, `@Mock`, and `@Witness`.
 
 #### Built-in prisms
 
@@ -2588,8 +2593,8 @@ struct ServiceMock: Service {
     var wrappedIsReady: () -> Bool
 
     init(
-        fetch: @escaping (String) -> AnyPublisher<[Item], any Error> = fail("Mock function not implemented for test case"),
-        isReady: @escaping () -> Bool = fail("Mock function not implemented for test case")
+        fetch: @escaping (String) -> AnyPublisher<[Item], any Error> = { _ in CoreFP.fail("Mock function not implemented for test case")() },
+        isReady: @escaping () -> Bool = { CoreFP.fail("Mock function not implemented for test case")() }
     ) { self.wrappedFetch = fetch; self.wrappedIsReady = isReady }
 
     func fetch(id: String) -> AnyPublisher<[Item], any Error> { wrappedFetch(id) }
@@ -2602,7 +2607,7 @@ struct ServiceMock: Service {
 let mock = ServiceMock(isReady: { false })
 ```
 
-`{ get set }` properties generate a getter closure plus a `wrapped<Name>Set` closure; overloaded methods are disambiguated by argument labels only on collision. Protocol inheritance, `mutating`/`static`/`init`/`subscript` requirements, and non-erasable generics are diagnosed rather than silently mishandled.
+`{ get set }` properties generate a getter closure plus a `wrapped<Name>Set` closure; overloaded methods are disambiguated only on collision (by argument labels, then by labels and parameter types). A class-bound (`AnyObject`) protocol gets a `final class` mock and a `Sendable` protocol gets `@Sendable` closures. Typed `throws(E)`, `rethrows`, `{ get async throws }` getters, `inout`, variadic, `@autoclosure`, non-escaping closure and unnamed `_:` parameters are all handled. Protocol inheritance (beyond `Sendable`/`AnyObject`), `mutating`/`static`/`init`/`subscript` requirements, non-erasable generics and `private` protocols are diagnosed rather than silently mishandled.
 
 #### `@Witness` — protocols as first-class values
 
@@ -2638,7 +2643,7 @@ public extension Repository where Self: Sendable {
 let w = MemoryRepo(store: ["a": 1]).witness   // RepositoryWitness<Int, RepoError>
 ```
 
-`{ get set }` properties become a getter thunk plus a `set<Name>` closure; because the protocol setter is `mutating`, the from-instance `init` and `.witness` convenience are gated to `where …: AnyObject` whenever a settable member exists. Protocol inheritance composes by name (`ChildWitness` gains a `parent: ParentWitness` field, provided the parent is also `@Witness`).
+`{ get set }` properties become a getter thunk plus a `set<Name>` closure; because the protocol setter is `mutating`, the from-instance `init` and `.witness` convenience are gated to `where …: AnyObject` whenever a settable member exists. Protocol inheritance composes by name (`ChildWitness` gains a `parent: ParentWitness` field, provided the parent is also `@Witness`); marker and stdlib parents (`Sendable & AnyObject`, `Equatable`, `Codable`, …) aren't composed, and a parent with `{ get set }` requirements needs a class-bound child (`protocol Child: AnyObject, Parent`). Typed `throws(E)` and `{ get async throws }` getters are preserved. Requirements mentioning `Self`, `rethrows` requirements, variadic parameters, non-erasable generics and `private` protocols are diagnosed.
 
 ---
 

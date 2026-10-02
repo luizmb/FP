@@ -25,7 +25,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   shape-matching scratch declaration, for verifying the 5 hand-written Prism types stay in
   sync with the macro. See `CONTRIBUTING.md`.
 
+- **`@Lenses` adds `Sendable` conformance** (new `extension` role): `CoreFP.lens` needs a
+  `Sendable` host and a `public` struct never gets one implicitly, so `@Lenses` on a `public`
+  struct (including the `Macros.md` / README headline `Config` example) didn't compile.
+  `extension Host: Sendable {}` is emitted only when lenses are and the struct doesn't already
+  declare `Sendable`; generic hosts get `where T: Sendable` for the parameters their stored
+  properties use. `@ApplyOptics` does the same for the structs it generates lenses for.
+- **`@Mock` adapts to the protocol**: a class-bound (`AnyObject`) protocol gets a `final class`
+  mock, a `Sendable` protocol gets `@Sendable` closures (immutable ones in a class mock). Defaults
+  are now closure literals calling `fail(...)`, which also fit non-escaping, `@autoclosure` and
+  `inout` parameter types.
+
+### Removed
+- **`ExpandOptic` and `FPMacrosExpander`**: the expander was a hand-copied fork of the macro
+  plugin that had already drifted (no `Prismatic` extension, an `init` that redeclared the
+  memberwise one, nested types printed as `extension Inner`, `@ApplyOptics` ignored). Xcode's
+  "Expand Macro" shows the real output; `CONTRIBUTING.md` describes the test-side `expand(_:)`
+  helper for diffing hand-written optics against it.
+
 ### Fixed
+- **Macros, stored properties** (`@Lenses`, `@Iso`, `@DeriveMonoid`): `willSet`/`didSet`-only
+  properties count as stored (they were treated as computed and dropped); `var a, b: Int` keeps
+  `a`; `T!` is spelled `T?` in generated types; initialised `let` constants are no longer passed
+  to the memberwise init by `@Iso`/`@DeriveMonoid` ("extra argument"); a stored property without
+  a written type is an error in `@Iso`/`@DeriveMonoid` instead of being silently skipped (which
+  broke the round trip / the identity law).
+- **`@Lenses` restricted setters**: `private(set)` was read as `private`, so the property lost its
+  lens, while `public private(set)` produced a public *writable* lens. The lens now exists, capped
+  to the setter's access (`private(set)` → `fileprivate`), and the property is left out of a
+  `with(...)` more visible than its setter.
+- **Optics nested in a generic type**: `@Lenses`/`@Prisms` (and `@ApplyOptics(recursively:)` on a
+  generic root) emitted `static let lens`/`prism`, which Swift rejects in any generic context.
+  Both are now always computed `static var`.
+- **`private` hosts** of `@Iso`, `@DeriveMonoid`, `@Witness` and `@Mock` produced broken code; they
+  are now diagnosed like `@Lenses`/`@Prisms` ("use `fileprivate`").
+- **`@Witness`**: inherited `A & B` compositions are split and marker/stdlib parents (`Sendable`,
+  `AnyObject`, `Equatable`, `Hashable`, `Codable`, …) are no longer composed as `…Witness` fields;
+  generic parents and stdlib protocols with associated types are diagnosed; a class-bound child
+  of a parent with `{ get set }` requirements works. Typed `throws(E)` is preserved (was erased to
+  `throws`); `{ get async throws }` properties forward with `try await`; a top-level `some P`
+  parameter is erased to `any P`; generic erasure only happens when the parameter is the whole
+  type of exactly one parameter (the unsound `[T]` / `(T, T)` cases are diagnosed, as the docs
+  promised); `Self`, variadic and `rethrows` requirements are diagnosed; same-label overloads fall
+  back to type-based names (`findWithIdInt`) instead of colliding; class-bound protocols no longer
+  trigger a "`var target` was never mutated" warning.
+- **`@Mock`**: non-escaping closure, `inout`, variadic (received as an array), unnamed `_:` and
+  `@autoclosure` parameters; typed `throws(E)`; `rethrows` requirements (a `throws` closure);
+  `{ get async throws }` properties; same-label overloads (type-based names, or a diagnostic);
+  non-erasable generics are diagnosed.
 - `Either`/`Validation`/`Loading`'s doc comments, and a whole README `@Prisms` section, still
   described the removed `@dynamicMemberLookup` per-case-accessor design (and a `.properties`
   `PrismsOptions` case that was never actually implemented) — both now describe the real,
