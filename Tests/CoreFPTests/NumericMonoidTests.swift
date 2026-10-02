@@ -63,7 +63,7 @@ import Testing
 
     @Test func doubleMin() {
         #expect(Double.Monoids.Min.combine(2.5, 1.1) == 1.1)
-        #expect(Double.Monoids.Min.identity.rawValue == Double.greatestFiniteMagnitude)
+        #expect(Double.Monoids.Min.identity.rawValue == Double.infinity)
     }
 
     @Test func minMconcat() {
@@ -85,7 +85,13 @@ import Testing
 
     @Test func doubleMax() {
         #expect(Double.Monoids.Max.combine(2.5, 1.1) == 2.5)
-        #expect(Double.Monoids.Max.identity.rawValue == -Double.greatestFiniteMagnitude)
+        #expect(Double.Monoids.Max.identity.rawValue == -Double.infinity)
+    }
+
+    @Test func floatingIdentityHoldsAtInfinity() {
+        #expect(Double.Monoids.Max.combine(.identity, Double.Monoids.Max(-.infinity)).rawValue == -.infinity)
+        #expect(Double.Monoids.Min.combine(.identity, Double.Monoids.Min(.infinity)).rawValue == .infinity)
+        #expect(Float.Monoids.Max.combine(.identity, Float.Monoids.Max(-.infinity)).rawValue == -.infinity)
     }
 
     @Test func maxMconcat() {

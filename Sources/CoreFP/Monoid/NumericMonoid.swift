@@ -219,11 +219,11 @@ extension Float: HasMax, HasMin {
     public typealias Monoids = NumericMonoid<Float>
 
     public static var min: Float {
-        -Float.greatestFiniteMagnitude
+        -Float.infinity
     }
 
     public static var max: Float {
-        Float.greatestFiniteMagnitude
+        Float.infinity
     }
 }
 
@@ -231,11 +231,11 @@ extension Double: HasMax, HasMin {
     public typealias Monoids = NumericMonoid<Double>
 
     public static var min: Double {
-        -Double.greatestFiniteMagnitude
+        -Double.infinity
     }
 
     public static var max: Double {
-        Double.greatestFiniteMagnitude
+        Double.infinity
     }
 }
 
@@ -246,11 +246,11 @@ extension Double: HasMax, HasMin {
         public typealias Monoids = NumericMonoid<Float80>
 
         public static var min: Float80 {
-            -Float80.greatestFiniteMagnitude
+            -Float80.infinity
         }
 
         public static var max: Float80 {
-            Float80.greatestFiniteMagnitude
+            Float80.infinity
         }
     }
 #endif
@@ -262,11 +262,11 @@ extension Double: HasMax, HasMin {
         public typealias Monoids = NumericMonoid<CGFloat>
 
         public static var min: CGFloat {
-            -CGFloat.greatestFiniteMagnitude
+            -CGFloat.infinity
         }
 
         public static var max: CGFloat {
-            CGFloat.greatestFiniteMagnitude
+            CGFloat.infinity
         }
     }
 #endif
