@@ -5,7 +5,7 @@
 public extension Zipper {
     /// Transform every element — structure and focus position preserved, contents changed.
     func map<B>(_ fn: (A) -> B) -> Zipper<B> {
-        Zipper<B>(left: left.map(fn), focus: fn(focus), right: right.map(fn))
+        Zipper<B>(uncheckedElements: elements.map(fn), focusedIndex: focusedIndex)
     }
 
     /// Curried, `@Sendable` form of `map`, matching this library's standard `fmap` shape.

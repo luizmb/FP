@@ -11,22 +11,13 @@ public extension Zipper {
     /// The focus becomes `self`; ``left`` holds every zipper reachable by repeatedly
     /// calling ``moveLeft()`` (closest-to-`self` first); ``right`` holds every zipper
     /// reachable by repeatedly calling ``moveRight()`` (closest-to-`self` first).
+    ///
+    /// O(n): one zipper per position, all sharing this zipper's ``elements`` buffer.
     func duplicate() -> Zipper<Zipper<A>> {
-        var lefts: [Zipper<A>] = []
-        var cursor = self
-        while let previous = cursor.moveLeft() {
-            lefts.append(previous)
-            cursor = previous
-        }
-
-        var rights: [Zipper<A>] = []
-        cursor = self
-        while let next = cursor.moveRight() {
-            rights.append(next)
-            cursor = next
-        }
-
-        return Zipper<Zipper<A>>(left: lefts, focus: self, right: rights)
+        Zipper<Zipper<A>>(
+            uncheckedElements: elements.indices.map { Zipper(uncheckedElements: elements, focusedIndex: $0) },
+            focusedIndex: focusedIndex
+        )
     }
 
     /// extend :: (Zipper A -> B) -> Zipper A -> Zipper B

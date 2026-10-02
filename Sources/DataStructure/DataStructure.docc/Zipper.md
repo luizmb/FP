@@ -1,33 +1,39 @@
 # ``Zipper``
 
-`Zipper<A>` is a focused, navigable non-empty sequence — the classic "list zipper": a sequence together with a distinguished cursor position (`focus`) and O(1) navigation one step in either direction. It's the canonical data structure for walking back and forth over a sequence while editing the element currently under focus.
+`Zipper<A>` is a focused, navigable non-empty sequence — the classic "list zipper": a sequence together with a distinguished cursor position (`focus`) and O(1) navigation one step in either direction. It's the canonical data structure for walking back and forth over a sequence with a cursor, keeping every earlier position as a valid value.
 
 ```swift
 import DataStructure
 
 public struct Zipper<A> {
-    public let left: [A]    // elements before the focus, closest-to-focus first
-    public let focus: A     // the element currently under focus
-    public let right: [A]   // elements after the focus, closest-to-focus first
+    public let elements: [A] // the full sequence, in order
+    public let focusedIndex: Int // always a valid index of `elements`
+
+    public var focus: A // elements[focusedIndex]
+    public var left: ReversedCollection<ArraySlice<A>> // before the focus, closest-to-focus first
+    public var right: ArraySlice<A> // after the focus, closest-to-focus first
 }
 ```
 
-`left` is stored in reversed order — closest-to-focus first — so that moving the cursor never requires reversing or re-indexing anything. Moving left pops the front of `left` into `focus` and pushes the old `focus` onto the front of `right`; moving right does the mirror operation. Both are O(1).
+A zipper is the whole sequence plus the index of the focus. Moving never writes to `elements`: `moveLeft()`/`moveRight()` return a new zipper that shares the same buffer with the index shifted by one, so they are O(1), the old zipper stays valid, and copy-on-write never triggers. `left` and `right` are lazy views into that buffer (O(1) to obtain, no copy unless you build an `Array` from them), presented closest-to-focus first like Haskell's `Data.List.Zipper`.
+
+The trade-off versus a linked-list zipper is editing at the focus: writing to the shared buffer would copy it (O(n)). `Zipper` has no editing operations; `map` rebuilds the whole sequence, O(n), as it must.
 
 ## Creating and navigating
 
 ```swift
-// Direct init, cursor placed explicitly:
+// Direct init, cursor placed explicitly (each side closest-to-focus first):
 let z = Zipper(left: [2, 1], focus: 3, right: [4, 5])   // sequence: 1, 2, 3, 4, 5
 
-// From a plain array, cursor starts at the first element — nil if the array is empty:
-let fromArray = Zipper([1, 2, 3, 4, 5])   // focus == 1
+// From a plain array, cursor at the first element, or at a given index (nil if invalid):
+let fromArray = Zipper([1, 2, 3, 4, 5])                 // focus == 1
+let atThird = Zipper([1, 2, 3, 4, 5], focusedAt: 2)     // focus == 3
 
-let stepped = fromArray?.moveRight()   // focus == 2, left == [1]
+let stepped = fromArray?.moveRight()   // focus == 2, Array(stepped.left) == [1]
 stepped?.moveLeft()                    // back to focus == 1
 fromArray?.moveLeft()                  // nil — already at the start
 
-fromArray?.toArray()   // [1, 2, 3, 4, 5] — left (un-reversed) + focus + right
+fromArray?.toArray()   // [1, 2, 3, 4, 5], the shared `elements`, O(1)
 ```
 
 `isAtStart` and `isAtEnd` tell you whether `moveLeft()`/`moveRight()` would return `nil` without having to call them speculatively.
@@ -57,7 +63,7 @@ let neighborSums = z.extend { zipper in
 }
 ```
 
-`duplicate()` builds its `left`/`right` arrays by walking `moveLeft()`/`moveRight()` repeatedly and collecting each intermediate zipper — no `Monoid` constraint required, since there's nothing to combine, only positions to visit. This is the same shape as `Reader`/`Writer`'s comonad instances, but simpler: those need an inner `Monoid` to accumulate a log or an environment, while `Zipper`'s "context" is just its own left/right neighbors.
+`duplicate()` builds one zipper per position, each sharing the same `elements` buffer and differing only in `focusedIndex` (O(n) total) — no `Monoid` constraint required, since there's nothing to combine, only positions to visit. This is the same shape as `Reader`/`Writer`'s comonad instances, but simpler: those need an inner `Monoid` to accumulate a log or an environment, while `Zipper`'s "context" is just its own left/right neighbors.
 
 `coflatMap` is provided as an alias for `extend`, matching the naming some Haskell comonad libraries use alongside the categorically-named `extend`.
 
@@ -87,7 +93,7 @@ There is no `<*>`/`>>-` for `Zipper` — it has no `Applicative` or `Monad` inst
 
 ## For Haskell developers
 
-`Zipper<A>` is the structure from Gérard Huet's 1997 paper "The Zipper" (the origin of the term for this whole family of focused-navigation data structures), specialized to lists — the same shape as `Data.List.Zipper` on Hackage. The `left`/`focus`/`right` triple, `left` reversed for O(1) movement, and the lawful `Comonad` instance are all direct ports of the standard presentation.
+`Zipper<A>` is the structure from Gérard Huet's 1997 paper "The Zipper" (the origin of the term for this whole family of focused-navigation data structures), specialized to lists — the same shape as `Data.List.Zipper` on Hackage. The `left`/`focus`/`right` view (each side closest-to-focus first) and the lawful `Comonad` instance are direct ports of the standard presentation. The storage differs: Haskell keeps each side as a cons list so that a move shares all but one node; here the sequence is one shared array plus an index, which gives the same persistent, O(1), non-mutating moves without per-move allocation.
 
 | This library | Haskell parallel |
 |---|---|
