@@ -9,7 +9,11 @@ public extension Loading {
     func startLoading() -> Self {
         .loading(previous: loadedOrPrevious)
     }
+}
 
+// `Result` requires `Failure: Error`; `Loading` itself does not (a UI-facing failure can be a
+// `String` or a title/subtitle struct), so only the `Result` bridges carry the constraint.
+public extension Loading where Failure: Error {
     /// Applies a `Result` to transition to `.loaded` or `.failed`, preserving
     /// `loadedOrPrevious` as the previous value on failure.
     func applying(_ result: Result<Success, Failure>) -> Self {

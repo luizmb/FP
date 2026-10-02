@@ -117,7 +117,14 @@ so it was left alone; `mconcat`'s `Array(dropFirst())` is an O(n) pointer copy i
 
 ## Step 3: law violations that change behaviour (breaking, target 3.0)
 
-**Decision needed per stack:** derive `<*>` / `liftA2` / `*>` / `<*` from `flatMapT` (makes them lawful monads, `<*>` short-circuits), or keep the parallel applicative and drop/rename the monad surface.
+### Policy (2026-10-02): Haskell is the source of truth
+- A stack gets a monad surface (`flatMapT`/`bindT`/`kleisliT`, `>>-`/`-<<`/`>=>`/`<=<`) **only where Haskell's `transformers` defines one**: `ReaderT r m` (`Reader<E, M<A>>`, any inner), `MaybeT`/`ExceptT` (`M<A?>`, `M<Either>`, `M<Result>`), `WriterT` (`M<Writer<W, A>>`, incl. `EitherTWriter`), and the `Stateful<S, Optional|Either|Result|Writer>` stacks (isomorphic to `MaybeT`/`ExceptT`/`WriterT` over `State`, or `StateT s (Writer w)`).
+- Where there is a monad, `<*>`/`liftA2`/`*>`/`<*` are **derived from bind** (`<*> == ap`). The parallel/compose applicative is a separate concept (`Compose`) and does not share the monad's operators.
+- Bind always takes a **full-stack continuation** (`a -> t m b`); the inner-only `flatMapT`s get the real bind where lawful.
+- Where Haskell has **no** monad (`M<[A]>`/`M<NonEmpty>` over a non-commutative `M`: StatefulTArray/NonEmpty, WriterTArray/NonEmpty; `Writer<W, M<A>>`: WriterTReader/Stateful/Publisher/AsyncStream; `M<Stateful<S, A>>`: XTStateful; `Either<L, Stateful<S, A>>`): **remove** the monad surface (remove, don't rename); functor/applicative stay.
+- `Loading` and `Validation` must not require `Failure: Error` (UI-facing failures are strings/view structs; `Error` breaks `Equatable`). Only `Result` bridges are constrained with `where Failure: Error`.
+
+**Resolved by the policy above.**
 
 ### 3.1 `<*>` ≠ `ap` (applicative disagrees with bind)
 - [ ] EitherTOptional (`.right(nil) <*> .left(l)`: `.left` vs `.right(nil)`), EitherTResult, EitherTArray, OptionalTEither, ArrayTEither (error duplicated per value), NonEmptyTEither, NonEmptyTResult, NonEmptyTOptional: `DataStructure/Either/*+Applicative.swift`, `DataStructure/NonEmpty/*+Applicative.swift`
@@ -138,8 +145,8 @@ so it was left alone; `mconcat`'s `Array(dropFirst())` is an O(n) pointer copy i
 ### 3.4 Misnamed / lossy
 - [ ] `CoreFP/Array/Array+Monad.swift:63`, `filterM` takes `(Element) -> Bool`, so it's `filter`. Rename or implement real `filterM` (`(Element) -> [Bool]`, powerset).
 - [ ] `BasicFreeFunctions+Composition.swift:46`, free `apply(value, fn)` is `|>`, clashing with applicative `apply` everywhere else. Rename (`pipe`) or remove (`call` exists).
-- [ ] `Validation+Alternative.swift:7-11`, `<|>` drops left errors when both fail; accumulate `E.combine(e1, e2)`. Rename the file to Alt (no `empty`).
-- [ ] `Loading+Catch.swift:19-20`, `catch` hides `previous`; pass `(Failure, Success?)` or default to keeping it.
+- [x] `Validation+Alternative.swift:7-11`, `<|>` drops left errors when both fail; accumulate `E.combine(e1, e2)`. Rename the file to Alt (no `empty`).
+- [x] `Loading+Catch.swift:19-20`, `catch` hides `previous`; pass `(Failure, Success?)` or default to keeping it.
 
 ---
 

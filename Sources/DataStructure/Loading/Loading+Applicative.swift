@@ -3,16 +3,85 @@ import CoreFP
 import Foundation
 
 public extension Loading {
-    /// Combines two `Loading` values sharing a `Failure` type into a `Loading` of the pair.
-    ///
-    /// Precedence — first match wins:
-    /// 1. If either side is `.failed`, the result is `.failed` carrying the first error
-    ///    encountered and a pair of `loadedOrPrevious` values when both sides have one.
-    /// 2. If either side is `.idle`, the result is `.idle`.
-    /// 3. If either side is `.loading`, the result is `.loading`, with `previous` set to the
-    ///    pair of `loadedOrPrevious` values when both sides have one.
-    /// 4. Otherwise both sides are `.loaded` and the result is `.loaded` with the pair.
+    // MARK: Applicative (derived from bind, so `<*> == ap` as Haskell requires)
+
+    //
+    // Left-biased and short-circuiting, like PureScript's `RemoteData`: the right side only
+    // matters when the left is `.loaded`. For the UI rule "show the failure if either request
+    // failed", use ``pessimisticCombine(_:_:)`` instead; it is deliberately not the applicative.
+
+    /// Pairs two `Loading` values: `liftA2 (,)`, i.e. `left >>= { l in right.map { (l, $0) } }`.
     static func zip<Left: Sendable, Right: Sendable>(
+        _ left: Loading<Left, Failure>,
+        _ right: Loading<Right, Failure>
+    ) -> Loading<(Left, Right), Failure>
+    where Success == (Left, Right) {
+        left.flatMap { l in right.map { r in (l, r) } }
+    }
+
+    /// Triples three `Loading` values, left to right, with the same rules as ``zip(_:_:)``.
+    static func zip3<A1: Sendable, A2: Sendable, A3: Sendable>(
+        _ first: Loading<A1, Failure>,
+        _ second: Loading<A2, Failure>,
+        _ third: Loading<A3, Failure>
+    ) -> Loading<(A1, A2, A3), Failure>
+    where Success == (A1, A2, A3) {
+        Loading<(A1, A2), Failure>.zip(first, second).flatMap { ab in third.map { c in (ab.0, ab.1, c) } }
+    }
+
+    /// Quadruples four `Loading` values, left to right, with the same rules as ``zip(_:_:)``.
+    static func zip4<A1: Sendable, A2: Sendable, A3: Sendable, A4: Sendable>(
+        _ first: Loading<A1, Failure>,
+        _ second: Loading<A2, Failure>,
+        _ third: Loading<A3, Failure>,
+        _ fourth: Loading<A4, Failure>
+    ) -> Loading<(A1, A2, A3, A4), Failure>
+    where Success == (A1, A2, A3, A4) {
+        Loading<(A1, A2, A3), Failure>.zip3(first, second, third).flatMap { abc in fourth.map { d in (abc.0, abc.1, abc.2, d) } }
+    }
+
+    /// `ap`: applies a `Loading`-wrapped function to a `Loading`-wrapped argument.
+    /// (<*>) :: Loading e (a -> b) -> Loading e a -> Loading e b
+    static func apply<A: Sendable>(
+        _ fnLoading: Loading<@Sendable (A) -> Success, Failure>,
+        _ argLoading: Loading<A, Failure>
+    ) -> Loading<Success, Failure> {
+        fnLoading.flatMap { fn in argLoading.map(fn) }
+    }
+
+    /// liftA2 :: (a -> b -> c) -> Loading e a -> Loading e b -> Loading e c
+    static func liftA2<A: Sendable, B: Sendable>(
+        _ fn: @escaping @Sendable (A, B) -> Success
+    ) -> @Sendable (Loading<A, Failure>, Loading<B, Failure>) -> Loading<Success, Failure> {
+        { left, right in left.flatMap { a in right.map { b in fn(a, b) } } }
+    }
+}
+
+public extension Loading {
+    /// seqRight :: Loading e a -> Loading e b -> Loading e b (derived from bind)
+    func seqRight<B: Sendable>(_ rhs: Loading<B, Failure>) -> Loading<B, Failure> {
+        Loading<B, Failure>.liftA2 { _, b in b }(self, rhs)
+    }
+
+    /// seqLeft :: Loading e a -> Loading e b -> Loading e a (derived from bind)
+    func seqLeft<B: Sendable>(_ rhs: Loading<B, Failure>) -> Loading<Success, Failure> {
+        Loading<Success, Failure>.liftA2 { a, _ in a }(self, rhs)
+    }
+}
+
+// MARK: - Pessimistic combine (UI rule, not the applicative)
+
+public extension Loading {
+    /// Combines two requests for one screen, pessimistically. Precedence, first match wins:
+    /// 1. Either side `.failed` → `.failed` with the first error found, and the pair of
+    ///    `loadedOrPrevious` values when both sides have one.
+    /// 2. Either side `.idle` → `.idle`.
+    /// 3. Either side `.loading` → `.loading`, `previous` paired as above.
+    /// 4. Both `.loaded` → `.loaded` with the pair.
+    ///
+    /// This checks both sides, so it is not `<*>`/``zip(_:_:)`` (those are left-biased and follow
+    /// bind). Use it when the screen should show a failure as soon as any request failed.
+    static func pessimisticCombine<Left: Sendable, Right: Sendable>(
         _ left: Loading<Left, Failure>,
         _ right: Loading<Right, Failure>
     ) -> Loading<(Left, Right), Failure>
@@ -37,71 +106,27 @@ public extension Loading {
         }
     }
 
-    /// Combines three `Loading` values sharing a `Failure` type into a `Loading` of the triple.
-    /// Built from `zip(_:_:)` and `liftA2(_:)`, so it follows the same precedence:
-    /// `.failed` beats `.idle` beats `.loading` beats `.loaded`.
-    static func zip3<A1: Sendable, A2: Sendable, A3: Sendable>(
+    /// Three-way ``pessimisticCombine(_:_:)``, same precedence.
+    static func pessimisticCombine<A1: Sendable, A2: Sendable, A3: Sendable>(
         _ first: Loading<A1, Failure>,
         _ second: Loading<A2, Failure>,
         _ third: Loading<A3, Failure>
     ) -> Loading<(A1, A2, A3), Failure>
     where Success == (A1, A2, A3) {
-        Loading<(A1, A2, A3), Failure>.liftA2 { ab, c in (ab.0, ab.1, c) }(
-            Loading<(A1, A2), Failure>.zip(first, second),
-            third
-        )
+        let firstTwo = Loading<(A1, A2), Failure>.pessimisticCombine(first, second)
+        return Loading<((A1, A2), A3), Failure>.pessimisticCombine(firstTwo, third).map { abc in (abc.0.0, abc.0.1, abc.1) }
     }
 
-    /// Combines four `Loading` values sharing a `Failure` type into a `Loading` of the quadruple.
-    /// Built from `zip3(_:_:_:)` and `liftA2(_:)`, preserving the same precedence:
-    /// `.failed` beats `.idle` beats `.loading` beats `.loaded`.
-    static func zip4<A1: Sendable, A2: Sendable, A3: Sendable, A4: Sendable>(
+    /// Four-way ``pessimisticCombine(_:_:)``, same precedence.
+    static func pessimisticCombine<A1: Sendable, A2: Sendable, A3: Sendable, A4: Sendable>(
         _ first: Loading<A1, Failure>,
         _ second: Loading<A2, Failure>,
         _ third: Loading<A3, Failure>,
         _ fourth: Loading<A4, Failure>
     ) -> Loading<(A1, A2, A3, A4), Failure>
     where Success == (A1, A2, A3, A4) {
-        Loading<(A1, A2, A3, A4), Failure>.liftA2 { abc, d in (abc.0, abc.1, abc.2, d) }(
-            Loading<(A1, A2, A3), Failure>.zip3(first, second, third),
-            fourth
-        )
-    }
-
-    /// Applies a `Loading`-wrapped function to a `Loading`-wrapped argument, sharing a
-    /// `Failure` type, following the same precedence rules as ``zip(_:_:)``: `.failed` beats
-    /// `.idle` beats `.loading` beats `.loaded`.
-    static func apply<A: Sendable>(
-        _ fnLoading: Loading<@Sendable (A) -> Success, Failure>,
-        _ argLoading: Loading<A, Failure>
-    ) -> Loading<Success, Failure> {
-        Loading<(@Sendable (A) -> Success, A), Failure>.zip(fnLoading, argLoading)
-            .map { fn, arg in fn(arg) }
-    }
-
-    /// Curried `liftA2` for `Loading`, built from ``zip(_:_:)`` and ``map(_:)``.
-    /// liftA2 :: (a -> b -> c) -> Loading<a, e> -> Loading<b, e> -> Loading<c, e>
-    static func liftA2<A: Sendable, B: Sendable>(
-        _ fn: @escaping @Sendable (A, B) -> Success
-    ) -> @Sendable (Loading<A, Failure>, Loading<B, Failure>) -> Loading<Success, Failure> {
-        { left, right in
-            Loading<(A, B), Failure>.zip(left, right).map(fn)
-        }
-    }
-}
-
-public extension Loading {
-    /// Runs both `Loading` values, discarding `self` and returning `rhs`, following the same
-    /// precedence rules as ``zip(_:_:)``.
-    /// seqRight :: Loading<a, e> -> Loading<b, e> -> Loading<b, e>
-    func seqRight<B: Sendable>(_ rhs: Loading<B, Failure>) -> Loading<B, Failure> {
-        Loading<B, Failure>.liftA2 { _, b in b }(self, rhs)
-    }
-
-    /// Runs both `Loading` values, discarding `rhs` and returning `self`, following the same
-    /// precedence rules as ``zip(_:_:)``.
-    /// seqLeft :: Loading<a, e> -> Loading<b, e> -> Loading<a, e>
-    func seqLeft<B: Sendable>(_ rhs: Loading<B, Failure>) -> Loading<Success, Failure> {
-        Loading<Success, Failure>.liftA2 { a, _ in a }(self, rhs)
+        let firstThree = Loading<(A1, A2, A3), Failure>.pessimisticCombine(first, second, third)
+        return Loading<((A1, A2, A3), A4), Failure>.pessimisticCombine(firstThree, fourth)
+            .map { abcd in (abcd.0.0, abcd.0.1, abcd.0.2, abcd.1) }
     }
 }

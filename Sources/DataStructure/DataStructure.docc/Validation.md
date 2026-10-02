@@ -104,14 +104,14 @@ validateName("Alice").seqLeft(validateAge(30))   // .success("Alice")
 
 ---
 
-## `<|>` — Alternative
+## `<|>` — Alt
 
-Return the first success, or the last failure if both fail.
+Return the first success; when both fail, the errors accumulate (Haskell's `Alt (Validation e)`). The right side is only evaluated when the left fails. There's no `empty`, so this is `Alt`, not `Alternative`.
 
 ```swift
-Validation<[String], Int>.failure(["a"]) <|> .success(3)    // .success(3)
-Validation<[String], Int>.success(1)     <|> .success(3)    // .success(1)
-Validation<[String], Int>.failure(["a"]) <|> .failure(["b"]) // .failure(["b"])
+Validation<[String], Int>.failure(["a"]) <|> .success(3) // .success(3)
+Validation<[String], Int>.success(1) <|> .success(3) // .success(1)
+Validation<[String], Int>.failure(["a"]) <|> .failure(["b"]) // .failure(["a", "b"])
 ```
 
 ---

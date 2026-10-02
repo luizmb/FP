@@ -5,7 +5,7 @@
 ```swift
 import DataStructure
 
-public enum Loading<Success: Sendable, Failure: Error & Sendable>: Sendable {
+public enum Loading<Success: Sendable, Failure: Sendable>: Sendable {
     case idle
     case loading(previous: Success?)
     case loaded(Success)
@@ -187,26 +187,37 @@ Loading<Int, AuthError>.kleisli(authorize, fetchProfile)(42)
 
 ---
 
-## `catch` — Recover from failure
+## `Failure` is any `Sendable` type
 
-`.failed` can be transformed into any other `Loading`. The other cases pass through.
+`Loading` doesn't require `Failure: Error`. In the UI the failure is usually a `String` or a struct with a title and subtitle, and a non-`Error` failure keeps `Loading` easy to make `Equatable`. Only the `Result` bridges (`applying(_:)`, `from(_:)`) need `Failure: Error`. Map a technical error into a view message the same way you map a DTO into a view state:
 
 ```swift
-let recovered = Loading<Int, NetworkError>
+struct Banner: Equatable, Sendable { let title: String; let subtitle: String }
+
+let screen: Loading<Profile, Banner> = request
+    .mapError { error in Banner(title: "Couldn't load your profile", subtitle: error.localizedDescription) }
+```
+
+`bimap(_:_:)` maps both channels at once.
+
+## `catch` — Recover from failure
+
+`.failed` can be transformed into any other `Loading`, possibly with another failure type (Haskell's `catchE`). The handler also receives the stale `previous` value so it can keep showing it. The other cases pass through.
+
+```swift
+let recovered: Loading<Int, NetworkError> = Loading<Int, NetworkError>
     .failed(error: .timeout, previous: 7)
-    .catch { _ in .loaded(0) }
+    .catch { _, _ in .loaded(0) }
 // .loaded(0)
 
-// Map one error into another
+// Retry, keeping the stale data on screen
 Loading<Int, NetworkError>
-    .failed(error: .timeout, previous: nil)
-    .catch { _ in .failed(error: .cancelled, previous: nil) }
-// .failed(error: .cancelled, previous: nil)
+    .failed(error: .timeout, previous: 7)
+    .catch { _, previous in Loading<Int, NetworkError>.loading(previous: previous) }
+// .loading(previous: 7)
 
 // Non-failed cases pass through
-Loading<Int, NetworkError>.idle.catch { _ in .loaded(0) }              // .idle
-Loading<Int, NetworkError>.loading(previous: 7).catch { _ in .loaded(0) }
-// .loading(previous: 7)
+Loading<Int, NetworkError>.idle.catch { _, _ in Loading<Int, NetworkError>.loaded(0) }   // .idle
 ```
 
 ---

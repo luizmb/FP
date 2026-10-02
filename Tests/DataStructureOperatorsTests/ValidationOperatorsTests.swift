@@ -93,4 +93,13 @@ import Testing
         let result = (rf <*> ra)("env")
         #expect(result == .failure([1, 2]))
     }
+
+    // MARK: - Alt accumulates
+
+    @Test func altOperatorAccumulatesBothFailures() {
+        let lhs: Validation<[String], Int> = .failure(["a"])
+        let rhs: Validation<[String], Int> = .failure(["b"])
+        #expect((lhs <|> rhs) == .failure(["a", "b"]))
+        #expect((Validation<[String], Int>.success(1) <|> rhs) == .success(1))
+    }
 }

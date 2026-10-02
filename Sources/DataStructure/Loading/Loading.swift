@@ -50,7 +50,7 @@ import Foundation
 /// macro generates.
 ///
 /// - SeeAlso: ``map(_:)``, ``zip(_:_:)``, ``flatMap(_:)``, ``catch(_:)``, ``startLoading()``
-public enum Loading<Success: Sendable, Failure: Error & Sendable>: Sendable {
+public enum Loading<Success: Sendable, Failure: Sendable>: Sendable {
     /// No fetch has been initiated yet.
     case idle
     /// A fetch is in progress. `previous` holds the last successful value, if any.
@@ -82,4 +82,4 @@ public extension Loading {
 }
 
 extension Loading: Equatable where Success: Equatable, Failure: Equatable {}
-extension Loading: Hashable where Success: Hashable, Failure: Hashable & Error {}
+extension Loading: Hashable where Success: Hashable, Failure: Hashable {}
