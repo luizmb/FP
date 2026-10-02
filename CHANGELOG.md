@@ -36,6 +36,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   are now closure literals calling `fail(...)`, which also fit non-escaping, `@autoclosure` and
   `inout` parameter types.
 
+### Deprecated
+- **Infix `^` (floating-point power)**: Swift's stdlib declares `^` in `AdditionPrecedence`, so it
+  bound like `+` (`2.0 * 3.0 ^ 2 == 36`). Use `power(_:_:)`; the operator goes in 3.0.
+
 ### Removed
 - **`ExpandOptic` and `FPMacrosExpander`**: the expander was a hand-copied fork of the macro
   plugin that had already drifted (no `Prismatic` extension, an `init` that redeclared the
@@ -44,6 +48,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   helper for diffing hand-written optics against it.
 
 ### Fixed
+- **Affine optics `set` is a no-op when the focus is absent**: `Lens ∘ Prism`,
+  `AffineTraversal ∘ Prism` and `affineTraversal(_: WritableKeyPath<S, A?>)` used to write the
+  value anyway, disagreeing with their own `over`/`lift` and the affine laws. `Prism.set` no
+  longer builds `review(a)` on a miss.
+- **`IdentifiedArray` keeps ids unique when optics change them**: `traversed`,
+  `traversed(where:)`, `ix(id:)` and `ix(_:)` mutations that made two ids collide corrupted the
+  index (a later lookup trapped). Collisions now resolve last-wins, like `append`; a traversal
+  that changes no id skips the table rebuild.
+- **`power(_:_:)`** returned `1` for every negative exponent and multiplied O(exp) times. It now
+  squares, returns the reciprocal for floating point and truncates like integer division for
+  `SignedInteger`.
+- **Floating-point `Min`/`Max` monoid identities** are `±infinity` (were
+  `±greatestFiniteMagnitude`, not an identity at the infinities).
+- **`AsyncThrowingStream` ↔ `Result`/`Either` bridges cancel their inner task** when the consumer
+  stops, instead of draining the upstream forever.
+- **`<*` for `Publisher` / `AsyncStream` runs the left side first** (was `rhs *> lhs`); new
+  `AsyncStream.seqLeft`. `altPublisher` / `<|>` builds its fallback only when the left fails.
+- **Kleisli composition chains**: `kleisli`/`kleisliBack`/`kleisliT`/`bind`/`bindT` and every
+  `>=>`/`<=<` now return `@Sendable` functions, so `f >=> g >=> h` compiles in Swift 6.
+- **`castOptionally`** is `<From, T>(T.Type) -> (From) -> T?`; it was `(T) -> T?` and could never
+  fail.
+- **`Mutable.mutate`** is no longer `@discardableResult`: it returns a copy, so ignoring the
+  result was a silent no-op.
+- **`liftA2ReaderWriter`** ran each reader twice.
 - **Macros, stored properties** (`@Lenses`, `@Iso`, `@DeriveMonoid`): `willSet`/`didSet`-only
   properties count as stored (they were treated as computed and dropped); `var a, b: Int` keeps
   `a`; `T!` is spelled `T?` in generated types; initialised `let` constants are no longer passed
