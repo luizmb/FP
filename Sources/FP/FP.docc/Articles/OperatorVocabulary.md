@@ -42,7 +42,7 @@ let parsed = "42"
 | `<<<` | `<<<` (`Control.Category`) | Function/optic composition, right to left | `FunctionCompositionBackwards` | right |
 | `£` / `<\|` | `$` | Function application, function on the left | `LowPrecedenceFunctionCallRight` | right |
 | `\|>` | — (F#/Elixir pipeline) | Function application, value on the left (pipeline) | `LowPrecedenceFunctionCallLeft` | left |
-| `^` (infix) | `^` | Numeric power, `BinaryFloatingPoint` only | `AdditionPrecedence` (stdlib — shared with `+`/`-`/`\|`/bitwise XOR) | left |
+| `^` (infix) | `^` | **Deprecated** numeric power, `BinaryFloatingPoint` only; use `power(_:_:)` | `AdditionPrecedence` (stdlib — shared with `+`/`-`/`\|`/bitwise XOR) | left |
 | `^` (prefix) | — | Lift a `KeyPath`/`WritableKeyPath` into a `Lens` (or a `@Sendable` getter) | n/a (prefix) | n/a |
 | `≅` | — | Flipped pattern match / range membership (`value ≅ range`) | `ComparisonPrecedence` (stdlib) | none (non-associative) |
 | `±` / `+/-` | — | Symmetric range construction, `center ± delta` | `RangeFormationPrecedence` (stdlib) | none (non-associative) |
@@ -62,12 +62,11 @@ A few things worth calling out explicitly:
   tripped up SourceKit (the editor's live type checker) with false-positive errors on code that
   `swift build`/`swift test` compile and pass without issue — giving transformer `fmap` its own
   symbol sidesteps that too.
-- **`^` the infix operator only works on `BinaryFloatingPoint`.** Swift's standard library already
-  declares `^` as bitwise XOR on `BinaryInteger` types; declaring a second `^` with a different
-  precedence group for the same operator name is an "ambiguous operator declarations" compiler
-  error, so this library cannot give integers a power operator. Use the named function
-  `power(_:_:)` for integer exponentiation; `^` the operator is reserved for `Double`/`Float`/etc.,
-  which have no conflicting stdlib meaning.
+- **`^` the infix operator is deprecated and will be removed in 3.0.** Swift's standard library
+  declares `^` (bitwise XOR) in `AdditionPrecedence`, and a second declaration with another
+  precedence group is an "ambiguous operator declarations" error, so the power overload binds
+  like `+` (`2.0 * 3.0 ^ 2 == 36`). It also only works on `BinaryFloatingPoint`, since integers
+  already own `^` as XOR. Use the named function `power(_:_:)` for every numeric type.
 - **`≅` and `±`/`+/-` are not in Haskell.** `≅` is a flipped alias of Swift's pattern-matching
   `~=` (`value ≅ range` reads better than `range ~= value` at a call site); `±`/`+/-` build a
   `ClosedRange` from a center and a delta (`5.0 ± 0.5` → `4.5...5.5`), generalized over

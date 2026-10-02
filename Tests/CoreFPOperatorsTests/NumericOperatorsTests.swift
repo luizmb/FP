@@ -121,8 +121,10 @@ import Testing
     // MARK: - Power
 
     // ^ is limited to BinaryFloatingPoint to avoid conflict with Swift's built-in
-    // XOR operator on BinaryInteger types. Use power(_:_:) for integers.
+    // XOR operator on BinaryInteger types. It's deprecated (binds like `+`), so the
+    // tests are marked deprecated too to keep exercising it without warnings.
 
+    @available(*, deprecated)
     @Test func powerFloatOperator() {
         let a = 2.0 ^ 10
         let b = 3.0 ^ 3
@@ -134,6 +136,7 @@ import Testing
         #expect(d == 7.0)
     }
 
+    @available(*, deprecated)
     @Test func powerOperatorMatchesNamedFunction() {
         let r1 = 2.0 ^ 8
         let r2 = 3.0 ^ 4

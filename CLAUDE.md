@@ -71,7 +71,7 @@ Every operator that has a directional sense has a **flipped counterpart**. When 
 | `<\|>` | — | `<\|>` | Alternative / choice (symmetric, no flip) |
 | `<>` | — | `<>` | Semigroup/Monoid append (symmetric, no flip) |
 | `++` | — | `++` | List/String concat (symmetric, no flip) |
-| `^` (infix) | — | `^` | Numeric power — `base ^ exp` |
+| `^` (infix) | — | `^` | **Deprecated** numeric power (binds like `+`); use `power(_:_:)`; removed in 3.0 |
 | `^` (prefix) | — | — | Lift — `WritableKeyPath` → `Lens`; `KeyPath` → partial `Lens` builder |
 | `≅` | — | — | Isomorphism / approximate equality check |
 | `±` / `+/-` | — | — | Numeric range construction — `value ± delta` |
