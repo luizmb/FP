@@ -356,10 +356,17 @@ import Testing
         #expect(Validation.alt(lhs, rhs) == .success(42))
     }
 
-    @Test func altBothFailureReturnsRhs() {
-        let lhs: Validation<String, Int> = .failure("first")
-        let rhs: Validation<String, Int> = .failure("second")
-        #expect(Validation.alt(lhs, rhs) == .failure("second"))
+    @Test func altBothFailuresAccumulate() {
+        let lhs: Validation<[String], Int> = .failure(["first"])
+        let rhs: Validation<[String], Int> = .failure(["second"])
+        #expect(Validation.alt(lhs, rhs) == .failure(["first", "second"]))
+    }
+
+    @Test func altDoesNotEvaluateRhsWhenLhsSucceeds() {
+        var evaluated = false
+        func fallback() -> Validation<[String], Int> { evaluated = true; return .success(0) }
+        #expect(Validation.alt(.success(1), fallback()) == .success(1))
+        #expect(evaluated == false)
     }
 
     // MARK: - Foldable

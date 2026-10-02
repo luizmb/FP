@@ -343,10 +343,18 @@ struct LoadingApplicativeTests {
         }
     }
 
-    @Test func zip_failedTrumpsIdle() {
+    @Test func zip_isLeftBiasedLikeBind() {
         let left: L<Int> = .idle
         let right: L<String> = .failed(error: .network, previous: "stale")
-        let result = L<(Int, String)>.zip(left, right)
+        // Tuples aren't Equatable, so compare a rendered form.
+        #expect(L<(Int, String)>.zip(left, right).map { "\($0)" } == .idle)
+        #expect(L<(Int, String)>.zip(.loaded(1), right).map { "\($0)" } == .failed(error: .network, previous: "(1, \"stale\")"))
+    }
+
+    @Test func pessimisticCombine_failedTrumpsIdle() {
+        let left: L<Int> = .idle
+        let right: L<String> = .failed(error: .network, previous: "stale")
+        let result = L<(Int, String)>.pessimisticCombine(left, right)
         // Failed always wins; previous pair is nil because left has none.
         guard case let .failed(err, prev) = result else {
             Issue.record("Expected .failed"); return
@@ -403,11 +411,11 @@ struct LoadingApplicativeTests {
         }
     }
 
-    @Test func zip3_failedTrumpsIdle() {
+    @Test func pessimisticCombine3_failedTrumpsIdle() {
         let first: L<Int> = .idle
         let second: L<String> = .failed(error: .network, previous: "stale")
         let third: L<Bool> = .loaded(true)
-        let result = L<(Int, String, Bool)>.zip3(first, second, third)
+        let result = L<(Int, String, Bool)>.pessimisticCombine(first, second, third)
         guard case let .failed(err, prev) = result else {
             Issue.record("Expected .failed"); return
         }
@@ -443,12 +451,12 @@ struct LoadingApplicativeTests {
         #expect(quad.3 == 2.5)
     }
 
-    @Test func zip4_failedTrumpsEverything() {
+    @Test func pessimisticCombine4_failedTrumpsEverything() {
         let first: L<Int> = .loaded(1)
         let second: L<String> = .idle
         let third: L<Bool> = .loading(previous: false)
         let fourth: L<Double> = .failed(error: .network, previous: 2.5)
-        let result = L<(Int, String, Bool, Double)>.zip4(first, second, third, fourth)
+        let result = L<(Int, String, Bool, Double)>.pessimisticCombine(first, second, third, fourth)
         guard case let .failed(err, prev) = result else {
             Issue.record("Expected .failed"); return
         }
@@ -554,31 +562,77 @@ struct LoadingMonadTests {
 struct LoadingCatchTests {
     @Test func catch_failed_appliesTransform() {
         let sut: Sut = .failed(error: .network, previous: nil)
-        let recovered = sut.catch(const(.loaded(99)))
+        let recovered: Sut = sut.catch(const(.loaded(99)))
         #expect(recovered == .loaded(99))
     }
 
     @Test func catch_loaded_passesThrough() {
         let sut: Sut = .loaded(5)
-        let recovered = sut.catch(const(.loaded(99)))
+        let recovered: Sut = sut.catch(const(.loaded(99)))
         #expect(recovered == .loaded(5))
     }
 
     @Test func catch_idle_passesThrough() {
         let sut: Sut = .idle
-        let recovered = sut.catch(const(.loaded(99)))
+        let recovered: Sut = sut.catch(const(.loaded(99)))
         #expect(recovered == .idle)
     }
 
     @Test func catch_loading_passesThrough() {
         let sut: Sut = .loading(previous: 1)
-        let recovered = sut.catch(const(.loaded(99)))
+        let recovered: Sut = sut.catch(const(.loaded(99)))
         #expect(recovered == .loading(previous: 1))
     }
 
     @Test func catch_canMapErrorToAnotherFailure() {
         let sut: Sut = .failed(error: .network, previous: 7)
-        let recovered = sut.catch(const(.failed(error: .decoding, previous: nil)))
+        let recovered: Sut = sut.catch(const(.failed(error: .decoding, previous: nil)))
         #expect(recovered == .failed(error: .decoding, previous: nil))
+    }
+
+    @Test func catch_receivesPreviousSoStaleDataSurvives() {
+        let sut: Sut = .failed(error: .network, previous: 7)
+        let retried: Sut = sut.catch { _, previous in .loading(previous: previous) }
+        #expect(retried == .loading(previous: 7))
+    }
+
+    @Test func catch_canChangeTheFailureType() {
+        let sut: Sut = .failed(error: .network, previous: 7)
+        let friendly: Loading<Int, String> = sut.catch { error, previous in .failed(error: "Couldn't load (\(error))", previous: previous) }
+        #expect(friendly == .failed(error: "Couldn't load (network)", previous: 7))
+    }
+}
+
+// MARK: - Non-Error failures and mapError
+
+private struct Banner: Equatable, Sendable {
+    let title: String
+    let subtitle: String
+}
+
+@Suite("Loading — UI-facing failures")
+struct LoadingUIFailureTests {
+    @Test func failureNeedNotBeAnError() {
+        let state: Loading<Int, String> = .failed(error: "Offline", previous: 3)
+        #expect(state == .failed(error: "Offline", previous: 3))
+        #expect(state.loadedOrPrevious == 3)
+    }
+
+    @Test func mapErrorTurnsATechnicalErrorIntoAViewMessage() {
+        let sut: Sut = .failed(error: .network, previous: 1)
+        let banner = sut.mapError { error in Banner(title: "Something went wrong", subtitle: "\(error)") }
+        #expect(banner == .failed(error: Banner(title: "Something went wrong", subtitle: "network"), previous: 1))
+    }
+
+    @Test func mapErrorLeavesOtherStatesAlone() {
+        let toText: (TestError) -> String = { "\($0)" }
+        #expect((Sut.loaded(5)).mapError(toText) == .loaded(5))
+        #expect((Sut.loading(previous: 2)).mapError(toText) == .loading(previous: 2))
+        #expect((Sut.idle).mapError(toText) == .idle)
+    }
+
+    @Test func bimapMapsBothChannels() {
+        let sut: Sut = .failed(error: .network, previous: 2)
+        #expect(sut.bimap({ $0 * 10 }, { "\($0)" }) == .failed(error: "network", previous: 20))
     }
 }

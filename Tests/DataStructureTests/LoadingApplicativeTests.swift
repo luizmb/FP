@@ -61,16 +61,24 @@ struct LoadingApplicativeMethodsTests {
         #expect(combine(left, right) == .loaded(5))
     }
 
-    @Test func liftA2_failedTrumpsEverything() {
+    @Test func liftA2_isLeftBiasedLikeBind() {
         let combine = L<Int>.liftA2 { (a: Int, b: Int) in a + b }
         let left: L<Int> = .idle
         let right: L<Int> = .failed(error: .decoding, previous: nil)
-        let result = combine(left, right)
-        guard case let .failed(err, prev) = result else {
-            Issue.record("Expected .failed"); return
+        // <*> == ap: the right side only matters when the left is loaded.
+        #expect(combine(left, right) == .idle)
+        #expect(combine(.loaded(1), right) == .failed(error: .decoding, previous: nil))
+    }
+
+    @Test func applyEqualsAp() {
+        let increment: @Sendable (Int) -> Int = { $0 + 1 }
+        let fns: [L<@Sendable (Int) -> Int>] = [.idle, .loading(previous: nil), .loaded(increment), .failed(error: .network, previous: nil)]
+        let args: [L<Int>] = [.idle, .loading(previous: 1), .loaded(2), .failed(error: .decoding, previous: 3)]
+        for fn in fns {
+            for arg in args {
+                #expect(L<Int>.apply(fn, arg) == fn.flatMap { f in arg.map(f) })
+            }
         }
-        #expect(err == .decoding)
-        #expect(prev == nil)
     }
 
     @Test func liftA2_idleTrumpsLoading() {

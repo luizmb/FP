@@ -53,6 +53,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `inout` parameter types.
 
 ### Changed
+- **`Loading` no longer requires `Failure: Error`** (any `Sendable` failure, e.g. a `String` or a
+  title/subtitle struct for the UI); only the `Result` bridges are `where Failure: Error`. New
+  `mapError(_:)` and `bimap(_:_:)`.
+- **`Loading` `zip`/`apply`/`liftA2`/`*>`/`<*` follow bind** (`<*> == ap`, left-biased like
+  PureScript's `RemoteData`). The previous "failed beats idle beats loading" rule is now
+  `pessimisticCombine(_:_:)` (2-, 3- and 4-ary), a UI combinator that is not the applicative.
+- **`Loading.catch`** receives `(Failure, Success?)` so stale data survives, and may change the
+  failure type (Haskell's `catchE`).
+- **`Validation` `<|>` accumulates** both failures (`e1 <> e2`) instead of dropping the left one.
 - **`Zipper.left` / `Zipper.right` are lazy views** instead of copied arrays:
   `ReversedCollection<ArraySlice<A>>` and `ArraySlice<A>`, still closest-to-focus first. Source
   break for code that expects `[A]`; wrap in `Array(...)` where an array is needed.
