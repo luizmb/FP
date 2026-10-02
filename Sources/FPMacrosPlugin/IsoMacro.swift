@@ -10,15 +10,8 @@ public struct IsoMacro: MemberMacro {
         conformingTo protocols: [TypeSyntax],
         in context: some MacroExpansionContext
     ) throws -> [DeclSyntax] {
-        guard let structDecl = declaration.as(StructDeclSyntax.self) else {
-            context.diagnose(Diagnostic(node: node, message: ProductMacroDiagnostic.notAStruct("@Iso")))
-            return []
-        }
-        let fields = storedFields(of: structDecl)
-        guard !fields.isEmpty else {
-            context.diagnose(Diagnostic(node: node, message: ProductMacroDiagnostic.noStoredFields("@Iso")))
-            return []
-        }
+        guard let (structDecl, fields) = productFields(of: declaration, macro: "@Iso", node: node, context: context)
+        else { return [] }
 
         let name = structDecl.name.trimmed.text
         let prefix = witnessAccess(structDecl.modifiers).prefix

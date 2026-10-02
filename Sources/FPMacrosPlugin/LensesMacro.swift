@@ -1,90 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
-import Foundation
 import SwiftDiagnostics
 import SwiftSyntax
 import SwiftSyntaxMacros
-
-// MARK: - Access levels
-
-enum AccessLevel: Int, Comparable {
-    case `private` = 0, `fileprivate`, `internal`, package, `public`, open
-
-    var keyword: String {
-        switch self {
-        case .private:
-            "private"
-
-        case .fileprivate:
-            "fileprivate"
-
-        case .internal:
-            "internal"
-
-        case .package:
-            "package"
-
-        case .public:
-            "public"
-
-        case .open:
-            "open"
-        }
-    }
-
-    /// Emit the keyword followed by a space, except for `.internal` which is the
-    /// implicit default and should be omitted to avoid noise.
-    var prefix: String { self == .internal ? "" : "\(keyword) " }
-
-    static func < (lhs: AccessLevel, rhs: AccessLevel) -> Bool { lhs.rawValue < rhs.rawValue }
-}
-
-private func explicitAccessLevel(from modifiers: DeclModifierListSyntax) -> AccessLevel? {
-    for modifier in modifiers {
-        switch modifier.name.text {
-        case "open":
-            return .open
-
-        case "public":
-            return .public
-
-        case "package":
-            return .package
-
-        case "internal":
-            return .internal
-
-        case "fileprivate":
-            return .fileprivate
-
-        case "private":
-            return .private
-
-        default:
-            continue
-        }
-    }
-    return nil
-}
-
-private func declaredAccessLevel(from modifiers: DeclModifierListSyntax) -> AccessLevel {
-    explicitAccessLevel(from: modifiers) ?? .internal
-}
-
-// MARK: - Property model
-
-struct StoredProperty {
-    let name: String
-    let type: String
-    let isLet: Bool
-    let defaultValue: String?
-    /// `nil` when the property has no explicit access modifier.
-    let explicitAccess: AccessLevel?
-
-    /// `let x = v` → immutable constant, excluded from init and lens
-    var isConstant: Bool { isLet && defaultValue != nil }
-    var isInitParam: Bool { !isConstant }
-    var hasLens: Bool { !isConstant }
-}
 
 // MARK: - Option parsing
 
@@ -167,6 +84,55 @@ public struct LensesMacro: MemberMacro {
     }
 }
 
+// MARK: - Sendable conformance
+
+extension LensesMacro: ExtensionMacro {
+    public static func expansion(
+        of node: AttributeSyntax,
+        attachedTo declaration: some DeclGroupSyntax,
+        providingExtensionsOf type: some TypeSyntaxProtocol,
+        conformingTo protocols: [TypeSyntax],
+        in context: some MacroExpansionContext
+    ) throws -> [ExtensionDeclSyntax] {
+        guard let structDecl = declaration.as(StructDeclSyntax.self) else { return [] }
+        return try sendableExtensionDecls(
+            structDecl: structDecl,
+            type: type,
+            flags: parseEmit(from: node),
+            protocols: protocols
+        )
+    }
+}
+
+/// `CoreFP.lens` needs a `Sendable` host, which a `public` struct never gets implicitly. When the
+/// compiler reports the host doesn't declare `Sendable` yet (it's in `protocols`) and lenses are
+/// emitted, add `extension Host: Sendable {}` — for a generic host, conditional on the generic parameters
+/// its stored properties mention (the same requirement Swift would infer implicitly).
+func sendableExtensionDecls(
+    structDecl: StructDeclSyntax,
+    type: some TypeSyntaxProtocol,
+    flags: LensesEmitFlags,
+    protocols: [TypeSyntax]
+) throws -> [ExtensionDeclSyntax] {
+    guard explicitAccessLevel(from: structDecl.modifiers) != .private,
+          flags.emitLenses,
+          protocols.contains(where: { isProtocol("Sendable", $0) })
+    else { return [] }
+    let storedTypes = scanStoredProperties(of: structDecl).properties.map(\.type)
+    let genericNames = (structDecl.genericParameterClause?.parameters.map(\.name.text) ?? [])
+        .filter { name in storedTypes.contains { appears(name, in: $0) } }
+    let whereClause = genericNames.isEmpty
+        ? ""
+        : " where " + genericNames.map { "\($0): Sendable" }.joined(separator: ", ")
+    return [try ExtensionDeclSyntax("extension \(type.trimmed): Sendable\(raw: whereClause) {}")]
+}
+
+/// Whether a `conformingTo` entry names `name` (bare or `Swift.`-qualified).
+func isProtocol(_ name: String, _ type: TypeSyntax) -> Bool {
+    let text = type.trimmedDescription
+    return text == name || text.hasSuffix(".\(name)")
+}
+
 /// The member-generation core of `@Lenses`, factored out so `@ApplyOptics` can drive it with its own
 /// parsed options. Diagnostics anchor to `node`.
 func generateLensMembers(
@@ -187,8 +153,11 @@ func generateLensMembers(
     }
 
     let structName = structDecl.name.trimmed.text
-    let isGeneric = structDecl.genericParameterClause != nil
-    let properties = collectProperties(from: structDecl, context: context)
+    let scan = scanStoredProperties(of: structDecl)
+    for untyped in scan.untyped {
+        context.diagnose(Diagnostic(node: untyped.binding, message: LensesDiagnostic.cannotInferType(name: untyped.name)))
+    }
+    let properties = scan.properties
     let initParams = properties.filter(\.isInitParam)
     let lensProps = properties
         .filter(\.hasLens)
@@ -227,19 +196,25 @@ func generateLensMembers(
             access: structAccess,
             lensProps: lensProps
         ))
-        members.append(makeStaticLens(
-            access: structAccess,
-            isGeneric: isGeneric
-        ))
+        members.append(DeclSyntax(stringLiteral: "\(structAccess.prefix)static var lens: Lenses { Lenses() }"))
         members.append(makeWithFunc(
             structName: structName,
             access: structAccess,
             initParams: initParams,
-            withProps: lensProps
+            // A `private(set)` property must not become writable through a `with(...)` that is more
+            // visible than its setter.
+            withProps: lensProps.filter { lensAccess(of: $0, structAccess: structAccess) >= structAccess }
         ))
     }
 
     return members
+}
+
+/// The access of a property's lens: the host's, capped by a restricted setter (`private(set)` →
+/// `fileprivate`, the lowest level a `Lenses` member is still usable from the host's file).
+private func lensAccess(of prop: StoredProperty, structAccess: AccessLevel) -> AccessLevel {
+    guard let setter = prop.setterAccess else { return structAccess }
+    return min(structAccess, max(setter, .fileprivate))
 }
 
 // MARK: - Helpers
@@ -251,71 +226,6 @@ private func hasConflictingInit(in structDecl: StructDeclSyntax, params: [Stored
         let gotLabels = initDecl.signature.parameterClause.parameters.map(\.firstName.text)
         return gotLabels == wantLabels
     }
-}
-
-// MARK: - Parsing
-
-private func collectProperties(
-    from structDecl: StructDeclSyntax,
-    context: some MacroExpansionContext
-) -> [StoredProperty] {
-    structDecl.memberBlock.members.flatMap { member -> [StoredProperty] in
-        guard let varDecl = member.decl.as(VariableDeclSyntax.self) else { return [] }
-
-        if varDecl.modifiers.contains(where: { $0.name.tokenKind == .keyword(.lazy) }) {
-            return []
-        }
-
-        if varDecl.modifiers.contains(where: { $0.name.tokenKind == .keyword(.static) }) {
-            return []
-        }
-
-        let isLet = varDecl.bindingSpecifier.tokenKind == .keyword(.let)
-        let explicitAccess = explicitAccessLevel(from: varDecl.modifiers)
-
-        return varDecl.bindings.compactMap { binding -> StoredProperty? in
-            guard binding.accessorBlock == nil else { return nil }
-            guard let name = binding.pattern.as(IdentifierPatternSyntax.self)?.identifier.text else { return nil }
-
-            let defaultValue = binding.initializer?.value.trimmedDescription
-
-            // `let x = v` with no explicit type annotation → immutable constant, skip
-            if isLet, defaultValue != nil, binding.typeAnnotation == nil { return nil }
-
-            // Resolve type: explicit annotation, or inferred from a simple literal default
-            let type: String
-            if let annotated = binding.typeAnnotation?.type.trimmedDescription {
-                type = annotated
-            } else if let initializer = binding.initializer?.value,
-                      let inferred = inferLiteralType(from: initializer) {
-                type = inferred
-            } else {
-                if defaultValue != nil {
-                    context.diagnose(Diagnostic(
-                        node: binding,
-                        message: LensesDiagnostic.cannotInferType(name: name)
-                    ))
-                }
-                return nil
-            }
-
-            return StoredProperty(
-                name: name,
-                type: type,
-                isLet: isLet,
-                defaultValue: defaultValue,
-                explicitAccess: explicitAccess
-            )
-        }
-    }
-}
-
-private func inferLiteralType(from expr: ExprSyntax) -> String? {
-    if expr.is(IntegerLiteralExprSyntax.self) { return "Int" }
-    if expr.is(FloatLiteralExprSyntax.self) { return "Double" }
-    if expr.is(StringLiteralExprSyntax.self) { return "String" }
-    if expr.is(BooleanLiteralExprSyntax.self) { return "Bool" }
-    return nil
 }
 
 // MARK: - Code generation
@@ -347,87 +257,23 @@ private func makeInit(access: AccessLevel, structAccess: AccessLevel, params: [S
 /// default value. Using default values lets `Lenses()` work as a no-arg init regardless
 /// of the host's access level (Swift synthesises `init()` for structs whose stored
 /// properties all have defaults). The host's access propagates to the struct and its
-/// fields so external callers can read `Host.lens.propertyName` at the appropriate level.
+/// fields so external callers can read `Host.lens.propertyName` at the appropriate level;
+/// a field whose property restricts its setter is capped to that setter's access.
 private func makeLensesStruct(
     structName: String,
     access: AccessLevel,
     lensProps: [StoredProperty]
 ) -> DeclSyntax {
-    let prefix = access.prefix
     let fields = lensProps
         .map { prop -> String in
             let typeAnn = "CoreFP.Lens<\(structName), \(prop.type)>"
             let body = prop.isLet
                 ? "CoreFP.lens(\\\(structName).\(prop.name)) { s, a in s.with(\(prop.name): a) }"
                 : "CoreFP.lens(\\\(structName).\(prop.name))"
-            return "\(prefix)let \(prop.name): \(typeAnn) = \(body)"
+            return "\(lensAccess(of: prop, structAccess: access).prefix)let \(prop.name): \(typeAnn) = \(body)"
         }
         .joined(separator: "; ")
-    return DeclSyntax(stringLiteral: "\(prefix)struct Lenses: Sendable { \(fields) }")
-}
-
-/// For non-generic hosts emit `static let lens = Lenses()` — a one-time allocation,
-/// cached for the program's lifetime. For generic hosts Swift forbids `static let` in a
-/// generic context, so we fall back to a computed `static var lens: Lenses { Lenses() }`
-/// which allocates per access. Same call-site syntax in both cases.
-private func makeStaticLens(access: AccessLevel, isGeneric: Bool) -> DeclSyntax {
-    let prefix = access.prefix
-    if isGeneric {
-        return DeclSyntax(stringLiteral: "\(prefix)static var lens: Lenses { Lenses() }")
-    }
-    return DeclSyntax(stringLiteral: "\(prefix)static let lens = Lenses()")
-}
-
-/// Whether the macro should treat the property's type as `Optional`. Detected
-/// syntactically: `T?`, `Optional<T>`, and `Swift.Optional<T>` all qualify.
-/// The characters of `type` that sit outside any `()`, `[]` or `<>` nesting. The `>` of a
-/// function arrow is not a closing bracket, so `->` survives at whatever level it appears.
-private func topLevelSkeleton(of type: String) -> String {
-    var depth = 0
-    var previous: Character = " "
-    var skeleton = ""
-    for char in type {
-        let isArrowHead = char == ">" && previous == "-"
-        if "([<".contains(char) {
-            depth += 1
-        } else if ")]>".contains(char), !isArrowHead {
-            depth -= 1
-        } else if depth == 0 {
-            skeleton.append(char)
-        }
-        previous = char
-    }
-    return skeleton
-}
-
-/// `true` when `type` is a function type at the top level (`(A) -> B`, `@Sendable () -> B?`).
-private func isFunctionType(_ type: String) -> Bool {
-    topLevelSkeleton(of: type).contains("->")
-}
-
-/// Spells `type` wrapped in `Optional` using the `?` sugar, parenthesising when appending `?`
-/// directly would bind to the wrong part of the type: function types (`() -> Void?` returns an
-/// optional), attributed types (`@Sendable ...`), existentials/opaque types (`any P?` is rejected)
-/// and protocol compositions (`A & B?` makes only `B` optional).
-func optionalTypeString(_ type: String) -> String {
-    let trimmed = type.trimmingCharacters(in: .whitespaces)
-    let skeleton = topLevelSkeleton(of: trimmed)
-    let needsParentheses = skeleton.contains("->")
-        || skeleton.contains("&")
-        || trimmed.hasPrefix("@")
-        || trimmed.hasPrefix("any ")
-        || trimmed.hasPrefix("some ")
-    return needsParentheses ? "(\(trimmed))?" : "\(trimmed)?"
-}
-
-private func isOptionalType(_ type: String) -> Bool {
-    let trimmed = type.trimmingCharacters(in: .whitespaces)
-    // `() -> Int?` ends in `?` but is a function returning an Optional, not an Optional.
-    if isFunctionType(trimmed) { return false }
-    if trimmed.hasSuffix("?") { return true }
-    if trimmed.hasPrefix("Optional<") { return true }
-    if trimmed.hasPrefix("Swift.Optional<") { return true }
-    return false
+    return DeclSyntax(stringLiteral: "\(access.prefix)struct Lenses: Sendable { \(fields) }")
 }
 
 /// Generates the `with(...)` helper.

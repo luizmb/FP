@@ -35,7 +35,7 @@
 ///   - options: Which `@Prisms` pieces to emit on enums (`.all`, `.prisms`, `.cases`).
 ///   - recursively: When `true`, apply to every nested struct/enum at any depth.
 @attached(member, names: arbitrary)
-@attached(extension, conformances: Prismatic)
+@attached(extension, conformances: Prismatic, Sendable)
 @attached(memberAttribute)
 public macro ApplyOptics(
     _ emit: LensesEmit = .all,
@@ -48,7 +48,7 @@ public macro ApplyOptics(
 /// by hand — `@ApplyOptics` stamps it (and it stamps `@ApplyOptics` back) to recurse to arbitrary depth,
 /// working around Swift's rule that a macro's `memberAttribute` role isn't re-run on attributes it added.
 @attached(member, names: arbitrary)
-@attached(extension, conformances: Prismatic)
+@attached(extension, conformances: Prismatic, Sendable)
 @attached(memberAttribute)
 public macro _ApplyOpticsRelay(
     _ emit: LensesEmit = .all,

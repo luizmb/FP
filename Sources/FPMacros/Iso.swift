@@ -20,6 +20,11 @@
 ///   `Other`'s fields (only its name), so a shape mismatch surfaces as a compile error in the
 ///   generated code rather than a clean diagnostic.
 ///
+/// The fields are the memberwise initialiser's: stored properties (observers included, every name
+/// of `var a, b: T`, `T!` read as `T?`), minus initialised `let` constants. A stored property whose
+/// type isn't written down (`var b = make()`) is a compile-time error rather than silently dropped
+/// from the round trip, and so is a `private` struct (use `fileprivate`).
+///
 /// For the library's generic `Newtype`, prefer its built-in `Newtype.iso`.
 @attached(member, names: named(iso))
 public macro Iso() = #externalMacro(module: "FPMacrosPlugin", type: "IsoMacro")
