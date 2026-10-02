@@ -20,6 +20,10 @@ Workflow: one step per PR, each with regression tests in both the core and opera
 - Power: **remove the `^` operator**: deprecate it now (pointing at `power(_:_:)`), delete in 3.0. Still fix `power` (negative exponents, squaring).
 - `private` hosts for `@Iso`/`@DeriveMonoid`/`@Witness`/`@Mock`: **diagnose like `@Lenses`** ("use `fileprivate`").
 - `@Lenses` Sendable: **emit `extension S: Sendable {}`** via an extension role when not already declared; fix the `Macros.md` example accordingly.
+- `@Mock` on `AnyObject` / `Sendable` protocols: **adapt the output** (`final class` mock for `AnyObject`, `@Sendable` stored closures for `Sendable`).
+- `FPMacrosExpander` drift: **delete `ExpandOptic` and `FPMacrosExpander`** (Xcode "Expand Macro" covers it). Touch points: `Package.swift`, `.swiftlint.yml`, `CONTRIBUTING.md`, `CHANGELOG.md`, and outside the repo `~/.claude/skills/fp-optics/SKILL.md` + `expand-optic.sh` (rewrite the skill's "manual boilerplate" section to not depend on the script). This supersedes the ExpandOptic sub-items below.
+- `@Witness` / `@Mock` throws: **preserve `throws(E)`** in closure types and forwards; `rethrows` becomes `throws` in the mock closure type, and is diagnosed in `@Witness`.
+- `castOptionally` → `<From, T>(T.Type) -> (From) -> T?` and drop `@discardableResult` from `Mutable.mutate`: **both in the patch release**.
 
 ### 1.1 Optics laws
 - [ ] `CoreFP/Utilities/OpticsComposition.swift:57`, Lens ∘ Prism `set: { s, b in set(s, other.review(b)) }` writes even when the prism misses. `S{ r: .failure }` → `set(s, 5).r == .success(5)` while `over` is a no-op. Fix: guard `other.preview(get(s)) != nil`.
