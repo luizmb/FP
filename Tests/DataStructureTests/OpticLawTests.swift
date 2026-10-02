@@ -66,8 +66,8 @@ struct PrismLawTests {
 struct AffineTraversalLawTests {
     private let affine = affineTraversal(\Box.maybe)
 
-    @Test func setThenPreview() { // set writes the focus (unconditionally for an optional key path)
-        forAll(boxGen, intGen) { s, a in affine.preview(affine.set(s, a)) == a }
+    @Test func setThenPreview() { // set replaces a present focus and leaves an absent one absent
+        forAll(boxGen, intGen) { s, a in affine.preview(affine.set(s, a)) == affine.preview(s).map { _ in a } }
     }
 
     @Test func setWhatYouPreview() { // setting back the previewed value is identity
