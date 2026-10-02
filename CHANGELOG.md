@@ -53,6 +53,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `inout` parameter types.
 
 ### Changed
+- **`Gen` is generic over the RNG**: `Gen<R: RandomNumberGenerator & Sendable, Value> = Stateful<R, Value>`.
+  Run it with an explicitly injected generator, `gen.run(&rng)` (`SplitMix64(seed:)`,
+  `SystemRandomNumberGenerator`, or `AnyRandomNumberGenerator`).
+- **`NonEmpty` and `IdentifiedArray` require `Sendable` elements** (`NonEmpty<A: Sendable>`,
+  `IdentifiedArray<ID: Hashable & Sendable, Element: Sendable>`). Their unconditional `Semigroup`
+  conformance (which refines `Sendable`) let non-Sendable contents cross isolation unchecked.
 - **`Loading` no longer requires `Failure: Error`** (any `Sendable` failure, e.g. a `String` or a
   title/subtitle struct for the UI); only the `Result` bridges are `where Failure: Error`. New
   `mapError(_:)` and `bimap(_:_:)`.
@@ -67,6 +73,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   break for code that expects `[A]`; wrap in `Array(...)` where an array is needed.
 
 ### Removed
+- **`Gen` runners `generate()`, `generate(seed:)` and `samples(seed:count:)`**: `generate()` read
+  `SystemRandomNumberGenerator` behind a pure-looking signature. Inject the RNG and call `run(&rng)`.
 - **Infix `^` (floating-point power)**: Swift's stdlib declares `^` in `AdditionPrecedence`, so it
   bound like `+` (`2.0 * 3.0 ^ 2 == 36`). Use `power(_:_:)`.
 - **`ExpandOptic` and `FPMacrosExpander`**: the expander was a hand-copied fork of the macro

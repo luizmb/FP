@@ -1,55 +1,50 @@
 // SPDX-License-Identifier: Apache-2.0
 import Foundation
 
-/// A composable, seedable generator of random `Value`s.
+/// A composable generator of random `Value`s, driven by an explicitly injected random number
+/// generator `R`.
 ///
 /// `Gen` is the random-generator monad familiar from property-based testing — QuickCheck's
-/// `Gen a` (Haskell) and ScalaCheck's `Gen[A]` (Scala). It is defined as a ``Stateful``
-/// computation threading a random number generator, so it inherits **all** of `Stateful`'s
-/// `Functor`/`Applicative`/`Monad` machinery — and every monad transformer built for `Stateful` —
-/// for free:
+/// `Gen a` (Haskell) and ScalaCheck's `Gen[A]` (Scala). It is a ``Stateful`` computation whose
+/// state is the RNG, so it inherits all of `Stateful`'s `Functor`/`Applicative`/`Monad` machinery:
 ///
 /// ```swift
-/// public typealias Gen<Value> = Stateful<AnyRandomNumberGenerator, Value>
+/// public typealias Gen<R: RandomNumberGenerator & Sendable, Value> = Stateful<R, Value>
 /// ```
 ///
-/// Because the RNG is threaded `inout` (never captured), `Gen<Value>` is `Sendable` for any
-/// `Value` — the Sendability comes from `Stateful`'s `@Sendable` closure, independent of the RNG.
+/// A generator is only a description, `(inout R) -> Value`. There is deliberately no runner that
+/// creates the RNG for you: you always inject it, so every source of randomness is visible at the
+/// call site. Use the seedable ``SplitMix64`` for reproducible output, `SystemRandomNumberGenerator`
+/// for entropy (at the edge of your program), or ``AnyRandomNumberGenerator`` to erase the type.
 ///
 /// ## Composing generators
 ///
-/// Build a generator for any type by composing primitives with `map`/`flatMap`/`zip`:
-///
 /// ```swift
-/// let die: Gen<Int> = .int(in: 1...6)
-/// let pair = Gen.zip(die, die).map { $0 + $1 }            // 2...12
+/// typealias G<V> = Gen<SplitMix64, V>
 ///
-/// struct User: Sendable { let id: UUID; let name: String; let age: Int }
-/// let user = Gen.zip(.uuid,
-///                    .string(of: .letter, count: .int(in: 3...8)),
-///                    .int(in: 0...120)).map(User.init)
+/// let die: G<Int> = .int(in: 1...6)
+/// let pair = G.zip(die, die).map { $0 + $1 } // 2...12
 /// ```
 ///
 /// ## Running a generator
 ///
-/// Use ``generate(seed:)``/``samples(seed:count:)`` for **reproducible** output (a fresh
-/// ``SplitMix64`` seeded with `seed`), or ``generate()`` for system randomness:
+/// Inject the generator and run the `Stateful`:
 ///
 /// ```swift
-/// let value = die.generate(seed: 42)          // deterministic for a given seed
-/// let many  = die.samples(seed: 42, count: 100)
+/// var rng = SplitMix64(seed: 42) // reproducible: same seed, same values
+/// let value = die.run(&rng)
+/// let many = die.array(ofCount: 100).run(&rng)
 /// ```
 ///
-/// - SeeAlso: ``Stateful``, ``AnyRandomNumberGenerator``, ``SplitMix64``
-public typealias Gen<Value> = Stateful<AnyRandomNumberGenerator, Value>
+/// - SeeAlso: ``Stateful``, ``SplitMix64``, ``AnyRandomNumberGenerator``
+public typealias Gen<R: RandomNumberGenerator & Sendable, Value> = Stateful<R, Value>
 
 // MARK: - Type-erased Sendable RNG
 
 /// A type-erased, `Sendable` `RandomNumberGenerator`.
 ///
-/// Erasing to a single concrete type lets ``Gen`` be a concrete, freely-composable type rather
-/// than being generic over the RNG. The wrapped value is constrained to
-/// `RandomNumberGenerator & Sendable`, so the eraser is itself `Sendable`.
+/// Use it as ``Gen``'s `R` when the concrete generator should not appear in the type. The wrapped
+/// value is constrained to `RandomNumberGenerator & Sendable`, so the eraser is itself `Sendable`.
 public struct AnyRandomNumberGenerator: RandomNumberGenerator, Sendable {
     private var base: any RandomNumberGenerator & Sendable
 
@@ -87,31 +82,5 @@ public struct SplitMix64: RandomNumberGenerator, Sendable {
         z = (z ^ (z >> 30)) &* 0xBF58_476D_1CE4_E5B9
         z = (z ^ (z >> 27)) &* 0x94D0_49BB_1331_11EB
         return z ^ (z >> 31)
-    }
-}
-
-// MARK: - Running a Gen
-
-public extension Stateful where S == AnyRandomNumberGenerator {
-    /// Generates one value from a fresh ``SplitMix64`` seeded with `seed` — reproducible.
-    func generate(seed: UInt64) -> A {
-        var rng = AnyRandomNumberGenerator(SplitMix64(seed: seed))
-        return self(&rng)
-    }
-
-    /// Generates one value from the system random number generator — not reproducible.
-    func generate() -> A {
-        var rng = AnyRandomNumberGenerator(SystemRandomNumberGenerator())
-        return self(&rng)
-    }
-
-    /// Generates `count` values threading a single ``SplitMix64`` seeded with `seed`.
-    ///
-    /// The whole sequence is reproducible from `seed`, which makes a failing property-test case
-    /// replayable: rerun with the same seed to get the same inputs.
-    func samples(seed: UInt64, count: Int) -> [A] {
-        var rng = AnyRandomNumberGenerator(SplitMix64(seed: seed))
-        // swiftlint:disable:next closure_ignoring_args
-        return (0..<max(0, count)).map { _ in self(&rng) } // side effect — rng is mutated; cannot use const()
     }
 }

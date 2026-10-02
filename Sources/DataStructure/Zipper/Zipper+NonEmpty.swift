@@ -2,7 +2,7 @@
 
 // MARK: - NonEmpty interop
 
-public extension Zipper {
+public extension Zipper where A: Sendable {
     /// Build a `Zipper` focused at the head of a `NonEmpty`, with the rest of its
     /// elements placed to the right of the focus.
     static func fromNonEmpty(_ ne: NonEmpty<A>) -> Zipper<A> {

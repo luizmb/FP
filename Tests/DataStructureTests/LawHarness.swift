@@ -12,9 +12,9 @@ private func check(
     _ count: Int,
     seed: UInt64,
     _ sourceLocation: SourceLocation,
-    _ draw: (inout AnyRandomNumberGenerator) -> Bool
+    _ draw: (inout SplitMix64) -> Bool
 ) {
-    var rng = AnyRandomNumberGenerator(SplitMix64(seed: seed))
+    var rng = SplitMix64(seed: seed)
     for index in 0..<count where !draw(&rng) {
         Issue.record("law violated at sample \(index) of \(count) (seed: \(seed))", sourceLocation: sourceLocation)
         return
@@ -22,7 +22,7 @@ private func check(
 }
 
 func forAll<A>(
-    _ ga: Gen<A>,
+    _ ga: Gen<SplitMix64, A>,
     count: Int = 300,
     seed: UInt64 = opticLawSeed,
     sourceLocation: SourceLocation = #_sourceLocation,
@@ -32,8 +32,8 @@ func forAll<A>(
 }
 
 func forAll<A, B>(
-    _ ga: Gen<A>,
-    _ gb: Gen<B>,
+    _ ga: Gen<SplitMix64, A>,
+    _ gb: Gen<SplitMix64, B>,
     count: Int = 300,
     seed: UInt64 = opticLawSeed,
     sourceLocation: SourceLocation = #_sourceLocation,
@@ -43,9 +43,9 @@ func forAll<A, B>(
 }
 
 func forAll<A, B, C>(
-    _ ga: Gen<A>,
-    _ gb: Gen<B>,
-    _ gc: Gen<C>,
+    _ ga: Gen<SplitMix64, A>,
+    _ gb: Gen<SplitMix64, B>,
+    _ gc: Gen<SplitMix64, C>,
     count: Int = 300,
     seed: UInt64 = opticLawSeed,
     sourceLocation: SourceLocation = #_sourceLocation,

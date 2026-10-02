@@ -66,7 +66,7 @@
 /// ```
 ///
 /// - SeeAlso: ``Validation``, ``Semigroup``, ``sconcat(_:_:)``
-public struct NonEmpty<A> {
+public struct NonEmpty<A: Sendable>: Sendable {
     /// The guaranteed first element.
     public let head: A
     /// The remaining elements, which may be empty.
@@ -100,7 +100,7 @@ public func nonEmpty<A>(_ array: [A]) -> NonEmpty<A>? {
 
 extension NonEmpty: Equatable where A: Equatable {}
 extension NonEmpty: Hashable where A: Hashable {}
-extension NonEmpty: Sendable where A: Sendable {}
+
 extension NonEmpty: Encodable where A: Encodable {}
 extension NonEmpty: Decodable where A: Decodable {}
 

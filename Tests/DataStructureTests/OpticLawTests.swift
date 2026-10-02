@@ -3,26 +3,29 @@ import CoreFP
 import DataStructure
 import Testing
 
+// Gen has no runner that creates the RNG; tests inject a seeded SplitMix64 explicitly.
+private typealias G<V> = Gen<SplitMix64, V>
+
 // Property-based optic laws, complementing the example-based `OpticsTests` in CoreFPTests. Each
 // law is checked over 300 generated inputs and replays from its seed on failure.
 
-private let intGen = Gen.int(in: -20...20)
+private let intGen = G.int(in: -20...20)
 
 private struct Pair: Equatable, Sendable { var first: Int; var second: Int }
-private let pairGen: Gen<Pair> = Gen.zip(intGen, intGen).map { pair in
+private let pairGen: G<Pair> = G.zip(intGen, intGen).map { pair in
     let (a, b) = pair
     return Pair(first: a, second: b)
 }
 
 private struct Box: Equatable, Sendable { var maybe: Int? }
-private let boxGen: Gen<Box> = intGen.optional().map { Box(maybe: $0) }
+private let boxGen: G<Box> = intGen.optional().map { Box(maybe: $0) }
 
-private let eitherGen: Gen<Either<Int, String>> = Gen.one(of: NonEmpty(
+private let eitherGen: G<Either<Int, String>> = G.one(of: NonEmpty(
     head: intGen.map { Either<Int, String>.left($0) },
-    tail: [Gen.string(of: .letter(), count: Gen.int(in: 0...4)).map { Either<Int, String>.right($0) }]
+    tail: [G.string(of: .letter(), count: G.int(in: 0...4)).map { Either<Int, String>.right($0) }]
 ))
 
-private let intFuncGen: Gen<@Sendable (Int) -> Int> = Gen.zip(Gen.int(in: -3...3), Gen.int(in: -3...3)).map { pair in
+private let intFuncGen: G<@Sendable (Int) -> Int> = G.zip(G.int(in: -3...3), G.int(in: -3...3)).map { pair in
     let (a, b) = pair
     return { $0 &* a &+ b }
 }

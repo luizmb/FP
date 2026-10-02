@@ -4,40 +4,40 @@ import Foundation
 // Primitive generators. Each fixed-output factory carries a per-member `where A == <output>`
 // clause (SE-0267): the member exists only when the base's value type already equals its output,
 // so `Gen.int(in:)` / `Gen.bool` resolve without an explicit type annotation. A plain extension
-// would leave the base's `A` free and force `Gen<Int>.int(in:)` or a typed context.
+// would leave the base's `A` free and force `Gen<S, Int>.int(in:)` or a typed context.
 
 // Every generator is a `static func … where A == Output`: the `where` constrains the base value
 // type so `Gen.bool()` / `Gen.int(in:)` resolve without an explicit type annotation. Swift forbids
 // `where` on computed properties (and stored statics on generic types), so the no-argument
 // generators take `()` rather than being properties.
 
-public extension Stateful where S == AnyRandomNumberGenerator {
+public extension Stateful where S: RandomNumberGenerator & Sendable {
     /// A uniform random `UInt64` — the raw output of the underlying generator.
-    static func uint64() -> Gen<UInt64> where A == UInt64 {
-        Gen<UInt64> { rng in rng.next() }
+    static func uint64() -> Gen<S, UInt64> where A == UInt64 {
+        Gen<S, UInt64> { rng in rng.next() }
     }
 
     /// A uniform random `Bool`.
-    static func bool() -> Gen<Bool> where A == Bool {
-        Gen<Bool> { rng in Bool.random(using: &rng) }
+    static func bool() -> Gen<S, Bool> where A == Bool {
+        Gen<S, Bool> { rng in Bool.random(using: &rng) }
     }
 
     /// A uniform random `Int` in the closed `range`.
-    static func int(in range: ClosedRange<Int>) -> Gen<Int> where A == Int {
-        Gen<Int> { rng in Int.random(in: range, using: &rng) }
+    static func int(in range: ClosedRange<Int>) -> Gen<S, Int> where A == Int {
+        Gen<S, Int> { rng in Int.random(in: range, using: &rng) }
     }
 
     /// A uniform random `Double` in the closed `range`.
-    static func double(in range: ClosedRange<Double>) -> Gen<Double> where A == Double {
-        Gen<Double> { rng in Double.random(in: range, using: &rng) }
+    static func double(in range: ClosedRange<Double>) -> Gen<S, Double> where A == Double {
+        Gen<S, Double> { rng in Double.random(in: range, using: &rng) }
     }
 
     /// A random version-4 `UUID`.
     ///
     /// Built from 16 generator bytes with the standard version/variant bits set, so the result is
     /// a well-formed v4 UUID that is reproducible from the generator's seed (unlike the non-deterministic UUID initialiser).
-    static func uuid() -> Gen<UUID> where A == UUID {
-        Gen<UUID> { rng in
+    static func uuid() -> Gen<S, UUID> where A == UUID {
+        Gen<S, UUID> { rng in
             let hi = rng.next()
             let lo = rng.next()
             var bytes = [UInt8](repeating: 0, count: 16)
@@ -59,7 +59,7 @@ public extension Stateful where S == AnyRandomNumberGenerator {
     /// A uniform random element of `collection`, or `nil` when it is empty.
     static func element<C: Collection & Sendable>(
         of collection: C
-    ) -> Gen<C.Element?> where A == C.Element?, C.Element: Sendable {
-        Gen<C.Element?> { rng in collection.randomElement(using: &rng) }
+    ) -> Gen<S, C.Element?> where A == C.Element?, C.Element: Sendable {
+        Gen<S, C.Element?> { rng in collection.randomElement(using: &rng) }
     }
 }
