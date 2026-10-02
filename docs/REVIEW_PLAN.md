@@ -15,6 +15,12 @@ Workflow: one step per PR, each with regression tests in both the core and opera
 
 ## Step 1: non-breaking bug fixes (patch release)
 
+### Decisions (2026-10-02)
+- IdentifiedArray id changes through optics (`traversed`, `traversed(where:)`, `ix(id:)` `tryModifyMut`, `ix(position)`): **revert id changes** per element (ids immutable through optics, like `ix(id:).set` already does). Update the `traversed` docs that say ids MAY change.
+- Power: **remove the `^` operator**: deprecate it now (pointing at `power(_:_:)`), delete in 3.0. Still fix `power` (negative exponents, squaring).
+- `private` hosts for `@Iso`/`@DeriveMonoid`/`@Witness`/`@Mock`: **diagnose like `@Lenses`** ("use `fileprivate`").
+- `@Lenses` Sendable: **emit `extension S: Sendable {}`** via an extension role when not already declared; fix the `Macros.md` example accordingly.
+
 ### 1.1 Optics laws
 - [ ] `CoreFP/Utilities/OpticsComposition.swift:57`, Lens ∘ Prism `set: { s, b in set(s, other.review(b)) }` writes even when the prism misses. `S{ r: .failure }` → `set(s, 5).r == .success(5)` while `over` is a no-op. Fix: guard `other.preview(get(s)) != nil`.
 - [ ] `OpticsComposition.swift:122`, AffineTraversal ∘ Prism checks only the outer preview. Fix: `preview(s).flatMap(other.preview).map { _ in set(s, other.review(b)) } ?? s` (also removes eager `const(...)`).
