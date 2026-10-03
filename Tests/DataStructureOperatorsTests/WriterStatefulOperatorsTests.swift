@@ -41,23 +41,6 @@ import Testing
         #expect(finalState == 6)
     }
 
-    @Test func writerFlatMapTKeepsOuterLog() {
-        let w = Writer<[String], Stateful<Int, Int>>(Stateful<Int, Int>.get, ["outer"])
-        let result = w >>- { n in
-            Writer<[String], Stateful<Int, String>>(
-                Stateful { state in
-                    state += n
-                    return "\(state)"
-                },
-                ["inner"]
-            )
-        }
-        let (output, finalState) = result.value.runStateful(3)
-        #expect(output == "6")
-        #expect(finalState == 6)
-        #expect(result.log == ["outer"])
-    }
-
     @Test func statefulTWriterApply() {
         let fn: @Sendable (Int) -> String = { "\($0)" }
         let sf = Stateful<Int, Writer<[String], @Sendable (Int) -> String>>.pure(Writer(fn, ["fn"]))

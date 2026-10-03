@@ -47,33 +47,4 @@ import Testing
         #expect(result.value.eval(7) == 7)
         #expect(result.log == ["a", "b"])
     }
-
-    @Test func bind() {
-        let w = Writer<[String], Stateful<Int, Int>>(Stateful<Int, Int>.get, ["outer"])
-        let result = w >>- { n in
-            Writer<[String], Stateful<Int, String>>(
-                Stateful { state in
-                    state += n
-                    return "\(state)"
-                },
-                ["inner"]
-            )
-        }
-        let (output, finalState) = result.value.runStateful(3)
-        #expect(output == "6")
-        #expect(finalState == 6)
-        #expect(result.log == ["outer"])
-    }
-
-    @Test func kleisli() {
-        let f: @Sendable (Int) -> Writer<[String], Stateful<Int, Int>> = { n in
-            Writer(Stateful<Int, Int>.pure(n + 1), ["f"])
-        }
-        let g: @Sendable (Int) -> Writer<[String], Stateful<Int, String>> = { n in
-            Writer(Stateful<Int, String>.pure("\(n)"), ["g"])
-        }
-        let result = (f >=> g)(4)
-        #expect(result.value.eval(0) == "5")
-        #expect(result.log == ["f"])
-    }
 }

@@ -44,39 +44,4 @@ import Testing
         #expect(result.value == NonEmpty(head: 1))
         #expect(result.log == ["lhs", "rhs"])
     }
-
-    // MARK: - Monad operators
-
-    @Test func bindOperator_forward() {
-        let w = Writer<[String], NonEmpty<Int>>(NonEmpty(head: 1, tail: [2]), ["outer"])
-        let result = w >>- { n in Writer<[String], NonEmpty<Int>?>(NonEmpty(head: n * 10), ["inner\(n)"]) }
-        #expect(result.value == NonEmpty(head: 10, tail: [20]))
-        #expect(result.log == ["outer", "inner1", "inner2"])
-    }
-
-    @Test func bindOperator_flipped() {
-        let w = Writer<[String], NonEmpty<Int>>(NonEmpty(head: 1, tail: [2]), ["outer"])
-        let fn: @Sendable (Int) -> Writer<[String], NonEmpty<Int>?> = { n in Writer(NonEmpty(head: n * 10), ["inner\(n)"]) }
-        let result = fn -<< w
-        #expect(result.value == NonEmpty(head: 10, tail: [20]))
-        #expect(result.log == ["outer", "inner1", "inner2"])
-    }
-
-    @Test func kleisliOperator_forward() {
-        let step1: @Sendable (Int) -> Writer<[String], NonEmpty<Int>?> = { n in Writer(NonEmpty(head: n + 1), ["step1"]) }
-        let step2: @Sendable (Int) -> Writer<[String], NonEmpty<String>?> = { n in Writer(NonEmpty(head: "\(n)"), ["step2"]) }
-        let pipeline = step1 >=> step2
-        let result = pipeline(3)
-        #expect(result.value == NonEmpty(head: "4"))
-        #expect(result.log == ["step1", "step2"])
-    }
-
-    @Test func kleisliOperator_reverse() {
-        let step1: @Sendable (Int) -> Writer<[String], NonEmpty<Int>?> = { n in Writer(NonEmpty(head: n + 1), ["step1"]) }
-        let step2: @Sendable (Int) -> Writer<[String], NonEmpty<String>?> = { n in Writer(NonEmpty(head: "\(n)"), ["step2"]) }
-        let pipeline = step2 <=< step1
-        let result = pipeline(3)
-        #expect(result.value == NonEmpty(head: "4"))
-        #expect(result.log == ["step1", "step2"])
-    }
 }

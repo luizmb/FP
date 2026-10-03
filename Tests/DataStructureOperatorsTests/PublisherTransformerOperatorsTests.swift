@@ -86,48 +86,9 @@
             #expect(capturedValue == 11)
         }
 
-        @Test func publisherTStatefulBindOperator() {
-            var cancellables = Set<AnyCancellable>()
-            let stateful = Stateful<Int, Int> { s in s + 1 }
-            let publisher = Just(stateful).setFailureType(to: TestError.self).eraseToAnyPublisher()
-
-            let bound = publisher >>- { value in
-                Stateful<Int, String> { s in "\(value)-\(s)" }
-            }
-
-            var capturedValue: String?
-            bound.sink(
-                receiveCompletion: ignore,
-                receiveValue: { stateful in capturedValue = stateful.eval(10) }
-            )
-            .store(in: &cancellables)
-
-            #expect(capturedValue == "11-10")
-        }
-
-        @Test func publisherTStatefulFlippedBindOperator() {
-            var cancellables = Set<AnyCancellable>()
-            let stateful = Stateful<Int, Int> { s in s + 1 }
-            let publisher = Just(stateful).setFailureType(to: TestError.self).eraseToAnyPublisher()
-
-            let fn: @Sendable (Int) -> Stateful<Int, String> = { value in
-                Stateful<Int, String> { s in "\(value)-\(s)" }
-            }
-            let bound = fn -<< publisher
-
-            var capturedValue: String?
-            bound.sink(
-                receiveCompletion: ignore,
-                receiveValue: { stateful in capturedValue = stateful.eval(10) }
-            )
-            .store(in: &cancellables)
-
-            #expect(capturedValue == "11-10")
-        }
-
         // MARK: - StatefulTPublisher (Stateful<S, any Publisher<A, E>>)
 
-        // Note: no monad operators (>>-/-<</>=>) — see StatefulTPublisher+Monad.swift.
+        // Note: no monad operators (>>-/-<</>=>): Combine closures cannot capture the `inout` state.
 
         @Test func statefulTPublisherFmapOperator() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
@@ -475,82 +436,6 @@
 
             #expect(capturedValue == 2)
             #expect(result.log == ["a", "b"])
-        }
-
-        @Test func writerTPublisherBindOperator() {
-            guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-            let writer = Writer<[String], any Publisher<Int, TestError>>(
-                Just(2).setFailureType(to: TestError.self).eraseToAnyPublisher(),
-                ["outer"]
-            )
-
-            let bound = writer >>- { value in
-                Writer<[String], any Publisher<String, TestError>>(
-                    Just("\(value * 10)").setFailureType(to: TestError.self).eraseToAnyPublisher(),
-                    ["inner"]
-                )
-            }
-
-            var cancellables = Set<AnyCancellable>()
-            var capturedValue: String?
-            bound.value.eraseToAnyPublisher()
-                .sink(receiveCompletion: ignore, receiveValue: { capturedValue = $0 })
-                .store(in: &cancellables)
-
-            #expect(capturedValue == "20")
-            #expect(bound.log == ["outer"])
-        }
-
-        @Test func writerTPublisherFlippedBindOperator() {
-            guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-            let writer = Writer<[String], any Publisher<Int, TestError>>(
-                Just(2).setFailureType(to: TestError.self).eraseToAnyPublisher(),
-                ["outer"]
-            )
-
-            let fn: @Sendable (Int) -> Writer<[String], any Publisher<String, TestError>> = { value in
-                Writer(
-                    Just("\(value * 10)").setFailureType(to: TestError.self).eraseToAnyPublisher(),
-                    ["inner"]
-                )
-            }
-            let bound = fn -<< writer
-
-            var cancellables = Set<AnyCancellable>()
-            var capturedValue: String?
-            bound.value.eraseToAnyPublisher()
-                .sink(receiveCompletion: ignore, receiveValue: { capturedValue = $0 })
-                .store(in: &cancellables)
-
-            #expect(capturedValue == "20")
-        }
-
-        @Test func writerTPublisherKleisliCompositionOperator() {
-            guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-            let parse: @Sendable (String) -> Writer<[String], any Publisher<Int, TestError>> = { s in
-                Writer(
-                    Just(Int(s) ?? 0).setFailureType(to: TestError.self).eraseToAnyPublisher(),
-                    ["parsed"]
-                )
-            }
-            let double: @Sendable (Int) -> Writer<[String], any Publisher<Int, TestError>> = { n in
-                Writer(
-                    Just(n * 2).setFailureType(to: TestError.self).eraseToAnyPublisher(),
-                    ["doubled"]
-                )
-            }
-
-            let pipeline = parse >=> double
-            let result = pipeline("21")
-
-            var cancellables = Set<AnyCancellable>()
-            var capturedValue: Int?
-            result.value.eraseToAnyPublisher()
-                .sink(receiveCompletion: ignore, receiveValue: { capturedValue = $0 })
-                .store(in: &cancellables)
-
-            #expect(capturedValue == 42)
-            #expect(result.log == ["parsed"])
         }
 
         // MARK: - PublisherTEither (AnyPublisher<Either<L, A>, E>)

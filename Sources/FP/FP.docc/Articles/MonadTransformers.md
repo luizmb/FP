@@ -66,7 +66,6 @@ Sources/CoreFP/Array/ArrayTOptional+Monad.swift
 $ find Sources -iname "EitherTStateful*"
 Sources/DataStructure/Either/EitherTStateful+Applicative.swift   # Either + Stateful → DataStructure
 Sources/DataStructure/Either/EitherTStateful+Functor.swift
-Sources/DataStructure/Either/EitherTStateful+Monad.swift
 ```
 
 ---
@@ -86,10 +85,10 @@ combos below, notably the `NonEmpty` family, are more complete than that documen
 | `ArrayTOptional` | Yes | Yes | Yes |
 | `ArrayTResult` | Yes | Yes | Yes |
 | `AsyncSequenceTOptional` | Yes | Yes | Yes |
-| `AsyncSequenceTArray` | Yes | Yes | Yes |
+| `AsyncSequenceTArray` | Yes | Yes | No |
 | `AsyncSequenceTResult` | Yes | Yes | Yes |
 | `PublisherTOptional` | Yes | Yes | Yes |
-| `PublisherTArray` | Yes | Yes | Yes |
+| `PublisherTArray` | Yes | Yes | No |
 | `PublisherTResult` | Yes | Yes | Yes |
 
 `ArrayTArray`, `OptionalTOptional`, `ResultTArray`, and `ResultTOptional` also exist but only as
@@ -100,13 +99,13 @@ Functor/Applicative/Monad transformer stack.
 
 | Stack | F | A | M |
 |---|---|---|---|
-| `EitherTArray` | Yes | Yes | Yes |
+| `EitherTArray` | Yes | Yes | No |
 | `EitherTOptional` | Yes | Yes | Yes |
 | `EitherTResult` | Yes | Yes | Yes |
 | `EitherTValidation` | Yes | Yes | No |
-| `EitherTStateful` | Yes | Yes | Yes |
+| `EitherTStateful` | Yes | Yes | No |
 | `EitherTWriter` | Yes | Yes | Yes |
-| `EitherTNonEmpty` | Yes | Yes | Yes |
+| `EitherTNonEmpty` | Yes | Yes | No |
 | `ArrayTEither` | Yes | Yes | Yes |
 | `OptionalTEither` | Yes | Yes | Yes |
 | `AsyncSequenceTEither` | Yes | Yes | Yes |
@@ -154,36 +153,36 @@ combos lack a Monad" below. Every `Validation` combination therefore stops at F/
 
 | Stack | F | A | M |
 |---|---|---|---|
-| `StatefulTArray` | Yes | Yes | Yes |
+| `StatefulTArray` | Yes | Yes | No |
 | `StatefulTOptional` | Yes | Yes | Yes |
 | `StatefulTResult` | Yes | Yes | Yes |
 | `StatefulTEither` | Yes | Yes | Yes |
 | `StatefulTValidation` | Yes | Yes | No |
-| `StatefulTReader` | Yes | Yes | Yes |
+| `StatefulTReader` | Yes | Yes | No |
 | `StatefulTWriter` | Yes | Yes | Yes |
-| `StatefulTNonEmpty` | Yes | Yes | Yes |
+| `StatefulTNonEmpty` | Yes | Yes | No |
 | `StatefulTPublisher` | Yes | Yes | No |
 | `StatefulTAsyncStream` | Yes | Yes | No |
-| `ArrayTStateful` | Yes | Yes | Yes |
-| `OptionalTStateful` | Yes | Yes | Yes |
-| `ResultTStateful` | Yes | Yes | Yes |
-| `PublisherTStateful` | Yes | Yes | Yes |
-| `AsyncStreamTStateful` | Yes | — | Yes |
+| `ArrayTStateful` | Yes | Yes | No |
+| `OptionalTStateful` | Yes | Yes | No |
+| `ResultTStateful` | Yes | Yes | No |
+| `PublisherTStateful` | Yes | Yes | No |
+| `AsyncStreamTStateful` | Yes | — | No |
 
 ### `Writer` combinations
 
 | Stack | F | A | M |
 |---|---|---|---|
-| `WriterTArray` | Yes | Yes | Yes |
+| `WriterTArray` | Yes | Yes | No |
 | `WriterTOptional` | Yes | Yes | Yes |
 | `WriterTResult` | Yes | Yes | Yes |
 | `WriterTEither` | Yes | Yes | Yes |
 | `WriterTValidation` | Yes | Yes | No |
-| `WriterTReader` | Yes | Yes | Yes |
-| `WriterTStateful` | Yes | Yes | Yes |
-| `WriterTNonEmpty` | Yes | Yes | Yes |
-| `WriterTPublisher` | Yes | Yes | Yes |
-| `WriterTAsyncStream` | Yes | Yes | Yes |
+| `WriterTReader` | Yes | Yes | No |
+| `WriterTStateful` | Yes | Yes | No |
+| `WriterTNonEmpty` | Yes | Yes | No |
+| `WriterTPublisher` | Yes | Yes | No |
+| `WriterTAsyncStream` | Yes | Yes | No |
 | `ArrayTWriter` | Yes | Yes | Yes |
 | `OptionalTWriter` | Yes | Yes | Yes |
 | `ResultTWriter` | Yes | Yes | Yes |
@@ -215,35 +214,34 @@ validation failure in one pass. A `flatMap` would have to pick a single branch t
 in the failure case, throwing away every error but the first, which defeats the purpose. So
 `Validation` and every `ValidationT*` stack stop at Functor + Applicative.
 
-**`Stateful` + `Publisher`/`AsyncStream` — no Monad, for a Swift-specific reason.** `StatefulTPublisher`
-and `StatefulTAsyncStream` ship as stub files containing only an explanatory comment, no
-implementation. From `StatefulTPublisher+Monad.swift`:
+**A list inside a non-commutative outer layer: no Monad (Haskell's `ListT` done wrong).**
+`EitherTArray`, `EitherTNonEmpty`, `StatefulTArray`, `StatefulTNonEmpty`, `WriterTArray`,
+`WriterTNonEmpty`, `PublisherTArray` and `AsyncSequenceTArray` (`M<[A]>` / `M<NonEmpty<A>>`) stop
+at Functor + Applicative. Binding element by element runs the outer effect once per element, so
+associativity only holds when that effect commutes. With a `Writer` log, `(m >>= f) >>= g` logs
+`["m", "f1", "f2", "g10", "g20"]` while `m >>= (f >=> g)` logs `["m", "f1", "g10", "f2", "g20"]`.
+Haskell's `transformers` deprecated (and later removed) `ListT` for exactly this reason.
 
-> `flatMapT` is not implementable for this transformer stack: Combine's `flatMap` takes an
-> `@escaping` closure, which cannot capture an `inout` parameter. Mutable state also cannot
-> safely be shared across concurrent publisher events.
+**`Writer` outside another monad: no Monad (no distributive law).** `WriterTReader`,
+`WriterTStateful`, `WriterTPublisher` and `WriterTAsyncStream` (`Writer<W, M<A>>`) stop at
+Functor + Applicative. The log sits outside the effect, so a bind would have to know the
+continuation's log before running `M`, which it can't (dropping that log instead breaks left
+identity). Haskell's `WriterT` is `M<Writer<W, A>>` (the log
+inside), which this library ships as `ArrayTWriter`, `OptionalTWriter`, `ResultTWriter`,
+`EitherTWriter`, `ReaderTWriter`, `PublisherTWriter`, `StatefulTWriter`, …
 
-`StatefulTAsyncStream+Monad.swift` gives the equivalent reason for structured concurrency:
+**A monad outside `Stateful`: no Monad.** `ArrayTStateful`, `OptionalTStateful`,
+`ResultTStateful`, `EitherTStateful`, `PublisherTStateful` and `AsyncStreamTStateful`
+(`M<Stateful<S, A>>`) stop at Functor + Applicative (`AsyncStreamTStateful` at Functor). The
+outer layer is decided before the state runs, so a continuation can never reach it (the best a
+"bind" can do is `fmap(Stateful.flatMap)`). Haskell has no transformer of this shape; use
+`Stateful<S, Optional|Either|Result|Writer>` (`MaybeT`/`ExceptT`/`WriterT` over `State`) instead.
 
-> Swift's concurrency model prohibits capturing an `inout` parameter across async boundaries
-> (the state `S` in `(inout S) -> A` cannot be shared with async closures).
-
-Both files suggest the workaround directly: use `Stateful<S, [A]>`, `Stateful<S, Result<A, E>>`,
-or `Stateful<S, AnyPublisher<A, E>>` where sequencing is needed, and thread the state around the
-stream/publisher instead of through it. This is the same root cause called out in the library's
-Sendable rules for `Stateful` combinators generally: `inout` cannot be captured in a `@Sendable`
-closure, and Combine/async closures are exactly that.
-
-Note that the reverse direction — `PublisherTStateful` and `AsyncStreamTStateful`, where
-`Stateful` is the *inner* type — **does** have a Monad. There the outer `Publisher`/`AsyncStream`
-only needs to call `.flatMap` on the already-materialised `Stateful` value it receives per event
-(`stateful.flatMap(fn)`), no `inout` capture required. The asymmetry is a direct consequence of
-which side owns the mutable state.
-
-**`Writer` + `Publisher` — has a Monad.** Unlike the `Stateful` case, `WriterTPublisher` and
-`PublisherTWriter` both implement `flatMapT`. `Writer`'s log is an immutable, appended-not-mutated
-value (no `inout`), so it can be captured in Combine's `@escaping` `flatMap` closure without
-issue — only genuinely mutable state (`Stateful`) runs into the capture restriction.
+**`Stateful` outside `Reader`/`Publisher`/`AsyncStream`: no Monad.** `StatefulTReader`,
+`StatefulTPublisher` and `StatefulTAsyncStream` (`Stateful<S, M<A>>`) stop at Functor +
+Applicative. `Stateful` runs with `inout S`, which can't be captured by the escaping `Reader`,
+Combine or async closures a bind would need. Thread the state around the stream instead, or use
+`Stateful<S, Result<A, E>>` / `Stateful<S, Either<L, A>>` where sequencing is needed.
 
 ---
 

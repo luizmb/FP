@@ -37,17 +37,4 @@ import Testing
         let result = lhs <* rhs
         #expect(result.eval(0) == [1, 1, 2, 2])
     }
-
-    @Test func bind() {
-        let s = Stateful<Int, [Int]>.pure([1, 2, 3])
-        let result = s >>- { n in Stateful<Int, [Int]>.pure([n, n * 10]) }
-        #expect(result.eval(0) == [1, 10, 2, 20, 3, 30])
-    }
-
-    @Test func kleisli() {
-        let f: @Sendable (Int) -> Stateful<Int, [Int]> = { n in .pure([n, n + 1]) }
-        let g: @Sendable (Int) -> Stateful<Int, [String]> = { n in .pure(["\(n)"]) }
-        let result = (f >=> g)(3)
-        #expect(result.eval(0) == ["3", "4"])
-    }
 }

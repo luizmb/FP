@@ -138,18 +138,6 @@ import Testing
         #expect(result == .left(.err))
     }
 
-    @Test func eitherTArrayFlatMapTRight() {
-        let either: Either<L, [Int]> = .right([1, 2])
-        let result = either >>- { n in Either<L, [String]>.right(["\(n)", "\(n * 10)"]) }
-        #expect(result == .right(["1", "10", "2", "20"]))
-    }
-
-    @Test func eitherTArrayFlatMapTLeft() {
-        let either: Either<L, [Int]> = .left(.err)
-        let result = either >>- { (n: Int) in Either<L, [String]>.right(["\(n)"]) }
-        #expect(result == .left(.err))
-    }
-
     // MARK: - EitherTResult
 
     @Test func eitherTResultMapTRightSuccess() throws {
@@ -200,25 +188,6 @@ import Testing
         let either: Either<L, Stateful<Int, Int>> = .left(.err)
         let result: Either<L, Stateful<Int, Int>> = { $0 * 2 } <£^> either
         if case let .left(l) = result { #expect(l == .err) } else { Issue.record("Expected .left") }
-    }
-
-    @Test func eitherTStatefulFlatMapTRight() {
-        let either: Either<L, Stateful<Int, Int>> = .right(Stateful<Int, Int>.get)
-        let result = either >>- { n in Stateful<Int, String>.pure("\(n)") }
-        if case let .right(s) = result { #expect(s.eval(7) == "7") } else { Issue.record("Expected .right") }
-    }
-
-    @Test func eitherTStatefulFlatMapTLeft() {
-        let either: Either<L, Stateful<Int, Int>> = .left(.err)
-        let result = either >>- { n in Stateful<Int, String>.pure("\(n)") }
-        if case let .left(l) = result { #expect(l == .err) } else { Issue.record("Expected .left") }
-    }
-
-    @Test func eitherTStatefulKleisli() {
-        let f: @Sendable (Int) -> Either<L, Stateful<Int, Int>> = { n in .right(Stateful<Int, Int>.pure(n + 1)) }
-        let g: @Sendable (Int) -> Stateful<Int, String> = { n in Stateful<Int, String>.pure("\(n)") }
-        let result = (f >=> g)(4)
-        if case let .right(s) = result { #expect(s.eval(0) == "5") } else { Issue.record("Expected .right") }
     }
 
     @Test func eitherTStatefulApply() {

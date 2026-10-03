@@ -35,26 +35,4 @@ import Testing
         #expect(result.value(0) == "done")
         #expect(result.log == ["a", "b"])
     }
-
-    @Test func bind() {
-        let w = Writer<[String], Reader<Int, Int>>(Reader { $0 }, ["outer"])
-        let result = w >>- { n in
-            Writer<[String], Reader<Int, String>>(Reader(const("\(n)")), ["inner"])
-        }
-        // inner log discarded; Reader defers n until run-time
-        #expect(result.log == ["outer"])
-        // value lazily computes based on n captured at composition time
-        let computed = result.value(7)
-        #expect(computed == "7")
-    }
-
-    @Test func kleisli() {
-        let f: @Sendable (Int) -> Writer<[String], Reader<Int, Int>> = { n in Writer(Reader { $0 + n }, ["f"]) }
-        let g: @Sendable (Int) -> Writer<[String], Reader<Int, String>> = { n in Writer(Reader(const("\(n)")), ["g"]) }
-        let result = (f >=> g)(2)
-        #expect(result.log == ["f"])
-        // result.value is Reader<Int, String> whose output was captured when g was called
-        let output = result.value(3) // f produces Reader { 3+2=5 }, g captures 5
-        #expect(output == "5")
-    }
 }

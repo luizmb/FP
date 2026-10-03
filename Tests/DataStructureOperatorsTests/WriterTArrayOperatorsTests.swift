@@ -34,19 +34,4 @@ import Testing
         #expect(result.value == ["x", "y", "x", "y"])
         #expect(result.log == ["a", "b"])
     }
-
-    @Test func bind() {
-        let w = Writer<[String], [Int]>([1, 2], ["outer"])
-        let result = w >>- { n in Writer<[String], [String]>(["\(n)", "\(n * 10)"], ["inner\(n)"]) }
-        #expect(result.value == ["1", "10", "2", "20"])
-        // logs from all inner fn calls are accumulated plus outer
-        #expect(result.log.first == "outer")
-    }
-
-    @Test func kleisli() {
-        let f: @Sendable (Int) -> Writer<[String], [Int]> = { n in Writer([n, n + 1], ["f"]) }
-        let g: @Sendable (Int) -> Writer<[String], [String]> = { n in Writer(["\(n)"], ["g"]) }
-        let result = (f >=> g)(3)
-        #expect(result.value == ["3", "4"])
-    }
 }

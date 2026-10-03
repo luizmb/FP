@@ -37,27 +37,6 @@ import Testing
         #expect(result.log == ["a", "b"])
     }
 
-    @Test func flatMapTKeepsOuterLog() {
-        let w = Writer<[String], Stateful<Int, Int>>(
-            Stateful<Int, Int>.get,
-            ["outer"]
-        )
-        let result = w.flatMapT { n in
-            Writer<[String], Stateful<Int, String>>(
-                Stateful { state in
-                    state += n
-                    return "\(state)"
-                },
-                ["inner"]
-            )
-        }
-        // inner log is discarded; state is still threaded
-        let (output, finalState) = result.value.runStateful(3)
-        #expect(output == "6")
-        #expect(finalState == 6)
-        #expect(result.log == ["outer"])
-    }
-
     // MARK: - Stateful<S, Writer<W, A>> — Stateful as outer, Writer as inner
 
     @Test func statefulTWriterMapT() {

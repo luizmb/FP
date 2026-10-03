@@ -80,24 +80,4 @@ import Testing
             Issue.record("Expected .left")
         }
     }
-
-    @Test func eitherTStatefulFlatMapTRight() {
-        let e: Either<String, Stateful<Int, Int>> = .right(.get)
-        let result = e.flatMapT { value in
-            Stateful<Int, String>.pure("\(value)")
-        }
-        #expect(result.mapRight { $0.eval(7) } == .right("7"))
-    }
-
-    @Test func eitherTStatefulFlatMapTLeft() {
-        let e: Either<String, Stateful<Int, Int>> = .left("fail")
-        let result: Either<String, Stateful<Int, String>> = e.flatMapT { value in
-            Stateful<Int, String>.pure("\(value)")
-        }
-        if case let .left(l) = result {
-            #expect(l == "fail")
-        } else {
-            Issue.record("Expected .left")
-        }
-    }
 }

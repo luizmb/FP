@@ -39,33 +39,4 @@ import Testing
         let result = lhs <* rhs
         #expect(result.eval(0) == NonEmpty(head: 1))
     }
-
-    // MARK: - Monad
-
-    @Test func bindForward() {
-        let s = Stateful<Int, NonEmpty<Int>>.pure(NonEmpty(head: 5))
-        let result = s >>- { (n: Int) -> Stateful<Int, NonEmpty<String>?> in .pure(NonEmpty(head: "\(n)")) }
-        #expect(result.eval(0) == NonEmpty(head: "5"))
-    }
-
-    @Test func bindBackward() {
-        let s = Stateful<Int, NonEmpty<Int>>.pure(NonEmpty(head: 5))
-        let fn: @Sendable (Int) -> Stateful<Int, NonEmpty<String>?> = { n in .pure(NonEmpty(head: "\(n)")) }
-        let result = fn -<< s
-        #expect(result.eval(0) == NonEmpty(head: "5"))
-    }
-
-    @Test func kleisliForward() {
-        let step1: @Sendable (Int) -> Stateful<Int, NonEmpty<Int>?> = { n in .pure(NonEmpty(head: n + 1)) }
-        let step2: @Sendable (Int) -> Stateful<Int, NonEmpty<String>?> = { n in .pure(NonEmpty(head: "\(n)")) }
-        let pipeline = step1 >=> step2
-        #expect(pipeline(4).eval(0) == NonEmpty(head: "5"))
-    }
-
-    @Test func kleisliBackward() {
-        let step1: @Sendable (Int) -> Stateful<Int, NonEmpty<Int>?> = { n in .pure(NonEmpty(head: n + 1)) }
-        let step2: @Sendable (Int) -> Stateful<Int, NonEmpty<String>?> = { n in .pure(NonEmpty(head: "\(n)")) }
-        let pipeline = step2 <=< step1
-        #expect(pipeline(4).eval(0) == NonEmpty(head: "5"))
-    }
 }

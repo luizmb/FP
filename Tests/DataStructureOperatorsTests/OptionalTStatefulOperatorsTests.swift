@@ -23,25 +23,6 @@ import Testing
         #expect(result == nil)
     }
 
-    @Test func bindSome() {
-        let opt: Stateful<Int, Int>? = .some(.get)
-        let result = opt >>- { n in Stateful<Int, String>.pure("\(n)") }
-        #expect(result?.eval(7) == "7")
-    }
-
-    @Test func bindNone() {
-        let opt: Stateful<Int, Int>? = nil
-        let result = opt >>- { n in Stateful<Int, String>.pure("\(n)") }
-        #expect(result == nil)
-    }
-
-    @Test func kleisli() {
-        let f: @Sendable (Int) -> Stateful<Int, Int>? = { n in .some(.pure(n + 1)) }
-        let g: @Sendable (Int) -> Stateful<Int, String> = { n in .pure("\(n)") }
-        let result = (f >=> g)(3)
-        #expect(result?.eval(0) == "4")
-    }
-
     @Test func apply() {
         let sf: Stateful<Int, @Sendable (Int) -> String>? = .pure { "\($0)" }
         let sa: Stateful<Int, Int>? = .get

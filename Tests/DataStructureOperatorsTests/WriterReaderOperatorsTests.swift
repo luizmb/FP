@@ -36,15 +36,6 @@ import Testing
         #expect(w.log == ["outer", "inner"])
     }
 
-    @Test func writerFlatMapTKeepsOuterLog() {
-        let w = Writer<[String], Reader<Int, Int>>(Reader { $0 }, ["outer"])
-        let result = w >>- { n in
-            Writer<[String], Reader<Int, String>>(Reader { env in "\(env + n)" }, ["inner"])
-        }
-        #expect(result.value.runReader(3) == "6")
-        #expect(result.log == ["outer"])
-    }
-
     @Test func readerTWriterApply() {
         let fn: @Sendable (Int) -> String = { "\($0)" }
         let rf: Reader<Int, Writer<[String], @Sendable (Int) -> String>> = Reader(const(Writer(fn, ["fn"])))
