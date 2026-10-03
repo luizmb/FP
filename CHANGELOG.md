@@ -52,6 +52,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `inout` parameter types.
 
 ### Changed
+- **`M<Writer>` bind is WriterT's bind** (`WriterT w M`) for `ArrayTWriter`, `OptionalTWriter`,
+  `ResultTWriter` and `EitherTWriter`: the continuation of `flatMapT`, `bindT`, `kleisliT`, `>>-`,
+  `-<<`, `>=>` and `<=<` now returns the full stack (`(A) -> [Writer<W, B>]`, `(A) -> Writer<W, B>?`,
+  `(A) -> Result<Writer<W, B>, E>`, `(A) -> Either<L, Writer<W, B>>`), so it can fail, prune or
+  branch as well as log; logs combine left to right. The old inner-only continuation
+  `(A) -> Writer<W, B>` is removed: write `outer.map { $0.flatMap(f) }` instead (`mapRight` for
+  `Either`).
 - **Transformer applicatives follow bind** (`<*> == ap`, Haskell's `ExceptT`/`MaybeT` semantics) for
   ArrayT, NonEmptyT, EitherT, OptionalT, StatefulT and WriterT over `Either`/`Optional`/`Result`:
   `apply`, `liftA2`, `*>` and `<*` now short-circuit like `>>-`. A failed function no longer

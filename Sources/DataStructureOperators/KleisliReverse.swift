@@ -39,7 +39,7 @@ public func <=< <L: Sendable, A: Sendable, B: Sendable, C: Sendable, E: Error>(
 
 /// `func` for `Either`.
 public func <=< <L: Sendable, W: Monoid, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Writer<W, C>,
+    _ fn2: @escaping @Sendable (B) -> Either<L, Writer<W, C>>,
     _ fn1: @escaping @Sendable (A) -> Either<L, Writer<W, B>>
 ) -> @Sendable (A) -> Either<L, Writer<W, C>> { fn1 >=> fn2 }
 
@@ -192,19 +192,19 @@ public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable, E: Error>(
 
 /// `func` for `Writer`.
 public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Writer<W, C>,
+    _ fn2: @escaping @Sendable (B) -> Writer<W, C>?,
     _ fn1: @escaping @Sendable (A) -> Writer<W, B>?
 ) -> @Sendable (A) -> Writer<W, C>? { fn1 >=> fn2 }
 
 /// `func` for `Writer`.
 public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Writer<W, C>,
+    _ fn2: @escaping @Sendable (B) -> [Writer<W, C>],
     _ fn1: @escaping @Sendable (A) -> [Writer<W, B>]
 ) -> @Sendable (A) -> [Writer<W, C>] { fn1 >=> fn2 }
 
 /// `func` for `Writer`.
 public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable, E: Error>(
-    _ fn2: @escaping @Sendable (B) -> Writer<W, C>,
+    _ fn2: @escaping @Sendable (B) -> Result<Writer<W, C>, E>,
     _ fn1: @escaping @Sendable (A) -> Result<Writer<W, B>, E>
 ) -> @Sendable (A) -> Result<Writer<W, C>, E> { fn1 >=> fn2 }
 

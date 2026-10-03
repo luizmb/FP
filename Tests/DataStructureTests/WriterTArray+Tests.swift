@@ -25,7 +25,7 @@ import Testing
 
     @Test func arrayTWriterFlatMapT() {
         let arr: [Writer<[String], Int>] = [Writer(5, ["outer"])]
-        let result = arr.flatMapT { n in Writer<[String], String>("\(n)", ["inner"]) }
+        let result = arr.flatMapT { n in [Writer<[String], String>("\(n)", ["inner"])] }
         #expect(result[0].value == "5")
         #expect(result[0].log == ["outer", "inner"])
     }
