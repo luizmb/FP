@@ -77,27 +77,4 @@ import Testing
         let result = seqLeftEitherNonEmpty(lhs, rhs)
         #expect(result == .left("err"))
     }
-
-    // MARK: - kleisliT
-
-    @Test func kleisliT_chains_through_right() {
-        let fn1: @Sendable (Int) -> Either<String, NonEmpty<Int>?> = { n in .right(NonEmpty(head: n, tail: [n * 2])) }
-        let fn2: @Sendable (Int) -> Either<String, NonEmpty<Int>?> = { n in n == 4 ? .right(nil) : .right(NonEmpty(head: n * 10)) }
-        let composed = kleisliT(fn1, fn2)
-        #expect(composed(2) == .right(NonEmpty(head: 20)))
-    }
-
-    @Test func kleisliT_propagates_left_from_first() {
-        let fn1: @Sendable (Int) -> Either<String, NonEmpty<Int>?> = const(.left("err"))
-        let fn2: @Sendable (Int) -> Either<String, NonEmpty<Int>?> = { n in .right(NonEmpty(head: n)) }
-        let composed = kleisliT(fn1, fn2)
-        #expect(composed(1) == .left("err"))
-    }
-
-    @Test func kleisliT_short_circuits_on_nil_intermediate() {
-        let fn1: @Sendable (Int) -> Either<String, NonEmpty<Int>?> = const(.right(nil))
-        let fn2: @Sendable (Int) -> Either<String, NonEmpty<Int>?> = { n in .right(NonEmpty(head: n)) }
-        let composed = kleisliT(fn1, fn2)
-        #expect(composed(1) == .right(nil))
-    }
 }

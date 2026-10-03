@@ -111,43 +111,6 @@
             #expect(capturedValue == 11)
         }
 
-        @Test func publisherTStatefulFlatMapT() {
-            var cancellables = Set<AnyCancellable>()
-            let stateful = Stateful<Int, Int> { s in s + 1 }
-            let publisher = Just(stateful).setFailureType(to: TestError.self).eraseToAnyPublisher()
-
-            let bound = publisher.flatMapT { value in
-                Stateful<Int, String> { s in "\(value)-\(s)" }
-            }
-
-            var capturedValue: String?
-            bound.sink(
-                receiveCompletion: ignore,
-                receiveValue: { stateful in capturedValue = stateful.eval(10) }
-            )
-            .store(in: &cancellables)
-
-            #expect(capturedValue == "11-10")
-        }
-
-        @Test func publisherTStatefulBindTStatic() {
-            var cancellables = Set<AnyCancellable>()
-            let stateful = Stateful<Int, Int> { s in s + 1 }
-            let publisher = Just(stateful).setFailureType(to: TestError.self).eraseToAnyPublisher()
-            let bindT = AnyPublisher<Stateful<Int, Int>, TestError>.bindT { (value: Int) in
-                Stateful<Int, Int> { s in value + s }
-            }
-
-            var capturedValue: Int?
-            bindT(publisher).sink(
-                receiveCompletion: ignore,
-                receiveValue: { stateful in capturedValue = stateful.eval(10) }
-            )
-            .store(in: &cancellables)
-
-            #expect(capturedValue == 21)
-        }
-
         // MARK: - StatefulTPublisher (Stateful<S, any Publisher<A, E>>)
 
         @Test func statefulTPublisherMapT() {
@@ -290,8 +253,7 @@
         }
 
         // Note: StatefulTPublisher has no flatMapT/Monad — Combine's flatMap takes an
-        // @escaping closure, which cannot capture an `inout` state parameter, so the
-        // source (StatefulTPublisher+Monad.swift) intentionally leaves it unimplemented.
+        // @escaping closure, which cannot capture an `inout` state parameter.
 
         // MARK: - PublisherTWriter (AnyPublisher<Writer<W, A>, E>)
 
@@ -569,55 +531,6 @@
 
             #expect(capturedValue == 2)
             #expect(result.log == ["a", "b"])
-        }
-
-        @Test func writerTPublisherFlatMapT() {
-            guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-            let writer = Writer<[String], any Publisher<Int, TestError>>(
-                Just(2).setFailureType(to: TestError.self).eraseToAnyPublisher(),
-                ["outer"]
-            )
-
-            // Outer log is kept as-is; the inner Writer's own log ("inner") is discarded
-            // by design — see the doc comment in WriterTPublisher+Monad.swift.
-            let bound = writer.flatMapT { value in
-                Writer<[String], any Publisher<String, TestError>>(
-                    Just("\(value * 10)").setFailureType(to: TestError.self).eraseToAnyPublisher(),
-                    ["inner"]
-                )
-            }
-
-            var cancellables = Set<AnyCancellable>()
-            var capturedValue: String?
-            bound.value.eraseToAnyPublisher()
-                .sink(receiveCompletion: ignore, receiveValue: { capturedValue = $0 })
-                .store(in: &cancellables)
-
-            #expect(capturedValue == "20")
-            #expect(bound.log == ["outer"])
-        }
-
-        @Test func writerTPublisherBindTStatic() {
-            guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-            let writer = Writer<[String], any Publisher<Int, TestError>>(
-                Just(2).setFailureType(to: TestError.self).eraseToAnyPublisher(),
-                ["outer"]
-            )
-            let bindT = Writer<[String], any Publisher<Int, TestError>>.bindT { value in
-                Writer<[String], any Publisher<Int, TestError>>(
-                    Just(value + 1).setFailureType(to: TestError.self).eraseToAnyPublisher(),
-                    ["inner"]
-                )
-            }
-            let bound = bindT(writer)
-
-            var cancellables = Set<AnyCancellable>()
-            var capturedValue: Int?
-            bound.value.eraseToAnyPublisher()
-                .sink(receiveCompletion: ignore, receiveValue: { capturedValue = $0 })
-                .store(in: &cancellables)
-
-            #expect(capturedValue == 3)
         }
 
         // MARK: - PublisherTEither (AnyPublisher<Either<L, A>, E>)

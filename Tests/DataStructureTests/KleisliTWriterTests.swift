@@ -65,22 +65,6 @@ import Testing
         }
     }
 
-    // MARK: - Writer<W, [A]> — Writer as outer, Array as inner
-
-    @Test func writerTArray() {
-        let fn1: @Sendable (Int) -> Writer<[String], [Int]> = { n in Writer([n, n + 1], ["fn1"]) }
-        let fn2: @Sendable (Int) -> Writer<[String], [String]> = { n in Writer(["\(n)"], ["fn2(\(n))"]) }
-
-        let result = kleisliT(fn1, fn2)(5)
-        #expect(result.value == ["5", "6"])
-        #expect(result.log == ["fn1", "fn2(5)", "fn2(6)"])
-
-        let empty: @Sendable (Int) -> Writer<[String], [Int]> = const(Writer([], ["fn1"]))
-        let emptyResult = kleisliT(empty, fn2)(5)
-        #expect(emptyResult.value.isEmpty)
-        #expect(emptyResult.log == ["fn1"])
-    }
-
     // MARK: - Writer<W, Either<L, A>> — Writer as outer, Either as inner
 
     @Test func writerTEither() {
@@ -119,22 +103,6 @@ import Testing
         #expect(nilResult.log == ["fn1"])
     }
 
-    // MARK: - Writer<W, Reader<Env, A>> — Writer as outer, Reader as inner
-
-    @Test func writerTReader() {
-        let fn1: @Sendable (Int) -> Writer<[String], Reader<Int, Int>> = { n in
-            Writer(Reader { env in n + env }, ["fn1"])
-        }
-        let fn2: @Sendable (Int) -> Writer<[String], Reader<Int, String>> = { n in
-            Writer(Reader { env in "\(n * env)" }, ["fn2"])
-        }
-
-        let result = kleisliT(fn1, fn2)(5)
-        #expect(result.value.runReader(2) == "14")
-        // Reader is lazy — flatMapT keeps the outer log only; fn2's log is discarded
-        #expect(result.log == ["fn1"])
-    }
-
     // MARK: - Writer<W, Result<A, E>> — Writer as outer, Result as inner
 
     @Test func writerTResult() {
@@ -155,35 +123,5 @@ import Testing
         let failureResult = kleisliT(failing, fn2)(5)
         #expect(failureResult.value == .failure(.failure))
         #expect(failureResult.log == ["fn1"])
-    }
-
-    // MARK: - Writer<W, Stateful<S, A>> — Writer as outer, Stateful as inner
-
-    @Test func writerTStateful() {
-        let fn1: @Sendable (Int) -> Writer<[String], Stateful<Int, Int>> = { n in
-            Writer(
-                Stateful { state in
-                    state += 1
-                    return n * 2
-                },
-                ["fn1"]
-            )
-        }
-        let fn2: @Sendable (Int) -> Writer<[String], Stateful<Int, String>> = { n in
-            Writer(
-                Stateful { state in
-                    state += 10
-                    return "\(n)"
-                },
-                ["fn2"]
-            )
-        }
-
-        let result = kleisliT(fn1, fn2)(5)
-        let (value, finalState) = result.value.runStateful(0)
-        #expect(value == "10")
-        #expect(finalState == 11)
-        // Stateful is lazy — flatMapT keeps the outer log only; fn2's log is discarded
-        #expect(result.log == ["fn1"])
     }
 }

@@ -72,15 +72,6 @@ import Testing
         #expect(collected == [[11, 21, 12, 22]])
     }
 
-    @Test func asyncStreamArrayFlatMapT() async {
-        let stream = makeStream([[1, 2]])
-        let result = flatMapTAsyncStreamArray(stream) { n in
-            makeStream([[n, n * 10]])
-        }
-        let collected = await collect(result)
-        #expect(collected == [[1, 10, 2, 20]])
-    }
-
     // MARK: - AsyncSequenceTResult
 
     private enum Err: Error, Equatable { case fail }

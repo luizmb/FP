@@ -27,12 +27,6 @@ public func <=< <A: Sendable, B0: Sendable, B: Sendable, B1: Sendable>(
 
 /// `func` for `Either`.
 public func <=< <L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Either<L, [C]>,
-    _ fn1: @escaping @Sendable (A) -> Either<L, [B]>
-) -> @Sendable (A) -> Either<L, [C]> { fn1 >=> fn2 }
-
-/// `func` for `Either`.
-public func <=< <L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
     _ fn2: @escaping @Sendable (B) -> Either<L, C?>,
     _ fn1: @escaping @Sendable (A) -> Either<L, B?>
 ) -> @Sendable (A) -> Either<L, C?> { fn1 >=> fn2 }
@@ -50,12 +44,6 @@ public func <=< <L: Sendable, W: Monoid, A: Sendable, B: Sendable, C: Sendable>(
 ) -> @Sendable (A) -> Either<L, Writer<W, C>> { fn1 >=> fn2 }
 
 /// `func` for `Either`.
-public func <=< <L: Sendable, S: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Stateful<S, C>,
-    _ fn1: @escaping @Sendable (A) -> Either<L, Stateful<S, B>>
-) -> @Sendable (A) -> Either<L, Stateful<S, C>> { fn1 >=> fn2 }
-
-/// `func` for `Either`.
 public func <=< <L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
     _ fn2: @escaping @Sendable (B) -> Either<L, C>?,
     _ fn1: @escaping @Sendable (A) -> Either<L, B>?
@@ -66,12 +54,6 @@ public func <=< <L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
     _ fn2: @escaping @Sendable (B) -> [Either<L, C>],
     _ fn1: @escaping @Sendable (A) -> [Either<L, B>]
 ) -> @Sendable (A) -> [Either<L, C>] { fn1 >=> fn2 }
-
-/// `func` for `Either`.
-public func <=< <L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Either<L, NonEmpty<C>?>,
-    _ fn1: @escaping @Sendable (A) -> Either<L, NonEmpty<B>?>
-) -> @Sendable (A) -> Either<L, NonEmpty<C>?> { fn1 >=> fn2 }
 
 // MARK: - These
 
@@ -160,12 +142,6 @@ public func <=< <S: Sendable, O0: Sendable, A: Sendable, B: Sendable>(
 
 /// `func` for `Stateful`.
 public func <=< <S: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Stateful<S, [C]>,
-    _ fn1: @escaping @Sendable (A) -> Stateful<S, [B]>
-) -> @Sendable (A) -> Stateful<S, [C]> { fn1 >=> fn2 }
-
-/// `func` for `Stateful`.
-public func <=< <S: Sendable, A: Sendable, B: Sendable, C: Sendable>(
     _ fn2: @escaping @Sendable (B) -> Stateful<S, C?>,
     _ fn1: @escaping @Sendable (A) -> Stateful<S, B?>
 ) -> @Sendable (A) -> Stateful<S, C?> { fn1 >=> fn2 }
@@ -182,30 +158,6 @@ public func <=< <S: Sendable, A: Sendable, B: Sendable, C: Sendable, E: Error>(
     _ fn1: @escaping @Sendable (A) -> Stateful<S, Result<B, E>>
 ) -> @Sendable (A) -> Stateful<S, Result<C, E>> { fn1 >=> fn2 }
 
-/// `func` for `Stateful`.
-public func <=< <S: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Stateful<S, C>,
-    _ fn1: @escaping @Sendable (A) -> Stateful<S, B>?
-) -> @Sendable (A) -> Stateful<S, C>? { fn1 >=> fn2 }
-
-/// `func` for `Stateful`.
-public func <=< <S: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Stateful<S, C>,
-    _ fn1: @escaping @Sendable (A) -> [Stateful<S, B>]
-) -> @Sendable (A) -> [Stateful<S, C>] { fn1 >=> fn2 }
-
-/// `func` for `Stateful`.
-public func <=< <S: Sendable, A: Sendable, B: Sendable, C: Sendable, E: Error>(
-    _ fn2: @escaping @Sendable (B) -> Stateful<S, C>,
-    _ fn1: @escaping @Sendable (A) -> Result<Stateful<S, B>, E>
-) -> @Sendable (A) -> Result<Stateful<S, C>, E> { fn1 >=> fn2 }
-
-/// `func` for `Stateful`.
-public func <=< <S, A: Sendable, B: Sendable, C>(
-    _ fn2: @escaping @Sendable (B) -> Stateful<S, NonEmpty<C>?>,
-    _ fn1: @escaping @Sendable (A) -> Stateful<S, NonEmpty<B>?>
-) -> @Sendable (A) -> Stateful<S, NonEmpty<C>?> { fn1 >=> fn2 }
-
 // MARK: - Writer
 
 /// `func` for `Writer`.
@@ -213,12 +165,6 @@ public func <=< <W: Monoid, O0: Sendable, A: Sendable, B: Sendable>(
     _ fn2: @escaping @Sendable (A) -> Writer<W, B>,
     _ fn1: @escaping @Sendable (O0) -> Writer<W, A>
 ) -> @Sendable (O0) -> Writer<W, B> { fn1 >=> fn2 }
-
-/// `func` for `Writer`.
-public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Writer<W, [C]>,
-    _ fn1: @escaping @Sendable (A) -> Writer<W, [B]>
-) -> @Sendable (A) -> Writer<W, [C]> { fn1 >=> fn2 }
 
 /// `func` for `Writer`.
 public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable>(
@@ -237,37 +183,6 @@ public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable, E: Error>(
     _ fn2: @escaping @Sendable (B) -> Writer<W, Result<C, E>>,
     _ fn1: @escaping @Sendable (A) -> Writer<W, Result<B, E>>
 ) -> @Sendable (A) -> Writer<W, Result<C, E>> { fn1 >=> fn2 }
-
-/// `func` for `Writer`.
-public func <=< <W: Monoid, S: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Writer<W, Stateful<S, C>>,
-    _ fn1: @escaping @Sendable (A) -> Writer<W, Stateful<S, B>>
-) -> @Sendable (A) -> Writer<W, Stateful<S, C>> { fn1 >=> fn2 }
-
-/// `func` for `Writer`.
-public func <=< <W: Monoid, Env: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Writer<W, Reader<Env, C>>,
-    _ fn1: @escaping @Sendable (A) -> Writer<W, Reader<Env, B>>
-) -> @Sendable (A) -> Writer<W, Reader<Env, C>> { fn1 >=> fn2 }
-
-/// `func` for `Writer`.
-public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Writer<W, NonEmpty<C>?>,
-    _ fn1: @escaping @Sendable (A) -> Writer<W, NonEmpty<B>?>
-) -> @Sendable (A) -> Writer<W, NonEmpty<C>?> { fn1 >=> fn2 }
-
-#if canImport(Combine)
-    import Combine
-    import CoreFPOperators
-
-    /// `func` for `Writer`.
-    @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
-    public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable, E: Error>(
-        _ fn2: @escaping @Sendable (B) -> Writer<W, any Publisher<C, E>>,
-        _ fn1: @escaping @Sendable (A) -> Writer<W, any Publisher<B, E>>
-    ) -> @Sendable (A) -> Writer<W, any Publisher<C, E>> { fn1 >=> fn2 }
-
-#endif
 
 /// `func` for `Writer`.
 public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable>(

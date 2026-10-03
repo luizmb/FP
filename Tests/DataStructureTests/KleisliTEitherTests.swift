@@ -21,20 +21,6 @@ private enum ComputationError: Error, Equatable {
         #expect(pipeline(-1) == [.left("non-positive")])
     }
 
-    // MARK: - EitherTArray: Either<L, [A]>
-
-    @Test func eitherTArrayComposition() {
-        let positive: @Sendable (Int) -> Either<String, [Int]> = { n in
-            n > 0 ? .right([n, n + 1]) : .left("non-positive")
-        }
-        let doubled: @Sendable (Int) -> Either<String, [Int]> = { n in
-            .right([n * 2])
-        }
-        let pipeline = kleisliT(positive, doubled)
-        #expect(pipeline(3) == .right([6, 8]))
-        #expect(pipeline(0) == .left("non-positive"))
-    }
-
     // MARK: - EitherTOptional: Either<L, A?>
 
     @Test func eitherTOptionalComposition() {
@@ -63,20 +49,6 @@ private enum ComputationError: Error, Equatable {
         #expect(pipeline(21) == .right(.success(42)))
         #expect(pipeline(-1) == .right(.failure(.tooSmall)))
         #expect(pipeline(200) == .left("overflow"))
-    }
-
-    // MARK: - EitherTStateful: Either<L, Stateful<S, A>>
-
-    @Test func eitherTStatefulComposition() {
-        let positive: @Sendable (Int) -> Either<String, Stateful<Int, Int>> = { n in
-            n > 0 ? .right(.pure(n)) : .left("non-positive")
-        }
-        let addedToState: @Sendable (Int) -> Stateful<Int, Int> = { n in
-            .gets { s in s + n }
-        }
-        let pipeline = kleisliT(positive, addedToState)
-        #expect(pipeline(5).mapRight { $0.eval(10) } == .right(15))
-        #expect(pipeline(-1).mapRight { $0.eval(10) } == .left("non-positive"))
     }
 
     // MARK: - EitherTWriter: Either<L, Writer<W, A>>

@@ -19,21 +19,6 @@ import Testing
         #expect(result[1].eval(5) == 20)
     }
 
-    @Test func bind() {
-        let arr: [Stateful<Int, Int>] = [.pure(3), .pure(4)]
-        let result = arr >>- { n in Stateful<Int, String>.pure("\(n)") }
-        #expect(result[0].eval(0) == "3")
-        #expect(result[1].eval(0) == "4")
-    }
-
-    @Test func kleisli() {
-        let f: @Sendable (Int) -> [Stateful<Int, Int>] = { n in [.pure(n), .pure(n + 1)] }
-        let g: @Sendable (Int) -> Stateful<Int, String> = { n in .pure("\(n)") }
-        let results = (f >=> g)(3)
-        #expect(results[0].eval(0) == "3")
-        #expect(results[1].eval(0) == "4")
-    }
-
     @Test func apply() {
         let fns: [Stateful<Int, @Sendable (Int) -> String>] = [.pure { "\($0)" }]
         let vals: [Stateful<Int, Int>] = [.pure(5)]

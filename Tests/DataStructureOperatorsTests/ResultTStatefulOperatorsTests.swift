@@ -26,25 +26,6 @@ import Testing
         if case let .failure(e) = mapped { #expect(e == .failure) } else { Issue.record("Expected .failure") }
     }
 
-    @Test func bindSuccess() {
-        let result: Result<Stateful<Int, Int>, TestError> = .success(.get)
-        let bound = result >>- { n in Stateful<Int, String>.pure("\(n)") }
-        #expect(Result.prism.success.preview(bound)?.eval(3) == "3")
-    }
-
-    @Test func bindFailure() {
-        let result: Result<Stateful<Int, Int>, TestError> = .failure(.failure)
-        let bound = result >>- { n in Stateful<Int, String>.pure("\(n)") }
-        if case let .failure(e) = bound { #expect(e == .failure) } else { Issue.record("Expected .failure") }
-    }
-
-    @Test func kleisli() {
-        let f: @Sendable (Int) -> Result<Stateful<Int, Int>, TestError> = { n in .success(.pure(n + 1)) }
-        let g: @Sendable (Int) -> Stateful<Int, String> = { n in .pure("\(n)") }
-        let result = (f >=> g)(4)
-        #expect(Result.prism.success.preview(result)?.eval(0) == "5")
-    }
-
     @Test func apply() {
         let rf: Result<Stateful<Int, @Sendable (Int) -> String>, TestError> = .success(.pure { "\($0)" })
         let ra: Result<Stateful<Int, Int>, TestError> = .success(.get)

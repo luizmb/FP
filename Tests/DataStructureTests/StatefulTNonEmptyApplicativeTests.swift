@@ -68,26 +68,4 @@ import Testing
         #expect(result == NonEmpty(head: 1))
         #expect(state == 11)
     }
-
-    // MARK: - kleisliT
-
-    @Test func kleisliTChainsStatefulNonEmptyArrows() {
-        let step1: @Sendable (Int) -> Stateful<Int, NonEmpty<Int>?> = { n in
-            Stateful { state in
-                state += n
-                return NonEmpty(head: n + 1, tail: [n + 2])
-            }
-        }
-        let step2: @Sendable (Int) -> Stateful<Int, NonEmpty<String>?> = { n in
-            Stateful { state in
-                state += n
-                return NonEmpty(head: "\(n)")
-            }
-        }
-        let pipeline = kleisliT(step1, step2)
-        var state = 0
-        let result = pipeline(3).run(&state)
-        #expect(result == NonEmpty(head: "4", tail: ["5"]))
-        #expect(state == 12) // step1 adds 3, step2 runs once per element adding 4 then 5
-    }
 }

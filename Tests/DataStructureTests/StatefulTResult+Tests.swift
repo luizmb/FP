@@ -61,24 +61,4 @@ import Testing
             Issue.record("Expected .failure")
         }
     }
-
-    @Test func resultTStatefulFlatMapTSuccess() {
-        let r: Result<Stateful<Int, Int>, TestError> = .success(.get)
-        let result = r.flatMapT { value in
-            Stateful<Int, String>.pure("\(value)")
-        }
-        #expect(result.map { $0.eval(7) } == .success("7"))
-    }
-
-    @Test func resultTStatefulFlatMapTFailure() {
-        let r: Result<Stateful<Int, Int>, TestError> = .failure(.failure)
-        let result: Result<Stateful<Int, String>, TestError> = r.flatMapT { value in
-            Stateful<Int, String>.pure("\(value)")
-        }
-        if case let .failure(e) = result {
-            #expect(e == .failure)
-        } else {
-            Issue.record("Expected .failure")
-        }
-    }
 }

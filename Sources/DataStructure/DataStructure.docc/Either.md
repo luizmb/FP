@@ -184,17 +184,18 @@ e >>- { n in .right(.some(n + 1)) }
 
 ### `EitherTArray` — `Either<L, [A]>` (outer = Either, inner = Array)
 
-Either containing an Array. `.left` propagates; `.right(arr)` lets you flatMap over elements.
+Either containing an Array. `.left` propagates; `.right(arr)` maps and combines elements.
+Functor and Applicative only: there is no lawful monad for a list inside a non-commutative
+outer layer (Haskell's old `ListT` problem), so there is no `flatMapT`/`>>-` for this stack.
 
 ```swift
 import DataStructure
 
 let e: Either<String, [Int]> = .right([1, 2, 3])
 mapTEitherArray({ $0 * 2 }, e)         // .right([2, 4, 6])
-flatMapTEitherArray(e) { n in .right([n, n * 10]) }  // .right([1, 10, 2, 20, 3, 30])
+liftA2EitherArray(+)(e, .right([10, 20]))  // .right([11, 21, 12, 22, 13, 23])
 
-Either<String, [Int]>.left("err")
-  |> { flatMapTEitherArray($0) { n in .right([n]) } }  // .left("err")
+liftA2EitherArray(+)(Either<String, [Int]>.left("err"), e)  // .left("err")
 ```
 
 ### `EitherTResult` — `Either<L, Result<A,E>>` (outer = Either, inner = Result)

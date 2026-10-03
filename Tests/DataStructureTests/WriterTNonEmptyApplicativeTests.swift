@@ -44,30 +44,4 @@ import Testing
         #expect(result.value == NonEmpty(head: 1))
         #expect(result.log == ["lhs", "rhs"])
     }
-
-    // MARK: - kleisliT
-
-    @Test func kleisliTChainsWriterNonEmptyArrows() {
-        let step1: @Sendable (Int) -> Writer<[String], NonEmpty<Int>?> = { n in
-            Writer(NonEmpty(head: n + 1, tail: [n * 2]), ["step1(\(n))"])
-        }
-        let step2: @Sendable (Int) -> Writer<[String], NonEmpty<String>?> = { n in
-            Writer(NonEmpty(head: "\(n)"), ["step2(\(n))"])
-        }
-        let pipeline = kleisliT(step1, step2)
-        let result = pipeline(3)
-        #expect(result.value == NonEmpty(head: "4", tail: ["6"]))
-        #expect(result.log == ["step1(3)", "step2(4)", "step2(6)"])
-    }
-
-    @Test func kleisliTShortCircuitsWhenFirstIsNil() {
-        let step1: @Sendable (Int) -> Writer<[String], NonEmpty<Int>?> = const(Writer(nil, ["empty"]))
-        let step2: @Sendable (Int) -> Writer<[String], NonEmpty<String>?> = { n in
-            Writer(NonEmpty(head: "\(n)"), ["step2"])
-        }
-        let pipeline = kleisliT(step1, step2)
-        let result = pipeline(3)
-        #expect(result.value == nil)
-        #expect(result.log == ["empty"])
-    }
 }

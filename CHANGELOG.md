@@ -14,9 +14,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `toArray()` is O(1), `duplicate()`/`extend` are O(n) instead of O(n²). New
   `Zipper(_:focusedAt:)`. Codable keeps the `left`/`focus`/`right` format.
 - **Linear-time folds and traversals**: `Array.traverse` (Optional / Result), `OptionalTArray`
-  and `EitherTArray` bind, NonEmpty `traverse` (Validation), the NonEmpty transformer binds and
-  Writer log folds no longer rebuild a growing array per element (O(n²) → O(n)).
-  `PublisherTArray` bind zips as a balanced tree (log n deep instead of n).
+  bind, NonEmpty `traverse` (Validation), the NonEmpty transformer binds and Writer log folds no
+  longer rebuild a growing array per element (O(n²) → O(n)).
 - **`sconcat` overrides** for `NonEmpty`, `Set` and `Dictionary` fold into one accumulator in
   place, so `mconcat`/`sconcat` of many values is linear.
 - **In-place optics**: `Lens.traversal`, `Prism.traversal`, `Dictionary.eachValue(Indexed)` and
@@ -79,6 +78,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   break for code that expects `[A]`; wrap in `Array(...)` where an array is needed.
 
 ### Removed
+- **Monad surface of transformer stacks that have no lawful monad** (Haskell's `transformers`
+  defines none for these shapes). `flatMapT`, `bindT`, `kleisliT`, the free `flatMapT…`/`bindT…`
+  functions and the `>>-`, `-<<`, `>=>`, `<=<` overloads are gone; `mapT`, `<£^>`/`<&^>`,
+  `apply`/`<*>`, `liftA2`, `*>` and `<*` stay.
+  - List inside a non-commutative outer layer (`ListT` done wrong, associativity fails):
+    `EitherTArray`, `EitherTNonEmpty`, `StatefulTArray`, `StatefulTNonEmpty`, `WriterTArray`,
+    `WriterTNonEmpty`, `PublisherTArray`, `AsyncSequenceTArray`.
+  - `Writer` outside another monad (no distributive law; the inner log was dropped, so left
+    identity failed): `WriterTReader`, `WriterTStateful`, `WriterTPublisher`, `WriterTAsyncStream`.
+    Use `M<Writer<W, A>>` (Haskell's `WriterT`).
+  - A monad outside `Stateful` (the continuation can't reach the outer layer; `flatMapT` was
+    `fmap(Stateful.flatMap)`): `ArrayTStateful`, `OptionalTStateful`, `ResultTStateful`,
+    `EitherTStateful`, `PublisherTStateful`, `AsyncStreamTStateful`. Use
+    `Stateful<S, Optional|Either|Result|Writer>`.
+  - `Stateful` outside `Reader`/streams (comment-only `+Monad.swift` stubs deleted):
+    `StatefulTReader`, `StatefulTPublisher`, `StatefulTAsyncStream`.
+  - **Watch out when upgrading:** some former transformer `>>-` call sites still compile, because
+    the base type's bind now matches instead (e.g. `opt >>- { Stateful.pure(...) }` on
+    `Stateful<S, A>?` now resolves to `Optional`'s `>>-`, with the `Stateful` promoted to an
+    Optional). Search for `>>-` / `flatMapT` on these shapes rather than relying on compile errors.
 - **`Gen` runners `generate()`, `generate(seed:)` and `samples(seed:count:)`**: `generate()` read
   `SystemRandomNumberGenerator` behind a pure-looking signature. Inject the RNG and call `run(&rng)`.
 - **Infix `^` (floating-point power)**: Swift's stdlib declares `^` in `AdditionPrecedence`, so it

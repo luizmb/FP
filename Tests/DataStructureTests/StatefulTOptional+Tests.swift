@@ -55,26 +55,4 @@ import Testing
         let mapped: Stateful<Int, Int>? = opt.mapT { $0 * 3 }
         #expect(mapped == nil)
     }
-
-    @Test func optionalTStatefulFlatMapTSome() throws {
-        let opt: Stateful<Int, Int>? = .some(Stateful<Int, Int>.get)
-        let result = opt.flatMapT { value in
-            Stateful<Int, String> { state in
-                state += value
-                return "\(value)"
-            }
-        }
-        let stateful = try #require(result)
-        let (output, finalState) = stateful.runStateful(3)
-        #expect(output == "3")
-        #expect(finalState == 6)
-    }
-
-    @Test func optionalTStatefulFlatMapTNone() {
-        let opt: Stateful<Int, Int>? = nil
-        let result = opt.flatMapT { value in
-            Stateful<Int, String>.pure("\(value)")
-        }
-        #expect(result == nil)
-    }
 }

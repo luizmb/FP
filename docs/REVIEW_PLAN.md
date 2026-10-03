@@ -135,12 +135,14 @@ so it was left alone; `mconcat`'s `Array(dropFirst())` is an O(n) pointer copy i
 - [ ] AsyncStream / Publisher `apply` is zip (`AsyncSequence+Applicative.swift:9-27`, `Publisher+Applicative.swift:21-25`) while bind is concat/merge, and there's no `pure`. Rename to `zipApply`/`zipWith` or derive from bind.
 
 ### 3.2 Exported as monads but not lawful
-- [ ] Associativity fails (non-commutative outer): StatefulTArray, StatefulTNonEmpty, WriterTArray, WriterTNonEmpty (`*Monad.swift`). Counterexample log `["m","f1","f2","g10","g20"]` vs `["m","f1","g10","f2","g20"]`. Drop `flatMapT`/`>>-`/`-<<`/`>=>` or document "only when S/W commutative".
-- [ ] Left identity fails (inner log discarded): WriterTReader, WriterTStateful, WriterTPublisher, WriterTAsyncStream (`value.flatMap { fn($0).value }`). No distributive law exists; remove or rename (e.g. `flatMapValueDroppingLog`).
+- [x] Associativity fails (non-commutative outer): StatefulTArray, StatefulTNonEmpty, WriterTArray, WriterTNonEmpty (`*Monad.swift`). Counterexample log `["m","f1","f2","g10","g20"]` vs `["m","f1","g10","f2","g20"]`. Drop `flatMapT`/`>>-`/`-<<`/`>=>` or document "only when S/W commutative". **Removed** (step 3b) together with the other list-inner stacks EitherTArray, EitherTNonEmpty, PublisherTArray, AsyncSequenceTArray; functor/applicative stay.
+- [x] Left identity fails (inner log discarded): WriterTReader, WriterTStateful, WriterTPublisher, WriterTAsyncStream (`value.flatMap { fn($0).value }`). No distributive law exists; remove or rename (e.g. `flatMapValueDroppingLog`). **Removed** (step 3b).
 
 ### 3.3 `flatMapT` with the wrong shape
 - [ ] Continuation can't reach the outer layer (really `fmap(innerBind)`): EitherTStateful, EitherTWriter, ReaderTWriter, ReaderTStateful, StatefulTWriter, ArrayTStateful, OptionalTStateful, ResultTStateful, PublisherTStateful, AsyncStreamTStateful; their `kleisliT`/`>=>` take mismatched arrows. Implement the real bind where lawful (ReaderTWriter, ReaderTStateful, StatefulTWriter, EitherTWriter via Writer traversable) and rename the rest (`flatMapInner`).
-- [ ] NonEmpty transformers return `NonEmpty<B>?` (not closed, can't chain): EitherTNonEmpty, ReaderTNonEmpty, StatefulTNonEmpty, WriterTNonEmpty. Use `(A) -> M<NonEmpty<B>>`; make `kleisliT` delegate to the bind.
+  - [x] `XTStateful` (ArrayTStateful, OptionalTStateful, ResultTStateful, PublisherTStateful, AsyncStreamTStateful) and EitherTStateful: no lawful monad, monad surface **removed** (step 3b), not renamed. Also removed the comment-only `+Monad.swift` stubs of StatefulTReader/Publisher/AsyncStream.
+  - [ ] Real bind for ReaderTWriter, ReaderTStateful, StatefulTWriter, EitherTWriter.
+- [ ] NonEmpty transformers return `NonEmpty<B>?` (not closed, can't chain): EitherTNonEmpty, ReaderTNonEmpty, StatefulTNonEmpty, WriterTNonEmpty. Use `(A) -> M<NonEmpty<B>>`; make `kleisliT` delegate to the bind. (EitherTNonEmpty, StatefulTNonEmpty, WriterTNonEmpty binds were removed in step 3b; only ReaderTNonEmpty remains.)
 
 ### 3.4 Misnamed / lossy
 - [ ] `CoreFP/Array/Array+Monad.swift:63`, `filterM` takes `(Element) -> Bool`, so it's `filter`. Rename or implement real `filterM` (`(Element) -> [Bool]`, powerset).

@@ -37,12 +37,6 @@ struct DataStructurePerformanceRegressionTests {
         #expect(NonEmpty(head: -1, tail: [2, -3]).traverse(check) == .failure(["-1", "-3"]))
     }
 
-    @Test func eitherTArrayBindConcatenatesAndShortCircuits() {
-        let values: Either<String, [Int]> = .right([1, 2, 3])
-        #expect(flatMapTEitherArray(values) { .right([$0, $0]) } == .right([1, 1, 2, 2, 3, 3]))
-        #expect(flatMapTEitherArray(values) { $0 == 2 ? .left("two") : .right([$0]) } == .left("two"))
-    }
-
     @Test func writerTArrayLogOrderIsPreserved() {
         let start = [Writer(1, ["a"]), Writer(2, ["b"])]
         let result = start.flatMapT { Writer($0 * 10, ["f\($0)"]) }
