@@ -33,7 +33,8 @@ import Testing
         let fns: [(@Sendable (Int) -> Int)?] = [{ $0 + 1 }, nil]
         let values: [Int?] = [10, 20]
         let result = applyArrayOptional(fns, values)
-        #expect(result == [11, 21, nil, nil])
+        // MaybeT []: a nil function short-circuits to a single nil (<*> = ap)
+        #expect(result == [11, 21, nil])
     }
 
     @Test func arrayTOptionalLiftA2CartesianProduct() {
@@ -54,7 +55,8 @@ import Testing
         let a: [Int?] = [1, nil]
         let b: [String?] = ["x", nil]
         let result = seqRightArrayOptional(a, b)
-        #expect(result == ["x", nil, nil, nil])
+        // MaybeT []: nil on the left short-circuits to a single nil
+        #expect(result == ["x", nil, nil])
     }
 
     @Test func arrayTOptionalSeqLeft() {

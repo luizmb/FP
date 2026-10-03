@@ -3,29 +3,35 @@ import Foundation
 
 // ArrayTOptional: outer = Array, inner = Optional
 // Type: [A?] = Array<Optional<A>>
+// Haskell: MaybeT []
+//
+// The applicative is derived from the monad (`<*>` = `ap`): sequential and short-circuiting
+// exactly like `flatMapT`. A `nil` on the left yields a single `nil` and never runs the right side.
 
 /// apply for ArrayTOptional: [(A->B)?] -> [A?] -> [B?]
-/// Cartesian product with Optional apply at each pair
+/// mf <*> ma = mf >>= \f -> fmap f ma
 public func applyArrayOptional<A, B>(_ fns: [(@Sendable (A) -> B)?], _ values: [A?]) -> [B?] {
-    fns.flatMap { f in values.map { a in f.flatMap { fn in a.map(fn) } } }
+    bindArrayOptional(fns) { f in values.mapT(f) }
 }
 
 /// liftA2 for ArrayTOptional: (A,B)->C -> [A?] -> [B?] -> [C?]
+/// liftA2 f ma mb = ma >>= \a -> fmap (f a) mb
 public func liftA2ArrayOptional<A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> ([A?], [B?]) -> [C?] {
     { arrA, arrB in
-        Array.liftA2 { @Sendable a, b in Optional.liftA2(fn)(a, b) }(arrA, arrB)
+        bindArrayOptional(arrA) { a in arrB.map { optB in optB.map { b in fn(a, b) } } }
     }
 }
 
 /// seqRight for ArrayTOptional: [A?] -> [B?] -> [B?]
-/// Cartesian product keeping right values (threading Optional through)
+/// ma *> mb = ma >>= \_ -> mb
 public func seqRightArrayOptional<A, B>(_ lhs: [A?], _ rhs: [B?]) -> [B?] {
-    Array.liftA2 { (a: A?, b: B?) in a.seqRight(b) }(lhs, rhs)
+    bindArrayOptional(lhs, const(rhs))
 }
 
 /// seqLeft for ArrayTOptional: [A?] -> [B?] -> [A?]
+/// ma <* mb = ma >>= \a -> fmap (const a) mb
 public func seqLeftArrayOptional<A, B>(_ lhs: [A?], _ rhs: [B?]) -> [A?] {
-    Array.liftA2 { (a: A?, b: B?) in a.seqLeft(b) }(lhs, rhs)
+    bindArrayOptional(lhs) { a in rhs.map { optB in optB.map(const(a)) } }
 }

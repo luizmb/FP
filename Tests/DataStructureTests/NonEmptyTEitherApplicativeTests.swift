@@ -17,7 +17,8 @@ import Testing
         let fns = NonEmpty<Either<String, @Sendable (Int) -> Int>>(head: .left("err"))
         let values = NonEmpty<Either<String, Int>>(head: .right(1), tail: [.right(2)])
         let result = applyNonEmptyEither(fns, values)
-        #expect(result.toArray == [.left("err"), .left("err")])
+        // ExceptT l NonEmpty: a left on the left never runs the right side (<*> = ap)
+        #expect(result.toArray == [.left("err")])
     }
 
     // MARK: - liftA2

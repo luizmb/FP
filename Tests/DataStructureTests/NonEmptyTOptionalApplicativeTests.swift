@@ -12,8 +12,8 @@ import Testing
         let fns = NonEmpty<(@Sendable (Int) -> Int)?>(head: { $0 + 1 }, tail: [nil])
         let values = NonEmpty<Int?>(head: 1, tail: [2])
         let result = applyNonEmptyOptional(fns, values)
-        // f=(+1): [2, 3]; f=nil: [nil, nil]
-        #expect(result.toArray == [Optional(2), Optional(3), nil, nil])
+        // f=(+1): [2, 3]; f=nil: [nil] (MaybeT NonEmpty, <*> = ap)
+        #expect(result.toArray == [Optional(2), Optional(3), nil])
     }
 
     // MARK: - liftA2
