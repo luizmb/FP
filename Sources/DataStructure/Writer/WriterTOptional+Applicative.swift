@@ -5,40 +5,39 @@ import Foundation
 // WriterT + Optional — free functions for Writer<W, A?>
 
 /// apply for Writer<W, Optional>
+/// Equals `ap`: `wf >>= \f -> fmap f wa`. Sequential and short-circuiting like `flatMapT`:
+/// when the function side fails, the right-hand log is not appended.
 public func applyWriterOptional<W: Monoid, A, B>(
     _ wf: Writer<W, (@Sendable (A) -> B)?>,
     _ wa: Writer<W, A?>
 ) -> Writer<W, B?> {
-    Writer<W, B?>(
-        Optional.apply(wf.value, wa.value),
-        W.combine(wf.log, wa.log)
-    )
+    wf.flatMapT { f in wa.mapT(f) }
 }
 
 /// liftA2 for Writer<W, Optional>
+/// Equals `a >>= \x -> fmap (f x) b`. When `a` fails, `b`'s log is not appended.
 public func liftA2WriterOptional<W: Monoid, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Writer<W, A?>, Writer<W, B?>) -> Writer<W, C?> {
     { wa, wb in
-        Writer<W, C?>(
-            Optional.liftA2(fn)(wa.value, wb.value),
-            W.combine(wa.log, wb.log)
-        )
+        wa.flatMapT { a in wb.mapT { b in fn(a, b) } }
     }
 }
 
 /// seqRight for Writer<W, Optional>
+/// Equals `a >>= \_ -> b`. When `lhs` fails, `rhs`'s log is not appended.
 public func seqRightWriterOptional<W: Monoid, A, B>(
     _ lhs: Writer<W, A?>,
     _ rhs: Writer<W, B?>
 ) -> Writer<W, B?> {
-    Writer<W, B?>(lhs.value.seqRight(rhs.value), W.combine(lhs.log, rhs.log))
+    lhs.flatMapT(const(rhs))
 }
 
 /// seqLeft for Writer<W, Optional>
+/// Equals `a >>= \x -> fmap (const x) b`. When `lhs` fails, `rhs`'s log is not appended.
 public func seqLeftWriterOptional<W: Monoid, A, B>(
     _ lhs: Writer<W, A?>,
     _ rhs: Writer<W, B?>
 ) -> Writer<W, A?> {
-    Writer<W, A?>(lhs.value.seqLeft(rhs.value), W.combine(lhs.log, rhs.log))
+    lhs.flatMapT { a in rhs.mapT(const(a)) }
 }
