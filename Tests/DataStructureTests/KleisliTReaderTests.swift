@@ -156,10 +156,12 @@ import Testing
                 }
             }
         }
-        let describe: @Sendable (Int) -> Stateful<Int, String> = { value in
-            Stateful { state in
-                state += 10
-                return "\(value)"
+        let describe: @Sendable (Int) -> Reader<Env, Stateful<Int, String>> = { value in
+            Reader { env in
+                Stateful { state in
+                    state += 10 * env.multiplier
+                    return "\(value)"
+                }
             }
         }
 
@@ -168,7 +170,7 @@ import Testing
         let env = Env(multiplier: 3)
         let (value, state) = composed(2)(env).runStateful(0)
         #expect(value == "6")
-        #expect(state == 11)
+        #expect(state == 31)
     }
 
     // MARK: - ReaderT + Writer
@@ -177,8 +179,8 @@ import Testing
         let scale: @Sendable (Int) -> Reader<Env, Writer<[String], Int>> = { value in
             Reader { env in Writer(value * env.multiplier, ["scaled"]) }
         }
-        let describe: @Sendable (Int) -> Writer<[String], String> = { value in
-            Writer("\(value)", ["described"])
+        let describe: @Sendable (Int) -> Reader<Env, Writer<[String], String>> = { value in
+            Reader { env in Writer("\(value)", ["described by \(env.multiplier)"]) }
         }
 
         let composed = kleisliT(scale, describe)
@@ -186,6 +188,6 @@ import Testing
         let env = Env(multiplier: 7)
         let writer = composed(2)(env)
         #expect(writer.value == "14")
-        #expect(writer.log == ["scaled", "described"])
+        #expect(writer.log == ["scaled", "described by 7"])
     }
 }

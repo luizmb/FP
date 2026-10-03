@@ -27,21 +27,31 @@ import Testing
             state += 1
             return Writer(v, ["outer"])
         }
-        let result = s >>- { n in Writer<[String], String>("\(n)", ["inner"]) }
+        let result = s >>- { (n: Int) in
+            Stateful<Int, Writer<[String], String>> { state in
+                state *= 10
+                return Writer("\(n)", ["inner"])
+            }
+        }
         let (w, finalState) = result.runStateful(5)
         #expect(w.value == "5")
         #expect(w.log == ["outer", "inner"])
-        #expect(finalState == 6)
+        #expect(finalState == 60)
     }
 
     @Test func kleisli() {
         let f: @Sendable (Int) -> Stateful<Int, Writer<[String], Int>> = { n in
             Stateful<Int, Writer<[String], Int>>.pure(Writer(n + 1, ["f"]))
         }
-        let g: @Sendable (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["g"]) }
-        let result = f(4) >>- g
-        let w = result.eval(0)
+        let g: @Sendable (Int) -> Stateful<Int, Writer<[String], String>> = { n in
+            Stateful { state in
+                state += n
+                return Writer("\(n)", ["g"])
+            }
+        }
+        let (w, finalState) = (f >=> g)(4).runStateful(1)
         #expect(w.value == "5")
         #expect(w.log == ["f", "g"])
+        #expect(finalState == 6)
     }
 }

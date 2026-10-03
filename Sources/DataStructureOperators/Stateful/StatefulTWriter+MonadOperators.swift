@@ -3,21 +3,29 @@ import CoreFP
 import CoreFPOperators
 import DataStructure
 
-/// (>>-) :: Stateful<s, Writer<w, a>> -> (a -> Writer<w, b>) -> Stateful<s, Writer<w, b>>
+// StatefulTWriter: outer = Stateful, inner = Writer
+// Type: Stateful<S, Writer<W, A>>
+
+/// (>>-) :: Stateful<s, Writer<w, a>> -> (a -> Stateful<s, Writer<w, b>>) -> Stateful<s, Writer<w, b>>
 public func >>- <S, W: Monoid, A, B>(
     _ stateful: Stateful<S, Writer<W, A>>,
-    _ fn: @escaping @Sendable (A) -> Writer<W, B>
+    _ fn: @escaping @Sendable (A) -> Stateful<S, Writer<W, B>>
 ) -> Stateful<S, Writer<W, B>> {
     stateful.flatMapT(fn)
 }
 
-/// (-<<) :: (a -> Writer<w, b>) -> Stateful<s, Writer<w, a>> -> Stateful<s, Writer<w, b>>
+/// (-<<) :: (a -> Stateful<s, Writer<w, b>>) -> Stateful<s, Writer<w, a>> -> Stateful<s, Writer<w, b>>
 public func -<< <S, W: Monoid, A, B>(
-    _ fn: @escaping @Sendable (A) -> Writer<W, B>,
+    _ fn: @escaping @Sendable (A) -> Stateful<S, Writer<W, B>>,
     _ stateful: Stateful<S, Writer<W, A>>
 ) -> Stateful<S, Writer<W, B>> {
     stateful.flatMapT(fn)
 }
 
-// Note: Kleisli composition for (a -> Writer<w, b>) -> (b -> Writer<w, c>) is already
-// provided by Writer+MonadOperators.swift's base >=> declaration.
+/// (>=>) :: (a -> Stateful<s, Writer<w, b>>) -> (b -> Stateful<s, Writer<w, c>>) -> a -> Stateful<s, Writer<w, c>>
+public func >=> <S, W: Monoid, A, B, C>(
+    _ fn1: @escaping @Sendable (A) -> Stateful<S, Writer<W, B>>,
+    _ fn2: @escaping @Sendable (B) -> Stateful<S, Writer<W, C>>
+) -> @Sendable (A) -> Stateful<S, Writer<W, C>> {
+    kleisliT(fn1, fn2)
+}

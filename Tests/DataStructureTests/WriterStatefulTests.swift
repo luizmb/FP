@@ -55,11 +55,16 @@ import Testing
             state += 1
             return Writer(v, ["outer"])
         }
-        let result = s.flatMapT { n in Writer<[String], String>("\(n)", ["inner"]) }
+        let result = s.flatMapT { n in
+            Stateful<Int, Writer<[String], String>> { state in
+                state *= 10
+                return Writer("\(n)", ["inner"])
+            }
+        }
         let (w, finalState) = result.runStateful(5)
         #expect(w.value == "5")
         #expect(w.log == ["outer", "inner"])
-        #expect(finalState == 6)
+        #expect(finalState == 60)
     }
 
     @Test func statefulTWriterApplicative() {

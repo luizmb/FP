@@ -141,8 +141,9 @@ so it was left alone; `mconcat`'s `Array(dropFirst())` is an O(n) pointer copy i
 ### 3.3 `flatMapT` with the wrong shape
 - [ ] Continuation can't reach the outer layer (really `fmap(innerBind)`): EitherTStateful, EitherTWriter, ReaderTWriter, ReaderTStateful, StatefulTWriter, ArrayTStateful, OptionalTStateful, ResultTStateful, PublisherTStateful, AsyncStreamTStateful; their `kleisliT`/`>=>` take mismatched arrows. Implement the real bind where lawful (ReaderTWriter, ReaderTStateful, StatefulTWriter, EitherTWriter via Writer traversable) and rename the rest (`flatMapInner`).
   - [x] `XTStateful` (ArrayTStateful, OptionalTStateful, ResultTStateful, PublisherTStateful, AsyncStreamTStateful) and EitherTStateful: no lawful monad, monad surface **removed** (step 3b), not renamed. Also removed the comment-only `+Monad.swift` stubs of StatefulTReader/Publisher/AsyncStream.
-  - [ ] Real bind for ReaderTWriter, ReaderTStateful, StatefulTWriter, EitherTWriter.
-- [ ] NonEmpty transformers return `NonEmpty<B>?` (not closed, can't chain): EitherTNonEmpty, ReaderTNonEmpty, StatefulTNonEmpty, WriterTNonEmpty. Use `(A) -> M<NonEmpty<B>>`; make `kleisliT` delegate to the bind. (EitherTNonEmpty, StatefulTNonEmpty, WriterTNonEmpty binds were removed in step 3b; only ReaderTNonEmpty remains.)
+  - [x] Real bind for ReaderTWriter, ReaderTStateful, StatefulTWriter (step 3c, `feature/step3c-reader-stateful`): full-stack continuation, inner-only bind removed; applicatives confirmed equal to `ap`; monad laws tested.
+  - [ ] Real bind for EitherTWriter.
+- [x] NonEmpty transformers return `NonEmpty<B>?` (not closed, can't chain): EitherTNonEmpty, ReaderTNonEmpty, StatefulTNonEmpty, WriterTNonEmpty. Use `(A) -> M<NonEmpty<B>>`; make `kleisliT` delegate to the bind. (EitherTNonEmpty, StatefulTNonEmpty, WriterTNonEmpty binds were removed in step 3b; ReaderTNonEmpty now binds `(A) -> Reader<E, NonEmpty<B>>` and `kleisliT` delegates to it, step 3c.)
 
 ### 3.4 Misnamed / lossy
 - [ ] `CoreFP/Array/Array+Monad.swift:63`, `filterM` takes `(Element) -> Bool`, so it's `filter`. Rename or implement real `filterM` (`(Element) -> [Bool]`, powerset).
