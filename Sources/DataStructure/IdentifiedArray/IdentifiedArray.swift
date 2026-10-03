@@ -59,7 +59,7 @@
 /// `insert`/`remove` are O(n) because order is preserved and the tail reindexes.
 ///
 /// - SeeAlso: ``IdentifiedArrayOf``
-public struct IdentifiedArray<ID: Hashable, Element> {
+public struct IdentifiedArray<ID: Hashable & Sendable, Element: Sendable>: Sendable {
     /// Element payload, in user-defined order.
     @usableFromInline
     var storage: [Element]
@@ -448,8 +448,6 @@ public extension IdentifiedArray {
 }
 
 // MARK: - Protocol conformances
-
-extension IdentifiedArray: Sendable where ID: Sendable, Element: Sendable {}
 
 extension IdentifiedArray: Equatable where Element: Equatable {
     public static func == (lhs: IdentifiedArray, rhs: IdentifiedArray) -> Bool {

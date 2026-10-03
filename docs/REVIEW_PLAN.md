@@ -164,6 +164,12 @@ so it was left alone; `mconcat`'s `Array(dropFirst())` is an O(n) pointer copy i
 
 ## Step 5: policy decisions (need Luiz's call)
 
+### Decisions (2026-10-02)
+- `NonEmpty` / `IdentifiedArray`: **require `Sendable` on the element type** (`NonEmpty<A: Sendable>`, `IdentifiedArray<ID, Element: Sendable>`). A conditional `Semigroup where A: Sendable` is impossible (marker-protocol rule), so the constraint goes on the type.
+- Combine and eager `Task`/`AsyncStream` code in FP: **keep both** (behind `#if canImport(Combine)` / availability), as a documented exception to the no-Combine / async-in-sibling-library rules.
+- `Gen`: **no runners at all**; it is generic over the RNG (`Gen<R: RandomNumberGenerator & Sendable, Value> = Stateful<R, Value>`) and always runs with an explicitly injected generator (`gen.run(&rng)`, e.g. `SplitMix64(seed:)` or `AnyRandomNumberGenerator`). `generate()`, `generate(seed:)` and `samples(seed:count:)` removed. Binding the RNG early into a `() -> Value` was considered and rejected (needs a shared mutable RNG box).
+- Done on `feature/review-step5`.
+
 - [ ] Unconditional `Semigroup` (hence `Sendable`) on `NonEmpty` (`NonEmpty+Semigroup.swift:9`) and `IdentifiedArray` (`IdentifiedArray+Semigroup.swift:17`): `NonEmpty<NonSendableClass>` crosses isolation via `T: Semigroup` with no diagnostic (verified in Swift 6 mode). Accept and document, or gate.
 - [ ] Combine in DataStructure (`Either/PublisherTEither+*`, `Completion+Either.swift`, `#if canImport(Combine)`) vs "no Combine in library code".
 - [ ] Eager `Task`/`AsyncStream` in `AsyncSequenceTEither+*`, `AsyncThrowingStream+Either.swift` vs DeferredTask rule and "async belongs to sibling library".
