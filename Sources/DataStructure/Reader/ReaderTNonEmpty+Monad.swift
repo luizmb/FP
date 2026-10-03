@@ -1,49 +1,34 @@
 // SPDX-License-Identifier: Apache-2.0
 // ReaderTNonEmpty: outer = Reader, inner = NonEmpty
-// Type: Reader<Environment, NonEmpty<A>>
+// Type: Reader<Environment, NonEmpty<A>>  (Haskell: ReaderT r NonEmpty)
+//
+// Bind runs `self` with the environment, runs `fn(a)` with the same environment for every
+// element and concatenates the results in order (NonEmpty bind).
 
 public extension Reader {
-    /// Declaration.
+    /// flatMapT :: Reader<env, NonEmpty<a>> -> (a -> Reader<env, NonEmpty<b>>) -> Reader<env, NonEmpty<b>>
     func flatMapT<Inner, B>(
-        _ fn: @escaping @Sendable (Inner) -> Reader<Environment, NonEmpty<B>?>
-    ) -> Reader<Environment, NonEmpty<B>?> where Output == NonEmpty<Inner> {
-        Reader<Environment, NonEmpty<B>?> { env in
-            let results = self.runReader(env).toArray.map { fn($0).runReader(env) }
-            let nonEmpties = results.compactMap(\.self)
-            return nonEmpties.first.map { first in
-                NonEmpty.sconcat(first, Array(nonEmpties.dropFirst()))
-            }
+        _ fn: @escaping @Sendable (Inner) -> Reader<Environment, NonEmpty<B>>
+    ) -> Reader<Environment, NonEmpty<B>> where Output == NonEmpty<Inner> {
+        Reader<Environment, NonEmpty<B>> { env in
+            self(env).flatMap { inner in fn(inner)(env) }
         }
     }
 
-    /// The `property` property.
+    /// Curried `flatMapT`: lifts a full-stack continuation into a transformation of `ReaderTNonEmpty` values.
     static func bindT<Inner, B>(
-        _ fn: @escaping @Sendable (Inner) -> Reader<Environment, NonEmpty<B>?>
-    ) -> @Sendable (Reader<Environment, NonEmpty<Inner>>) -> Reader<Environment, NonEmpty<B>?>
+        _ fn: @escaping @Sendable (Inner) -> Reader<Environment, NonEmpty<B>>
+    ) -> @Sendable (Reader<Environment, NonEmpty<Inner>>) -> Reader<Environment, NonEmpty<B>>
     where Output == NonEmpty<Inner> {
         { $0.flatMapT(fn) }
     }
 }
 
 /// Kleisli composition for `ReaderT + NonEmpty` (left-to-right)
-/// (>=>) :: (a -> Reader<env, NonEmpty<b>?>) -> (b -> Reader<env, NonEmpty<c>?>) -> a -> Reader<env, NonEmpty<c>?>
-///
-/// Both arrows already return the fold-and-combine `NonEmpty<_>?` shape produced by `flatMapT`,
-/// so composition re-applies the same "run + collect + NonEmpty.combine fold" idiom starting
-/// from the (already optional) result of `fn1`, short-circuiting to `nil` if it is empty.
+/// (>=>) :: (a -> Reader<env, NonEmpty<b>>) -> (b -> Reader<env, NonEmpty<c>>) -> a -> Reader<env, NonEmpty<c>>
 public func kleisliT<Env, A, B, C>(
-    _ fn1: @escaping @Sendable (A) -> Reader<Env, NonEmpty<B>?>,
-    _ fn2: @escaping @Sendable (B) -> Reader<Env, NonEmpty<C>?>
-) -> @Sendable (A) -> Reader<Env, NonEmpty<C>?> {
-    { a in
-        let readerB = fn1(a)
-        return Reader<Env, NonEmpty<C>?> { env in
-            guard let nonEmptyB = readerB.runReader(env) else { return nil }
-            let results = nonEmptyB.toArray.map { fn2($0).runReader(env) }
-            let nonEmpties = results.compactMap(\.self)
-            return nonEmpties.first.map { first in
-                NonEmpty.sconcat(first, Array(nonEmpties.dropFirst()))
-            }
-        }
-    }
+    _ fn1: @escaping @Sendable (A) -> Reader<Env, NonEmpty<B>>,
+    _ fn2: @escaping @Sendable (B) -> Reader<Env, NonEmpty<C>>
+) -> @Sendable (A) -> Reader<Env, NonEmpty<C>> {
+    { a in fn1(a).flatMapT(fn2) }
 }

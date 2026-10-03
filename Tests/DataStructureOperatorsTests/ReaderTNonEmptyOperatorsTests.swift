@@ -47,28 +47,32 @@ import Testing
 
     @Test func bindOperator_forward() {
         let reader = Reader<Env, NonEmpty<Int>>(const(NonEmpty(head: 1, tail: [2])))
-        let result = reader >>- { n -> Reader<Env, NonEmpty<Int>?> in Reader { env in NonEmpty(head: n * env.factor) } }
+        let result = reader >>- { n -> Reader<Env, NonEmpty<Int>> in Reader { env in NonEmpty(head: n * env.factor) } }
         #expect(result.runReader(Env(factor: 10)) == NonEmpty(head: 10, tail: [20]))
     }
 
     @Test func bindOperator_flipped() {
         let reader = Reader<Env, NonEmpty<Int>>(const(NonEmpty(head: 1, tail: [2])))
-        let fn: @Sendable (Int) -> Reader<Env, NonEmpty<Int>?> = { n in Reader { env in NonEmpty(head: n * env.factor) } }
+        let fn: @Sendable (Int) -> Reader<Env, NonEmpty<Int>> = { n in Reader { env in NonEmpty(head: n * env.factor) } }
         let result = fn -<< reader
         #expect(result.runReader(Env(factor: 10)) == NonEmpty(head: 10, tail: [20]))
     }
 
     @Test func kleisliOperator_forward() {
-        let step1: @Sendable (Int) -> Reader<Env, NonEmpty<Int>?> = { n in Reader { env in NonEmpty(head: n + env.factor) } }
-        let step2: @Sendable (Int) -> Reader<Env, NonEmpty<String>?> = { n in Reader(const(NonEmpty(head: "\(n)"))) }
+        let step1: @Sendable (Int) -> Reader<Env, NonEmpty<Int>> = { n in Reader { env in NonEmpty(head: n + env.factor, tail: [n]) } }
+        let step2: @Sendable (Int) -> Reader<Env, NonEmpty<String>> = { n in
+            Reader { env in NonEmpty(head: "\(n)", tail: ["\(env.factor)"]) }
+        }
         let pipeline = step1 >=> step2
-        #expect(pipeline(3).runReader(Env(factor: 10)) == NonEmpty(head: "13"))
+        #expect(pipeline(3).runReader(Env(factor: 10)) == NonEmpty(head: "13", tail: ["10", "3", "10"]))
     }
 
     @Test func kleisliOperator_reverse() {
-        let step1: @Sendable (Int) -> Reader<Env, NonEmpty<Int>?> = { n in Reader { env in NonEmpty(head: n + env.factor) } }
-        let step2: @Sendable (Int) -> Reader<Env, NonEmpty<String>?> = { n in Reader(const(NonEmpty(head: "\(n)"))) }
+        let step1: @Sendable (Int) -> Reader<Env, NonEmpty<Int>> = { n in Reader { env in NonEmpty(head: n + env.factor, tail: [n]) } }
+        let step2: @Sendable (Int) -> Reader<Env, NonEmpty<String>> = { n in
+            Reader { env in NonEmpty(head: "\(n)", tail: ["\(env.factor)"]) }
+        }
         let pipeline = step2 <=< step1
-        #expect(pipeline(3).runReader(Env(factor: 10)) == NonEmpty(head: "13"))
+        #expect(pipeline(3).runReader(Env(factor: 10)) == NonEmpty(head: "13", tail: ["10", "3", "10"]))
     }
 }

@@ -57,8 +57,8 @@ private enum ComputationError: Error, Equatable {
         let doubled: @Sendable (Int) -> Either<String, Writer<[String], Int>> = { n in
             n > 0 ? .right(Writer(n * 2, ["doubled"])) : .left("non-positive")
         }
-        let stringified: @Sendable (Int) -> Writer<[String], String> = { n in
-            Writer("\(n)", ["stringified"])
+        let stringified: @Sendable (Int) -> Either<String, Writer<[String], String>> = { n in
+            .right(Writer("\(n)", ["stringified"]))
         }
         let pipeline = kleisliT(doubled, stringified)
         let success = pipeline(21)

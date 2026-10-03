@@ -3,20 +3,20 @@ import CoreFP
 import CoreFPOperators
 import DataStructure
 
-/// (>>-) :: Writer<w, a>? -> (a -> Writer<w, b>) -> Writer<w, b>?
-public func >>- <W: Monoid, A, B>(_ opt: Writer<W, A>?, _ fn: @escaping @Sendable (A) -> Writer<W, B>) -> Writer<W, B>? {
+/// (>>-) :: Writer<w, a>? -> (a -> Writer<w, b>?) -> Writer<w, b>?
+public func >>- <W: Monoid, A, B>(_ opt: Writer<W, A>?, _ fn: @escaping @Sendable (A) -> Writer<W, B>?) -> Writer<W, B>? {
     opt.flatMapT(fn)
 }
 
-/// (-<<) :: (a -> Writer<w, b>) -> Writer<w, a>? -> Writer<w, b>?
-public func -<< <W: Monoid, A, B>(_ fn: @escaping @Sendable (A) -> Writer<W, B>, _ opt: Writer<W, A>?) -> Writer<W, B>? {
-    opt.flatMapT(fn)
+/// (-<<) :: (a -> Writer<w, b>?) -> Writer<w, a>? -> Writer<w, b>?
+public func -<< <W: Monoid, A, B>(_ fn: @escaping @Sendable (A) -> Writer<W, B>?, _ opt: Writer<W, A>?) -> Writer<W, B>? {
+    opt >>- fn
 }
 
-/// (>=>) :: (a -> Writer<w, b>?) -> (b -> Writer<w, c>) -> a -> Writer<w, c>?
+/// (>=>) :: (a -> Writer<w, b>?) -> (b -> Writer<w, c>?) -> a -> Writer<w, c>?
 public func >=> <W: Monoid, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Writer<W, B>?,
-    _ fn2: @escaping @Sendable (B) -> Writer<W, C>
+    _ fn2: @escaping @Sendable (B) -> Writer<W, C>?
 ) -> @Sendable (A) -> Writer<W, C>? {
     kleisliT(fn1, fn2)
 }

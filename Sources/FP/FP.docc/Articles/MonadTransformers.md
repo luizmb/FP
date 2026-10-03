@@ -229,6 +229,9 @@ continuation's log before running `M`, which it can't (dropping that log instead
 identity). Haskell's `WriterT` is `M<Writer<W, A>>` (the log
 inside), which this library ships as `ArrayTWriter`, `OptionalTWriter`, `ResultTWriter`,
 `EitherTWriter`, `ReaderTWriter`, `PublisherTWriter`, `StatefulTWriter`, …
+Their bind is WriterT's: the continuation returns the whole stack (`(A) -> [Writer<W, B>]`,
+`(A) -> Writer<W, B>?`, `(A) -> Result<Writer<W, B>, E>`, `(A) -> Either<L, Writer<W, B>>`), so it
+can fail or branch as well as log.
 
 **A monad outside `Stateful`: no Monad.** `ArrayTStateful`, `OptionalTStateful`,
 `ResultTStateful`, `EitherTStateful`, `PublisherTStateful` and `AsyncStreamTStateful`

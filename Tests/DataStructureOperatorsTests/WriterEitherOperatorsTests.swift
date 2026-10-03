@@ -36,7 +36,7 @@ import Testing
 
     @Test func eitherFlatMapTWithWriterInner() {
         let e: Either<String, Writer<[String], Int>> = .right(Writer(5, ["outer"]))
-        let result = e.flatMapT { n in Writer<[String], String>("\(n)", ["inner"]) }
+        let result = e.flatMapT { n in Either<String, Writer<[String], String>>.right(Writer("\(n)", ["inner"])) }
         #expect(result == .right(Writer("5", ["outer", "inner"])))
     }
 }

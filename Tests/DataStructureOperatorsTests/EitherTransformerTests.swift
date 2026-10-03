@@ -230,27 +230,38 @@ import Testing
 
     @Test func eitherTWriterFlatMapTRight() {
         let either: Either<L, Writer<[String], Int>> = .right(Writer(5, ["outer"]))
-        let result = either >>- { n in Writer<[String], String>("\(n)", ["inner"]) }
-        if case let .right(w) = result {
-            #expect(w.value == "5")
-            #expect(w.log == ["outer", "inner"])
-        } else { Issue.record("Expected .right") }
+        let fn: @Sendable (Int) -> Either<L, Writer<[String], String>> = { n in .right(Writer("\(n)", ["inner"])) }
+        #expect((either >>- fn) == .right(Writer("5", ["outer", "inner"])))
     }
 
     @Test func eitherTWriterFlatMapTLeft() {
         let either: Either<L, Writer<[String], Int>> = .left(.err)
-        let result = either >>- { n in Writer<[String], String>("\(n)", ["inner"]) }
-        #expect(result == .left(.err))
+        let fn: @Sendable (Int) -> Either<L, Writer<[String], String>> = { n in .right(Writer("\(n)", ["inner"])) }
+        #expect((either >>- fn) == .left(.err))
+    }
+
+    @Test func eitherTWriterFlatMapTContinuationFails() {
+        let either: Either<L, Writer<[String], Int>> = .right(Writer(5, ["outer"]))
+        let fn: @Sendable (Int) -> Either<L, Writer<[String], String>> = const(.left(.err))
+        #expect((either >>- fn) == .left(.err))
+    }
+
+    @Test func eitherTWriterFlippedFlatMapT() {
+        let either: Either<L, Writer<[String], Int>> = .right(Writer(5, ["outer"]))
+        let fn: @Sendable (Int) -> Either<L, Writer<[String], String>> = { n in .right(Writer("\(n)", ["inner"])) }
+        #expect((fn -<< either) == .right(Writer("5", ["outer", "inner"])))
     }
 
     @Test func eitherTWriterKleisli() {
         let f: @Sendable (Int) -> Either<L, Writer<[String], Int>> = { n in .right(Writer(n + 1, ["f"])) }
-        let g: @Sendable (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["g"]) }
-        let result = (f >=> g)(4)
-        if case let .right(w) = result {
-            #expect(w.value == "5")
-            #expect(w.log == ["f", "g"])
-        } else { Issue.record("Expected .right") }
+        let g: @Sendable (Int) -> Either<L, Writer<[String], String>> = { n in .right(Writer("\(n)", ["g"])) }
+        #expect((f >=> g)(4) == .right(Writer("5", ["f", "g"])))
+    }
+
+    @Test func eitherTWriterReverseKleisli() {
+        let f: @Sendable (Int) -> Either<L, Writer<[String], Int>> = { n in .right(Writer(n + 1, ["f"])) }
+        let g: @Sendable (Int) -> Either<L, Writer<[String], String>> = { n in .right(Writer("\(n)", ["g"])) }
+        #expect((g <=< f)(4) == .right(Writer("5", ["f", "g"])))
     }
 
     @Test func eitherTWriterApply() {

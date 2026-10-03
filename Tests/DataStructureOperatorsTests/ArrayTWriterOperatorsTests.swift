@@ -25,19 +25,35 @@ import Testing
 
     @Test func bind() {
         let arr: [Writer<[String], Int>] = [Writer(3, ["a"]), Writer(4, ["b"])]
-        let result = arr >>- { n in Writer<[String], String>("\(n)", ["inner"]) }
-        #expect(result[0].value == "3")
-        #expect(result[0].log == ["a", "inner"])
-        #expect(result[1].value == "4")
-        #expect(result[1].log == ["b", "inner"])
+        let fn: @Sendable (Int) -> [Writer<[String], String>] = { n in [Writer("\(n)", ["x"]), Writer("\(-n)", ["y"])] }
+        let from3: [Writer<[String], String>] = [Writer("3", ["a", "x"]), Writer("-3", ["a", "y"])]
+        let from4: [Writer<[String], String>] = [Writer("4", ["b", "x"]), Writer("-4", ["b", "y"])]
+        let expected = from3 + from4
+        #expect((arr >>- fn) == expected)
+    }
+
+    @Test func bindContinuationPrunes() {
+        let arr: [Writer<[String], Int>] = [Writer(3, ["a"]), Writer(4, ["b"])]
+        let fn: @Sendable (Int) -> [Writer<[String], Int>] = { n in n.isMultiple(of: 2) ? [Writer(n, ["even"])] : [] }
+        #expect((arr >>- fn) == [Writer(4, ["b", "even"])])
+    }
+
+    @Test func flippedBind() {
+        let arr: [Writer<[String], Int>] = [Writer(3, ["a"])]
+        let fn: @Sendable (Int) -> [Writer<[String], String>] = { n in [Writer("\(n)", ["inner"])] }
+        #expect((fn -<< arr) == [Writer("3", ["a", "inner"])])
     }
 
     @Test func kleisli() {
         let f: @Sendable (Int) -> [Writer<[String], Int>] = { n in [Writer(n, ["f1"]), Writer(n + 1, ["f2"])] }
-        let g: @Sendable (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["g"]) }
-        let result = (f >=> g)(5)
-        #expect(result[0].value == "5")
-        #expect(result[1].value == "6")
+        let g: @Sendable (Int) -> [Writer<[String], String>] = { n in [Writer("\(n)", ["g"])] }
+        #expect((f >=> g)(5) == [Writer("5", ["f1", "g"]), Writer("6", ["f2", "g"])])
+    }
+
+    @Test func reverseKleisli() {
+        let f: @Sendable (Int) -> [Writer<[String], Int>] = { n in [Writer(n, ["f1"]), Writer(n + 1, ["f2"])] }
+        let g: @Sendable (Int) -> [Writer<[String], String>] = { n in [Writer("\(n)", ["g"])] }
+        #expect((g <=< f)(5) == [Writer("5", ["f1", "g"]), Writer("6", ["f2", "g"])])
     }
 
     @Test func apply() {
