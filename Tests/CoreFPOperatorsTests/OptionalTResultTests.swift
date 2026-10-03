@@ -100,4 +100,16 @@ import Testing
         let result = opt >>- { n -> Result<Int, Err>? in .success(n * 2) }
         #expect(try result?.get() == 10)
     }
+
+    // MARK: - Applicative is ap (mixed failures)
+
+    @Test func applicativeOperatorsMatchBindOnMixedFailure() {
+        let fns: Result<@Sendable (Int) -> Int, Err>? = .some(.failure(.fail))
+        let lhs: Result<Int, Err>? = .some(.failure(.fail))
+        let rhs: Result<Int, Err>? = nil
+        #expect((fns <*> rhs) == fns.flatMapT { fn in rhs.mapT(fn) })
+        #expect((fns <*> rhs) == .some(.failure(.fail)))
+        #expect((lhs *> rhs) == .some(.failure(.fail)))
+        #expect((lhs <* rhs) == .some(.failure(.fail)))
+    }
 }

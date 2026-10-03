@@ -53,6 +53,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `inout` parameter types.
 
 ### Changed
+- **Transformer applicatives follow bind** (`<*> == ap`, Haskell's `ExceptT`/`MaybeT` semantics) for
+  ArrayT, NonEmptyT, EitherT, OptionalT, StatefulT and WriterT over `Either`/`Optional`/`Result`:
+  `apply`, `liftA2`, `*>` and `<*` now short-circuit like `>>-`. A failed function no longer
+  duplicates per argument (`[.left(e)] <*> [.right(1), .right(2)]` is `[.left(e)]`), the right-hand
+  state effect / log is skipped once the left failed (`StatefulT`/`WriterT`), and `StatefulTOptional`
+  `*>`/`<*` no longer disagree with its `apply`.
 - **`Gen` is generic over the RNG**: `Gen<R: RandomNumberGenerator & Sendable, Value> = Stateful<R, Value>`.
   Run it with an explicitly injected generator, `gen.run(&rng)` (`SplitMix64(seed:)`,
   `SystemRandomNumberGenerator`, or `AnyRandomNumberGenerator`).

@@ -3,29 +3,35 @@ import Foundation
 
 // ArrayTOptional: outer = Array, inner = Optional
 // Type: [A?] = Array<Optional<A>>
+// Haskell: MaybeT []
+//
+// The applicative is derived from the monad (`<*>` = `ap`): sequential and short-circuiting
+// exactly like `flatMapT`. A `nil` on the left yields a single `nil` and never runs the right side.
 
 /// apply for ArrayTOptional: [(A->B)?] -> [A?] -> [B?]
-/// Cartesian product with Optional apply at each pair
-public func applyArrayOptional<A, B>(_ fns: [(@Sendable (A) -> B)?], _ values: [A?]) -> [B?] {
-    fns.flatMap { f in values.map { a in f.flatMap { fn in a.map(fn) } } }
+/// mf <*> ma = mf >>= \f -> fmap f ma
+public func applyArrayOptional<A: Sendable, B>(_ fns: [(@Sendable (A) -> B)?], _ values: [A?]) -> [B?] {
+    fns.flatMapT { f in values.mapT(f) }
 }
 
 /// liftA2 for ArrayTOptional: (A,B)->C -> [A?] -> [B?] -> [C?]
-public func liftA2ArrayOptional<A, B, C>(
+/// liftA2 f ma mb = ma >>= \a -> fmap (f a) mb
+public func liftA2ArrayOptional<A: Sendable, B: Sendable, C>(
     _ fn: @escaping @Sendable (A, B) -> C
-) -> ([A?], [B?]) -> [C?] {
+) -> @Sendable ([A?], [B?]) -> [C?] {
     { arrA, arrB in
-        Array.liftA2 { @Sendable a, b in Optional.liftA2(fn)(a, b) }(arrA, arrB)
+        arrA.flatMapT { a in arrB.mapT { b in fn(a, b) } }
     }
 }
 
 /// seqRight for ArrayTOptional: [A?] -> [B?] -> [B?]
-/// Cartesian product keeping right values (threading Optional through)
-public func seqRightArrayOptional<A, B>(_ lhs: [A?], _ rhs: [B?]) -> [B?] {
-    Array.liftA2 { (a: A?, b: B?) in a.seqRight(b) }(lhs, rhs)
+/// ma *> mb = ma >>= \_ -> mb
+public func seqRightArrayOptional<A, B: Sendable>(_ lhs: [A?], _ rhs: [B?]) -> [B?] {
+    lhs.flatMapT(const(rhs))
 }
 
 /// seqLeft for ArrayTOptional: [A?] -> [B?] -> [A?]
-public func seqLeftArrayOptional<A, B>(_ lhs: [A?], _ rhs: [B?]) -> [A?] {
-    Array.liftA2 { (a: A?, b: B?) in a.seqLeft(b) }(lhs, rhs)
+/// ma <* mb = ma >>= \a -> fmap (const a) mb
+public func seqLeftArrayOptional<A: Sendable, B: Sendable>(_ lhs: [A?], _ rhs: [B?]) -> [A?] {
+    lhs.flatMapT { a in rhs.mapT(const(a)) }
 }

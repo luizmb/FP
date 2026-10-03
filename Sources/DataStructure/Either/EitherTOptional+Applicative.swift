@@ -4,34 +4,43 @@ import Foundation
 
 // EitherTOptional: outer = Either, inner = Optional
 // Type: Either<L, A?> = Either<L, Optional<A>>
+// Haskell: MaybeT (Either L)
+//
+// The applicative is the one induced by the monad (`<*> = ap`), so it is sequential and
+// short-circuits exactly like `flatMapTEitherOptional`: the first `.left` or `.right(nil)`
+// in left-to-right order wins.
 
 /// apply for EitherTOptional: Either<L,(A->B)?> -> Either<L,A?> -> Either<L,B?>
-public func applyEitherOptional<L, A, B>(
+/// (<*>) = ap :: mf >>= \f -> fmap f ma
+public func applyEitherOptional<L: Sendable, A: Sendable, B>(
     _ fns: Either<L, (@Sendable (A) -> B)?>,
     _ values: Either<L, A?>
 ) -> Either<L, B?> {
-    Either.liftA2(Optional.apply)(fns, values)
+    flatMapTEitherOptional(fns) { fn in mapTEitherOptional(fn, values) }
 }
 
 /// liftA2 for EitherTOptional
-public func liftA2EitherOptional<L, A, B, C>(
+/// liftA2 f ma mb = ma >>= \a -> fmap (f a) mb
+public func liftA2EitherOptional<L: Sendable, A: Sendable, B: Sendable, C>(
     _ fn: @escaping @Sendable (A, B) -> C
-) -> (Either<L, A?>, Either<L, B?>) -> Either<L, C?> {
-    Either.liftA2(Optional.liftA2(fn))
+) -> @Sendable (Either<L, A?>, Either<L, B?>) -> Either<L, C?> {
+    { lhs, rhs in flatMapTEitherOptional(lhs) { a in mapTEitherOptional({ b in fn(a, b) }, rhs) } }
 }
 
 /// seqRight for EitherTOptional
-public func seqRightEitherOptional<L, A, B>(
+/// ma *> mb = ma >>= \_ -> mb
+public func seqRightEitherOptional<L: Sendable, A, B: Sendable>(
     _ lhs: Either<L, A?>,
     _ rhs: Either<L, B?>
 ) -> Either<L, B?> {
-    Either.liftA2 { (a: A?, b: B?) in a.seqRight(b) }(lhs, rhs)
+    flatMapTEitherOptional(lhs, const(rhs))
 }
 
 /// seqLeft for EitherTOptional
-public func seqLeftEitherOptional<L, A, B>(
+/// ma <* mb = ma >>= \a -> fmap (const a) mb
+public func seqLeftEitherOptional<L: Sendable, A: Sendable, B: Sendable>(
     _ lhs: Either<L, A?>,
     _ rhs: Either<L, B?>
 ) -> Either<L, A?> {
-    Either.liftA2 { (a: A?, b: B?) in a.seqLeft(b) }(lhs, rhs)
+    flatMapTEitherOptional(lhs) { a in mapTEitherOptional(const(a), rhs) }
 }

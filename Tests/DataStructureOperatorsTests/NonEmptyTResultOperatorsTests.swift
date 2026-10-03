@@ -22,7 +22,8 @@ private enum TestError: Error, Equatable { case bad(String) }
         let fns = NonEmpty<Result<@Sendable (Int) -> Int, TestError>>(head: .failure(.bad("err")))
         let values = NonEmpty<Result<Int, TestError>>(head: .success(1), tail: [.success(2)])
         let result = fns <*> values
-        #expect(result.toArray == [.failure(.bad("err")), .failure(.bad("err"))])
+        // ExceptT e NonEmpty: a failure on the left never runs the right side (<*> = ap)
+        #expect(result.toArray == [.failure(.bad("err"))])
     }
 
     @Test func seqRightOperator() {

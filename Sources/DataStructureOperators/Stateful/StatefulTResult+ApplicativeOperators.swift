@@ -16,6 +16,9 @@ public func *> <S, A, B, E: Error>(_ lhs: Stateful<S, Result<A, E>>, _ rhs: Stat
 }
 
 /// (<*) :: Stateful<s, Result<a, e>> -> Stateful<s, Result<b, e>> -> Stateful<s, Result<a, e>>
-public func <* <S, A, B, E: Error>(_ lhs: Stateful<S, Result<A, E>>, _ rhs: Stateful<S, Result<B, E>>) -> Stateful<S, Result<A, E>> {
+public func <* <S, A, B, E: Error>(
+    _ lhs: Stateful<S, Result<A, E>>,
+    _ rhs: Stateful<S, Result<B, E>>
+) -> Stateful<S, Result<A, E>> where A: Sendable, B: Sendable {
     seqLeftStatefulResult(lhs, rhs)
 }

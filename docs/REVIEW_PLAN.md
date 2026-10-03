@@ -124,7 +124,7 @@ so it was left alone; `mconcat`'s `Array(dropFirst())` is an O(n) pointer copy i
 - Where Haskell has **no** monad (`M<[A]>`/`M<NonEmpty>` over a non-commutative `M`: StatefulTArray/NonEmpty, WriterTArray/NonEmpty; `Writer<W, M<A>>`: WriterTReader/Stateful/Publisher/AsyncStream; `M<Stateful<S, A>>`: XTStateful; `Either<L, Stateful<S, A>>`): **remove** the monad surface (remove, don't rename); functor/applicative stay.
 - `Loading` and `Validation` must not require `Failure: Error` (UI-facing failures are strings/view structs; `Error` breaks `Equatable`). Only `Result` bridges are constrained with `where Failure: Error`.
 
-**Resolved by the policy above.**
+**Resolved by the policy above.** 3a done on `feature/review-step3a` for the 16 non-stream stacks (ArrayT/NonEmptyT/EitherT/OptionalT/StatefulT/WriterT over Either/Optional/Result); `M<Writer>` stacks confirmed already equal to WriterT `ap`. Stream stacks (PublisherT/AsyncSequenceT × Either/Optional/Result) deferred until the base Publisher/AsyncStream `<*>` (zip vs bind) is decided. Also found for 3c: ArrayTWriter, OptionalTWriter and ResultTWriter `flatMapT` take an inner-only `(A) -> Writer<W, B>` continuation (WriterT bind needs `A -> M<Writer<W, B>>`).
 
 ### 3.1 `<*>` ≠ `ap` (applicative disagrees with bind)
 - [ ] EitherTOptional (`.right(nil) <*> .left(l)`: `.left` vs `.right(nil)`), EitherTResult, EitherTArray, OptionalTEither, ArrayTEither (error duplicated per value), NonEmptyTEither, NonEmptyTResult, NonEmptyTOptional: `DataStructure/Either/*+Applicative.swift`, `DataStructure/NonEmpty/*+Applicative.swift`

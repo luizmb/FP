@@ -15,7 +15,8 @@ import Testing
         let fns = NonEmpty<(@Sendable (Int) -> Int)?>(head: { $0 + 1 }, tail: [nil])
         let values = NonEmpty<Int?>(head: 1, tail: [2])
         let result = fns <*> values
-        #expect(result.toArray == [Optional(2), Optional(3), nil, nil])
+        // MaybeT NonEmpty: nil function yields a single nil (<*> = ap)
+        #expect(result.toArray == [Optional(2), Optional(3), nil])
     }
 
     @Test func seqRightOperator() {

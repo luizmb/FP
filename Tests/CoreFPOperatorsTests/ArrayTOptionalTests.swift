@@ -56,8 +56,8 @@ import Testing
         let a: [Int?] = [1, nil]
         let b: [String?] = ["x", nil]
         let result = a *> b
-        // Cartesian: (1,x)=x, (1,nil)=nil, (nil,x)=nil, (nil,nil)=nil
-        #expect(result == ["x", nil, nil, nil])
+        // MaybeT []: 1 >>= const b = [x, nil]; nil short-circuits to [nil]
+        #expect(result == ["x", nil, nil])
     }
 
     @Test func seqLeftCartesianProduct() {

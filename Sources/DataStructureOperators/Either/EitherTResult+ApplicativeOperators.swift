@@ -9,7 +9,7 @@ import DataStructure
 public func <*> <L, A, B, E: Error>(
     _ fns: Either<L, Result<@Sendable (A) -> B, E>>,
     _ values: Either<L, Result<A, E>>
-) -> Either<L, Result<B, E>> {
+) -> Either<L, Result<B, E>> where L: Sendable, A: Sendable {
     applyEitherResult(fns, values)
 }
 
