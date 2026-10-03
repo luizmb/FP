@@ -6,7 +6,10 @@ import DataStructure
 // Type: Either<L, A?>
 
 /// (<*>) :: Either<l,(a->b)?> -> Either<l,a?> -> Either<l,b?>
-public func <*> <L, A, B>(_ fns: Either<L, (@Sendable (A) -> B)?>, _ values: Either<L, A?>) -> Either<L, B?> {
+public func <*> <L, A, B>(
+    _ fns: Either<L, (@Sendable (A) -> B)?>,
+    _ values: Either<L, A?>
+) -> Either<L, B?> where L: Sendable, A: Sendable {
     applyEitherOptional(fns, values)
 }
 

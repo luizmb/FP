@@ -16,27 +16,10 @@ public func applyStatefulEither<S, L: Sendable, A: Sendable, B: Sendable>(
 
 /// liftA2 for Stateful<S, Either>
 /// Equals `a >>= \x -> fmap (f x) b`. When `a` fails, `b`'s state effect never happens.
-/// Inlined (same body as `flatMapT` + `mapT`) because `A` is not required to be `Sendable`.
-public func liftA2StatefulEither<S, L, A, B, C>(
+public func liftA2StatefulEither<S, L: Sendable, A: Sendable, B: Sendable, C>(
     _ fn: @escaping @Sendable (A, B) -> C
-) -> (Stateful<S, Either<L, A>>, Stateful<S, Either<L, B>>) -> Stateful<S, Either<L, C>> {
-    { sa, sb in
-        Stateful<S, Either<L, C>> { s in
-            switch sa.run(&s) {
-            case let .left(l):
-                .left(l)
-
-            case let .right(a):
-                switch sb.run(&s) {
-                case let .left(l):
-                    .left(l)
-
-                case let .right(b):
-                    .right(fn(a, b))
-                }
-            }
-        }
-    }
+) -> @Sendable (Stateful<S, Either<L, A>>, Stateful<S, Either<L, B>>) -> Stateful<S, Either<L, C>> {
+    { sa, sb in sa.flatMapT { a in sb.mapT { b in fn(a, b) } } }
 }
 
 /// seqRight for Stateful<S, Either>

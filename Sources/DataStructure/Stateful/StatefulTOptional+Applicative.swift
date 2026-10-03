@@ -16,15 +16,10 @@ public func applyStatefulOptional<S, A, B>(
 
 /// liftA2 for Stateful<S, Optional>
 /// Equals `a >>= \x -> fmap (f x) b`. When `a` fails, `b`'s state effect never happens.
-/// Inlined (same body as `flatMapT` + `mapT`) because `A` is not required to be `Sendable`.
-public func liftA2StatefulOptional<S, A, B, C>(
+public func liftA2StatefulOptional<S, A: Sendable, B: Sendable, C>(
     _ fn: @escaping @Sendable (A, B) -> C
-) -> (Stateful<S, A?>, Stateful<S, B?>) -> Stateful<S, C?> {
-    { sa, sb in
-        Stateful<S, C?> { s in
-            sa.run(&s).flatMap { a in sb.run(&s).map { b in fn(a, b) } }
-        }
-    }
+) -> @Sendable (Stateful<S, A?>, Stateful<S, B?>) -> Stateful<S, C?> {
+    { sa, sb in sa.flatMapT { a in sb.mapT { b in fn(a, b) } } }
 }
 
 /// seqRight for Stateful<S, Optional>
@@ -38,12 +33,9 @@ public func seqRightStatefulOptional<S, A, B>(
 
 /// seqLeft for Stateful<S, Optional>
 /// Equals `a >>= \x -> fmap (const x) b`. When `lhs` fails, `rhs`'s state effect never happens.
-/// Inlined (same body as `flatMapT` + `mapT`) because `A` is not required to be `Sendable`.
-public func seqLeftStatefulOptional<S, A, B>(
+public func seqLeftStatefulOptional<S, A: Sendable, B: Sendable>(
     _ lhs: Stateful<S, A?>,
     _ rhs: Stateful<S, B?>
 ) -> Stateful<S, A?> {
-    Stateful<S, A?> { s in
-        lhs.run(&s).flatMap { a in rhs.run(&s).map(const(a)) }
-    }
+    lhs.flatMapT { a in rhs.mapT(const(a)) }
 }

@@ -11,7 +11,15 @@ public extension Array {
     /// For each element: .failure(e) → [.failure(e)], .success(a) → fn(a)
     func flatMapT<A, B, E: Error>(_ fn: @escaping @Sendable (A) -> [Result<B, E>]) -> [Result<B, E>]
     where Element == Result<A, E> {
-        bindArrayResult(self, fn)
+        flatMap { result -> [Result<B, E>] in
+            switch result {
+            case let .failure(e):
+                [.failure(e)]
+
+            case let .success(a):
+                fn(a)
+            }
+        }
     }
 
     /// Curried bindT for [Result<A,E>]
@@ -19,22 +27,6 @@ public extension Array {
         _ fn: @escaping @Sendable (A) -> [Result<B, E>]
     ) -> @Sendable ([Result<A, E>]) -> [Result<B, E>] {
         { arr in arr.flatMapT(fn) }
-    }
-}
-
-/// The `ExceptT e []` bind, shared by ``Array/flatMapT(_:)`` and the applicative surface
-/// (`applyArrayResult`, `liftA2ArrayResult`, `seqRightArrayResult`, `seqLeftArrayResult`),
-/// so `<*>` = `ap` holds by construction. Non-escaping, so callers may capture non-`Sendable` values.
-/// .failure(e) → [.failure(e)], .success(a) → fn(a)
-func bindArrayResult<A, B, E: Error>(_ arr: [Result<A, E>], _ fn: (A) -> [Result<B, E>]) -> [Result<B, E>] {
-    arr.flatMap { result -> [Result<B, E>] in
-        switch result {
-        case let .failure(e):
-            [.failure(e)]
-
-        case let .success(a):
-            fn(a)
-        }
     }
 }
 

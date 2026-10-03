@@ -16,15 +16,10 @@ public func applyStatefulResult<S, A, B, E: Error>(
 
 /// liftA2 for Stateful<S, Result>
 /// Equals `a >>= \x -> fmap (f x) b`. When `a` fails, `b`'s state effect never happens.
-/// Inlined (same body as `flatMapT` + `mapT`) because `A` is not required to be `Sendable`.
-public func liftA2StatefulResult<S, A, B, C, E: Error>(
+public func liftA2StatefulResult<S, A: Sendable, B: Sendable, C, E: Error>(
     _ fn: @escaping @Sendable (A, B) -> C
-) -> (Stateful<S, Result<A, E>>, Stateful<S, Result<B, E>>) -> Stateful<S, Result<C, E>> {
-    { sa, sb in
-        Stateful<S, Result<C, E>> { s in
-            sa.run(&s).flatMap { a in sb.run(&s).map { b in fn(a, b) } }
-        }
-    }
+) -> @Sendable (Stateful<S, Result<A, E>>, Stateful<S, Result<B, E>>) -> Stateful<S, Result<C, E>> {
+    { sa, sb in sa.flatMapT { a in sb.mapT { b in fn(a, b) } } }
 }
 
 /// seqRight for Stateful<S, Result>
@@ -38,12 +33,9 @@ public func seqRightStatefulResult<S, A, B, E: Error>(
 
 /// seqLeft for Stateful<S, Result>
 /// Equals `a >>= \x -> fmap (const x) b`. When `lhs` fails, `rhs`'s state effect never happens.
-/// Inlined (same body as `flatMapT` + `mapT`) because `A` is not required to be `Sendable`.
-public func seqLeftStatefulResult<S, A, B, E: Error>(
+public func seqLeftStatefulResult<S, A: Sendable, B: Sendable, E: Error>(
     _ lhs: Stateful<S, Result<A, E>>,
     _ rhs: Stateful<S, Result<B, E>>
 ) -> Stateful<S, Result<A, E>> {
-    Stateful<S, Result<A, E>> { s in
-        lhs.run(&s).flatMap { a in rhs.run(&s).map(const(a)) }
-    }
+    lhs.flatMapT { a in rhs.mapT(const(a)) }
 }

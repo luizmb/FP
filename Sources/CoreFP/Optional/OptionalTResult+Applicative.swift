@@ -7,72 +7,33 @@ import Foundation
 //
 // The applicative is the one induced by the monad (`<*> = ap`), so it is sequential and
 // short-circuits exactly like `flatMapT`: the first `nil` or `.some(.failure)` in left-to-right
-// order wins. Each function below is `flatMapT` + `mapT` with the bind's case analysis inlined,
-// so no non-`Sendable` value is captured in a `@Sendable` closure.
+// order wins.
 
 /// apply for OptionalTResult: Result<(A->B),E>? -> Result<A,E>? -> Result<B,E>?
 /// (<*>) = ap :: mf >>= \f -> fmap f ma
-public func applyOptionalResult<A, B, E: Error>(
+public func applyOptionalResult<A: Sendable, B, E: Error>(
     _ fns: Result<@Sendable (A) -> B, E>?,
     _ values: Result<A, E>?
 ) -> Result<B, E>? {
-    switch fns {
-    case .none:
-        .none
-
-    case let .some(.failure(e)):
-        .some(.failure(e))
-
-    case let .some(.success(fn)):
-        values.mapT(fn)
-    }
+    fns.flatMapT { fn in values.mapT(fn) }
 }
 
 /// liftA2 for OptionalTResult
 /// liftA2 f ma mb = ma >>= \a -> fmap (f a) mb
-public func liftA2OptionalResult<A, B, C, E: Error>(
+public func liftA2OptionalResult<A: Sendable, B: Sendable, C, E: Error>(
     _ fn: @escaping @Sendable (A, B) -> C
-) -> (Result<A, E>?, Result<B, E>?) -> Result<C, E>? {
-    { lhs, rhs in
-        switch lhs {
-        case .none:
-            .none
-
-        case let .some(.failure(e)):
-            .some(.failure(e))
-
-        case let .some(.success(a)):
-            rhs.map { resultB in resultB.map { b in fn(a, b) } }
-        }
-    }
+) -> @Sendable (Result<A, E>?, Result<B, E>?) -> Result<C, E>? {
+    { lhs, rhs in lhs.flatMapT { a in rhs.mapT { b in fn(a, b) } } }
 }
 
 /// seqRight for OptionalTResult
 /// ma *> mb = ma >>= \_ -> mb
-public func seqRightOptionalResult<A, B, E: Error>(_ lhs: Result<A, E>?, _ rhs: Result<B, E>?) -> Result<B, E>? {
-    switch lhs {
-    case .none:
-        .none
-
-    case let .some(.failure(e)):
-        .some(.failure(e))
-
-    case .some(.success):
-        rhs
-    }
+public func seqRightOptionalResult<A, B: Sendable, E: Error>(_ lhs: Result<A, E>?, _ rhs: Result<B, E>?) -> Result<B, E>? {
+    lhs.flatMapT(const(rhs))
 }
 
 /// seqLeft for OptionalTResult
 /// ma <* mb = ma >>= \a -> fmap (const a) mb
-public func seqLeftOptionalResult<A, B, E: Error>(_ lhs: Result<A, E>?, _ rhs: Result<B, E>?) -> Result<A, E>? {
-    switch lhs {
-    case .none:
-        .none
-
-    case let .some(.failure(e)):
-        .some(.failure(e))
-
-    case let .some(.success(a)):
-        rhs.map { resultB in resultB.map(const(a)) }
-    }
+public func seqLeftOptionalResult<A: Sendable, B: Sendable, E: Error>(_ lhs: Result<A, E>?, _ rhs: Result<B, E>?) -> Result<A, E>? {
+    lhs.flatMapT { a in rhs.mapT(const(a)) }
 }

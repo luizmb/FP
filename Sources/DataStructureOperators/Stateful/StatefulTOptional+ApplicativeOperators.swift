@@ -13,6 +13,6 @@ public func *> <S, A, B>(_ lhs: Stateful<S, A?>, _ rhs: Stateful<S, B?>) -> Stat
 }
 
 /// (<*) :: Stateful<s, a?> -> Stateful<s, b?> -> Stateful<s, a?>
-public func <* <S, A, B>(_ lhs: Stateful<S, A?>, _ rhs: Stateful<S, B?>) -> Stateful<S, A?> {
+public func <* <S, A, B>(_ lhs: Stateful<S, A?>, _ rhs: Stateful<S, B?>) -> Stateful<S, A?> where A: Sendable, B: Sendable {
     seqLeftStatefulOptional(lhs, rhs)
 }
