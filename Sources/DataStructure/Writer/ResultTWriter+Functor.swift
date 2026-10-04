@@ -7,7 +7,7 @@ import Foundation
 
 public extension Result {
     /// Declaration.
-    func mapT<W: Monoid, A, B>(_ fn: (A) -> B) -> Result<Writer<W, B>, Failure>
+    func mapT<W: Monoid, A, B>(_ fn: @escaping @Sendable (A) -> B) -> Result<Writer<W, B>, Failure>
     where Success == Writer<W, A> {
         map { writer in writer.map(fn) }
     }
