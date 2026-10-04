@@ -156,6 +156,13 @@ Done in step 3c (`feature/review-step3c`); PublisherTWriter / AsyncStreamTWriter
 
 ## Step 4: API consistency (mostly breaking, target 3.0)
 
+### Decisions (2026-10-04)
+- No new operators. Remove: `++` (use `<>`), the transformer `£>`/`<£` overloads (they hijack the base operator; inner replace is `mapT(const(x))`), and `<£^>`/`<&^>` (use `mapT`).
+- Keep the ASCII-friendly aliases: `<|` (same precedence group as `£`), `+/-` (alias of `±`), `≅`.
+- `mapT` shape everywhere: method `.mapT(_:)` + static `fmapT(_:)`; free `mapTXY`/`fmapTXY` functions and ReaderT's `fmap` statics are replaced.
+- `Either` / `Validation` gain `map` (functor map of the right/success side); `mapLeft`/`mapRight`/`mapSuccess`/`mapFailure`/`bimap` stay.
+- Conversions: outgoing `to…()` methods (`toResult()`, `toEither()`, `toValidation()`), incoming `init(_:)` (`Validation(either)`, `These(either)`); `Either.result()`, free `validationFrom…` and `These.fromEither` removed.
+
 - [ ] Operators with inline logic (CLAUDE.md rule): Function `*>`/`<*` (`Function+ApplicativeOperators.swift:17-38`, no named `seqRight`/`seqLeft`), `>>>`/`<<<` (`FunctionComposition.swift:29,51`, and the variadic ones at :75-95 have no named counterpart), `Iso >>>` (`CoreFPOperators/Utilities/IsoComposition.swift:7` ignores `Iso.compose`), AsyncSequence `>=>` (`AsyncSequence+MonadOperators.swift:28-35`), Array `++`, Either `£>` (`Either+FunctorOperators.swift:13-15`), These `£>` (`These+FunctorOperators.swift:13-19`), ReaderTEither `£>` (`ReaderTEither+FunctorOperators.swift:21-25`), ReaderTValidation `<£^>`/`<&^>` (`ReaderTValidation+FunctorOperators.swift:11,19`).
 - [ ] Transformer `£>`/`<£` overloads hijack the base operator (`Reader<Int,[Int]> £> "x"` replaces inner elements, `Stateful<Int,[Int]> £> "x"` replaces the whole output). Add transformer-only `£^>` / `<£^` like `<£^>`, remove the transformer `£>` overloads. Only OptionalTArray has them in CoreFP.
 - [ ] `mapT` naming: EitherT `mapTEitherX(fn, value)` + `fmapTEitherX(fn)`; ValidationT `mapTValidationX(fn) -> (V) -> V` with no `fmapT`; NonEmptyT/OptionalT/ArrayT methods `.mapT` + static `fmapT`; ReaderT statics named `fmap` (overloading `Reader.fmap`) instead of `fmapT`; StatefulTValidation has no `.mapT`. `EitherTValidation+Functor.swift:7,15` are both `fmapTEitherValidation`. Pick one convention.
@@ -178,3 +185,19 @@ Done in step 3c (`feature/review-step3c`); PublisherTWriter / AsyncStreamTWriter
 - [ ] Combine in DataStructure (`Either/PublisherTEither+*`, `Completion+Either.swift`, `#if canImport(Combine)`) vs "no Combine in library code".
 - [ ] Eager `Task`/`AsyncStream` in `AsyncSequenceTEither+*`, `AsyncThrowingStream+Either.swift` vs DeferredTask rule and "async belongs to sibling library".
 - [ ] `Gen.generate()` (`Gen/Gen.swift:103-106`) uses ambient `SystemRandomNumberGenerator`; inject the RNG.
+
+---
+
+## Step 6: newtype transformers (design, not started)
+
+Motivation: transformers are plain nested types today (`Reader<E, [A]>` is both "a Reader of an array" and "ReaderTArray"), so the same operator can mean different things depending on overload ranking (`£>` hijacking, 3b's silent fallback) and the API needs `T`-suffixed names and `^` operators. Haskell avoids this because every transformer is its own newtype.
+
+Design notes (2026-10-04):
+- One concrete newtype per stack (`struct ReaderTArray<Env, A> { let run: Reader<Env, [A]> }`). A generic `ReaderT<Env, M, A>` is impossible without HKT (HKT emulation needs `as!`).
+- Inside a newtype: plain `map`/`flatMap`/`pure` and the base operators (`<£>`, `>>-`, `<*>`, `£>`); no `^` operators, no `mapT`/`flatMapT`/`bindT`/`kleisliT`. Stacks without a lawful monad get only functor/applicative (like Haskell's `Compose`).
+- Escape hatches follow Haskell names: `mapReaderT`, `mapMaybeT`, `mapExceptT`, `mapWriterT`, `mapStateT` (and the same pattern for streams), taking `(Outer<Inner<A>>) -> Outer2<Inner2<B>>`, so the whole underlying API (e.g. Combine's `buffer`, `receive(on:)`) is reachable without proxying anything. `mapXT (fmap f)` covers "transform the inner value".
+- Lifting is via **properties** (key-path friendly), e.g. `Publisher where Output == [Element]` gains `.publisherT` → `PublisherTArray`; `.run` (or a domain name) leaves.
+- Implementation: newtypes delegate to the existing (now lawful) nested-type functions, which become internal. Generate them with a dev-time generator (SwiftPM command plugin or script writing checked-in sources) from a small table, ~4 templates (ExceptT/MaybeT-like, WriterT-like, ReaderT-like, Compose-like), rather than a macro inside the library (keeps swift-syntax out of `DataStructure` consumers' builds).
+- [ ] Prototype: ReaderTArray + EitherTOptional (or a Publisher stack) as newtypes with `mapXT` and lifting properties; compare real call sites before/after.
+- [ ] Decide; then generate all stacks and remove the nested-type transformer surface in 3.0.
+
