@@ -368,18 +368,23 @@
             let writer = Writer<[String], Int>(2, ["outer"])
             let publisher = Just(writer).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let bound = publisher.flatMapT { value in
-                Writer<[String], String>("\(value * 10)", ["inner"])
+            let bound = publisher.flatMapT { (value: Int) in
+                [Writer<[String], String>("\(value * 10)", ["inner1"]), Writer<[String], String>("\(value)", ["inner2"])]
+                    .publisher
+                    .setFailureType(to: TestError.self)
+                    .eraseToAnyPublisher()
             }
 
-            var capturedValue: String?
+            var captured: [Writer<[String], String>] = []
             bound.sink(
                 receiveCompletion: ignore,
-                receiveValue: { writer in capturedValue = writer.value }
+                receiveValue: { writer in captured.append(writer) }
             )
             .store(in: &cancellables)
 
-            #expect(capturedValue == "20")
+            // full-stack bind: every inner emission is kept, each log is outer <> inner
+            #expect(captured.map(\.value) == ["20", "2"])
+            #expect(captured.map(\.log) == [["outer", "inner1"], ["outer", "inner2"]])
         }
 
         @Test func publisherTWriterBindTStatic() {
@@ -387,17 +392,18 @@
             let writer = Writer<[String], Int>(2, ["outer"])
             let publisher = Just(writer).setFailureType(to: TestError.self).eraseToAnyPublisher()
             let bindT = AnyPublisher<Writer<[String], Int>, TestError>.bindT { (value: Int) in
-                Writer<[String], Int>(value + 1, ["inner"])
+                Just(Writer<[String], Int>(value + 1, ["inner"])).setFailureType(to: TestError.self).eraseToAnyPublisher()
             }
 
-            var capturedValue: Int?
+            var captured: Writer<[String], Int>?
             bindT(publisher).sink(
                 receiveCompletion: ignore,
-                receiveValue: { writer in capturedValue = writer.value }
+                receiveValue: { writer in captured = writer }
             )
             .store(in: &cancellables)
 
-            #expect(capturedValue == 3)
+            #expect(captured?.value == 3)
+            #expect(captured?.log == ["outer", "inner"])
         }
 
         // MARK: - WriterTPublisher (Writer<W, any Publisher<A, E>>)

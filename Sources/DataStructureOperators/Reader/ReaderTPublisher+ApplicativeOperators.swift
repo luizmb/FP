@@ -9,8 +9,8 @@ import DataStructure
 
     /// `func`.
     @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
-    public func <*> <Env, A, B, E: Error>(
-        _ readerF: Reader<Env, any Publisher<(A) -> B, E>>,
+    public func <*> <Env, A: Sendable, B, E: Error>(
+        _ readerF: Reader<Env, any Publisher<@Sendable (A) -> B, E>>,
         _ readerA: Reader<Env, any Publisher<A, E>>
     ) -> Reader<Env, any Publisher<B, E>> {
         applyReaderPublisher(readerF, readerA)
@@ -27,7 +27,7 @@ import DataStructure
 
     /// `func`.
     @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
-    public func <* <Env, A, B, E: Error>(
+    public func <* <Env, A: Sendable, B: Sendable, E: Error>(
         _ lhs: Reader<Env, any Publisher<A, E>>,
         _ rhs: Reader<Env, any Publisher<B, E>>
     ) -> Reader<Env, any Publisher<A, E>> {

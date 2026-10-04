@@ -29,7 +29,8 @@
             let pubA: AnyPublisher<Int?, Never> = [1, nil].publisher.map { $0 as Int? }.eraseToAnyPublisher()
             let pubB: AnyPublisher<Int?, Never> = [10, 20].publisher.map { $0 as Int? }.eraseToAnyPublisher()
             let result = liftA2PublisherOptional(+)(pubA, pubB)
-            #expect(collect(result) == [11, nil])
+            // bind-derived: each left element runs the whole right stream; `nil` short-circuits once
+            #expect(collect(result) == [11, 21, nil])
         }
 
         @Test func publisherTOptionalFlatMapT() {

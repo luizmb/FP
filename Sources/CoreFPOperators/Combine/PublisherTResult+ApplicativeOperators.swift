@@ -5,6 +5,16 @@
 
     // PublisherTResult: AnyPublisher<Result<A,E2>, E>
 
+    // (<*>) :: AnyPublisher<Result<(a -> b),e2>,e> -> AnyPublisher<Result<a,e2>,e> -> AnyPublisher<Result<b,e2>,e>
+    /// `<*>` overload.
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+    public func <*> <A, B, E: Error, E2: Error>(
+        _ fns: AnyPublisher<Result<@Sendable (A) -> B, E2>, E>,
+        _ values: AnyPublisher<Result<A, E2>, E>
+    ) -> AnyPublisher<Result<B, E2>, E> {
+        applyPublisherResult(fns, values)
+    }
+
     // (*>) :: AnyPublisher<Result<a,e2>,e> -> AnyPublisher<Result<b,e2>,e> -> AnyPublisher<Result<b,e2>,e>
     /// `*>` overload.
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
@@ -18,7 +28,7 @@
     // (<*) :: AnyPublisher<Result<a,e2>,e> -> AnyPublisher<Result<b,e2>,e> -> AnyPublisher<Result<a,e2>,e>
     /// `func`.
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func <* <A, B, E: Error, E2: Error>(
+    public func <* <A: Sendable, B, E: Error, E2: Error>(
         _ lhs: AnyPublisher<Result<A, E2>, E>,
         _ rhs: AnyPublisher<Result<B, E2>, E>
     ) -> AnyPublisher<Result<A, E2>, E> {

@@ -296,18 +296,19 @@
             let writer = Writer<[String], Int>(2, ["outer"])
             let publisher = Just(writer).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let bound = publisher >>- { value in
-                Writer<[String], String>("\(value * 10)", ["inner"])
+            let bound = publisher >>- { (value: Int) in
+                Just(Writer<[String], String>("\(value * 10)", ["inner"])).setFailureType(to: TestError.self).eraseToAnyPublisher()
             }
 
-            var capturedValue: String?
+            var captured: Writer<[String], String>?
             bound.sink(
                 receiveCompletion: ignore,
-                receiveValue: { writer in capturedValue = writer.value }
+                receiveValue: { writer in captured = writer }
             )
             .store(in: &cancellables)
 
-            #expect(capturedValue == "20")
+            #expect(captured?.value == "20")
+            #expect(captured?.log == ["outer", "inner"])
         }
 
         @Test func publisherTWriterFlippedBindOperator() {
@@ -315,19 +316,20 @@
             let writer = Writer<[String], Int>(2, ["outer"])
             let publisher = Just(writer).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let fn: @Sendable (Int) -> Writer<[String], String> = { value in
-                Writer<[String], String>("\(value * 10)", ["inner"])
+            let fn: @Sendable (Int) -> AnyPublisher<Writer<[String], String>, TestError> = { value in
+                Just(Writer<[String], String>("\(value * 10)", ["inner"])).setFailureType(to: TestError.self).eraseToAnyPublisher()
             }
             let bound = fn -<< publisher
 
-            var capturedValue: String?
+            var captured: Writer<[String], String>?
             bound.sink(
                 receiveCompletion: ignore,
-                receiveValue: { writer in capturedValue = writer.value }
+                receiveValue: { writer in captured = writer }
             )
             .store(in: &cancellables)
 
-            #expect(capturedValue == "20")
+            #expect(captured?.value == "20")
+            #expect(captured?.log == ["outer", "inner"])
         }
 
         // MARK: - WriterTPublisher (Writer<W, any Publisher<A, E>>)

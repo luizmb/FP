@@ -96,6 +96,20 @@ public func <=< <A, B, C, E: Error>(
     ) -> @Sendable (A0) -> any Publisher<A1, B>
     where P1.Output == A, P1.Failure == B, P2.Output == A1, P2.Failure == B { fn1 >=> fn2 }
 
+    /// `func` for `PublisherT + Optional`.
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+    public func <=< <A, B, C, E: Error>(
+        _ fn2: @escaping @Sendable (B) -> AnyPublisher<C?, E>,
+        _ fn1: @escaping @Sendable (A) -> AnyPublisher<B?, E>
+    ) -> @Sendable (A) -> AnyPublisher<C?, E> { fn1 >=> fn2 }
+
+    /// `func` for `PublisherT + Result`.
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+    public func <=< <A, B, C, E: Error, E2: Error>(
+        _ fn2: @escaping @Sendable (B) -> AnyPublisher<Result<C, E2>, E>,
+        _ fn1: @escaping @Sendable (A) -> AnyPublisher<Result<B, E2>, E>
+    ) -> @Sendable (A) -> AnyPublisher<Result<C, E2>, E> { fn1 >=> fn2 }
+
 #endif
 
 // MARK: - AsyncSequence
