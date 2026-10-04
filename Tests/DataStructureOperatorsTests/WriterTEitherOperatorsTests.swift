@@ -7,24 +7,6 @@ import Testing
 @Suite struct WriterTEitherOperatorsTests {
     private enum TestL: Equatable { case err }
 
-    @Test func fmapRight() {
-        let w = Writer<[String], Either<TestL, Int>>(.right(5), ["log"])
-        let result = { $0 * 2 } <£^> w
-        #expect(result == Writer<[String], Either<TestL, Int>>(.right(10), ["log"]))
-    }
-
-    @Test func flippedFmapRight() {
-        let w = Writer<[String], Either<TestL, Int>>(.right(5), ["log"])
-        let result = w <&^> { $0 * 2 }
-        #expect(result == Writer<[String], Either<TestL, Int>>(.right(10), ["log"]))
-    }
-
-    @Test func fmapLeft() {
-        let w = Writer<[String], Either<TestL, Int>>(.left(.err), ["log"])
-        let result = { $0 * 2 } <£^> w
-        #expect(result == Writer<[String], Either<TestL, Int>>(.left(.err), ["log"]))
-    }
-
     @Test func apply() {
         let wf = Writer<[String], Either<TestL, @Sendable (Int) -> String>>(.right { "\($0)" }, ["fn"])
         let wa = Writer<[String], Either<TestL, Int>>(.right(7), ["val"])

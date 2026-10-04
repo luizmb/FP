@@ -27,13 +27,13 @@ public extension Loading where Failure: Error {
     }
 
     /// Wraps a `Result` as a fresh `Loading` with no prior context.
-    static func from(_ result: Result<Success, Failure>) -> Self {
+    init(_ result: Result<Success, Failure>) {
         switch result {
         case let .success(value):
-            .loaded(value)
+            self = .loaded(value)
 
         case let .failure(error):
-            .failed(error: error, previous: nil)
+            self = .failed(error: error, previous: nil)
         }
     }
 }

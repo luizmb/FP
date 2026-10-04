@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import CoreFP
 
 // MARK: - Function Composition
 
@@ -30,7 +31,7 @@ public func >>> <A, B, C>(
     _ f: @escaping @Sendable (A) -> B,
     _ g: @escaping @Sendable (B) -> C
 ) -> @Sendable (A) -> C {
-    { a in g(f(a)) }
+    compose(f, g)
 }
 
 /// Right-to-left function composition.
@@ -52,7 +53,7 @@ public func <<< <A, B, C>(
     _ g: @escaping @Sendable (B) -> C,
     _ f: @escaping @Sendable (A) -> B
 ) -> @Sendable (A) -> C {
-    { a in g(f(a)) }
+    compose(f, g)
 }
 
 // MARK: - Variadic (fan-out) Composition
@@ -76,10 +77,7 @@ public func >>> <Root, each T, Output>(
     _ f: @escaping @Sendable (Root) -> (repeat each T),
     _ g: @escaping @Sendable (repeat each T) -> Output
 ) -> @Sendable (Root) -> Output {
-    { root in
-        let values = f(root)
-        return g(repeat each values)
-    }
+    compose(f, g)
 }
 
 /// Right-to-left composition of a **multi-argument** function with a **tuple-producing** function — the
@@ -88,54 +86,32 @@ public func <<< <Root, each T, Output>(
     _ g: @escaping @Sendable (repeat each T) -> Output,
     _ f: @escaping @Sendable (Root) -> (repeat each T)
 ) -> @Sendable (Root) -> Output {
-    { root in
-        let values = f(root)
-        return g(repeat each values)
-    }
+    compose(f, g)
 }
 
 // MARK: - Function Application
 
 /// Function application operator — applies `fn` to `value` with low precedence.
 ///
-/// `£` is the Swift equivalent of Haskell's `$`. Its extremely low precedence means
+/// `<|` is the Swift equivalent of Haskell's `$`. Its extremely low precedence means
 /// all other operators on the right-hand side are evaluated first, eliminating parentheses.
 ///
-/// **Named equivalent:** ``apply(_:_:)-value-fn`` from `CoreFP`.
+/// **Named equivalent:** ``call(_:_:)`` from `CoreFP`.
 ///
 /// **Precedence:** `LowPrecedenceFunctionCallRight` (right-associative, lower than ternary).
 ///
 /// ```swift
-/// // Without £ — needs parentheses:
+/// // Without <| — needs parentheses:
 /// let result = f(g(h(x)))
 ///
-/// // With £ — reads left-to-right, no nesting:
-/// let result = f £ g £ h £ x
-/// ```
-public func £ <A, B>(
-    _ fn: @escaping @Sendable (A) -> B,
-    _ value: A
-) -> B {
-    fn(value)
-}
-
-/// Function application operator (alternative ASCII symbol for `£`).
-///
-/// `<|` is an ASCII alternative to ``£``. Both have the same type, precedence, and
-/// associativity. Use whichever reads more clearly in context.
-///
-/// **Named equivalent:** ``call(_:_:)`` from `CoreFP`.
-///
-/// **Precedence:** `LowPrecedenceFunctionCallRight` (right-associative).
-///
-/// ```swift
-/// f <| g <| x    // f(g(x))
+/// // With <| — no nesting:
+/// let result = f <| g <| h <| x
 /// ```
 public func <| <A, B>(
     _ fn: @escaping @Sendable (A) -> B,
     _ value: A
 ) -> B {
-    fn(value)
+    call(fn, value)
 }
 
 /// Flipped function application — pipes a value into a function.
@@ -158,5 +134,5 @@ public func |> <A, B>(
     _ value: A,
     _ fn: @escaping @Sendable (A) -> B
 ) -> B {
-    fn(value)
+    apply(value, fn)
 }

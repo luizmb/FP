@@ -204,37 +204,37 @@ import Testing
         #expect(result.exec(0) == 1)
     }
 
-    @Test func zip3ProducesTriple() {
+    @Test func zipProducesTriple() {
         let sa = Stateful<Int, Int>.pure(1)
         let sb = Stateful<Int, String>.pure("a")
         let sc = Stateful<Int, Bool>.pure(true)
-        #expect(Stateful<Int, (Int, String, Bool)>.zip3(sa, sb, sc).eval(0) == (1, "a", true))
+        #expect(Stateful<Int, (Int, String, Bool)>.zip(sa, sb, sc).eval(0) == (1, "a", true))
     }
 
-    @Test func zip3ThreadsStateLeftToRight() {
+    @Test func zipOfThreeThreadsStateLeftToRight() {
         let s1 = Stateful<Int, Int> { s in let v = s; s += 1; return v }
         let s2 = Stateful<Int, Int> { s in let v = s; s += 10; return v }
         let s3 = Stateful<Int, Int>.get
-        let result = Stateful<Int, (Int, Int, Int)>.zip3(s1, s2, s3)
+        let result = Stateful<Int, (Int, Int, Int)>.zip(s1, s2, s3)
         // state=0: s1 returns 0, state→1; s2 returns 1, state→11; s3 reads 11
         #expect(result.eval(0) == (0, 1, 11))
         #expect(result.exec(0) == 11)
     }
 
-    @Test func zip4ProducesQuadruple() {
+    @Test func zipProducesQuadruple() {
         let sa = Stateful<Int, Int>.pure(1)
         let sb = Stateful<Int, String>.pure("a")
         let sc = Stateful<Int, Bool>.pure(true)
         let sd = Stateful<Int, Double>.pure(2.5)
-        #expect(Stateful<Int, (Int, String, Bool, Double)>.zip4(sa, sb, sc, sd).eval(0) == (1, "a", true, 2.5))
+        #expect(Stateful<Int, (Int, String, Bool, Double)>.zip(sa, sb, sc, sd).eval(0) == (1, "a", true, 2.5))
     }
 
-    @Test func zip4ThreadsStateLeftToRight() {
+    @Test func zipOfFourThreadsStateLeftToRight() {
         let s1 = Stateful<Int, Int> { s in let v = s; s += 1; return v }
         let s2 = Stateful<Int, Int> { s in let v = s; s += 10; return v }
         let s3 = Stateful<Int, Int> { s in let v = s; s += 100; return v }
         let s4 = Stateful<Int, Int>.get
-        let result = Stateful<Int, (Int, Int, Int, Int)>.zip4(s1, s2, s3, s4)
+        let result = Stateful<Int, (Int, Int, Int, Int)>.zip(s1, s2, s3, s4)
         // state=0: s1→0,state=1; s2→1,state=11; s3→11,state=111; s4 reads 111
         #expect(result.eval(0) == (0, 1, 11, 111))
         #expect(result.exec(0) == 111)

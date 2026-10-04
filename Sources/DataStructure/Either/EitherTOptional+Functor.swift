@@ -1,21 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
-import Foundation
+import CoreFP
 
 // EitherTOptional: outer = Either, inner = Optional
-// Type: Either<L, A?> = Either<L, Optional<A>>
+// Type: Either<L, A?>
 
-/// mapT for Either<L, A?> — maps the inner Optional's value
-/// fmap :: (a -> b) -> Either<l, a?> -> Either<l, b?>
-public func mapTEitherOptional<L, A, B>(
-    _ fn: @escaping @Sendable (A) -> B,
-    _ either: Either<L, A?>
-) -> Either<L, B?> {
-    either.mapRight { optA in optA.map(fn) }
-}
+public extension Either {
+    /// Maps the value inside the inner Optional, leaving `.left` untouched.
+    /// mapT :: (a -> b) -> Either l (optional a) -> Either l (optional b)
+    func mapT<Inner, C>(_ fn: @escaping @Sendable (Inner) -> C) -> Either<A, C?>
+    where B == Inner? {
+        mapRight { $0.map(fn) }
+    }
 
-/// Curried fmapT
-public func fmapTEitherOptional<L, A, B>(
-    _ fn: @escaping @Sendable (A) -> B
-) -> (Either<L, A?>) -> Either<L, B?> {
-    { either in mapTEitherOptional(fn, either) }
+    /// Curried, point-free form of ``mapT(_:)``.
+    static func fmapT<Inner, C>(
+        _ fn: @escaping @Sendable (Inner) -> C
+    ) -> @Sendable (Either<A, Inner?>) -> Either<A, C?>
+    where B == Inner? {
+        { $0.mapT(fn) }
+    }
 }

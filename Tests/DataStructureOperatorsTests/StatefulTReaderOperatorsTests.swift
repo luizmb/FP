@@ -6,18 +6,6 @@ import DataStructureOperators
 import Testing
 
 @Suite struct StatefulTReaderOperatorsTests {
-    @Test func fmap() {
-        let s = Stateful<Int, Reader<String, Int>>.pure(Reader(const(5)))
-        let result = { $0 * 2 } <£^> s
-        #expect(result.eval(0)("env") == 10)
-    }
-
-    @Test func flippedFmap() {
-        let s = Stateful<Int, Reader<String, Int>>.pure(Reader(const(5)))
-        let result = s <&^> { $0 * 2 }
-        #expect(result.eval(0)("env") == 10)
-    }
-
     @Test func apply() {
         let fn: @Sendable (Int) -> String = { "\($0)" }
         let sf = Stateful<Int, Reader<String, @Sendable (Int) -> String>>.pure(Reader(const(fn)))

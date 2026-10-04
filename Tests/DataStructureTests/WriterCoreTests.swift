@@ -195,21 +195,21 @@ import Testing
         #expect(result.log == [])
     }
 
-    @Test func zip3CombinesAllValuesAndLogs() {
+    @Test func zipOfThreeCombinesAllValuesAndLogs() {
         let wa = Writer<[String], Int>(1, ["a"])
         let wb = Writer<[String], String>("x", ["b"])
         let wc = Writer<[String], Bool>(true, ["c"])
-        let result = Writer<[String], (Int, String, Bool)>.zip3(wa, wb, wc)
+        let result = Writer<[String], (Int, String, Bool)>.zip(wa, wb, wc)
         #expect(result.value == (1, "x", true))
         #expect(result.log == ["a", "b", "c"])
     }
 
-    @Test func zip4CombinesAllValuesAndLogs() {
+    @Test func zipOfFourCombinesAllValuesAndLogs() {
         let wa = Writer<[String], Int>(1, ["a"])
         let wb = Writer<[String], String>("x", ["b"])
         let wc = Writer<[String], Bool>(true, ["c"])
         let wd = Writer<[String], Double>(3.14, ["d"])
-        let result = Writer<[String], (Int, String, Bool, Double)>.zip4(wa, wb, wc, wd)
+        let result = Writer<[String], (Int, String, Bool, Double)>.zip(wa, wb, wc, wd)
         #expect(result.value == (1, "x", true, 3.14))
         #expect(result.log == ["a", "b", "c", "d"])
     }

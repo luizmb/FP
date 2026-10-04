@@ -5,22 +5,6 @@ import DataStructureOperators
 import Testing
 
 @Suite struct StatefulTWriterOperatorsTests {
-    @Test func fmap() {
-        let s = Stateful<Int, Writer<[String], Int>> { state in Writer(state, ["x"]) }
-        let result = { $0 * 2 } <£^> s
-        let w = result.eval(4)
-        #expect(w.value == 8)
-        #expect(w.log == ["x"])
-    }
-
-    @Test func flippedFmap() {
-        let s = Stateful<Int, Writer<[String], Int>> { state in Writer(state, ["x"]) }
-        let result = s <&^> { $0 * 2 }
-        let w = result.eval(4)
-        #expect(w.value == 8)
-        #expect(w.log == ["x"])
-    }
-
     @Test func bind() {
         let s = Stateful<Int, Writer<[String], Int>> { state in
             let v = state

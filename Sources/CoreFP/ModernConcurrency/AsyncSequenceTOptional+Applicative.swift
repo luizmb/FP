@@ -6,7 +6,7 @@ import Foundation
 // Haskell: MaybeT AsyncStream
 //
 // The applicative is derived from the monad (`<*>` = `ap`): built from `flatMapTAsyncStreamOptional`
-// (ordered concat) and `mapTAsyncStreamOptional`. A `nil` on the left yields a single `nil` and never
+// (ordered concat) and `mapT`. A `nil` on the left yields a single `nil` and never
 // touches the right side; every `.some` on the left runs over the whole right stream, in order.
 // The right stream is single-pass, so it is drained once and replayed (see `AsyncStream.replayable`).
 
@@ -18,7 +18,7 @@ public func applyAsyncStreamOptional<A, B>(
     _ values: AsyncStream<A?>
 ) -> AsyncStream<B?> where A: Sendable, B: Sendable {
     let replay = AsyncStream<A?>.replayable(values)
-    return flatMapTAsyncStreamOptional(fns) { f in mapTAsyncStreamOptional(f, replay()) }
+    return flatMapTAsyncStreamOptional(fns) { f in replay().mapT(f) }
 }
 
 /// liftA2 for AsyncStream<A?>
@@ -31,7 +31,7 @@ where A: Sendable, B: Sendable, C: Sendable {
     { @Sendable streamA, streamB in
         let replay = AsyncStream<B?>.replayable(streamB)
         return flatMapTAsyncStreamOptional(streamA) { a in
-            mapTAsyncStreamOptional({ b in fn(a, b) }, replay())
+            replay().mapT { b in fn(a, b) }
         }
     }
 }

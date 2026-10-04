@@ -168,7 +168,7 @@ Either containing an Optional. `.left` propagates; `.right(.none)` re-wraps as `
 import DataStructure
 
 let e: Either<String, Int?> = .right(.some(5))
-mapTEitherOptional({ $0 * 2 }, e)          // .right(Optional(10))
+e.mapT { $0 * 2 }  // .right(Optional(10))
 flatMapTEitherOptional(e) { n in .right(.some(n * 2)) }  // .right(Optional(10))
 
 let none: Either<String, Int?> = .right(.none)
@@ -192,7 +192,7 @@ outer layer (Haskell's old `ListT` problem), so there is no `flatMapT`/`>>-` for
 import DataStructure
 
 let e: Either<String, [Int]> = .right([1, 2, 3])
-mapTEitherArray({ $0 * 2 }, e)         // .right([2, 4, 6])
+e.mapT { $0 * 2 }  // .right([2, 4, 6])
 liftA2EitherArray(+)(e, .right([10, 20]))  // .right([11, 21, 12, 22, 13, 23])
 
 liftA2EitherArray(+)(Either<String, [Int]>.left("err"), e)  // .left("err")
@@ -206,7 +206,7 @@ Either containing a Result — two independent error channels.
 import DataStructure
 
 let e: Either<String, Result<Int, MyError>> = .right(.success(5))
-mapTEitherResult({ $0 * 2 }, e)         // .right(.success(10))
+e.mapT { $0 * 2 }  // .right(.success(10))
 flatMapTEitherResult(e) { n in .right(.success(n * 2)) }  // .right(.success(10))
 
 // Inner failure preserves outer .right

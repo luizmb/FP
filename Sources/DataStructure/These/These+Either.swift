@@ -9,11 +9,11 @@ public extension These {
     /// to perform. `.left` maps to `.this`, `.right` maps to `.that`.
     ///
     /// ```swift
-    /// These<String, Int>.fromEither(.left("error"))   // .this("error")
-    /// These<String, Int>.fromEither(.right(42))        // .that(42)
+    /// These<String, Int>(Either.left("error"))   // .this("error")
+    /// These<String, Int>(Either.right(42))        // .that(42)
     /// ```
-    static func fromEither(_ either: Either<A, B>) -> These<A, B> {
-        either.match(caseLeft: These.this, caseRight: These.that)
+    init(_ either: Either<A, B>) {
+        self = either.match(caseLeft: These.this, caseRight: These.that)
     }
 
     /// Aligns two optionals into a single `These`, following Haskell's `Data.Align` "align".

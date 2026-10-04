@@ -51,6 +51,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   are now closure literals calling `fail(...)`, which also fit non-escaping, `@autoclosure` and
   `inout` parameter types.
 
+- **`map` on `Either` and `Validation`**: the functor map of the right / success side (same as
+  `mapRight` / `mapSuccess`, which stay, as do `mapLeft`, `mapFailure` and `bimap`). `fmap` now
+  delegates to it.
+- **`pure` for `Validation` and `Loading`** (`.success` / `.loaded`).
+- **`join` / `void` siblings**: `Loading.join`, `Loading.void()`, `These.void()`, and the free
+  `join` / `void` functions for `NonEmpty`, `These` and `Loading` (next to the Either / Reader /
+  Stateful / Writer ones).
+- **Named functions behind operators that had inline logic**: `seqRight` / `seqLeft` for functions
+  (`*>` / `<*` on `(R) -> A`), a variadic `compose` (`compose(fanout(\.a, \.b), Make.init)`, behind
+  the variadic `>>>` / `<<<`). `>>>` / `<<<` now call `compose`, `<|` calls `call`, `|>` calls
+  `apply`, `Iso >>> Iso` calls `Iso.compose`, AsyncSequence `>=>` calls `kleisli`, and Either /
+  These `£>` call `map(const(value))`.
+- **Conversions**: `Either.toValidation()` (when the left side is a `Semigroup`).
+
 ### Changed
 - **`M<Writer>` bind is WriterT's bind** (`WriterT w M`) for `ArrayTWriter`, `OptionalTWriter`,
   `ResultTWriter` and `EitherTWriter`: the continuation of `flatMapT`, `bindT`, `kleisliT`, `>>-`,
@@ -136,11 +150,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`Zipper.left` / `Zipper.right` are lazy views** instead of copied arrays:
   `ReversedCollection<ArraySlice<A>>` and `ArraySlice<A>`, still closest-to-focus first. Source
   break for code that expects `[A]`; wrap in `Array(...)` where an array is needed.
+- **One `mapT` shape for every transformer stack**: an instance method `.mapT(_:)` plus a static
+  curried `fmapT(_:)`, the same shape as base `map` / `fmap`. The free functions are gone (migrate
+  `mapTEitherArray(f, x)` → `x.mapT(f)`, `fmapTEitherArray(f)` → `Either<L, [A]>.fmapT(f)`):
+  `mapTEither{Array,Optional,NonEmpty,Result}`, `fmapTEither{Array,Optional,NonEmpty,Result}`,
+  both `fmapTEitherValidation` overloads, `fmapTStatefulValidation` (both overloads),
+  `mapTValidation{Array,Optional,NonEmpty,Result,Either,Reader,Stateful,Writer}` (these returned
+  `(V) -> V`; now `v.mapT(f)` / `Validation<E, [A]>.fmapT(f)`),
+  `mapTPublisher{Array,Optional,Result,Either}` / `fmapTPublisher…` (now methods on `Publisher`,
+  returning `AnyPublisher`) and `mapTAsyncStream{Array,Optional,Result,Either}` /
+  `fmapTAsyncStream…` (now methods on `AsyncStream`). ReaderT's curried statics were named `fmap`,
+  overloading `Reader.fmap`; they are now `fmapT` (`ReaderTArray`, `ReaderTOptional`,
+  `ReaderTResult`, `ReaderTEither`, `ReaderTReader`, `ReaderTPublisher`, `ReaderTAsyncSequence`).
+
+- **Conversion naming**: outgoing conversions are `to…()` methods, incoming ones are `init(_:)`.
+  Migration: `either.result()` → `either.toResult()`; `validationFromEither(e)` → `Validation(e)`;
+  `validationFromResult(r)` → `Validation(r)`; `These.fromEither(e)` → `These(e)`;
+  `Loading.from(result)` → `Loading(result)`; `Zipper.fromNonEmpty(ne)` → `Zipper(ne)`.
+- **`SumType2.bifoldMap` drops its labels**: `bifoldMap(leftBy:rightBy:)` → `bifoldMap(_:_:)`,
+  matching `Validation.bifoldMap` and the free `bifoldMap`.
+- **Sendable constraints aligned**: `Result.mapRight` / `bimap` take plain non-escaping closures
+  like `mapLeft` (and stdlib `map` / `mapError`); Publisher `<£>` drops the extra `Sendable`
+  requirements that `<&>` never had (`<&>` now delegates to `<£>`); function `kleisli` /
+  `kleisliReverse` / `>=>` / `<=<` no longer require `A: Sendable`.
+- Either and These `£>` / `<£` now require the replacement value to be `Sendable` (they go through
+  `map`).
+- **`Stateful.zip` and `Writer.zip` are variadic** (two or more arguments), like `Reader.zip`.
+  Migration: `zip3(a, b, c)` / `zip4(a, b, c, d)` → `zip(a, b, c)` / `zip(a, b, c, d)` (also for
+  `Gen`, which is a `Stateful`).
 
 ### Removed
 - **Monad surface of transformer stacks that have no lawful monad** (Haskell's `transformers`
   defines none for these shapes). `flatMapT`, `bindT`, `kleisliT`, the free `flatMapT…`/`bindT…`
-  functions and the `>>-`, `-<<`, `>=>`, `<=<` overloads are gone; `mapT`, `<£^>`/`<&^>`,
+  functions and the `>>-`, `-<<`, `>=>`, `<=<` overloads are gone; `mapT`,
   `apply`/`<*>`, `liftA2`, `*>` and `<*` stay.
   - List inside a non-commutative outer layer (`ListT` done wrong, associativity fails):
     `EitherTArray`, `EitherTNonEmpty`, `StatefulTArray`, `StatefulTNonEmpty`, `WriterTArray`,
@@ -158,6 +200,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     the base type's bind now matches instead (e.g. `opt >>- { Stateful.pure(...) }` on
     `Stateful<S, A>?` now resolves to `Optional`'s `>>-`, with the `Stateful` promoted to an
     Optional). Search for `>>-` / `flatMapT` on these shapes rather than relying on compile errors.
+- **`<£^>` and `<&^>`** (transformer functor map), every overload and both `infix operator`
+  declarations. Use the named method: `f <£^> stack` / `stack <&^> f` → `stack.mapT(f)`.
+- **Transformer overloads of `£>` / `<£`** (`ReaderTArray`, `ReaderTOptional`, `ReaderTResult`,
+  `ReaderTEither`, `ReaderTReader`, `ReaderTPublisher`, `ReaderTAsyncSequence`, `OptionalTArray`).
+  They hijacked the base operator (`Reader<Int, [Int]> £> "x"` replaced the inner elements while
+  `Stateful<Int, [Int]> £> "x"` replaced the whole output). `£>` / `<£` on a stack now always
+  resolve to the outer type's base replace (whole output); inner replace is
+  `stack.mapT(const(x))`. **Watch out when upgrading:** old call sites still compile with the new
+  meaning, so search for `£>` / `<£` on `Reader<_, [A]>`, `Reader<_, A?>`, `Reader<_, Either>`,
+  `Reader<_, Result>`, `Reader<_, Reader>`, `Reader<_, Publisher>`, `Reader<_, AsyncStream>` and
+  `[A]?`. The `replaceOutputT(_:)` methods on `ReaderTOptional`, `ReaderTResult` and
+  `ReaderTPublisher`, which only backed those operators, are removed too.
 - **`Gen` runners `generate()`, `generate(seed:)` and `samples(seed:count:)`**: `generate()` read
   `SystemRandomNumberGenerator` behind a pure-looking signature. Inject the RNG and call `run(&rng)`.
 - **Infix `^` (floating-point power)**: Swift's stdlib declares `^` in `AdditionPrecedence`, so it
@@ -167,6 +221,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   memberwise one, nested types printed as `extension Inner`, `@ApplyOptics` ignored). Xcode's
   "Expand Macro" shows the real output; `CONTRIBUTING.md` describes the test-side `expand(_:)`
   helper for diffing hand-written optics against it.
+
+- **`++`** (operator, `AppendToList` precedence group, Array overload). Migration: `a ++ b` →
+  `a <> b`.
+- **Infix `£`** (function application). Migration: `f £ x` → `f <| x` (same precedence group,
+  `LowPrecedenceFunctionCallRight`); `|>` stays as its flip. Operators that only contain the
+  character (`<£>`, `£>`, `<£`) are unchanged.
+- **`Stateful.zip3` / `zip4` and `Writer.zip3` / `zip4`**: use the variadic `zip`.
+- **Old conversion names** `Either.result()`, `validationFromEither`, `validationFromResult`,
+  `These.fromEither`, `Loading.from(_:)`, `Zipper.fromNonEmpty` (see Changed for the new
+  spellings).
 
 ### Fixed
 - **Affine optics `set` is a no-op when the focus is absent**: `Lens ∘ Prism`,

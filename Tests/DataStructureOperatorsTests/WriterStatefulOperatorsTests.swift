@@ -6,28 +6,6 @@ import DataStructureOperators
 import Testing
 
 @Suite struct WriterStatefulOperatorsTests {
-    @Test func writerMapTWithStatefulInner() {
-        let w = Writer<[String], Stateful<Int, Int>>(Stateful<Int, Int>.get, ["x"])
-        let result = { $0 * 4 } <£^> w
-        #expect(result.value.eval(3) == 12)
-        #expect(result.log == ["x"])
-    }
-
-    @Test func writerFlippedFmapWithStatefulInner() {
-        let w = Writer<[String], Stateful<Int, Int>>(Stateful<Int, Int>.get, ["x"])
-        let result = w <&^> { $0 * 4 }
-        #expect(result.value.eval(3) == 12)
-        #expect(result.log == ["x"])
-    }
-
-    @Test func statefulMapTWithWriterInner() {
-        let s = Stateful<Int, Writer<[String], Int>> { state in Writer(state, ["y"]) }
-        let result = { $0 * 2 } <£^> s
-        let w = result.eval(5)
-        #expect(w.value == 10)
-        #expect(w.log == ["y"])
-    }
-
     @Test func statefulFlatMapTWithWriterInner() {
         let s = Stateful<Int, Writer<[String], Int>> { state in
             let v = state

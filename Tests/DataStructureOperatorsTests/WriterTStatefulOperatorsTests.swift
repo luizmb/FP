@@ -6,20 +6,6 @@ import DataStructureOperators
 import Testing
 
 @Suite struct WriterTStatefulOperatorsTests {
-    @Test func fmap() {
-        let w = Writer<[String], Stateful<Int, Int>>(Stateful<Int, Int>.get, ["log"])
-        let result = { $0 * 2 } <£^> w
-        #expect(result.value.eval(5) == 10)
-        #expect(result.log == ["log"])
-    }
-
-    @Test func flippedFmap() {
-        let w = Writer<[String], Stateful<Int, Int>>(Stateful<Int, Int>.get, ["log"])
-        let result = w <&^> { $0 * 2 }
-        #expect(result.value.eval(5) == 10)
-        #expect(result.log == ["log"])
-    }
-
     @Test func apply() {
         let fn: @Sendable (Int) -> String = { "\($0)" }
         let wf = Writer<[String], Stateful<Int, @Sendable (Int) -> String>>(

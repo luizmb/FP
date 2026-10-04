@@ -28,19 +28,4 @@ import Testing
         let result = lhs <* rhs
         #expect(result.runReader(0).eval(0) == 99)
     }
-
-    // MARK: - Stateful<S, Reader<Env, A>> fmap (from existing)
-
-    @Test func statefulReaderImportSmoke() {
-        // Smoke test: importing all three modules compiles successfully.
-        let s = Stateful<Int, Reader<Int, Int>>.pure(Reader(id))
-        let mapped = { $0 * 2 } <£^> s
-        #expect(mapped.eval(0).runReader(5) == 10)
-    }
-
-    @Test func statefulReaderFlippedFmap() {
-        let s = Stateful<Int, Reader<Int, Int>>.pure(Reader(id))
-        let mapped = s <&^> { $0 * 2 }
-        #expect(mapped.eval(0).runReader(5) == 10)
-    }
 }

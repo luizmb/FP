@@ -1,19 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
-/// EitherTValidation: outer = Either, inner = Validation
-/// Type: Either<L, Validation<E, A>>
+// EitherTValidation: outer = Either, inner = Validation
+// Type: Either<L, Validation<E, A>>
 
-public func fmapTEitherValidation<L, E: Semigroup, A, B>(
-    _ fn: @escaping @Sendable (A) -> B,
-    _ either: Either<L, Validation<E, A>>
-) -> Either<L, Validation<E, B>> {
-    either.mapRight(Validation<E, A>.fmap(fn))
-}
+public extension Either {
+    /// Maps the value inside the inner Validation, leaving `.left` untouched.
+    /// mapT :: (a -> b) -> Either l (validation a) -> Either l (validation b)
+    func mapT<E: Semigroup, Inner, C>(_ fn: @escaping @Sendable (Inner) -> C) -> Either<A, Validation<E, C>>
+    where B == Validation<E, Inner> {
+        mapRight { $0.mapSuccess(fn) }
+    }
 
-/// `fmapTEitherValidation`.
-public func fmapTEitherValidation<L, E: Semigroup, A, B>(
-    _ fn: @escaping @Sendable (A) -> B
-) -> (Either<L, Validation<E, A>>) -> Either<L, Validation<E, B>> {
-    { fmapTEitherValidation(fn, $0) }
+    /// Curried, point-free form of ``mapT(_:)``.
+    static func fmapT<E: Semigroup, Inner, C>(
+        _ fn: @escaping @Sendable (Inner) -> C
+    ) -> @Sendable (Either<A, Validation<E, Inner>>) -> Either<A, Validation<E, C>>
+    where B == Validation<E, Inner> {
+        { $0.mapT(fn) }
+    }
 }

@@ -546,7 +546,7 @@
             let right: Either<String, Int> = .right(5)
             let publisher = Just(right).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let mapped = mapTPublisherEither({ $0 * 10 }, publisher)
+            let mapped = publisher.mapT { $0 * 10 }
 
             var captured: Either<String, Int>?
             mapped.sink(receiveCompletion: ignore, receiveValue: { captured = $0 })
@@ -560,7 +560,7 @@
             let left: Either<String, Int> = .left("boom")
             let publisher = Just(left).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let mapped = mapTPublisherEither({ $0 * 10 }, publisher)
+            let mapped = publisher.mapT { $0 * 10 }
 
             var captured: Either<String, Int>?
             mapped.sink(receiveCompletion: ignore, receiveValue: { captured = $0 })
@@ -574,14 +574,12 @@
             let right: Either<String, Int> = .right(5)
             let publisher = Just(right).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
+            let increment = AnyPublisher<Either<String, Int>, TestError>.fmapT { (value: Int) in value + 1 }
+            let mapped = increment(publisher)
+
             var captured: Either<String, Int>?
-            // Kept as one expression: fmapTPublisherEither's L/E parameters are only
-            // pinned down once applied to the publisher.
-            fmapTPublisherEither { (value: Int) in value + 1 }(publisher).sink(
-                receiveCompletion: ignore,
-                receiveValue: { captured = $0 }
-            )
-            .store(in: &cancellables)
+            mapped.sink(receiveCompletion: ignore, receiveValue: { captured = $0 })
+                .store(in: &cancellables)
 
             #expect(captured == .right(6))
         }

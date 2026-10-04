@@ -3,24 +3,25 @@
     import Combine
     import Foundation
 
-    // PublisherTOptional: outer = AnyPublisher, inner = Optional
-    // Type: AnyPublisher<A?, E>
+    // PublisherTOptional: outer = Publisher, inner = Optional
+    // Type: AnyPublisher<A?, Failure>
 
-    /// mapT for AnyPublisher<A?, E> — maps over the inner Optional's value
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func mapTPublisherOptional<A, B, E: Error>(
-        _ fn: @escaping @Sendable (A) -> B,
-        _ publisher: AnyPublisher<A?, E>
-    ) -> AnyPublisher<B?, E> {
-        publisher.map { optA in optA.map(fn) }.eraseToAnyPublisher()
-    }
+    public extension Publisher {
+        /// Maps the value inside every emitted Optional.
+        /// mapT :: (a -> b) -> Publisher (optional a) e -> Publisher (optional b) e
+        func mapT<Inner, B>(_ fn: @escaping @Sendable (Inner) -> B) -> AnyPublisher<B?, Failure>
+        where Output == Inner? {
+            map { $0.map(fn) }.eraseToAnyPublisher()
+        }
 
-    /// Curried fmapT
-    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func fmapTPublisherOptional<A, B, E: Error>(
-        _ fn: @escaping @Sendable (A) -> B
-    ) -> (AnyPublisher<A?, E>) -> AnyPublisher<B?, E> {
-        { publisher in mapTPublisherOptional(fn, publisher) }
+        /// Curried, point-free form of ``mapT(_:)``.
+        static func fmapT<Inner, B>(
+            _ fn: @escaping @Sendable (Inner) -> B
+        ) -> @Sendable (AnyPublisher<Inner?, Failure>) -> AnyPublisher<B?, Failure>
+        where Output == Inner? {
+            { $0.mapT(fn) }
+        }
     }
 
 #endif

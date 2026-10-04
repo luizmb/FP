@@ -52,7 +52,7 @@ import Testing
         let fns: [Either<String, @Sendable (Int) -> String>] = [.right(label("f")), .left("no"), .right(label("g"))]
         let xs: [Either<String, Int>] = [.right(1), .left("bad"), .right(2)]
         let applied = await collectAll(applyAsyncStreamEither(streamOf(fns), streamOf(xs)))
-        let derived = await collectAll(flatMapTAsyncStreamEither(streamOf(fns)) { fn in mapTAsyncStreamEither(fn, streamOf(xs)) })
+        let derived = await collectAll(flatMapTAsyncStreamEither(streamOf(fns)) { fn in streamOf(xs).mapT(fn) })
         #expect(applied == derived)
         #expect(applied == [.right("f1"), .left("bad"), .right("f2"), .left("no"), .right("g1"), .left("bad"), .right("g2")])
     }

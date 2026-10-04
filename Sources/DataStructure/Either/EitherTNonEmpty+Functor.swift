@@ -1,18 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
+import CoreFP
+
 // EitherTNonEmpty: outer = Either, inner = NonEmpty
 // Type: Either<L, NonEmpty<A>>
 
-/// mapT for Either<L, NonEmpty<A>> — maps over NonEmpty inside Right, propagates Left.
-public func mapTEitherNonEmpty<L, A, B>(
-    _ fn: @escaping @Sendable (A) -> B,
-    _ either: Either<L, NonEmpty<A>>
-) -> Either<L, NonEmpty<B>> {
-    either.mapRight { ne in ne.map(fn) }
-}
+public extension Either {
+    /// Maps the value inside the inner NonEmpty, leaving `.left` untouched.
+    /// mapT :: (a -> b) -> Either l (nonempty a) -> Either l (nonempty b)
+    func mapT<Inner, C>(_ fn: @escaping @Sendable (Inner) -> C) -> Either<A, NonEmpty<C>>
+    where B == NonEmpty<Inner> {
+        mapRight { $0.map(fn) }
+    }
 
-/// Curried fmapT
-public func fmapTEitherNonEmpty<L, A, B>(
-    _ fn: @escaping @Sendable (A) -> B
-) -> (Either<L, NonEmpty<A>>) -> Either<L, NonEmpty<B>> {
-    { mapTEitherNonEmpty(fn, $0) }
+    /// Curried, point-free form of ``mapT(_:)``.
+    static func fmapT<Inner, C>(
+        _ fn: @escaping @Sendable (Inner) -> C
+    ) -> @Sendable (Either<A, NonEmpty<Inner>>) -> Either<A, NonEmpty<C>>
+    where B == NonEmpty<Inner> {
+        { $0.mapT(fn) }
+    }
 }

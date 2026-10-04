@@ -1,15 +1,4 @@
 // SPDX-License-Identifier: Apache-2.0
-/// Append / list concatenation. (`++` in Haskell)
-///
-/// Appends the right-hand sequence to the left-hand sequence.
-///
-/// **Precedence:** `AppendToList` (right-associative, between `AdditionPrecedence` and `RangeFormationPrecedence`).
-///
-/// ```swift
-/// [1, 2] ++ [3, 4]    // [1, 2, 3, 4]
-/// ```
-infix operator ++: AppendToList
-
 /// Semigroup concatenation. (`<>` in Haskell)
 ///
 /// Combines two ``Semigroup`` values using ``Semigroup/combine(_:_:)``.
@@ -219,26 +208,17 @@ infix operator <<<: FunctionCompositionBackwards
 
 /// Function application with lowest right-associative precedence. (`$` in Haskell)
 ///
-/// `f £ x` applies `f` to `x`. Its extremely low precedence means all other operators
+/// `f <| x` applies `f` to `x`. Its extremely low precedence means all other operators
 /// on the right-hand side are evaluated first, eliminating deep parentheses nesting.
 ///
-/// **Named equivalent:** ``apply(_:_:)``
+/// **Named equivalent:** ``call(_:_:)``
 ///
 /// **Precedence:** `LowPrecedenceFunctionCallRight` (right-associative, lower than ternary).
 ///
 /// ```swift
-/// f £ g £ x           // f(g(x))
-/// not £ isValid £ input  // not(isValid(input))
+/// f <| g <| x              // f(g(x))
+/// not <| isValid <| input  // not(isValid(input))
 /// ```
-infix operator £: LowPrecedenceFunctionCallRight
-
-/// ASCII alternative to `£` — function application with lowest right-associative precedence.
-///
-/// `f <| x` is identical to `f £ x`. Use whichever is more readable in context.
-///
-/// **Named equivalent:** ``call(_:_:)``
-///
-/// **Precedence:** `LowPrecedenceFunctionCallRight` (right-associative).
 infix operator <|: LowPrecedenceFunctionCallRight
 
 /// Pipeline / flipped function application. (`&` in Swift stdlib, `|>` in F# / Elixir)
@@ -309,19 +289,6 @@ infix operator <£: FunctorOps
 /// userId |> fetchUser <&> \.name
 /// ```
 infix operator <&>: MonadBindLeft
-
-/// Transformer-specific fmap: `(<£^>) :: (a -> b) -> f (g a) -> f (g b)`
-///
-/// This operator is exclusively for transformer (nested) fmap (`mapT`).
-/// Unlike `<£>`, it has NO base overload — only transformer-specific overloads —
-/// so Swift can always resolve the correct overload with zero ambiguity.
-infix operator <£^>: FunctorOps
-
-/// Flipped transformer-specific fmap: `(<&^>) :: f (g a) -> (a -> b) -> f (g b)`
-///
-/// Flipped version of `<£^>`. The outer type is the first argument,
-/// so Swift resolves the overload from the container type directly.
-infix operator <&^>: MonadBindLeft
 
 // There is no infix power operator: Swift's stdlib owns `infix operator ^: AdditionPrecedence`
 // (bitwise XOR) and a redeclaration in a higher group is an "ambiguous operator declarations"

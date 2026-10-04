@@ -47,11 +47,10 @@ There is no `•` operator in this library — some older notes mention it, but 
 
 #### Function Application (Precedence 0)
 - `|>` - forward pipe (`LowPrecedenceFunctionCallLeft`, left-associative): `a -> (a -> b) -> b`
-- `<|` / `£` - backward application (`LowPrecedenceFunctionCallRight`, right-associative): `(a -> b) -> a -> b` — `£` and `<|` are two spellings of the same operator
+- `<|` - backward application (`LowPrecedenceFunctionCallRight`, right-associative): `(a -> b) -> a -> b`
 
-#### Semigroup (Precedence 6 / 5)
+#### Semigroup (Precedence 6)
 - `<>` - append/concat (`ConcatPrecedence`, precedence 6, right-associative)
-- `++` - list concatenation (`AppendToList`, precedence 5, right-associative)
 
 ### Example Analysis Process:
 

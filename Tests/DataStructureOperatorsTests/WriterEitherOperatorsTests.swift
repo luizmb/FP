@@ -5,20 +5,6 @@ import DataStructureOperators
 import Testing
 
 @Suite struct WriterEitherOperatorsTests {
-    @Test func writerMapTWithEitherInner() {
-        let w = Writer<[String], Either<String, Int>>(.right(5), ["x"])
-        let result = { $0 * 2 } <£^> w
-        #expect(result.value == .right(10))
-        #expect(result.log == ["x"])
-    }
-
-    @Test func writerFlippedFmapWithEitherInner() {
-        let w = Writer<[String], Either<String, Int>>(.right(5), ["x"])
-        let result = w <&^> { $0 * 2 }
-        #expect(result.value == .right(10))
-        #expect(result.log == ["x"])
-    }
-
     @Test func eitherMapTWithWriterInner() {
         let e: Either<String, Writer<[String], Int>> = .right(Writer(3, ["y"]))
         let result = e.mapT { $0 * 4 }

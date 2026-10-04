@@ -8,26 +8,6 @@ import Testing
 @Suite struct ResultTWriterOperatorsTests {
     enum TestError: Error, Equatable { case failure }
 
-    @Test func fmapSuccess() {
-        let result: Result<Writer<[String], Int>, TestError> = .success(Writer(5, ["x"]))
-        let mapped = { $0 * 2 } <£^> result
-        #expect(Result.prism.success.preview(mapped)?.value == 10)
-        #expect(Result.prism.success.preview(mapped)?.log == ["x"])
-    }
-
-    @Test func flippedFmapSuccess() {
-        let result: Result<Writer<[String], Int>, TestError> = .success(Writer(5, ["x"]))
-        let mapped = result <&^> { $0 * 2 }
-        #expect(Result.prism.success.preview(mapped)?.value == 10)
-        #expect(Result.prism.success.preview(mapped)?.log == ["x"])
-    }
-
-    @Test func fmapFailure() {
-        let result: Result<Writer<[String], Int>, TestError> = .failure(.failure)
-        let mapped: Result<Writer<[String], Int>, TestError> = { $0 * 2 } <£^> result
-        if case let .failure(e) = mapped { #expect(e == .failure) } else { Issue.record("Expected .failure") }
-    }
-
     @Test func bindSuccess() {
         let result: Result<Writer<[String], Int>, TestError> = .success(Writer(5, ["outer"]))
         let fn: @Sendable (Int) -> Result<Writer<[String], String>, TestError> = { n in .success(Writer("\(n)", ["inner"])) }

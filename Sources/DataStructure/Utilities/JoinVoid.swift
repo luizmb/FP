@@ -5,7 +5,7 @@ import CoreFP
 
 //
 // These free functions mirror the join/void free functions in CoreFP/Utilities/JoinVoid.swift
-// but target the DataStructure monad types: Either, Reader, Stateful, Writer.
+// but target the DataStructure monad types: Either, Reader, Stateful, Writer, NonEmpty, These, Loading.
 //
 // join :: Monad m => m (m a) -> m a     (flattens one layer of nesting)
 // void :: Functor f => f a -> f ()      (discards values, keeps structure)
@@ -15,11 +15,17 @@ import CoreFP
 //   join(Reader<Env, Reader<Env, A>>)       -> Reader<Env, A>
 //   join(Stateful<S, Stateful<S, A>>)       -> Stateful<S, A>
 //   join(Writer<W, Writer<W, A>>)           -> Writer<W, A>
+//   join(NonEmpty<NonEmpty<A>>)             -> NonEmpty<A>
+//   join(These<L, These<L, A>>)             -> These<L, A>       (L: Semigroup)
+//   join(Loading<Loading<A, F>, F>)         -> Loading<A, F>
 //
 //   void(Either<L, A>)                      -> Either<L, Void>
 //   void(Reader<Env, A>)                    -> Reader<Env, Void>
 //   void(Stateful<S, A>)                    -> Stateful<S, Void>
 //   void(Writer<W, A>)                      -> Writer<W, Void>
+//   void(NonEmpty<A>)                       -> NonEmpty<Void>
+//   void(These<L, A>)                       -> These<L, Void>
+//   void(Loading<A, F>)                     -> Loading<Void, F>
 //   void(Validation<E, A>)                  -> Validation<E, Void>  (Functor only — no Monad)
 
 // MARK: - Either
@@ -74,5 +80,41 @@ public func void<W: Monoid, A>(_ fa: Writer<W, A>) -> Writer<W, Void> {
 
 /// `void` for `Validation (Functor only — no Monad join)`.
 public func void<E: Semigroup, A>(_ fa: Validation<E, A>) -> Validation<E, Void> {
+    fa.void()
+}
+
+// MARK: - NonEmpty
+
+/// `join` for `NonEmpty`.
+public func join<A>(_ nested: NonEmpty<NonEmpty<A>>) -> NonEmpty<A> {
+    NonEmpty.join(nested)
+}
+
+/// `void` for `NonEmpty`.
+public func void<A>(_ fa: NonEmpty<A>) -> NonEmpty<Void> {
+    fa.void()
+}
+
+// MARK: - These
+
+/// `join` for `These`.
+public func join<L: Semigroup, A>(_ nested: These<L, These<L, A>>) -> These<L, A> {
+    These.join(nested)
+}
+
+/// `void` for `These`.
+public func void<L, A>(_ fa: These<L, A>) -> These<L, Void> {
+    fa.void()
+}
+
+// MARK: - Loading
+
+/// `join` for `Loading`.
+public func join<A, F>(_ nested: Loading<Loading<A, F>, F>) -> Loading<A, F> {
+    Loading.join(nested)
+}
+
+/// `void` for `Loading`.
+public func void<A, F>(_ fa: Loading<A, F>) -> Loading<Void, F> {
     fa.void()
 }

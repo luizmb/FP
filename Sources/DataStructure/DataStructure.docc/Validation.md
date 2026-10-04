@@ -161,7 +161,9 @@ Validation<MyError, Int>.success(42).toResult()      // .success(42)
 Validation<MyError, Int>.failure(.bad).toResult()    // .failure(.bad)
 
 // From Either / Result
-validationFromEither(Either<[String], Int>.right(42))  // .success(42)
+Validation(Either<[String], Int>.right(42))  // .success(42)
+Validation(Result<Int, MyErrors>.success(42))  // .success(42), requires E: Semigroup & Error
+Either<[String], Int>.right(42).toValidation()  // .success(42)
 ```
 
 ---
@@ -195,32 +197,32 @@ Validation participates in transformer stacks either as the **outer** layer or a
 ```swift
 let v: Validation<[String], Int?> = .success(.some(5))
 
-// <£^> maps inside the Optional without touching the Validation layer
-{ $0 * 2 } <£^> v  // .success(Optional(10))
+// mapT maps inside the Optional without touching the Validation layer
+v.mapT { $0 * 2 }  // .success(Optional(10))
 
 let none: Validation<[String], Int?> = .success(.none)
-{ $0 * 2 } <£^> none  // .success(nil)
+none.mapT { $0 * 2 }  // .success(nil)
 
 let failed: Validation<[String], Int?> = .failure(["e"])
-{ $0 * 2 } <£^> failed  // .failure(["e"])
+failed.mapT { $0 * 2 }  // .failure(["e"])
 ```
 
 ### `ValidationTArray` — `Validation<E, [A]>` (outer = Validation, inner = Array)
 
 ```swift
 let v: Validation<[String], [Int]> = .success([1, 2, 3])
-{ $0 * 2 } <£^> v  // .success([2, 4, 6])
+v.mapT { $0 * 2 }  // .success([2, 4, 6])
 ```
 
 ### `ValidationTResult` — `Validation<E, Result<A, Err>>` (outer = Validation, inner = Result)
 
 ```swift
 let v: Validation<[String], Result<Int, MyError>> = .success(.success(5))
-{ $0 * 2 } <£^> v  // .success(.success(10))
+v.mapT { $0 * 2 }  // .success(.success(10))
 
 // Inner failure passes through the outer success
 let innerFail: Validation<[String], Result<Int, MyError>> = .success(.failure(.bad))
-{ $0 * 2 } <£^> innerFail  // .success(.failure(.bad))
+innerFail.mapT { $0 * 2 }  // .success(.failure(.bad))
 ```
 
 ### `OptionalTValidation` — `Validation<E, A>?` (outer = Optional, inner = Validation)
@@ -261,7 +263,7 @@ import DataStructureOperators // Operators (<£>, <*>, *>, <*…)
 | `bimap` | `Data.Bifunctor`'s `bimap` |
 | `mapFailure` | `Data.Bifunctor`'s `first` |
 | `toEither` | `Data.Validation`'s `toEither` |
-| `validationFromEither` | `Data.Validation`'s `fromEither` |
+| `Validation(_ either:)` | `Data.Validation`'s `fromEither` |
 | `sequence` / `traverse` (Traversable) | `Data.Traversable`'s `sequence` / `traverse` |
 
 Haskell's `Validation` is, for the exact same reason as this library's, **Applicative but not Monad** — accumulating every error requires running both sides independently, which is incompatible with `flatMap`'s inherently sequential, short-circuiting nature. This is a rare case where the Swift and Haskell libraries independently arrived at the identical design constraint, rather than one copying the other.

@@ -296,7 +296,7 @@ import DataStructureOperators
 | `liftA2` | `Control.Applicative`'s `liftA2` |
 | `>>-` / `-<<` (`flatMap`) | `>>=` / `=<<` (the list monad) |
 | `>=>` | `Control.Monad`'s `>=>` |
-| `<|>` | `Alternative`'s `<|>` for `[]` (list concatenation, same as `++`/`mplus`) |
+| `<|>` | `Alternative`'s `<|>` for `[]` (list concatenation, same as `<>`/`mplus`) |
 | `filterM` | **name collision, not the same function** — this library's `filterM` is just a curried `filter`; Haskell's `Control.Monad.filterM` is the monadic power-set-style filter, `(a -> m Bool) -> [a] -> m [a]` |
 | `foldLeft` | `Data.List`'s `foldl'` |
 | `foldRight` | `Data.List`'s `foldr` |

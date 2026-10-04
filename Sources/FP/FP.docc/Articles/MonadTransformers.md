@@ -260,7 +260,7 @@ Combine or async closures a bind would need. Thread the state around the stream 
 
 `Either<L, Result<A, E>>` models two independent error channels — for example a routing/left-right
 outcome (`Either`) wrapping a Swift-idiomatic fallible operation (`Result`). Composing across both
-layers uses the transformer functions directly, or the `<£^>`/`>>-`/`>=>` operators, which delegate
+layers uses the transformer functions directly, or the `>>-`/`>=>` operators, which delegate
 to them:
 
 ```swift
@@ -272,8 +272,7 @@ enum MyError: Error { case negative }
 let ok: Either<String, Result<Int, MyError>> = .right(.success(21))
 
 // mapT — transform the innermost value, leaving both outer layers alone
-mapTEitherResult({ $0 * 2 }, ok)              // .right(.success(42))
-{ $0 * 2 } <£^> ok                             // same, via the transformer-specific operator
+ok.mapT { $0 * 2 }  // .right(.success(42))
 
 // flatMapT — chain a function that returns a full Either<L, Result<B, E>>
 let validated = flatMapTEitherResult(ok) { n in
@@ -329,7 +328,7 @@ For the Haskell side of this mapping, see:
 
 ```swift
 import DataStructure          // Transformer named functions (mapT, applyXxx, liftA2Xxx, flatMapT, kleisliT)
-import DataStructureOperators // Transformer operators (<£^>, <&^>, <*>, >>-, >=>…)
+import DataStructureOperators // Transformer operators (<*>, >>-, >=>…)
 import CoreFP                 // CoreFP-only combos (OptionalTArray, ArrayTResult, PublisherTOptional, …)
 import CoreFPOperators        // Operator variants for the CoreFP-only combos
 ```

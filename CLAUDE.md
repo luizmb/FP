@@ -38,7 +38,7 @@ The `FP` umbrella product re-exports all four. **Operators must always delegate 
 
 ### Monad Transformer Naming
 
-Transformers are named `OuterTInner`, e.g. `OptionalTArray` means `Optional<[A]>`, `ReaderTEither` means `Reader<Env, Either<L, A>>`. Each transformer exposes three operations as free functions: `mapT`, `liftA2*`, `flatMapT`.
+Transformers are named `OuterTInner`, e.g. `OptionalTArray` means `Optional<[A]>`, `ReaderTEither` means `Reader<Env, Either<L, A>>`. Transformer fmap is always the instance method `.mapT(_:)` plus the static curried `fmapT(_:)` (never a free `mapTOuterInner` function); `liftA2*` and `flatMapT` follow per-stack conventions.
 
 ### Key Types
 
@@ -59,7 +59,6 @@ Every operator that has a directional sense has a **flipped counterpart**. When 
 | Forward | Flipped | Haskell equiv | Meaning |
 |---|---|---|---|
 | `<£>` | `<&>` | `<$>` / `<&>` | Functor map — fn left / container left |
-| `<£^>` | `<&^>` | — | Transformer (nested) functor map — fn left / container left |
 | `£>` | `<£` | `$>` / `<$` | Replace with constant — container left / value left |
 | `<*>` | — | `<*>` | Applicative apply (symmetric, no flip) |
 | `*>` | `<*` | `*>` / `<*` | Sequence — keep right / keep left |
@@ -67,17 +66,17 @@ Every operator that has a directional sense has a **flipped counterpart**. When 
 | `->>` | `<<-` | — | Comonad extend — container left / fn left |
 | `>=>` | `<=<` | `>=>` / `<=<` | Kleisli composition — left-to-right / right-to-left |
 | `>>>` | `<<<` | `>>>` / `<<<` | Function/optics composition — left-to-right / right-to-left |
-| `£` / `<\|` | `\|>` | `$` | Function application — fn left (`f £ x`) / value left (`x \|> f`) |
+| `<\|` | `\|>` | `$` | Function application — fn left (`f <\| x`) / value left (`x \|> f`) |
 | `<\|>` | — | `<\|>` | Alternative / choice (symmetric, no flip) |
 | `<>` | — | `<>` | Semigroup/Monoid append (symmetric, no flip) |
-| `++` | — | `++` | List/String concat (symmetric, no flip) |
 | `^` (prefix) | — | — | Lift — `WritableKeyPath` → `Lens`; `KeyPath` → partial `Lens` builder |
 | `≅` | — | — | Isomorphism / approximate equality check |
 | `±` / `+/-` | — | — | Numeric range construction — `value ± delta` |
 
 **Notes:**
-- `£` and `<|` are two symbols for the same operator (both `fn £ value` / `fn <| value`); `|>` is its flip.
-- `<£^>` and `<&^>` have **no base-type overloads** by design — transformer-only, so Swift always resolves unambiguously.
+- `<|` is function application (`fn <| value`, Haskell's `$`); `|>` is its flip. There is no plain `£` operator: `£` only appears inside other operators such as `<£>`, `£>`, `<£`.
+- There is no `++`: concatenate arrays and strings with `<>`.
+- Transformer (nested) functor map has **no operator**: every stack exposes the method `.mapT(_:)` plus the static curried `fmapT(_:)` (same shape as base `map` / `fmap`). `£>` / `<£` on a stack resolve to the base type (they replace the whole output); inner replace is `mapT(const(x))`.
 - Optics (`Lens`, `Prism`, `AffineTraversal`) compose via `>>>` / `<<<` alongside regular function composition.
 
 ## Sendable Contract — MANDATORY

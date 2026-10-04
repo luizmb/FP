@@ -4,17 +4,17 @@ import Foundation
 public extension SumType2 {
     /// Fold both cases of the sum type into a single value `C`.
     ///
-    /// This is an alias for ``SumType2/match(caseLeft:caseRight:)`` with labelled parameters,
-    /// matching the Haskell `bimap` / bifoldMap naming convention.
+    /// This is an alias for ``SumType2/match(caseLeft:caseRight:)`` with Haskell's `bifoldMap`
+    /// argument order (left function first) and no labels, like `Validation.bifoldMap(_:_:)`.
     ///
     /// ```swift
     /// let e: Either<String, Int> = .right(42)
-    /// let s = e.bifoldMap(leftBy: { "error: \($0)" }, rightBy: { "value: \($0)" })
+    /// let s = e.bifoldMap({ "error: \($0)" }, { "value: \($0)" })
     /// // "value: 42"
     /// ```
     func bifoldMap<C>(
-        leftBy lf: (A) -> C,
-        rightBy rf: (B) -> C
+        _ lf: (A) -> C,
+        _ rf: (B) -> C
     ) -> C {
         match(caseLeft: lf, caseRight: rf)
     }

@@ -5,24 +5,6 @@ import DataStructureOperators
 import Testing
 
 @Suite struct StatefulTOptionalOperatorsTests {
-    @Test func fmapSome() {
-        let s = Stateful<Int, Int?>.pure(.some(5))
-        let result = { $0 * 2 } <£^> s
-        #expect(result.eval(0) == .some(10))
-    }
-
-    @Test func flippedFmapSome() {
-        let s = Stateful<Int, Int?>.pure(.some(5))
-        let result = s <&^> { $0 * 2 }
-        #expect(result.eval(0) == .some(10))
-    }
-
-    @Test func fmapNone() {
-        let s = Stateful<Int, Int?>.pure(nil)
-        let result = { $0 * 2 } <£^> s
-        #expect(result.eval(0) == nil)
-    }
-
     @Test func apply() {
         let sf = Stateful<Int, (@Sendable (Int) -> String)?>.pure(.some { "\($0)" })
         let sa = Stateful<Int, Int?>.pure(.some(7))

@@ -73,7 +73,7 @@ A `Zipper` is, structurally, a `NonEmpty` with a cursor. Converting between them
 
 ```swift
 let ne = NonEmpty(head: 1, tail: [2, 3, 4])
-let z = Zipper.fromNonEmpty(ne)   // focus == 1 (the head), rest placed to the right
+let z = Zipper(ne)   // focus == 1 (the head), rest placed to the right
 
 z.moveRight()?.toNonEmpty()   // NonEmpty(head: 1, tail: [2, 3, 4]) — full sequence,
                               // regardless of where the focus currently sits

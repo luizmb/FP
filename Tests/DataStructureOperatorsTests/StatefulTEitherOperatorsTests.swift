@@ -5,24 +5,6 @@ import DataStructureOperators
 import Testing
 
 @Suite struct StatefulTEitherOperatorsTests {
-    @Test func fmapRight() {
-        let s = Stateful<Int, Either<String, Int>>.pure(.right(5))
-        let result: Stateful<Int, Either<String, Int>> = { $0 * 2 } <£^> s
-        #expect(result.eval(0) == .right(10))
-    }
-
-    @Test func flippedFmapRight() {
-        let s = Stateful<Int, Either<String, Int>>.pure(.right(5))
-        let result: Stateful<Int, Either<String, Int>> = s <&^> { $0 * 2 }
-        #expect(result.eval(0) == .right(10))
-    }
-
-    @Test func fmapLeft() {
-        let s = Stateful<Int, Either<String, Int>>.pure(.left("err"))
-        let result: Stateful<Int, Either<String, Int>> = { $0 * 2 } <£^> s
-        #expect(result.eval(0) == .left("err"))
-    }
-
     @Test func apply() {
         let sf = Stateful<Int, Either<String, @Sendable (Int) -> String>>.pure(.right { "\($0)" })
         let sa = Stateful<Int, Either<String, Int>>.pure(.right(42))

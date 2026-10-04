@@ -8,10 +8,10 @@ public extension Either {
     /// The left case maps to `.failure` and the right case maps to `.success`:
     ///
     /// ```swift
-    /// Either<DBError, User>.left(DBError.notFound).result()    // .failure(.notFound)
-    /// Either<DBError, User>.right(user).result()              // .success(user)
+    /// Either<DBError, User>.left(DBError.notFound).toResult()    // .failure(.notFound)
+    /// Either<DBError, User>.right(user).toResult()              // .success(user)
     /// ```
-    func result() -> Result<B, A> where A: Error {
+    func toResult() -> Result<B, A> where A: Error {
         Result.from(inverted())
     }
 }

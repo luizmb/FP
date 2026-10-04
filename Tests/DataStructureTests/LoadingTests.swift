@@ -252,12 +252,12 @@ struct LoadingTransitionTests {
         #expect(sut.applying(.failure(.network)) == .failed(error: .network, previous: nil))
     }
 
-    @Test func from_success_hasNoPrevious() {
-        #expect(Sut.from(.success(7)) == .loaded(7))
+    @Test func initFromResult_success_hasNoPrevious() {
+        #expect(Sut(.success(7)) == .loaded(7))
     }
 
-    @Test func from_failure_hasNoPrevious() {
-        #expect(Sut.from(.failure(.decoding)) == .failed(error: .decoding, previous: nil))
+    @Test func initFromResult_failure_hasNoPrevious() {
+        #expect(Sut(.failure(.decoding)) == .failed(error: .decoding, previous: nil))
     }
 }
 

@@ -13,6 +13,25 @@ public func compose<A, B, C>(
     { a in bc(ab(a)) }
 }
 
+/// Left-to-right composition of a **tuple-producing** function with a **multi-argument** function.
+///
+/// The named counterpart of the variadic `>>>`: `compose(fanout(\.a, \.b), Thing.init)` feeds the
+/// values produced by `f` positionally into `g`. Swift (since SE-0110) treats `((A, B)) -> Out` and
+/// `(A, B) -> Out` as distinct types; the parameter pack bridges the two.
+///
+/// ```swift
+/// let narrow: @Sendable (World) -> Env = compose(fanout(\.badge, \.save), Env.init)
+/// ```
+public func compose<Root, each T, Output>(
+    _ f: @escaping @Sendable (Root) -> (repeat each T),
+    _ g: @escaping @Sendable (repeat each T) -> Output
+) -> @Sendable (Root) -> Output {
+    { root in
+        let values = f(root)
+        return g(repeat each values)
+    }
+}
+
 public extension Of3 {
     /// The `property` property.
     static func compose(

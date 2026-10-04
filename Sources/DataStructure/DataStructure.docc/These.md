@@ -75,8 +75,8 @@ Unlike `Validation`, `These` *does* have a lawful `Monad` instance — `flatMap`
 
 ```swift
 // Either has no "both" case — the conversion is always total and lossless
-These<String, Int>.fromEither(.left("error"))   // .this("error")
-These<String, Int>.fromEither(.right(42))        // .that(42)
+These<String, Int>(Either.left("error"))   // .this("error")
+These<String, Int>(Either.right(42))        // .that(42)
 
 // align: the "zip two optionals, keep whichever are present" operation
 These<String, Int>.align("a", 1)     // .both("a", 1)
@@ -107,7 +107,7 @@ These<String, Int>.align(nil, nil)   // nil — the only case with no `These` to
 | `These<A, B>` | [`These a b`](https://hackage.haskell.org/package/these) (`these` package) |
 | `.this` / `.that` / `.both` | `This` / `That` / `These` |
 | `These.align(_:_:)` | [`Data.Align`](https://hackage.haskell.org/package/semialign)'s `align` (now in the `semialign` package) |
-| `These.fromEither(_:)` | `these`'s `fromEither` |
+| `These(_ either:)` | `these`'s `fromEither` |
 | Applicative/Monad requiring `A: Semigroup` | same constraint on the `This`-side type in `these`'s own `Semigroup a => Applicative (These a)` instance |
 
 **References:**

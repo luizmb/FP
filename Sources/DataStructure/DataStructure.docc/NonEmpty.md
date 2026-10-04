@@ -201,8 +201,6 @@ let ne = NonEmpty<Int?>(head: 1, tail: [nil, 3])
 
 // mapT — maps only over present values
 ne.mapT { $0 * 10 }.toArray         // [Optional(10), nil, Optional(30)]
-{ $0 * 10 } <£^> ne                 // same (with DataStructureOperators)
-ne <&^> { $0 * 10 }                 // same (flipped)
 
 // flatMapT — inner function returns NonEmpty<B?>;
 //            nil slots become nil in result, some slots follow the function
@@ -224,9 +222,6 @@ let ne = NonEmpty<Result<Int, MyError>>(
 // mapT — maps over success values
 ne.mapT { $0 * 10 }.toArray
 // [.success(10), .failure(.err), .success(30)]
-
-{ $0 * 10 } <£^> ne                 // same (with DataStructureOperators)
-ne <&^> { $0 * 10 }                 // same (flipped)
 
 // flatMapT — inner function returns NonEmpty<Result<B, E>>;
 //            failures propagate, successes follow the function
@@ -269,11 +264,11 @@ NonEmpty(head: 2)            >  NonEmpty(head: 1, tail: [9])  // true (head wins
 
 ## Module
 
-`NonEmpty<A>` lives in the `DataStructure` module. Operator overloads (`<£>`, `>>-`, `<>`, `<£^>`, …) are in `DataStructureOperators`.
+`NonEmpty<A>` lives in the `DataStructure` module. Operator overloads (`<£>`, `>>-`, `<>`, …) are in `DataStructureOperators`.
 
 ```swift
 import DataStructure             // named functions only
-import DataStructureOperators    // adds <£>, <&>, >>-, <=<, <>, <£^>, <&^>, …
+import DataStructureOperators    // adds <£>, <&>, >>-, <=<, <>, …
 import FP                        // re-exports both + CoreFP + CoreFPOperators
 ```
 

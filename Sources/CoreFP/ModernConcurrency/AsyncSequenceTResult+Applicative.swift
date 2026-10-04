@@ -6,7 +6,7 @@ import Foundation
 // Haskell: ExceptT e AsyncStream
 //
 // The applicative is derived from the monad (`<*>` = `ap`): built from `flatMapTAsyncStreamResult`
-// (ordered concat) and `mapTAsyncStreamResult`. A `.failure` on the left is emitted once and never
+// (ordered concat) and `mapT`. A `.failure` on the left is emitted once and never
 // touches the right side; every `.success` on the left runs over the whole right stream, in order.
 // The right stream is single-pass, so it is drained once and replayed (see `AsyncStream.replayable`).
 
@@ -18,7 +18,7 @@ public func applyAsyncStreamResult<A, B, E: Error>(
     _ values: AsyncStream<Result<A, E>>
 ) -> AsyncStream<Result<B, E>> where A: Sendable, B: Sendable, E: Sendable {
     let replay = AsyncStream<Result<A, E>>.replayable(values)
-    return flatMapTAsyncStreamResult(fns) { f in mapTAsyncStreamResult(f, replay()) }
+    return flatMapTAsyncStreamResult(fns) { f in replay().mapT(f) }
 }
 
 /// liftA2 for AsyncStream<Result<A,E>>
@@ -31,7 +31,7 @@ where A: Sendable, B: Sendable, C: Sendable, E: Sendable {
     { @Sendable streamA, streamB in
         let replay = AsyncStream<Result<B, E>>.replayable(streamB)
         return flatMapTAsyncStreamResult(streamA) { a in
-            mapTAsyncStreamResult({ b in fn(a, b) }, replay())
+            replay().mapT { b in fn(a, b) }
         }
     }
 }

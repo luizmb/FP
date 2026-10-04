@@ -174,7 +174,7 @@ let maybeIncrement = Stateful<Int, Int?> { s in
 }
 // Note: state mutation happens either way
 
-{ $0 * 2 } <£^> maybeIncrement   // Stateful<Int, Int?> — maps inside the Optional
+maybeIncrement.mapT { $0 * 2 }   // Stateful<Int, Int?> — maps inside the Optional
 ```
 
 ### `StatefulTEither` — `Stateful<S, Either<L, A>>` (outer = Stateful, inner = Either)
@@ -184,7 +184,7 @@ let safeIncrement = Stateful<Int, Either<String, Int>> { s in
     s < 100 ? (s += 1; return .right(s)) : .left("overflow")
 }
 
-{ $0 * 2 } <£^> safeIncrement   // Stateful<Int, Either<String, Int>>
+safeIncrement.mapT { $0 * 2 }   // Stateful<Int, Either<String, Int>>
 ```
 
 ### `StatefulTResult` — `Stateful<S, Result<A, E>>` (outer = Stateful, inner = Result)
@@ -193,7 +193,7 @@ let safeIncrement = Stateful<Int, Either<String, Int>> { s in
 let result: Stateful<Int, Result<Int, MyError>> =
     increment.fmap { .success($0) }
 
-{ $0 * 2 } <£^> result   // Stateful<Int, Result<Int, MyError>>
+result.mapT { $0 * 2 }   // Stateful<Int, Result<Int, MyError>>
 ```
 
 ### `StatefulTWriter` — `Stateful<S, Writer<W, A>>` (outer = Stateful, inner = Writer)
@@ -204,7 +204,7 @@ Threads state while also accumulating a log.
 let logged: Stateful<Int, Writer<[String], Int>> = increment.fmap { n in
     Writer(n, ["incremented to \(n)"])
 }
-{ $0 * 2 } <£^> logged  // Stateful<Int, Writer<[String], Int>>
+logged.mapT { $0 * 2 }  // Stateful<Int, Writer<[String], Int>>
 
 // Bind (StateT s (Writer w)): the continuation returns the whole stack, so it can
 // touch the state and emit its own log. State threads left to right, logs append.

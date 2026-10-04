@@ -8,13 +8,19 @@ public extension Validation {
     }
 }
 
-/// Convert from Result to Validation — requires E: Semigroup & Error.
-public func validationFromResult<E: Semigroup & Error, A>(_ result: Result<A, E>) -> Validation<E, A> {
-    switch result {
-    case let .failure(e):
-        .failure(e)
+public extension Validation where E: Error {
+    /// Convert from Result — requires E: Semigroup & Error.
+    ///
+    /// ```swift
+    /// Validation(Result<Int, Errors>.success(42))  // .success(42)
+    /// ```
+    init(_ result: Result<A, E>) {
+        switch result {
+        case let .failure(e):
+            self = .failure(e)
 
-    case let .success(a):
-        .success(a)
+        case let .success(a):
+            self = .success(a)
+        }
     }
 }

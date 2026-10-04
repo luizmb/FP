@@ -24,7 +24,7 @@ public func -<< <R, A, B>(
 
 /// Kleisli composition operator for functions (left-to-right)
 /// (>=>) :: (a -> r -> b) -> (b -> r -> c) -> (a -> r -> c)
-public func >=> <R, A: Sendable, B, C>(
+public func >=> <R, A, B, C>(
     _ f: @escaping @Sendable (A) -> @Sendable (R) -> B,
     _ g: @escaping @Sendable (B) -> @Sendable (R) -> C
 ) -> @Sendable (A) -> @Sendable (R) -> C {
@@ -33,7 +33,7 @@ public func >=> <R, A: Sendable, B, C>(
 
 /// Kleisli composition operator for functions (right-to-left)
 /// (<=<) :: (b -> r -> c) -> (a -> r -> b) -> (a -> r -> c)
-public func <=< <R, A: Sendable, B, C>(
+public func <=< <R, A, B, C>(
     _ g: @escaping @Sendable (B) -> @Sendable (R) -> C,
     _ f: @escaping @Sendable (A) -> @Sendable (R) -> B
 ) -> @Sendable (A) -> @Sendable (R) -> C {

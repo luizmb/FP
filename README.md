@@ -1868,15 +1868,13 @@ companies.map(ceoName)   // [String]
 
 ---
 
-**Function application** — `£` / `<|` and `|>`
+**Function application** — `<|` and `|>`
 
-`£` and `<|` both apply a function to a value with the function on the left. They use the same precedence group — lower than every other operator — so they eliminate wrapping parentheses. Both are right-associative, so chains nest naturally:
+`<|` applies a function to a value with the function on the left (Haskell's `$`). Its precedence group is lower than every other operator, so it eliminates wrapping parentheses. It is right-associative, so chains nest naturally:
 
 ```swift
-uppercased £ trim £ "  hello  "   // "HELLO" — evaluated right-to-left: trim first, then uppercased
+uppercased <| trim <| "  hello  "   // "HELLO" — evaluated right-to-left: trim first, then uppercased
 ```
-
-The practical difference is in readability and conflict risk: `£` is a single Unicode character that never clashes with any other Swift operator. `<|` is ASCII, but the `<` and `|` characters appear in comparison and bitwise-OR operators, so it can cause parse ambiguity when placed directly adjacent to expressions involving `<` or `|`. Prefer `£` inside complex expressions; use `<|` where clarity is sufficient.
 
 `|>` is the value-left flip — left-associative at the same level — ideal for pipelines:
 
@@ -2143,7 +2141,6 @@ All operators require `CoreFPOperators` (for built-in types) or `DataStructureOp
 | Operator | Flipped | Description | Types |
 |----------|---------|-------------|-------|
 | `<£>` | `<&>` | Functor map — fn left / container left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `Either`, `Loading`, `Reader`, `Stateful`, `Validation`, `Writer` |
-| `<£^>` | `<&^>` | Transformer map (nested containers) — transformer-only, no base-type overloads | `Either`, `Reader`, `Stateful`, `Validation`, `Writer` transformer variants |
 | `£>` | `<£` | Replace contents with a constant — container left / value left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `Either`, `Loading`, `Reader`, `Stateful`, `Validation`, `Writer` |
 | `<*>` | — | Applicative apply — wrapped function on left, wrapped value on right | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` |
 | `*>` | `<*` | Sequence two effects — keep right / keep left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` |
@@ -2151,10 +2148,9 @@ All operators require `CoreFPOperators` (for built-in types) or `DataStructureOp
 | `->>` | `<<-` | Comonad extend — container left / fn left | `Writer` |
 | `>=>` | `<=<` | Kleisli composition — left-to-right / right-to-left | `Optional`, `Array`, `Result`, `Either`, `Loading`, `Reader`, `Stateful`, `Writer` |
 | `>>>` | `<<<` | Function / optics composition — left-to-right / right-to-left | Functions, `Iso`, `Lens`, `Prism`, `AffineTraversal` |
-| `£` / `<\|` | `\|>` | Function application — fn left / value left | Any function |
+| `<\|` | `\|>` | Function application — fn left / value left | Any function |
 | `<\|>` | — | Alternative / choice | `Optional`, `Array`, `Result`, `Publisher` |
 | `<>` | — | Semigroup append | `String`, `Array`, `Optional`, `Dictionary`, `Set`, `Result`, `Int.Monoids.*`, `Bool.Monoids.*`, `SIMD4<Int>.Monoids.*`, … |
-| `++` | — | Concatenation | `String`, `Array` |
 | `^` _(prefix)_ | — | Lift `WritableKeyPath` → `Lens`; `KeyPath` → partial `Lens` builder | `WritableKeyPath`, `KeyPath` |
 | `±` / `+/-` | — | Symmetric range — `center ± delta` → `ClosedRange` | `Strideable` (`Int`, `Double`, `Float`, `Date`, …) |
 | `≅` | — | Flipped range match — `value ≅ range` (equivalent to `range ~= value`) | `Comparable` |
@@ -2170,7 +2166,6 @@ Every custom operator lives in one of the precedence groups defined in `Sources/
 | 7 | `*`, `/` _(stdlib)_ | left | `MultiplicationPrecedence` |
 | 6 | `<>` | right | `ConcatPrecedence` |
 | 6 | `+`, `-` _(stdlib)_ | left | `AdditionPrecedence` |
-| 5 | `++` | right | `AppendToList` |
 | 4.8 | `...`, `..<` _(stdlib)_, `±` / `+/-` | none | `RangeFormationPrecedence` |
 | 4.5 | `as?` _(stdlib)_ | none | `CastingPrecedence` |
 | 4.2 | `??` _(stdlib)_ | right | `NilCoalescingPrecedence` |
@@ -2182,13 +2177,13 @@ Every custom operator lives in one of the precedence groups defined in `Sources/
 | 1 | `>=>`, `<=<`, `-<<`, `<<-` | right | `KleisliCompositionRight` |
 | 1 | `>>-`, `<&>`, `->>` | left | `MonadBindLeft` |
 | 0.5 | `?:` _(stdlib)_ | right | `TernaryPrecedence` |
-| 0 | `£`, `<\|` | right | `LowPrecedenceFunctionCallRight` |
+| 0 | `<\|` | right | `LowPrecedenceFunctionCallRight` |
 | 0 | `\|>` | left | `LowPrecedenceFunctionCallLeft` |
 | -1 | `=` _(stdlib)_ | right | `AssignmentPrecedence` |
 
 Practical takeaways:
 - `>>>` / `<<<` bind tighter than everything else, so composed functions and optics never need parentheses next to arithmetic or comparisons.
-- `£` / `<|` / `|>` sit near the very bottom (just above assignment), which is what lets them wrap an entire expression without parentheses — `f £ a + b * c` parses as `f £ (a + b * c)`.
+- `<|` / `|>` sit near the very bottom (just above assignment), which is what lets them wrap an entire expression without parentheses — `f <| a + b * c` parses as `f <| (a + b * c)`.
 - `>=>` / `<=<` / `-<<` / `<<-` (right-associative) and `>>-` / `<&>` / `->>` (left-associative) share precedence level 1 but different associativity groups — matching Haskell's `infixr 1` for Kleisli composition and `infixl 1` for bind.
 
 ---
@@ -2675,7 +2670,7 @@ let sumOfTwoDice = Gen.zip(die, die).map { $0 + $1 }   // 2...12
 
 struct User: Sendable { let id: UUID; let name: String; let age: Int }
 
-let userGen: Gen<User> = Gen.zip3(
+let userGen: Gen<User> = Gen.zip(
     .uuid(),
     .string(of: .letter(), count: .int(in: 3...8)),
     .int(in: 0...120)

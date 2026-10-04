@@ -7,7 +7,7 @@ import Foundation
 // Haskell: ExceptT l AsyncStream
 //
 // The applicative is derived from the monad (`<*>` = `ap`): built from `flatMapTAsyncStreamEither`
-// (ordered concat) and `mapTAsyncStreamEither`. A `.left` on the left is emitted once and never
+// (ordered concat) and `mapT`. A `.left` on the left is emitted once and never
 // touches the right side; every `.right` on the left runs over the whole right stream, in order.
 // The right stream is single-pass, so it is drained once and replayed (see `AsyncStream.replayable`).
 
@@ -19,7 +19,7 @@ public func applyAsyncStreamEither<L, A, B>(
     _ values: AsyncStream<Either<L, A>>
 ) -> AsyncStream<Either<L, B>> where A: Sendable, B: Sendable, L: Sendable {
     let replay = AsyncStream<Either<L, A>>.replayable(values)
-    return flatMapTAsyncStreamEither(fns) { f in mapTAsyncStreamEither(f, replay()) }
+    return flatMapTAsyncStreamEither(fns) { f in replay().mapT(f) }
 }
 
 /// liftA2 for AsyncStream<Either<L,A>>
@@ -32,7 +32,7 @@ where A: Sendable, B: Sendable, C: Sendable, L: Sendable {
     { @Sendable streamA, streamB in
         let replay = AsyncStream<Either<L, B>>.replayable(streamB)
         return flatMapTAsyncStreamEither(streamA) { a in
-            mapTAsyncStreamEither({ b in fn(a, b) }, replay())
+            replay().mapT { b in fn(a, b) }
         }
     }
 }

@@ -9,24 +9,25 @@ public extension Result {
         { $0.mapLeft(fn) }
     }
 
-    /// Declaration.
+    /// Transforms the success value (`Result.map`). Like the stdlib, the method form takes a
+    /// non-escaping closure; the curried statics take `@Sendable` ones.
     func mapLeft<A1>(
         _ lf: (A) -> A1
     ) -> Result<A1, B> {
         map(lf)
     }
 
-    /// Declaration.
+    /// Transforms the failure value (`Result.mapError`).
     func mapRight<B1>(
-        _ rf: @escaping @Sendable (B) -> B1
+        _ rf: (B) -> B1
     ) -> Result<A, B1> {
         mapError(rf)
     }
 
-    /// Declaration.
+    /// Transforms both sides at once.
     func bimap<A1, B1>(
-        _ lf: @escaping @Sendable (A) -> A1,
-        _ rf: @escaping @Sendable (B) -> B1
+        _ lf: (A) -> A1,
+        _ rf: (B) -> B1
     ) -> Result<A1, B1> {
         map(lf).mapError(rf)
     }

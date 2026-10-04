@@ -69,14 +69,14 @@ let adultNames: ([Person]) -> [String] = {
 }
 ```
 
-The predicate and the transform are now fully point-free — built from `flip`, `>>>`, and key paths, with no closure body anywhere inside them. The single `{ $0. … }` wrapper at the top remains only because `filter`/`map` are *methods*, not free functions this library provides a point-free entry point for — `£`/`|>` compose free functions, not method calls. That outer wrapper is exactly the boundary discussed below.
+The predicate and the transform are now fully point-free — built from `flip`, `>>>`, and key paths, with no closure body anywhere inside them. The single `{ $0. … }` wrapper at the top remains only because `filter`/`map` are *methods*, not free functions this library provides a point-free entry point for — `<|`/`|>` compose free functions, not method calls. That outer wrapper is exactly the boundary discussed below.
 
-**Using `£` / `|>` for the call itself:**
+**Using `<|` / `|>` for the call itself:**
 
 ```swift
 let people = [Person(name: "Ada", age: 16), Person(name: "Alan", age: 25)]
 
-adultNames £ people        // fn-left application
+adultNames <| people       // fn-left application
 people |> adultNames       // value-left, pipeline-friendly
 ```
 
@@ -140,7 +140,7 @@ works too (`Env.init <<< fanout(\.badge, \.save)`).
 Point-free is a tool for *removing noise*, not a mandate to eliminate every named value. Two symptoms mean it has gone too far:
 
 - **Composition chains that no longer name a concept.** `\.age >>> flip(>=)(18)` reads fine inline once — as `isAdult` it reads as a concept everywhere it's reused. If a composed pipeline has a name in the domain, give it one; point-free composes the *implementation* of `isAdult`, it doesn't forbid the binding.
-- **Operator soup.** Nesting `£`/`<|`/`|>`/`>>>`/`<<<` three or four deep to avoid a two-line closure usually reads worse than the closure it replaced. This library's own convention (see `CLAUDE.md`) is: prefer the point-free form when a named function or operator is *already* in scope and directly applicable — don't manufacture composition just to avoid `{ $0 }`.
+- **Operator soup.** Nesting `<|`/`|>`/`>>>`/`<<<` three or four deep to avoid a two-line closure usually reads worse than the closure it replaced. This library's own convention (see `CLAUDE.md`) is: prefer the point-free form when a named function or operator is *already* in scope and directly applicable — don't manufacture composition just to avoid `{ $0 }`.
 
 The rule of thumb used throughout this library: point-free where it removes an unnecessary intermediate name; a short closure (or a named `let`) where the intermediate name *is* the documentation.
 
@@ -155,7 +155,7 @@ The rule of thumb used throughout this library: point-free where it removes an u
 | `curry` / `uncurry` | `curry` / `uncurry` | identical names and semantics |
 | `id` | `id` | identical |
 | `>>>` / `<<<` | `Control.Category`'s `(>>>)` / `(<<<)` (`(<<<)` = `(.)`) | Haskell's bare `(.)` is right-to-left, matching `<<<`; `>>>` is the left-to-right dual from `Control.Category` |
-| `£` / `<\|` | `($)` | function application, low precedence, right-associative — same role as Haskell's `$` |
+| `<\|` | `($)` | function application, low precedence, right-associative — same role as Haskell's `$` |
 | `\|>` | `(&)` from `Data.Function` | value-first application, left-associative — Haskell's pipeline operator |
 | `withArg` | closest is `Data.Function.on`, though `on` transforms the *comparator*, not the argument position | no exact equivalent — `withArg` is Swift-specific plumbing for adapting arity around key paths |
 
@@ -167,5 +167,5 @@ For general background on the style itself — not specific to this library — 
 
 ```swift
 import FP        // Named functions (curry, flip, compose, fanout…)
-import CoreFPOperators  // Operators (>>>, <<<, £, <|, |>…)
+import CoreFPOperators  // Operators (>>>, <<<, <|, |>…)
 ```

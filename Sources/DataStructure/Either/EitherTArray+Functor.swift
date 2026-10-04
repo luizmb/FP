@@ -1,20 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
-import Foundation
+import CoreFP
 
 // EitherTArray: outer = Either, inner = Array
-// Type: Either<L, [A]> = Either<L, Array<A>>
+// Type: Either<L, [A]>
 
-/// mapT for Either<L, [A]>
-public func mapTEitherArray<L, A, B>(
-    _ fn: @escaping @Sendable (A) -> B,
-    _ either: Either<L, [A]>
-) -> Either<L, [B]> {
-    either.mapRight { arr in arr.map(fn) }
-}
+public extension Either {
+    /// Maps the value inside the inner Array, leaving `.left` untouched.
+    /// mapT :: (a -> b) -> Either l (array a) -> Either l (array b)
+    func mapT<Inner, C>(_ fn: @escaping @Sendable (Inner) -> C) -> Either<A, [C]>
+    where B == [Inner] {
+        mapRight { $0.map(fn) }
+    }
 
-/// Curried fmapT
-public func fmapTEitherArray<L, A, B>(
-    _ fn: @escaping @Sendable (A) -> B
-) -> (Either<L, [A]>) -> Either<L, [B]> {
-    { either in mapTEitherArray(fn, either) }
+    /// Curried, point-free form of ``mapT(_:)``.
+    static func fmapT<Inner, C>(
+        _ fn: @escaping @Sendable (Inner) -> C
+    ) -> @Sendable (Either<A, [Inner]>) -> Either<A, [C]>
+    where B == [Inner] {
+        { $0.mapT(fn) }
+    }
 }

@@ -5,6 +5,12 @@ import Foundation
 public extension Loading {
     // MARK: Applicative (derived from bind, so `<*> == ap` as Haskell requires)
 
+    /// pure :: a -> Loading e a
+    /// Lift a value into the `.loaded` state, the identity of ``zip(_:_:)`` and ``apply(_:_:)``.
+    static func pure(_ value: Success) -> Loading<Success, Failure> {
+        .loaded(value)
+    }
+
     //
     // Left-biased and short-circuiting, like PureScript's `RemoteData`: the right side only
     // matters when the left is `.loaded`. For the UI rule "show the failure if either request

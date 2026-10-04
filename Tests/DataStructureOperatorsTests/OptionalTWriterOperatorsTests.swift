@@ -6,26 +6,6 @@ import DataStructureOperators
 import Testing
 
 @Suite struct OptionalTWriterOperatorsTests {
-    @Test func fmapSome() {
-        let opt: Writer<[String], Int>? = .some(Writer(5, ["x"]))
-        let result = { $0 * 2 } <£^> opt
-        #expect(result?.value == 10)
-        #expect(result?.log == ["x"])
-    }
-
-    @Test func flippedFmapSome() {
-        let opt: Writer<[String], Int>? = .some(Writer(5, ["x"]))
-        let result = opt <&^> { $0 * 2 }
-        #expect(result?.value == 10)
-        #expect(result?.log == ["x"])
-    }
-
-    @Test func fmapNone() {
-        let opt: Writer<[String], Int>? = nil
-        let result: Writer<[String], Int>? = { $0 * 2 } <£^> opt
-        #expect(result == nil)
-    }
-
     @Test func bindSome() {
         let opt: Writer<[String], Int>? = .some(Writer(5, ["outer"]))
         let fn: @Sendable (Int) -> Writer<[String], String>? = { n in Writer("\(n)", ["inner"]) }

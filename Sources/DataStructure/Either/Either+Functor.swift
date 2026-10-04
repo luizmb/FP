@@ -3,12 +3,22 @@ import CoreFP
 import Foundation
 
 public extension Either {
-    /// Curried, point-free form of ``mapRight(_:)`` — maps over the `.right` case, leaving `.left` untouched.
+    /// Curried, point-free form of ``map(_:)`` — maps over the `.right` case, leaving `.left` untouched.
     /// fmap :: (b -> b1) -> Either a b -> Either a b1
     static func fmap<B1>(
         _ fn: @escaping @Sendable (B) -> B1
     ) -> @Sendable (Either<A, B>) -> Either<A, B1> {
-        { $0.mapRight(fn) }
+        { $0.map(fn) }
+    }
+
+    /// Functor map: transforms the `.right` value, leaving `.left` untouched. Same as ``mapRight(_:)``.
+    /// fmap :: (b -> b1) -> Either a b -> Either a b1
+    /// - Parameter fn: Function applied to the wrapped value when `self` is `.right`.
+    /// - Returns: A new `Either` with the transformed right type, unchanged if `self` is `.left`.
+    func map<B1>(
+        _ fn: @escaping @Sendable (B) -> B1
+    ) -> Either<A, B1> {
+        mapRight(fn)
     }
 
     /// Transforms the `.left` value, leaving `.right` untouched.

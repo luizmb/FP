@@ -50,7 +50,7 @@ struct User: Sendable {
     let age: Int
 }
 
-let userGen: Gen<User> = Gen.zip3(
+let userGen: Gen<User> = Gen.zip(
     .uuid(),
     .string(of: .letter(), count: .int(in: 3...8)),
     .int(in: 0...120)

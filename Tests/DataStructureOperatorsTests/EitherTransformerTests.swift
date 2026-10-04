@@ -11,12 +11,6 @@ import Testing
 
     // MARK: - ArrayTEither
 
-    @Test func arrayTEitherMapT() {
-        let arr: [Either<L, Int>] = [.right(1), .left(.err), .right(3)]
-        let result = { $0 * 2 } <£^> arr
-        #expect(result == [.right(2), .left(.err), .right(6)])
-    }
-
     @Test func arrayTEitherFlatMapT() {
         let arr: [Either<L, Int>] = [.right(1), .left(.err), .right(2)]
         let result = arr >>- { n in [Either<L, Int>.right(n), .right(n * 10)] }
@@ -30,18 +24,6 @@ import Testing
         #expect(result == [.right(11), .right(21), .right(12), .right(22)])
     }
 
-    @Test func arrayTEitherFmapOperator() {
-        let arr: [Either<L, Int>] = [.right(5), .left(.err)]
-        let result = { $0 * 2 } <£^> arr
-        #expect(result == [.right(10), .left(.err)])
-    }
-
-    @Test func arrayTEitherFlippedFmapOperator() {
-        let arr: [Either<L, Int>] = [.right(5), .left(.err)]
-        let result = arr <&^> { $0 * 2 }
-        #expect(result == [.right(10), .left(.err)])
-    }
-
     @Test func arrayTEitherBindOperator() {
         let arr: [Either<L, Int>] = [.right(1), .right(2)]
         let result = arr >>- { n in [Either<L, Int>.right(n * 2)] }
@@ -49,24 +31,6 @@ import Testing
     }
 
     // MARK: - OptionalTEither
-
-    @Test func optionalTEitherMapTSomeRight() {
-        let opt: Either<L, Int>? = .right(5)
-        let result = { $0 * 2 } <£^> opt
-        #expect(result == .some(.right(10)))
-    }
-
-    @Test func optionalTEitherMapTSomeLeft() {
-        let opt: Either<L, Int>? = .left(.err)
-        let result = { $0 * 2 } <£^> opt
-        #expect(result == .some(.left(.err)))
-    }
-
-    @Test func optionalTEitherMapTNone() {
-        let opt: Either<L, Int>? = nil
-        let result = { $0 * 2 } <£^> opt
-        #expect(result == nil)
-    }
 
     @Test func optionalTEitherFlatMapTNone() {
         let opt: Either<L, Int>? = nil
@@ -88,24 +52,6 @@ import Testing
 
     // MARK: - EitherTOptional
 
-    @Test func eitherTOptionalMapTRightSome() {
-        let either: Either<L, Int?> = .right(.some(5))
-        let result = { $0 * 2 } <£^> either
-        #expect(result == .right(.some(10)))
-    }
-
-    @Test func eitherTOptionalMapTRightNone() {
-        let either: Either<L, Int?> = .right(.none)
-        let result = { $0 * 2 } <£^> either
-        #expect(result == .right(.none))
-    }
-
-    @Test func eitherTOptionalMapTLeft() {
-        let either: Either<L, Int?> = .left(.err)
-        let result = { $0 * 2 } <£^> either
-        #expect(result == .left(.err))
-    }
-
     @Test func eitherTOptionalFlatMapTRightSome() {
         let either: Either<L, Int?> = .right(.some(5))
         let result = either >>- { n in Either<L, String?>.right(.some("\(n)")) }
@@ -124,39 +70,7 @@ import Testing
         #expect(result == .left(.err))
     }
 
-    // MARK: - EitherTArray
-
-    @Test func eitherTArrayMapTRight() {
-        let either: Either<L, [Int]> = .right([1, 2, 3])
-        let result = { $0 * 2 } <£^> either
-        #expect(result == .right([2, 4, 6]))
-    }
-
-    @Test func eitherTArrayMapTLeft() {
-        let either: Either<L, [Int]> = .left(.err)
-        let result = { $0 * 2 } <£^> either
-        #expect(result == .left(.err))
-    }
-
     // MARK: - EitherTResult
-
-    @Test func eitherTResultMapTRightSuccess() throws {
-        let either: Either<L, Result<Int, E>> = .right(.success(5))
-        let result = { $0 * 2 } <£^> either
-        #expect(result == .right(.success(10)))
-    }
-
-    @Test func eitherTResultMapTRightFailure() {
-        let either: Either<L, Result<Int, E>> = .right(.failure(.fail))
-        let result = { $0 * 2 } <£^> either
-        #expect(result == .right(.failure(.fail)))
-    }
-
-    @Test func eitherTResultMapTLeft() {
-        let either: Either<L, Result<Int, E>> = .left(.err)
-        let result = { $0 * 2 } <£^> either
-        #expect(result == .left(.err))
-    }
 
     @Test func eitherTResultFlatMapTRightSuccess() {
         let either: Either<L, Result<Int, E>> = .right(.success(5))
@@ -177,18 +91,6 @@ import Testing
     }
 
     // MARK: - EitherTStateful
-
-    @Test func eitherTStatefulMapTRight() {
-        let either: Either<L, Stateful<Int, Int>> = .right(Stateful<Int, Int>.get)
-        let result = { $0 * 2 } <£^> either
-        if case let .right(s) = result { #expect(s.eval(5) == 10) } else { Issue.record("Expected .right") }
-    }
-
-    @Test func eitherTStatefulMapTLeft() {
-        let either: Either<L, Stateful<Int, Int>> = .left(.err)
-        let result: Either<L, Stateful<Int, Int>> = { $0 * 2 } <£^> either
-        if case let .left(l) = result { #expect(l == .err) } else { Issue.record("Expected .left") }
-    }
 
     @Test func eitherTStatefulApply() {
         let eithF: Either<L, Stateful<Int, @Sendable (Int) -> String>> = .right(.pure { "\($0)" })
@@ -212,21 +114,6 @@ import Testing
     }
 
     // MARK: - EitherTWriter
-
-    @Test func eitherTWriterMapTRight() {
-        let either: Either<L, Writer<[String], Int>> = .right(Writer(5, ["log"]))
-        let result = { $0 * 2 } <£^> either
-        if case let .right(w) = result {
-            #expect(w.value == 10)
-            #expect(w.log == ["log"])
-        } else { Issue.record("Expected .right") }
-    }
-
-    @Test func eitherTWriterMapTLeft() {
-        let either: Either<L, Writer<[String], Int>> = .left(.err)
-        let result = { $0 * 2 } <£^> either
-        #expect(result == .left(.err))
-    }
 
     @Test func eitherTWriterFlatMapTRight() {
         let either: Either<L, Writer<[String], Int>> = .right(Writer(5, ["outer"]))

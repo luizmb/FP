@@ -18,7 +18,7 @@
         _ fns: AnyPublisher<(@Sendable (A) -> B)?, E>,
         _ values: AnyPublisher<A?, E>
     ) -> AnyPublisher<B?, E> {
-        bindPublisherOptional(fns) { f in mapTPublisherOptional(f, values) }
+        bindPublisherOptional(fns) { f in values.mapT(f) }
     }
 
     /// liftA2 for PublisherTOptional
@@ -28,7 +28,7 @@
         _ fn: @escaping @Sendable (A, B) -> C
     ) -> (AnyPublisher<A?, E>, AnyPublisher<B?, E>) -> AnyPublisher<C?, E> {
         { pubA, pubB in
-            bindPublisherOptional(pubA) { a in mapTPublisherOptional({ b in fn(a, b) }, pubB) }
+            bindPublisherOptional(pubA) { a in pubB.mapT { b in fn(a, b) } }
         }
     }
 
@@ -49,7 +49,7 @@
         _ lhs: AnyPublisher<A?, E>,
         _ rhs: AnyPublisher<B?, E>
     ) -> AnyPublisher<A?, E> {
-        bindPublisherOptional(lhs) { a in mapTPublisherOptional({ (_: B) in a }, rhs) }
+        bindPublisherOptional(lhs) { a in rhs.mapT { (_: B) in a } }
     }
 
 #endif

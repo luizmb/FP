@@ -3,24 +3,25 @@
     import Combine
     import Foundation
 
-    // PublisherTArray: outer = AnyPublisher, inner = Array
-    // Type: AnyPublisher<[A], E>
+    // PublisherTArray: outer = Publisher, inner = Array
+    // Type: AnyPublisher<[A], Failure>
 
-    /// `mapTPublisherArray`.
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func mapTPublisherArray<A, B, E: Error>(
-        _ fn: @escaping @Sendable (A) -> B,
-        _ publisher: AnyPublisher<[A], E>
-    ) -> AnyPublisher<[B], E> {
-        publisher.map { arr in arr.map(fn) }.eraseToAnyPublisher()
-    }
+    public extension Publisher {
+        /// Maps the value inside every emitted Array.
+        /// mapT :: (a -> b) -> Publisher (array a) e -> Publisher (array b) e
+        func mapT<Inner, B>(_ fn: @escaping @Sendable (Inner) -> B) -> AnyPublisher<[B], Failure>
+        where Output == [Inner] {
+            map { $0.map(fn) }.eraseToAnyPublisher()
+        }
 
-    /// `fmapTPublisherArray`.
-    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func fmapTPublisherArray<A, B, E: Error>(
-        _ fn: @escaping @Sendable (A) -> B
-    ) -> (AnyPublisher<[A], E>) -> AnyPublisher<[B], E> {
-        { publisher in mapTPublisherArray(fn, publisher) }
+        /// Curried, point-free form of ``mapT(_:)``.
+        static func fmapT<Inner, B>(
+            _ fn: @escaping @Sendable (Inner) -> B
+        ) -> @Sendable (AnyPublisher<[Inner], Failure>) -> AnyPublisher<[B], Failure>
+        where Output == [Inner] {
+            { $0.mapT(fn) }
+        }
     }
 
 #endif

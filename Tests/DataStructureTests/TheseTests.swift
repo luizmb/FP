@@ -362,16 +362,16 @@ import Testing
         #expect(lifted(both1, both2) == .both(["a", "b"], 15))
     }
 
-    // MARK: - Interop: fromEither
+    // MARK: - Interop: init from Either
 
-    @Test func fromEitherLeft() {
+    @Test func initFromEitherLeft() {
         let either: Either<String, Int> = .left("error")
-        #expect(These.fromEither(either) == .this("error"))
+        #expect(These(either) == .this("error"))
     }
 
-    @Test func fromEitherRight() {
+    @Test func initFromEitherRight() {
         let either: Either<String, Int> = .right(42)
-        #expect(These.fromEither(either) == .that(42))
+        #expect(These(either) == .that(42))
     }
 
     // MARK: - Interop: align

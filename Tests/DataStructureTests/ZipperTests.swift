@@ -124,9 +124,9 @@ private let middle = Zipper(left: [2, 1], focus: 3, right: [4, 5])
 
     // MARK: - NonEmpty interop
 
-    @Test func fromNonEmpty() {
+    @Test func initFromNonEmpty() {
         let ne = NonEmpty(head: 1, tail: [2, 3])
-        let z = Zipper.fromNonEmpty(ne)
+        let z = Zipper(ne)
         #expect(z.focus == 1)
         #expect(z.left.isEmpty)
         #expect(Array(z.right) == [2, 3])
@@ -143,7 +143,7 @@ private let middle = Zipper(left: [2, 1], focus: 3, right: [4, 5])
 
     @Test func nonEmpty_roundTrip() {
         let ne = NonEmpty(head: 1, tail: [2, 3])
-        #expect(Zipper.fromNonEmpty(ne).toNonEmpty() == ne)
+        #expect(Zipper(ne).toNonEmpty() == ne)
     }
 
     // MARK: - Functor

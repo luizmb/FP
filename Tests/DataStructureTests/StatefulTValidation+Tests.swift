@@ -7,13 +7,13 @@ import Testing
 
     @Test func mapTSuccess() {
         let s = Stateful<Int, Validation<[String], Int>>.pure(.success(5))
-        let mapped = fmapTStatefulValidation({ $0 * 2 }, s)
+        let mapped = s.mapT { $0 * 2 }
         #expect(mapped.eval(0) == .success(10))
     }
 
     @Test func mapTFailure() {
         let s = Stateful<Int, Validation<[String], Int>>.pure(.failure(["err"]))
-        let mapped = fmapTStatefulValidation({ $0 * 2 }, s)
+        let mapped = s.mapT { $0 * 2 }
         #expect(mapped.eval(0) == .failure(["err"]))
     }
 

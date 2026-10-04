@@ -254,21 +254,55 @@ import Testing
         #expect(v.toEither() == .left("err"))
     }
 
-    @Test func fromEither() {
+    @Test func initFromEither() {
         let e: Either<String, Int> = .right(10)
-        let v = validationFromEither(e)
+        let v = Validation(e)
         #expect(v == .success(10))
 
         let e2: Either<String, Int> = .left("oops")
-        let v2 = validationFromEither(e2)
+        let v2 = Validation(e2)
         #expect(v2 == .failure("oops"))
+    }
+
+    @Test func eitherToValidation() {
+        #expect(Either<String, Int>.right(10).toValidation() == .success(10))
+        #expect(Either<String, Int>.left("oops").toValidation() == .failure("oops"))
+    }
+
+    @Test func toResultSuccess() {
+        let v: Validation<ValidationErrors, Int> = .success(3)
+        #expect(v.toResult() == .success(3))
+    }
+
+    @Test func toResultFailure() {
+        let v: Validation<ValidationErrors, Int> = .failure(ValidationErrors(messages: ["bad"]))
+        #expect(v.toResult() == .failure(ValidationErrors(messages: ["bad"])))
+    }
+
+    @Test func initFromResult() {
+        #expect(Validation(Result<Int, ValidationErrors>.success(3)) == .success(3))
+        let failure = Result<Int, ValidationErrors>.failure(ValidationErrors(messages: ["bad"]))
+        #expect(Validation(failure) == .failure(ValidationErrors(messages: ["bad"])))
+    }
+
+    @Test func resultRoundTrip() {
+        let v: Validation<ValidationErrors, Int> = .failure(ValidationErrors(messages: ["a", "b"]))
+        #expect(Validation(v.toResult()) == v)
+    }
+
+    @Test func mapIsMapSuccess() {
+        let success: Validation<[String], Int> = .success(2)
+        let failure: Validation<[String], Int> = .failure(["e"])
+        #expect(success.map { $0 * 10 } == .success(20))
+        #expect(failure.map { $0 * 10 } == .failure(["e"]))
+        #expect(success.map(String.init) == success.mapSuccess(String.init))
     }
 
     // MARK: - Transformer: ValidationTOptional
 
     @Test func validationTOptionalFunctor() {
         let v: Validation<[String], Int?> = .success(.some(5))
-        let result = mapTValidationOptional { $0 * 2 }(v)
+        let result = v.mapT { $0 * 2 }
         #expect(result == .success(.some(10)))
     }
 
@@ -282,7 +316,7 @@ import Testing
 
     @Test func validationTArrayFunctor() {
         let v: Validation<[String], [Int]> = .success([1, 2, 3])
-        let result = mapTValidationArray { $0 * 2 }(v)
+        let result = v.mapT { $0 * 2 }
         #expect(result == .success([2, 4, 6]))
     }
 
@@ -296,7 +330,7 @@ import Testing
 
     @Test func eitherTValidationFunctorRight() {
         let e: Either<String, Validation<[Int], Int>> = .right(.success(5))
-        let result = fmapTEitherValidation({ $0 * 2 }, e)
+        let result = e.mapT { $0 * 2 }
         #expect(result == .right(.success(10)))
     }
 
@@ -456,5 +490,13 @@ extension ValidationTests.AccumulatedError: Semigroup {
     typealias E = ValidationTests.AccumulatedError
     static func combine(_ lhs: E, _ rhs: E) -> E {
         E(parts: lhs.parts + rhs.parts)
+    }
+}
+
+private struct ValidationErrors: Error, Semigroup, Equatable {
+    let messages: [String]
+
+    static func combine(_ lhs: Self, _ rhs: Self) -> Self {
+        ValidationErrors(messages: lhs.messages + rhs.messages)
     }
 }

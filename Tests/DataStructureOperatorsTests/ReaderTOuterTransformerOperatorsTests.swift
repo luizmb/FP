@@ -7,24 +7,12 @@ import Testing
 
 /// Covers the 4 Reader-outer monad-transformer combinations that had zero operator-syntax
 /// coverage: `ReaderTArray`, `ReaderTOptional`, `ReaderTResult`, and `ReaderTReader` (nested
-/// Reader). Every assertion below goes through an operator symbol (`<£^>`, `<&^>`, `<*>`, `*>`,
+/// Reader). Every assertion below goes through an operator symbol (`<*>`, `*>`,
 /// `<*`, `>>-`, `-<<`, `>=>`, `<=<`) rather than the underlying named function.
 @Suite struct ReaderTOuterTransformerOperatorsTests {
     // MARK: - Transformer: ReaderTArray
 
     struct ArrayEnv { let factor: Int }
-
-    @Test func readerTArrayFmapOperatorForward() {
-        let reader = Reader<ArrayEnv, [Int]> { env in [env.factor, env.factor * 2] }
-        let result = { (n: Int) in n + 1 } <£^> reader
-        #expect(result.runReader(ArrayEnv(factor: 3)) == [4, 7])
-    }
-
-    @Test func readerTArrayFmapOperatorFlipped() {
-        let reader = Reader<ArrayEnv, [Int]> { env in [env.factor, env.factor * 2] }
-        let result = reader <&^> { $0 + 1 }
-        #expect(result.runReader(ArrayEnv(factor: 3)) == [4, 7])
-    }
 
     @Test func readerTArrayApplyOperator() {
         let readerF = Reader<ArrayEnv, [@Sendable (Int) -> Int]> { env in [{ $0 + env.factor }] }
@@ -83,18 +71,6 @@ import Testing
     // MARK: - Transformer: ReaderTOptional
 
     struct OptionalEnv { let value: Int }
-
-    @Test func readerTOptionalFmapOperatorForward() {
-        let reader = Reader<OptionalEnv, Int?> { env in env.value }
-        let result = { (n: Int) in n * 2 } <£^> reader
-        #expect(result.runReader(OptionalEnv(value: 5)) == 10)
-    }
-
-    @Test func readerTOptionalFmapOperatorFlipped() {
-        let reader = Reader<OptionalEnv, Int?> { env in env.value }
-        let result = reader <&^> { $0 * 2 }
-        #expect(result.runReader(OptionalEnv(value: 5)) == 10)
-    }
 
     @Test func readerTOptionalApplyOperator() {
         let readerF = Reader<OptionalEnv, (@Sendable (Int) -> Int)?> { env in { $0 + env.value } }
@@ -155,18 +131,6 @@ import Testing
     struct ResultEnv { let factor: Int }
     enum ResultTestError: Error, Equatable { case boom }
 
-    @Test func readerTResultFmapOperatorForward() {
-        let reader = Reader<ResultEnv, Result<Int, ResultTestError>> { env in .success(env.factor) }
-        let result = { (n: Int) in n * 2 } <£^> reader
-        #expect(result.runReader(ResultEnv(factor: 5)) == .success(10))
-    }
-
-    @Test func readerTResultFmapOperatorFlipped() {
-        let reader = Reader<ResultEnv, Result<Int, ResultTestError>> { env in .success(env.factor) }
-        let result = reader <&^> { $0 * 2 }
-        #expect(result.runReader(ResultEnv(factor: 5)) == .success(10))
-    }
-
     @Test func readerTResultApplyOperator() {
         let readerF = Reader<ResultEnv, Result<@Sendable (Int) -> Int, ResultTestError>> { env in .success { $0 + env.factor } }
         let readerA = Reader<ResultEnv, Result<Int, ResultTestError>>(const(.success(4)))
@@ -225,24 +189,6 @@ import Testing
 
     struct OuterEnv { let factor: Int }
     struct InnerEnv { let offset: Int }
-
-    @Test func readerTReaderFmapOperatorForward() {
-        let reader = Reader<OuterEnv, Reader<InnerEnv, Int>> { outer in
-            Reader<InnerEnv, Int> { inner in outer.factor + inner.offset }
-        }
-        let result = { (n: Int) in n * 2 } <£^> reader
-        let inner = result.runReader(OuterEnv(factor: 3))
-        #expect(inner.runReader(InnerEnv(offset: 4)) == 14)
-    }
-
-    @Test func readerTReaderFmapOperatorFlipped() {
-        let reader = Reader<OuterEnv, Reader<InnerEnv, Int>> { outer in
-            Reader<InnerEnv, Int> { inner in outer.factor + inner.offset }
-        }
-        let result = reader <&^> { $0 * 2 }
-        let inner = result.runReader(OuterEnv(factor: 3))
-        #expect(inner.runReader(InnerEnv(offset: 4)) == 14)
-    }
 
     @Test func readerTReaderApplyOperator() {
         let readerF = Reader<OuterEnv, Reader<InnerEnv, @Sendable (Int) -> Int>> { outer in

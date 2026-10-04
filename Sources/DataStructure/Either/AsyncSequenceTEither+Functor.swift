@@ -2,30 +2,31 @@
 import Foundation
 
 // AsyncSequenceTEither: outer = AsyncStream, inner = Either
-// Type: AsyncStream<Either<L,A>>
+// Type: AsyncStream<Either<L, A>>
 
-/// `mapTAsyncStreamEither`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func mapTAsyncStreamEither<L, A, B: Sendable>(
-    _ fn: @escaping @Sendable (A) -> B,
-    _ stream: AsyncStream<Either<L, A>>
-) -> AsyncStream<Either<L, B>> where A: Sendable, L: Sendable {
-    AsyncStream<Either<L, B>> { continuation in
-        let task = Task { @Sendable in
-            for await either in stream {
-                continuation.yield(either.mapRight(fn))
+public extension AsyncStream {
+    /// Maps the value inside every emitted Either.
+    /// mapT :: (a -> b) -> AsyncStream (either a) -> AsyncStream (either b)
+    func mapT<L, Inner, B: Sendable>(_ fn: @escaping @Sendable (Inner) -> B) -> AsyncStream<Either<L, B>>
+    where Element == Either<L, Inner>, Inner: Sendable, L: Sendable {
+        AsyncStream<Either<L, B>> { continuation in
+            let task = Task { @Sendable in
+                for await element in self {
+                    continuation.yield(element.mapRight(fn))
+                }
+                continuation.finish()
             }
-            continuation.finish()
+            // swiftlint:disable:next closure_ignoring_args
+            continuation.onTermination = { _ in task.cancel() }
         }
-        // swiftlint:disable:next closure_ignoring_args
-        continuation.onTermination = { _ in task.cancel() }
     }
-}
 
-/// `fmapTAsyncStreamEither`.
-@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func fmapTAsyncStreamEither<L, A, B: Sendable>(
-    _ fn: @escaping @Sendable (A) -> B
-) -> @Sendable (AsyncStream<Either<L, A>>) -> AsyncStream<Either<L, B>> where A: Sendable, L: Sendable {
-    { @Sendable stream in mapTAsyncStreamEither(fn, stream) }
+    /// Curried, point-free form of ``mapT(_:)``.
+    static func fmapT<L, Inner, B: Sendable>(
+        _ fn: @escaping @Sendable (Inner) -> B
+    ) -> @Sendable (AsyncStream<Either<L, Inner>>) -> AsyncStream<Either<L, B>>
+    where Element == Either<L, Inner>, Inner: Sendable, L: Sendable {
+        { @Sendable stream in stream.mapT(fn) }
+    }
 }
