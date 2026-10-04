@@ -198,6 +198,14 @@ Design notes (2026-10-04):
 - Escape hatches follow Haskell names: `mapReaderT`, `mapMaybeT`, `mapExceptT`, `mapWriterT`, `mapStateT` (and the same pattern for streams), taking `(Outer<Inner<A>>) -> Outer2<Inner2<B>>`, so the whole underlying API (e.g. Combine's `buffer`, `receive(on:)`) is reachable without proxying anything. `mapXT (fmap f)` covers "transform the inner value".
 - Lifting is via **properties** (key-path friendly), e.g. `Publisher where Output == [Element]` gains `.publisherT` → `PublisherTArray`; `.run` (or a domain name) leaves.
 - Implementation: newtypes delegate to the existing (now lawful) nested-type functions, which become internal. Generate them with a dev-time generator (SwiftPM command plugin or script writing checked-in sources) from a small table, ~4 templates (ExceptT/MaybeT-like, WriterT-like, ReaderT-like, Compose-like), rather than a macro inside the library (keeps swift-syntax out of `DataStructure` consumers' builds).
-- [ ] Prototype: ReaderTArray + EitherTOptional (or a Publisher stack) as newtypes with `mapXT` and lifting properties; compare real call sites before/after.
-- [ ] Decide; then generate all stacks and remove the nested-type transformer surface in 3.0.
+
+### Decisions (2026-10-04)
+- One concrete struct per stack (`ReaderTArray<Env, A>`, …). Stored value is **`rawValue`** (never `run`): `init(rawValue:)` + `init(_:)`.
+- `protocol TransformerStack: RawRepresentable` with `associatedtype O` (the whole nested value, `O == RawValue`) and `associatedtype I` (its inner layer only, e.g. `[A]` for `Reader<Env, [A]>`). `protocol MonadT: TransformerStack` for lawful monad stacks only; applicative-only stacks (no lawful monad, see 3b) adopt just `TransformerStack`. Neither refines `Sendable` (marker-protocol rule); each struct gets a conditional `Sendable`.
+- Functor / Applicative / Monad as plain names on each struct (`map`, static `fmap`, `apply`, `liftA2`, `seqRight`, `seqLeft`, static `pure`, and on MonadT stacks `flatMap`, static `bind`, `kleisli`), operators (`<£>`, `<&>`, `£>`, `<£`, `<*>`, `*>`, `<*`, `>>-`, `-<<`, `>=>`, `<=<`) delegating to them. No `T` suffixes, no new operators.
+- Escape hatches with Haskell names: `mapReaderT`, `mapMaybeT`, `mapExceptT`, `mapWriterT`, `mapStateT`, `mapPublisherT`, `mapAsyncStreamT` (`(O) -> O2` → stack over `O2`).
+- Lifting via properties (key-path friendly), using inner-shape protocols (`ArrayLike`, `OptionalLike`, `ResultLike`, `EitherLike`, `NonEmptyLike`, `WriterLike`, …) because Swift has no parameterized extensions: e.g. `extension Publisher where Output: ArrayLike { var publisherT: PublisherTArray<Output.Element, Failure> }`, `reader.readerT`.
+- **All stacks in one change**, generated from templates by a dev-time generator (checked-in output, no macro in the library). The nested-type surface (`mapT`/`fmapT`/`flatMapT`/`bindT`/`kleisliT` and free `apply…`/`liftA2…`/`seqRight…`/`seqLeft…` on nested types) is removed in the same change; its logic moves into the structs.
+- [ ] Protocols, inner-shape protocols, generator and templates.
+- [ ] All stacks generated; nested-type surface removed; tests ported to the structs.
 
