@@ -10,11 +10,11 @@ public func <£> <B1, A, B>(_ transform: @escaping @Sendable (B) -> B1, _ either
 }
 
 /// ($>) :: Either<A, B> -> b0 -> Either<A, b0>
-public func £> <B1, A, B>(_ either: Either<A, B>, _ value: B1) -> Either<A, B1> {
-    either.match(caseLeft: Either.left, caseRight: const(.right(value)))
+public func £> <B1, A, B>(_ either: Either<A, B>, _ value: B1) -> Either<A, B1> where B1: Sendable {
+    either.map(const(value))
 }
 
 /// (<$) :: b0 -> Either<A, B> -> Either<A, b0>
-public func <£ <B1, A, B>(_ value: B1, _ either: Either<A, B>) -> Either<A, B1> {
+public func <£ <B1, A, B>(_ value: B1, _ either: Either<A, B>) -> Either<A, B1> where B1: Sendable {
     either £> value
 }

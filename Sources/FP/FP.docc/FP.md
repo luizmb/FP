@@ -11,7 +11,7 @@ or import exactly the piece you need — each has its own documentation landing 
 | Module | Contents |
 |--------|----------|
 | [CoreFP](../corefp) | Optics (Lens, Prism, AffineTraversal, Iso), the Semigroup/Monoid hierarchy, standard-library extensions, the `SumType2` protocol |
-| [CoreFPOperators](../corefpoperators) | Operator syntax for `CoreFP`: `>>>`, `<<<`, `\|>`, `£`, `<\|>`, `<£>`, `<*>`, `>>-`, `>=>`, `<=<`, … |
+| [CoreFPOperators](../corefpoperators) | Operator syntax for `CoreFP`: `>>>`, `<<<`, `\|>`, `<\|`, `<\|>`, `<£>`, `<*>`, `>>-`, `>=>`, `<=<`, … |
 | [DataStructure](../datastructure) | The library's own algebraic and effect types: `Either`, `Validation`, `Reader`, `Writer`, `Stateful`, `NonEmpty`, `IdentifiedArray`, `Loading`, `These`, `Zipper`, `Newtype`, `Gen` |
 | [DataStructureOperators](../datastructureoperators) | Operator syntax for `DataStructure` |
 

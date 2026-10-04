@@ -16,7 +16,6 @@
 //  7   MultiplicationPrecedence     (* / — stdlib)
 //  6   ConcatPrecedence             (<>, right-assoc)
 //  6   AdditionPrecedence           (+ - — stdlib)
-//  5   AppendToList                 (++, right-assoc)
 //  4.8 RangeFormationPrecedence     (... ..< — stdlib)
 //  4.5 CastingPrecedence            (as? — stdlib)
 //  4.2 NilCoalescingPrecedence      (?? — stdlib)
@@ -27,7 +26,7 @@
 //  1   KleisliCompositionRight      (>=> <=< -<< <<-, right-assoc)
 //  1   MonadBindLeft                (>>- <&> ->>, left-assoc)
 //  0.5 TernaryPrecedence            (?:)
-//  0   LowPrecedenceFunctionCallRight (£ <|, right-assoc)
+//  0   LowPrecedenceFunctionCallRight (<|, right-assoc)
 //  0   LowPrecedenceFunctionCallLeft  (|>, left-assoc)
 //  -1  AssignmentPrecedence         (= — stdlib)
 
@@ -55,14 +54,6 @@ precedencegroup ConcatPrecedence {
 }
 
 // 6: AdditionPrecedence + -
-
-// 5: Append to list ++
-
-precedencegroup AppendToList {
-    associativity: right
-    lowerThan: AdditionPrecedence
-    higherThan: RangeFormationPrecedence
-}
 
 // 4.8: RangeFormationPrecedence ... ..<
 

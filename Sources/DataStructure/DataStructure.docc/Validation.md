@@ -161,7 +161,9 @@ Validation<MyError, Int>.success(42).toResult()      // .success(42)
 Validation<MyError, Int>.failure(.bad).toResult()    // .failure(.bad)
 
 // From Either / Result
-validationFromEither(Either<[String], Int>.right(42))  // .success(42)
+Validation(Either<[String], Int>.right(42))  // .success(42)
+Validation(Result<Int, MyErrors>.success(42))  // .success(42), requires E: Semigroup & Error
+Either<[String], Int>.right(42).toValidation()  // .success(42)
 ```
 
 ---
@@ -261,7 +263,7 @@ import DataStructureOperators // Operators (<£>, <*>, *>, <*…)
 | `bimap` | `Data.Bifunctor`'s `bimap` |
 | `mapFailure` | `Data.Bifunctor`'s `first` |
 | `toEither` | `Data.Validation`'s `toEither` |
-| `validationFromEither` | `Data.Validation`'s `fromEither` |
+| `Validation(_ either:)` | `Data.Validation`'s `fromEither` |
 | `sequence` / `traverse` (Traversable) | `Data.Traversable`'s `sequence` / `traverse` |
 
 Haskell's `Validation` is, for the exact same reason as this library's, **Applicative but not Monad** — accumulating every error requires running both sides independently, which is incompatible with `flatMap`'s inherently sequential, short-circuiting nature. This is a rare case where the Swift and Haskell libraries independently arrived at the identical design constraint, rather than one copying the other.

@@ -22,8 +22,8 @@ import Foundation
 ///
 /// ## Functor / Applicative / Monad / Catch
 ///
-/// `Loading` is a `Functor` (``map(_:)``), an `Applicative` with ``zip(_:_:)`` (no `pure` / `apply`
-/// because there is no canonical wrap for `.idle` / `.loading` / `.failed`), a `Monad`
+/// `Loading` is a `Functor` (``map(_:)``), an `Applicative` (``pure(_:)`` wraps into `.loaded`,
+/// plus ``apply(_:_:)`` and ``zip(_:_:)``, all derived from bind), a `Monad`
 /// (``flatMap(_:)``), and supports error recovery via ``catch(_:)``. Operator forms — `<£>`,
 /// `<&>`, `£>`, `<£`, `>>-`, `-<<`, `>=>`, `<=<` — live in `DataStructureOperators`.
 ///

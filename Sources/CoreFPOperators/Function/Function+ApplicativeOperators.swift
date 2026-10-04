@@ -18,10 +18,7 @@ public func *> <R, A, B>(
     _ f: @escaping @Sendable (R) -> A,
     _ g: @escaping @Sendable (R) -> B
 ) -> @Sendable (R) -> B {
-    { r in
-        _ = f(r)
-        return g(r)
-    }
+    seqRight(f, g)
 }
 
 /// Sequence left operator for functions
@@ -30,9 +27,5 @@ public func <* <R, A, B>(
     _ f: @escaping @Sendable (R) -> A,
     _ g: @escaping @Sendable (R) -> B
 ) -> @Sendable (R) -> A {
-    { r in
-        let result = f(r)
-        _ = g(r)
-        return result
-    }
+    seqLeft(f, g)
 }

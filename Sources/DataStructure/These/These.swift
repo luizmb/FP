@@ -60,7 +60,7 @@ import Foundation
 ///
 /// ## Interoperability
 ///
-/// `These` can be constructed from an `Either` via ``fromEither(_:)``, and from a pair of
+/// `These` can be constructed from an `Either` via ``init(_:)``, and from a pair of
 /// optionals via ``align(_:_:)``. See `These+Either.swift`.
 ///
 /// - SeeAlso: ``Either``, ``Validation``, ``Semigroup``

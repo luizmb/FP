@@ -1,6 +1,6 @@
 # ``CoreFPOperators``
 
-The operator syntax for everything in `CoreFP` — Functor/Applicative/Monad operators for `Optional`, `Result`, `Array`, `Combine.Publisher`, `AsyncSequence`, and function composition (`>>>`, `<<<`, `|>`, `£`).
+The operator syntax for everything in `CoreFP` — Functor/Applicative/Monad operators for `Optional`, `Result`, `Array`, `Combine.Publisher`, `AsyncSequence`, and function composition (`>>>`, `<<<`, `|>`, `<|`).
 
 ## Overview
 
@@ -179,16 +179,14 @@ multi-argument function, bridging the SE-0110 gap between a tuple argument and a
 list: `fanout(\.badge, \.save) >>> Env.init`. It coexists with the single-argument overload without
 ambiguity — see [Point-Free Style](../corefp/pointfreestyle) for the worked example.
 
-### Function Application — `£` / `<|` (fn-left), `|>` (value-left)
+### Function Application — `<|` (fn-left), `|>` (value-left)
 
-- ``£(_:_:)``
 - ``<|(_:_:)``
 - ``|>(_:_:)``
 
-### Semigroup & Monoid Append — `<>`, `++`
+### Semigroup & Monoid Append — `<>`
 
 - ``<>(_:_:)``
-- ``++(_:_:)``
 
 ### Numeric Ranges & Isomorphism — `^`, `+/-` / `±`, `≅`
 

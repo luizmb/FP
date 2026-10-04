@@ -3,6 +3,12 @@ import CoreFP
 import Foundation
 
 public extension These {
+    /// Discards the `B` value, keeping the shape (and any `A`).
+    /// void :: These a b -> These a ()
+    func void() -> These<A, Void> {
+        map(ignore)
+    }
+
     /// The `property` property.
     static func fmap<B1>(
         _ fn: @escaping @Sendable (B) -> B1

@@ -35,10 +35,9 @@ let parsed = "42"
 | `<<-` | flip of `=>>` | Comonad extend/`coflatMap`, function left | `KleisliCompositionRight` | right |
 | `<>` | `<>` | Semigroup/Monoid append | `ConcatPrecedence` | right |
 | `<\|>` | `<\|>` | Alternative / first-success fallback | `AlternativePrecedence` | left |
-| `++` | `++` | List/sequence concatenation | `AppendToList` | right |
 | `>>>` | `>>>` (`Control.Category`) | Function/optic composition, left to right | `FunctionCompositionForward` | right |
 | `<<<` | `<<<` (`Control.Category`) | Function/optic composition, right to left | `FunctionCompositionBackwards` | right |
-| `£` / `<\|` | `$` | Function application, function on the left | `LowPrecedenceFunctionCallRight` | right |
+| `<\|` | `$` | Function application, function on the left | `LowPrecedenceFunctionCallRight` | right |
 | `\|>` | — (F#/Elixir pipeline) | Function application, value on the left (pipeline) | `LowPrecedenceFunctionCallLeft` | left |
 | `^` (prefix) | — | Lift a `KeyPath`/`WritableKeyPath` into a `Lens` (or a `@Sendable` getter) | n/a (prefix) | n/a |
 | `≅` | — | Flipped pattern match / range membership (`value ≅ range`) | `ComparisonPrecedence` (stdlib) | none (non-associative) |
@@ -47,8 +46,8 @@ let parsed = "42"
 A few things worth calling out explicitly:
 
 - **`£` is a pound sign, not a typo for `$`.** Haskell's `$` can't be reused because `$` is
-  reserved for Swift string interpolation delimiters, so the library uses `£` (and offers the
-  ASCII-friendly `<|` as an alias for the exact same operator).
+  reserved for Swift string interpolation delimiters, so `<$>`/`$>`/`<$` become `<£>`/`£>`/`<£`.
+  Plain `$` (function application) is spelled `<|`; there is no standalone `£` operator.
 - **Transformer stacks have no map operator.** Mapping one layer inside a stack
   (`Writer<W, Either<L, A>>`, `Either<L, Result<A, E>>`, …) is the method `.mapT(_:)` (plus the
   static curried `fmapT(_:)`), never an operator. `£>`/`<£` on a stack are the *base* overloads
@@ -81,7 +80,6 @@ fixed and cannot be changed; the custom groups slot around them):
 7     MultiplicationPrecedence        (stdlib: *, /, %)
 6     ConcatPrecedence                <>                      right
 6     AdditionPrecedence              (stdlib: +, -, |, ^)                 left
-5     AppendToList                    ++                      right
 4.8   RangeFormationPrecedence        (stdlib: ..., ..<)  ±  +/-
 4.5   CastingPrecedence               (stdlib: as?)
 4.2   NilCoalescingPrecedence         (stdlib: ??)
@@ -93,7 +91,7 @@ fixed and cannot be changed; the custom groups slot around them):
 1     KleisliCompositionRight         >=>  <=<  -<<  <<-                   right
 1     MonadBindLeft                   >>-  <&>  ->>                        left
 0.5   TernaryPrecedence               (stdlib: ?:)
-0     LowPrecedenceFunctionCallRight  £  <|                                right
+0     LowPrecedenceFunctionCallRight  <|                                   right
 0     LowPrecedenceFunctionCallLeft   |>                                   left
 -1    AssignmentPrecedence            (stdlib: =)
 ```
@@ -145,11 +143,10 @@ counterpart, `Data.Functor`'s `<$>`) despite both being "functor map."
   `<=<` for right-to-left reading). Use this over manual `>>-` chaining when you're building a
   reusable pipeline rather than running one immediately.
 - **Fall back to an alternative if the first effect "fails"** → `<|>`.
-- **Concatenate two monoidal values** (arrays, strings, logs, `Endo` chains, …) → `<>`
-  (`++` specifically for sequence/list concatenation).
+- **Concatenate two monoidal values** (arrays, strings, logs, `Endo` chains, …) → `<>`.
 - **Chain plain functions, or compose optics (`Lens`/`Prism`/`AffineTraversal`/`Iso`)** → `>>>` /
   `<<<`.
-- **Apply a function to a value with minimal parentheses** → `£` / `<|` (function first) or `|>`
+- **Apply a function to a value with minimal parentheses** → `<|` (function first) or `|>`
   (value first, pipeline style).
 - **Extend a comonadic computation over its whole context** (`Writer`, `Reader` with a `Monoid`
   environment) → `->>` / `<<-`.

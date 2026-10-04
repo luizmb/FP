@@ -261,4 +261,18 @@ import Testing
         #expect(viaApply(5) == manual(5))
         #expect(viaApply(10) == manual(10))
     }
+
+    @Test func sequenceRightOperatorKeepsRightResult() {
+        let length: @Sendable (String) -> Int = get(\.count)
+        let shout: @Sendable (String) -> String = { $0.uppercased() }
+
+        #expect((length *> shout)("abc") == "ABC")
+    }
+
+    @Test func sequenceLeftOperatorKeepsLeftResult() {
+        let length: @Sendable (String) -> Int = get(\.count)
+        let shout: @Sendable (String) -> String = { $0.uppercased() }
+
+        #expect((length <* shout)("abc") == 3)
+    }
 }

@@ -39,7 +39,7 @@ state = state.applying(.failure(.timeout))
 // .failed(error: .timeout, previous: [movie1, movie2])
 
 // Or build a fresh Loading from a Result (no prior context).
-let fresh = Loading<[Movie], NetworkError>.from(.success([]))
+let fresh = Loading<[Movie], NetworkError>(.success([]))
 // .loaded([])
 ```
 

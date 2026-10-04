@@ -63,6 +63,15 @@ import Testing
         #expect(leftResult == .left("error"))
     }
 
+    @Test func mapIsMapRight() {
+        let right: Either<String, Int> = .right(5)
+        #expect(right.map { $0 * 2 } == .right(10))
+        #expect(right.map(String.init) == right.mapRight(String.init))
+
+        let left: Either<String, Int> = .left("error")
+        #expect(left.map { $0 * 2 } == .left("error"))
+    }
+
     @Test func mapLeft() {
         let left: Either<String, Int> = .left("error")
         let result = left.mapLeft { $0.uppercased() }
@@ -203,7 +212,7 @@ import Testing
 
     @Test func toResultRight() {
         let either: Either<TestError, Int> = .right(42)
-        let result = either.result()
+        let result = either.toResult()
 
         if case let .success(value) = result {
             #expect(value == 42)
@@ -214,7 +223,7 @@ import Testing
 
     @Test func toResultLeft() {
         let either: Either<TestError, Int> = .left(.test)
-        let result = either.result()
+        let result = either.toResult()
 
         if case let .failure(error) = result {
             #expect(error == .test)

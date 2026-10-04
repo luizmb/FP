@@ -2,6 +2,12 @@
 import CoreFP
 
 public extension Validation {
+    /// pure :: a -> Validation e a
+    /// Lift a value into the successful context.
+    static func pure(_ value: A) -> Validation<E, A> {
+        .success(value)
+    }
+
     /// apply :: Validation<e, (a -> b)> -> Validation<e, a> -> Validation<e, b>
     /// THE key operation — accumulates errors via Semigroup.combine instead of short-circuiting.
     static func apply<A0>(_ fns: Validation<E, @Sendable (A0) -> A>, _ values: Validation<E, A0>) -> Validation<E, A> {

@@ -35,12 +35,6 @@ import Testing
 
     // MARK: - Application Operators
 
-    @Test func functionApplicationPound() {
-        let addOne: @Sendable (Int) -> Int = { $0 + 1 }
-
-        #expect((addOne £ 5) == 6)
-    }
-
     @Test func functionApplicationAngle() {
         let addOne: @Sendable (Int) -> Int = { $0 + 1 }
 

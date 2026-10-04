@@ -44,7 +44,7 @@
         _ publisher: any Publisher<A, B>,
         _ transform: @escaping @Sendable (A) -> A1
     ) -> any Publisher<A1, B> {
-        AnyPublisher<A, B>.fmap(transform)(publisher)
+        transform <£> publisher
     }
 
 #endif

@@ -52,7 +52,7 @@ Every requirement beyond `match` is a protocol extension — free for any confor
 | `.b: B?` | extension | the right value, or `nil` if in the left case |
 | `.isA: Bool` | extension | `true` when in the left case |
 | `.isB: Bool` | extension | `true` when in the right case |
-| `.bifoldMap(leftBy:rightBy:)` | extension | alias for `match`, with labels matching Haskell's `bimap`/`bifoldMap` naming convention |
+| `.bifoldMap(_:_:)` | extension | alias for `match`, with Haskell's `bifoldMap` argument order |
 | `.fromLeft(_:)` | extension | the left value, or a supplied default if in the right case |
 | `.fromRight(_:)` | extension | the right value, or a supplied default if in the left case |
 | `static func from(_:)` | extension | rebuilds `Self` from *any* other `SumType2` sharing the same `A`/`B` — the cross-type bridge |
@@ -61,7 +61,7 @@ Every requirement beyond `match` is a protocol extension — free for any confor
 let e: Either<String, Int> = .right(42)
 
 e.match(caseLeft: { "error: \($0)" }, caseRight: { "value: \($0)" })   // "value: 42"
-e.bifoldMap(leftBy: { "error: \($0)" }, rightBy: { "value: \($0)" })   // "value: 42" — same thing, Haskell-flavored name
+e.bifoldMap({ "error: \($0)" }, { "value: \($0)" })   // "value: 42" — same thing, Haskell-flavored name
 
 e.a           // nil
 e.b           // Optional(42)

@@ -33,6 +33,31 @@ public func apply<R, A, B>(
     }
 }
 
+/// Sequence two functions of the same environment, keeping the right result
+/// (*>) :: (r -> a) -> (r -> b) -> (r -> b)
+public func seqRight<R, A, B>(
+    _ f: @escaping @Sendable (R) -> A,
+    _ g: @escaping @Sendable (R) -> B
+) -> @Sendable (R) -> B {
+    { r in
+        _ = f(r)
+        return g(r)
+    }
+}
+
+/// Sequence two functions of the same environment, keeping the left result
+/// (<*) :: (r -> a) -> (r -> b) -> (r -> a)
+public func seqLeft<R, A, B>(
+    _ f: @escaping @Sendable (R) -> A,
+    _ g: @escaping @Sendable (R) -> B
+) -> @Sendable (R) -> A {
+    { r in
+        let result = f(r)
+        _ = g(r)
+        return result
+    }
+}
+
 /// Lift a binary function to work with functions
 /// liftA2 :: (a -> b -> c) -> (r -> a) -> (r -> b) -> (r -> c)
 public func liftA2<R, A, B, C>(

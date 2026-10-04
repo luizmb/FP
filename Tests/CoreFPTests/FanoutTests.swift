@@ -50,4 +50,17 @@ import Testing
         let total = fanout(keypaths: \World.badge, \World.save, \World.badge, into: sum)
         #expect(total(World(badge: 10, save: 5, name: "z")) == 25)
     }
+
+    // MARK: - compose(_:_:) — variadic, tuple-producing function into a multi-arg function
+
+    @Test func composeFanoutIntoInitializer() {
+        let narrow: @Sendable (World) -> Env = compose(fanout(\.badge, \.save), Env.init)
+        #expect(narrow(World(badge: 3, save: 4, name: "y")) == Env(badge: 3, save: 4))
+    }
+
+    @Test func composeFanoutIntoArbitraryFunction() {
+        let sum: @Sendable (Int, Int, Int) -> Int = { $0 + $1 + $2 }
+        let total: @Sendable (World) -> Int = compose(fanout(\.badge, \.save, \.badge), sum)
+        #expect(total(World(badge: 10, save: 5, name: "z")) == 25)
+    }
 }

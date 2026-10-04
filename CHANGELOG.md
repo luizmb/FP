@@ -51,6 +51,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   are now closure literals calling `fail(...)`, which also fit non-escaping, `@autoclosure` and
   `inout` parameter types.
 
+- **`map` on `Either` and `Validation`**: the functor map of the right / success side (same as
+  `mapRight` / `mapSuccess`, which stay, as do `mapLeft`, `mapFailure` and `bimap`). `fmap` now
+  delegates to it.
+- **`pure` for `Validation` and `Loading`** (`.success` / `.loaded`).
+- **`join` / `void` siblings**: `Loading.join`, `Loading.void()`, `These.void()`, and the free
+  `join` / `void` functions for `NonEmpty`, `These` and `Loading` (next to the Either / Reader /
+  Stateful / Writer ones).
+- **Named functions behind operators that had inline logic**: `seqRight` / `seqLeft` for functions
+  (`*>` / `<*` on `(R) -> A`), a variadic `compose` (`compose(fanout(\.a, \.b), Make.init)`, behind
+  the variadic `>>>` / `<<<`). `>>>` / `<<<` now call `compose`, `<|` calls `call`, `|>` calls
+  `apply`, `Iso >>> Iso` calls `Iso.compose`, AsyncSequence `>=>` calls `kleisli`, and Either /
+  These `£>` call `map(const(value))`.
+- **Conversions**: `Either.toValidation()` (when the left side is a `Semigroup`).
+
 ### Changed
 - **`M<Writer>` bind is WriterT's bind** (`WriterT w M`) for `ArrayTWriter`, `OptionalTWriter`,
   `ResultTWriter` and `EitherTWriter`: the continuation of `flatMapT`, `bindT`, `kleisliT`, `>>-`,
@@ -149,6 +163,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   overloading `Reader.fmap`; they are now `fmapT` (`ReaderTArray`, `ReaderTOptional`,
   `ReaderTResult`, `ReaderTEither`, `ReaderTReader`, `ReaderTPublisher`, `ReaderTAsyncSequence`).
 
+- **Conversion naming**: outgoing conversions are `to…()` methods, incoming ones are `init(_:)`.
+  Migration: `either.result()` → `either.toResult()`; `validationFromEither(e)` → `Validation(e)`;
+  `validationFromResult(r)` → `Validation(r)`; `These.fromEither(e)` → `These(e)`;
+  `Loading.from(result)` → `Loading(result)`; `Zipper.fromNonEmpty(ne)` → `Zipper(ne)`.
+- **`SumType2.bifoldMap` drops its labels**: `bifoldMap(leftBy:rightBy:)` → `bifoldMap(_:_:)`,
+  matching `Validation.bifoldMap` and the free `bifoldMap`.
+- **Sendable constraints aligned**: `Result.mapRight` / `bimap` take plain non-escaping closures
+  like `mapLeft` (and stdlib `map` / `mapError`); Publisher `<£>` drops the extra `Sendable`
+  requirements that `<&>` never had (`<&>` now delegates to `<£>`); function `kleisli` /
+  `kleisliReverse` / `>=>` / `<=<` no longer require `A: Sendable`.
+- Either and These `£>` / `<£` now require the replacement value to be `Sendable` (they go through
+  `map`).
+- **`Stateful.zip` and `Writer.zip` are variadic** (two or more arguments), like `Reader.zip`.
+  Migration: `zip3(a, b, c)` / `zip4(a, b, c, d)` → `zip(a, b, c)` / `zip(a, b, c, d)` (also for
+  `Gen`, which is a `Stateful`).
+
 ### Removed
 - **Monad surface of transformer stacks that have no lawful monad** (Haskell's `transformers`
   defines none for these shapes). `flatMapT`, `bindT`, `kleisliT`, the free `flatMapT…`/`bindT…`
@@ -191,6 +221,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   memberwise one, nested types printed as `extension Inner`, `@ApplyOptics` ignored). Xcode's
   "Expand Macro" shows the real output; `CONTRIBUTING.md` describes the test-side `expand(_:)`
   helper for diffing hand-written optics against it.
+
+- **`++`** (operator, `AppendToList` precedence group, Array overload). Migration: `a ++ b` →
+  `a <> b`.
+- **Infix `£`** (function application). Migration: `f £ x` → `f <| x` (same precedence group,
+  `LowPrecedenceFunctionCallRight`); `|>` stays as its flip. Operators that only contain the
+  character (`<£>`, `£>`, `<£`) are unchanged.
+- **`Stateful.zip3` / `zip4` and `Writer.zip3` / `zip4`**: use the variadic `zip`.
+- **Old conversion names** `Either.result()`, `validationFromEither`, `validationFromResult`,
+  `These.fromEither`, `Loading.from(_:)`, `Zipper.fromNonEmpty` (see Changed for the new
+  spellings).
 
 ### Fixed
 - **Affine optics `set` is a no-op when the focus is absent**: `Lens ∘ Prism`,

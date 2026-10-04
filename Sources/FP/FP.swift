@@ -17,7 +17,7 @@
 /// | Module | Contents |
 /// |--------|---------|
 /// | `CoreFP` | Optics (Lens, Prism, AffineTraversal, Iso), Semigroup/Monoid hierarchy, free functions, SumType protocol |
-/// | `CoreFPOperators` | All operator definitions: `>>>`, `<<<`, `£`, `<|>`, `<£>`, `<*>`, `>>-`, `>=>`, `<=<`, etc. |
+/// | `CoreFPOperators` | All operator definitions: `>>>`, `<<<`, `<|`, `<|>`, `<£>`, `<*>`, `>>-`, `>=>`, `<=<`, etc. |
 /// | `DataStructure` | Either, Reader, Writer, Stateful, Validation, NonEmpty |
 /// | `DataStructureOperators` | Operator overloads for all DataStructure types |
 ///
@@ -28,7 +28,7 @@
 /// | `>>>` | `>>>` / `.` | Left-to-right composition (functions and optics) |
 /// | `<<<` | `.` / `<<<` | Right-to-left composition |
 /// | `\|>` | (F# style) | Pipeline / flipped application |
-/// | `£` | `$` | Low-precedence function application |
+/// | `<\|` | `$` | Low-precedence function application |
 /// | `<£>` | `<$>` | Functor map |
 /// | `<&>` | `<&>` | Flipped functor map |
 /// | `<*>` | `<*>` | Applicative apply |

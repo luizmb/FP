@@ -66,16 +66,16 @@ Every operator that has a directional sense has a **flipped counterpart**. When 
 | `->>` | `<<-` | — | Comonad extend — container left / fn left |
 | `>=>` | `<=<` | `>=>` / `<=<` | Kleisli composition — left-to-right / right-to-left |
 | `>>>` | `<<<` | `>>>` / `<<<` | Function/optics composition — left-to-right / right-to-left |
-| `£` / `<\|` | `\|>` | `$` | Function application — fn left (`f £ x`) / value left (`x \|> f`) |
+| `<\|` | `\|>` | `$` | Function application — fn left (`f <\| x`) / value left (`x \|> f`) |
 | `<\|>` | — | `<\|>` | Alternative / choice (symmetric, no flip) |
 | `<>` | — | `<>` | Semigroup/Monoid append (symmetric, no flip) |
-| `++` | — | `++` | List/String concat (symmetric, no flip) |
 | `^` (prefix) | — | — | Lift — `WritableKeyPath` → `Lens`; `KeyPath` → partial `Lens` builder |
 | `≅` | — | — | Isomorphism / approximate equality check |
 | `±` / `+/-` | — | — | Numeric range construction — `value ± delta` |
 
 **Notes:**
-- `£` and `<|` are two symbols for the same operator (both `fn £ value` / `fn <| value`); `|>` is its flip.
+- `<|` is function application (`fn <| value`, Haskell's `$`); `|>` is its flip. There is no plain `£` operator: `£` only appears inside other operators such as `<£>`, `£>`, `<£`.
+- There is no `++`: concatenate arrays and strings with `<>`.
 - Transformer (nested) functor map has **no operator**: every stack exposes the method `.mapT(_:)` plus the static curried `fmapT(_:)` (same shape as base `map` / `fmap`). `£>` / `<£` on a stack resolve to the base type (they replace the whole output); inner replace is `mapT(const(x))`.
 - Optics (`Lens`, `Prism`, `AffineTraversal`) compose via `>>>` / `<<<` alongside regular function composition.
 

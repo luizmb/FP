@@ -2,10 +2,18 @@
 import CoreFP
 
 public extension Validation {
-    /// Curried, point-free form of ``mapSuccess(_:)`` — maps over the `.success` case, leaving `.failure` untouched.
+    /// Curried, point-free form of ``map(_:)`` — maps over the `.success` case, leaving `.failure` untouched.
     /// fmap :: (a -> b) -> Validation e a -> Validation e b
     static func fmap<B>(_ fn: @escaping @Sendable (A) -> B) -> @Sendable (Validation<E, A>) -> Validation<E, B> {
-        { $0.mapSuccess(fn) }
+        { $0.map(fn) }
+    }
+
+    /// Functor map: transforms the `.success` value, leaving `.failure` untouched. Same as ``mapSuccess(_:)``.
+    /// fmap :: (a -> b) -> Validation e a -> Validation e b
+    /// - Parameter fn: Function applied to the wrapped value when `self` is `.success`.
+    /// - Returns: A new `Validation` with the transformed success type, unchanged if `self` is `.failure`.
+    func map<B>(_ fn: @escaping @Sendable (A) -> B) -> Validation<E, B> {
+        mapSuccess(fn)
     }
 
     /// Transforms the `.success` value, leaving `.failure` untouched (the `Functor.map` for `Validation`).

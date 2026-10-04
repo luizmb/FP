@@ -8,12 +8,12 @@ import Testing
 
     @Test func eitherBifoldMapLeft() {
         let e: Either<String, Int> = .left("error")
-        #expect(e.bifoldMap(leftBy: { $0.count }, rightBy: { $0 * 2 }) == 5)
+        #expect(e.bifoldMap({ $0.count }, { $0 * 2 }) == 5)
     }
 
     @Test func eitherBifoldMapRight() {
         let e: Either<String, Int> = .right(7)
-        #expect(e.bifoldMap(leftBy: { $0.count }, rightBy: { $0 * 2 }) == 14)
+        #expect(e.bifoldMap({ $0.count }, { $0 * 2 }) == 14)
     }
 
     @Test func eitherBifoldMapFreeCurried() {

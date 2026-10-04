@@ -3,6 +3,21 @@ import CoreFP
 import Foundation
 
 public extension Loading {
+    /// Flattens a nested `Loading`. An outer `.loaded` yields the inner state; the other outer
+    /// states pass through, with each `previous` projected via the inner `loadedOrPrevious`.
+    /// join :: Loading e (Loading e a) -> Loading e a
+    static func join<B: Sendable>(
+        _ nested: Loading<Loading<B, Failure>, Failure>
+    ) -> Loading<B, Failure> where Success == Loading<B, Failure> {
+        nested.flatMap(CoreFP.id)
+    }
+
+    /// Discards the success value(s), keeping only the state.
+    /// void :: Loading e a -> Loading e ()
+    func void() -> Loading<Void, Failure> {
+        map(ignore)
+    }
+
     /// Monadic bind for `Loading`.
     /// (>>=) :: m a -> (a -> m b) -> m b
     ///

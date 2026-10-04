@@ -10,8 +10,7 @@
     public func <£> <A1, A, B: Error>(
         _ transform: @escaping @Sendable (A) -> A1,
         _ publisher: any Publisher<A, B>
-    ) -> any Publisher<A1, B>
-    where B: Sendable, A1: Sendable, A: Sendable {
+    ) -> any Publisher<A1, B> {
         AnyPublisher<A, B>.fmap(transform)(publisher)
     }
 

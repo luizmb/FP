@@ -40,18 +40,18 @@ public func join<R, A>(
 /// Kleisli composition for functions
 /// Composes two monadic functions (Kleisli arrows)
 /// (>=>) :: (a -> r -> b) -> (b -> r -> c) -> (a -> r -> c)
-public func kleisli<R, A: Sendable, B, C>(
+public func kleisli<R, A, B, C>(
     _ f: @escaping @Sendable (A) -> @Sendable (R) -> B,
     _ g: @escaping @Sendable (B) -> @Sendable (R) -> C
 ) -> @Sendable (A) -> @Sendable (R) -> C {
     { a in
-        flatMap({ @Sendable r in f(a)(r) }, g)
+        flatMap(f(a), g)
     }
 }
 
 /// Reverse Kleisli composition for functions
 /// (<=<) :: (b -> r -> c) -> (a -> r -> b) -> (a -> r -> c)
-public func kleisliReverse<R, A: Sendable, B, C>(
+public func kleisliReverse<R, A, B, C>(
     _ g: @escaping @Sendable (B) -> @Sendable (R) -> C,
     _ f: @escaping @Sendable (A) -> @Sendable (R) -> B
 ) -> @Sendable (A) -> @Sendable (R) -> C {
