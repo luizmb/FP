@@ -28,7 +28,7 @@
 
         /// Curried monadic bind (ordered concat, see ``concatMap(_:)``)
         /// (>>=) :: m a -> (a -> m b) -> m b
-        static func bind<A1, P: Publisher>(
+        static func bind<A1, P: Publisher & SendableMetatype>(
             _ fn: @escaping @Sendable (A) -> P
         ) -> @Sendable (any Publisher<A, Failure>) -> any Publisher<A1, Failure>
         where P.Output == A1, P.Failure == Failure {
@@ -39,7 +39,7 @@
 
         /// Kleisli composition (left-to-right), using the ordered-concat bind
         /// (>=>) :: (a -> m b) -> (b -> m c) -> a -> m c
-        static func kleisli<A0, A1, P1: Publisher, P2: Publisher>(
+        static func kleisli<A0, A1, P1: Publisher & SendableMetatype, P2: Publisher & SendableMetatype>(
             _ fn1: @escaping @Sendable (A0) -> P1,
             _ fn2: @escaping @Sendable (A) -> P2
         ) -> @Sendable (A0) -> any Publisher<A1, Failure>
@@ -51,7 +51,7 @@
 
         /// Kleisli composition (right-to-left), using the ordered-concat bind
         /// (<=<) :: (b -> m c) -> (a -> m b) -> a -> m c
-        static func kleisliBack<A0, A1, P1: Publisher, P2: Publisher>(
+        static func kleisliBack<A0, A1, P1: Publisher & SendableMetatype, P2: Publisher & SendableMetatype>(
             _ fn2: @escaping @Sendable (A) -> P2,
             _ fn1: @escaping @Sendable (A0) -> P1
         ) -> @Sendable (A0) -> any Publisher<A1, Failure>

@@ -90,7 +90,7 @@ public func <=< <A, B, C, E: Error>(
 
     /// `func` for `Publisher`.
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func <=< <A0, A, A1, B: Error, P1: Publisher, P2: Publisher>(
+    public func <=< <A0, A, A1, B: Error, P1: Publisher & SendableMetatype, P2: Publisher & SendableMetatype>(
         _ fn2: @escaping @Sendable (A) -> P2,
         _ fn1: @escaping @Sendable (A0) -> P1
     ) -> @Sendable (A0) -> any Publisher<A1, B>

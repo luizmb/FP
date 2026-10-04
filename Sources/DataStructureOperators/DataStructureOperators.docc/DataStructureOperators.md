@@ -572,10 +572,8 @@ Every operator here is heavily overloaded — one per type it applies to (`Eithe
 - ``-<<(_:_:)->AnyPublisher<Writer<W,B>,E>``
 
 **AsyncSequence**
-- ``>>-(_:_:)->AsyncMapSequence<AsyncStream<Stateful<S,A>>,Stateful<S,B>>``
 - ``>>-(_:_:)->AsyncStream<Writer<W,B>>``
 - ``>>-(_:_:)->AsyncStream<Either<L,B>>``
-- ``-<<(_:_:)->AsyncMapSequence<AsyncStream<Stateful<S,A>>,Stateful<S,B>>``
 - ``-<<(_:_:)->AsyncStream<Writer<W,B>>``
 - ``-<<(_:_:)->AsyncStream<Either<L,B>>``
 

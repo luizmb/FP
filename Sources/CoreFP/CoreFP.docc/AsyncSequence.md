@@ -169,13 +169,13 @@ applyAsyncStreamOptional(fns, sb)      // fns: AsyncStream<(@Sendable (Int) -> B
 
 // flatMapT — each Optional element produces a new AsyncStream<B?>
 let bound = flatMapTAsyncStreamOptional(stream) { n in
-    AsyncStream<Int?>.just(Optional(n * 2))
+    AsyncStream<Int?> { $0.yield(Optional(n * 2)); $0.finish() }
 }
 // emits Optional(2), nil, Optional(6)
 
 // Operators
 { $0 * 2 } <£^> stream   // emits Optional(2), nil, Optional(6)
-stream >>- { n in AsyncStream<Int?>.just(n + 1) }
+stream >>- { n in AsyncStream<Int?> { $0.yield(n + 1); $0.finish() } }
 sa *> sb                 // emits Optional(10), Optional(20), nil
 f >=> g                  // kleisliTAsyncStreamOptional(f, g)
 ```
@@ -197,8 +197,8 @@ mapTAsyncStreamArray({ $0 * 2 }, stream)
 // emits [2, 4], [6, 8]
 
 // liftA2 — zip and combine with Array.liftA2
-let sa = AsyncStream<[Int]>.just([1, 2])
-let sb = AsyncStream<[Int]>.just([10, 20])
+let sa = AsyncStream<[Int]> { $0.yield([1, 2]); $0.finish() }
+let sb = AsyncStream<[Int]> { $0.yield([10, 20]); $0.finish() }
 liftA2AsyncStreamArray(+)(sa, sb)   // emits [11, 21, 12, 22]
 
 { $0 * 2 } <£> stream   // emits [2, 4], [6, 8]
@@ -217,7 +217,7 @@ let stream = AsyncStream<Result<Int, MyError>> { c in
 
 mapTAsyncStreamResult({ $0 * 2 }, stream)  // emits .success(10), .failure(.bad)
 flatMapTAsyncStreamResult(stream) { n in
-    AsyncStream<Result<String, MyError>>.just(.success("\(n)"))
+    AsyncStream<Result<String, MyError>> { $0.yield(.success("\(n)")); $0.finish() }
 }
 // emits .success("5"), .failure(.bad)
 ```
@@ -235,7 +235,7 @@ let stream = AsyncStream<Either<String, Int>> { c in
 
 mapTAsyncStreamEither({ $0 * 2 }, stream)  // emits .right(2), .left("err"), .right(6)
 flatMapTAsyncStreamEither(stream) { n in
-    AsyncStream<Either<String, Int>>.just(.right(n * 2))
+    AsyncStream<Either<String, Int>> { $0.yield(.right(n * 2)); $0.finish() }
 }
 // emits .right(2), .left("err"), .right(6)
 
