@@ -161,7 +161,7 @@ import Testing
         for await value in result {
             results.append(value)
         }
-        #expect(results == [11, 22])
+        #expect(results == [11, 21, 12, 22])
     }
 
     @Test func zip() async throws {
@@ -210,7 +210,7 @@ import Testing
         for await value in result {
             results.append(value)
         }
-        #expect(results == [10, 13])
+        #expect(results == [10, 6, 15, 13])
     }
 
     // MARK: - <* effect order
@@ -224,27 +224,9 @@ import Testing
             values.append(value)
         }
 
-        #expect(values == [1, 2])
+        #expect(values == [1, 1, 2, 2])
         let pulls = await log.entries
-        #expect(Array(pulls.prefix(4)) == ["l", "r", "l", "r"])
+        // left first; the right stream is drained once (2 values + end) and replayed
+        #expect(pulls == ["l", "r", "r", "r", "l", "l"])
     }
-}
-
-private actor PullLog {
-    private(set) var entries: [String] = []
-    func record(_ entry: String) { entries.append(entry) }
-}
-
-private func loggedStream(_ label: String, _ values: [Int], _ log: PullLog) -> AsyncStream<Int> {
-    let box = UnfoldCursor(values)
-    return AsyncStream(unfolding: {
-        await log.record(label)
-        return await box.next()
-    })
-}
-
-private actor UnfoldCursor {
-    private var remaining: [Int]
-    init(_ values: [Int]) { remaining = values }
-    func next() -> Int? { remaining.isEmpty ? nil : remaining.removeFirst() }
 }

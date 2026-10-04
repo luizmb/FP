@@ -5,9 +5,8 @@ import Foundation
 
 // ReaderT + AsyncSequence
 
-// Note: The traditional apply operator (<*>) doesn't apply well to AsyncSequence
-// because AsyncStream<(A) -> B> is not a practical type.
-// Instead, we provide sequence operators that use liftA2 internally.
+// Note: there is no `<*>` here because `Reader<Env, AsyncStream<(A) -> B>>` is rarely practical;
+// the sequence operators below use the bind-derived (concat) liftA2, not zip.
 
 // (*>) :: Reader e (AsyncStream a) -> Reader e (AsyncStream b) -> Reader e (AsyncStream b)
 /// `*>` overload.
@@ -15,7 +14,7 @@ import Foundation
 public func *> <Env, A, B>(
     _ lhs: Reader<Env, AsyncStream<A>>,
     _ rhs: Reader<Env, AsyncStream<B>>
-) -> Reader<Env, AsyncMapSequence<AsyncStream<(A, B)>, B>>
+) -> Reader<Env, AsyncStream<B>>
 where A: Sendable, B: Sendable {
     seqRightReaderAsyncStream(lhs, rhs)
 }
@@ -26,7 +25,7 @@ where A: Sendable, B: Sendable {
 public func <* <Env, A, B>(
     _ lhs: Reader<Env, AsyncStream<A>>,
     _ rhs: Reader<Env, AsyncStream<B>>
-) -> Reader<Env, AsyncMapSequence<AsyncStream<(A, B)>, A>>
+) -> Reader<Env, AsyncStream<A>>
 where A: Sendable, B: Sendable {
     seqLeftReaderAsyncStream(lhs, rhs)
 }

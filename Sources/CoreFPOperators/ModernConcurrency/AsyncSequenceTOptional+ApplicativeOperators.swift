@@ -3,6 +3,14 @@ import CoreFP
 
 // AsyncSequenceTOptional: AsyncStream<A?>
 
+// (<*>) :: AsyncStream<(a -> b)?> -> AsyncStream<a?> -> AsyncStream<b?>
+/// `<*>` overload: `ap` derived from the bind (ordered concat), not zip.
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+public func <*> <A, B>(_ fns: AsyncStream<(@Sendable (A) -> B)?>, _ values: AsyncStream<A?>) -> AsyncStream<B?>
+where A: Sendable, B: Sendable {
+    applyAsyncStreamOptional(fns, values)
+}
+
 // (*>) :: AsyncStream<a?> -> AsyncStream<b?> -> AsyncStream<b?>
 /// `*>` overload.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)

@@ -4,6 +4,15 @@ import DataStructure
 
 // AsyncSequenceTEither: AsyncStream<Either<L,A>>
 
+/// `<*>` overload: `ap` derived from the bind (ordered concat), not zip.
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+public func <*> <L, A, B>(
+    _ fns: AsyncStream<Either<L, @Sendable (A) -> B>>,
+    _ values: AsyncStream<Either<L, A>>
+) -> AsyncStream<Either<L, B>> where A: Sendable, B: Sendable, L: Sendable {
+    applyAsyncStreamEither(fns, values)
+}
+
 /// `*>` overload.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
 public func *> <L, A, B>(_ lhs: AsyncStream<Either<L, A>>, _ rhs: AsyncStream<Either<L, B>>) -> AsyncStream<Either<L, B>>

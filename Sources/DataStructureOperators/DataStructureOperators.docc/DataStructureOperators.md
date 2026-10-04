@@ -294,7 +294,7 @@ Every operator here is heavily overloaded — one per type it applies to (`Eithe
 - ``<*>(_:_:)->Reader<Env,Writer<W,B>>``
 - ``<*>(_:_:)->Reader<Env,[B]>``
 - ``<*>(_:_:)->Reader<Env1,Reader<Env2,B>>``
-- ``*>(_:_:)->Reader<Env,AsyncMapSequence<AsyncStream<(A,B)>,B>>``
+- ``*>(_:_:)->Reader<Env,AsyncStream<B>>``
 - ``*>(_:_:)->Reader<Env,B>``
 - ``*>(_:_:)->Reader<Env,B?>``
 - ``*>(_:_:)->Reader<Env,Either<L,B>>``
@@ -308,7 +308,7 @@ Every operator here is heavily overloaded — one per type it applies to (`Eithe
 - ``*>(_:_:)->Reader<Env1,Reader<Env2,B>>``
 - ``<*(_:_:)->Reader<Env,A>``
 - ``<*(_:_:)->Reader<Env,A?>``
-- ``<*(_:_:)->Reader<Env,AsyncMapSequence<AsyncStream<(A,B)>,A>>``
+- ``<*(_:_:)->Reader<Env,AsyncStream<A>>``
 - ``<*(_:_:)->Reader<Env,Either<L,A>>``
 - ``<*(_:_:)->Reader<Env,NonEmpty<A>>``
 - ``<*(_:_:)->Reader<Env,Publisher<A,E>>``
@@ -438,8 +438,12 @@ Every operator here is heavily overloaded — one per type it applies to (`Eithe
 - ``<*(_:_:)->AnyPublisher<Writer<W,A>,E>``
 
 **AsyncSequence**
+- ``<*>(_:_:)->AsyncStream<Either<L,B>>``
+- ``<*>(_:_:)->AsyncStream<Writer<W,B>>``
 - ``*>(_:_:)->AsyncStream<Either<L,B>>``
+- ``*>(_:_:)->AsyncStream<Writer<W,B>>``
 - ``<*(_:_:)->AsyncStream<Either<L,A>>``
+- ``<*(_:_:)->AsyncStream<Writer<W,A>>``
 
 ### Monad — `>>-` / `-<<` (bind, container-left / fn-left)
 
@@ -569,10 +573,10 @@ Every operator here is heavily overloaded — one per type it applies to (`Eithe
 
 **AsyncSequence**
 - ``>>-(_:_:)->AsyncMapSequence<AsyncStream<Stateful<S,A>>,Stateful<S,B>>``
-- ``>>-(_:_:)->AsyncMapSequence<AsyncStream<Writer<W,A>>,Writer<W,B>>``
+- ``>>-(_:_:)->AsyncStream<Writer<W,B>>``
 - ``>>-(_:_:)->AsyncStream<Either<L,B>>``
 - ``-<<(_:_:)->AsyncMapSequence<AsyncStream<Stateful<S,A>>,Stateful<S,B>>``
-- ``-<<(_:_:)->AsyncMapSequence<AsyncStream<Writer<W,A>>,Writer<W,B>>``
+- ``-<<(_:_:)->AsyncStream<Writer<W,B>>``
 - ``-<<(_:_:)->AsyncStream<Either<L,B>>``
 
 ### Kleisli Composition — `>=>` / `<=<`

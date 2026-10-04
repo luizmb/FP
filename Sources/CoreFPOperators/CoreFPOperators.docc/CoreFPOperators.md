@@ -88,6 +88,8 @@ Transformer (nested) functor map:
 - ``<*>(_:_:)->[Result<B,E>]``
 - ``<*>(_:_:)->Publisher<A,B>``
 - ``<*>(_:_:)->AsyncStream<B>``
+- ``<*>(_:_:)->AsyncStream<B?>``
+- ``<*>(_:_:)->AsyncStream<Result<B,E>>``
 - ``<*>(_:_:)-3ixm5``
 - ``*>(_:_:)->A?``
 - ``*>(_:_:)->[A1]``
