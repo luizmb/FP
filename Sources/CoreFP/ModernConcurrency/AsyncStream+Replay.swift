@@ -63,11 +63,11 @@ private actor ReplayBuffer<Element: Sendable> {
 }
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-extension AsyncStream where Element: Sendable {
+package extension AsyncStream where Element: Sendable {
     /// Ordered concat (`>>=` of the stream monad), closed over `AsyncStream`.
     ///
     /// Each inner stream runs to completion, in upstream order, before the next upstream element is pulled.
-    static func concatMap<A: Sendable>(
+    package static func concatMap<A: Sendable>(
         _ stream: AsyncStream<A>,
         _ fn: @escaping @Sendable (A) -> AsyncStream<Element>
     ) -> AsyncStream<Element> {
@@ -86,7 +86,7 @@ extension AsyncStream where Element: Sendable {
     }
 
     /// `fmap` closed over `AsyncStream`.
-    static func mapStream<A: Sendable>(
+    package static func mapStream<A: Sendable>(
         _ stream: AsyncStream<A>,
         _ fn: @escaping @Sendable (A) -> Element
     ) -> AsyncStream<Element> {
@@ -99,6 +99,14 @@ extension AsyncStream where Element: Sendable {
             }
             // swiftlint:disable:next closure_ignoring_args
             continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    /// `pure` closed over `AsyncStream`: a stream that yields `value` once and finishes.
+    package static func just(_ value: Element) -> AsyncStream<Element> {
+        AsyncStream { continuation in
+            continuation.yield(value)
+            continuation.finish()
         }
     }
 }

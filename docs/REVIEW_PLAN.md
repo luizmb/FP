@@ -206,6 +206,6 @@ Design notes (2026-10-04):
 - Escape hatches with Haskell names: `mapReaderT`, `mapMaybeT`, `mapExceptT`, `mapWriterT`, `mapStateT`, `mapPublisherT`, `mapAsyncStreamT` (`(O) -> O2` → stack over `O2`).
 - Lifting via properties (key-path friendly), using inner-shape protocols (`ArrayLike`, `OptionalLike`, `ResultLike`, `EitherLike`, `NonEmptyLike`, `WriterLike`, …) because Swift has no parameterized extensions: e.g. `extension Publisher where Output: ArrayLike { var publisherT: PublisherTArray<Output.Element, Failure> }`, `reader.readerT`.
 - **All stacks in one change**, generated from templates by a dev-time generator (checked-in output, no macro in the library). The nested-type surface (`mapT`/`fmapT`/`flatMapT`/`bindT`/`kleisliT` and free `apply…`/`liftA2…`/`seqRight…`/`seqLeft…` on nested types) is removed in the same change; its logic moves into the structs.
-- [ ] Protocols, inner-shape protocols, generator and templates.
+- [x] Protocols, inner-shape protocols, generator and templates (phase A: all 74 structs generated next to the nested surface, delegating to it). Deviation: `TransformerStack` mirrors `RawRepresentable` (`rawValue`, `init(rawValue:)`) instead of refining it — with Swift 6.3, a generic `RawRepresentable` struct whose `RawValue` is an `Optional` (every Optional-outer stack) breaks inference of any generic method returning the struct in a contextual position.
 - [ ] All stacks generated; nested-type surface removed; tests ported to the structs.
 
