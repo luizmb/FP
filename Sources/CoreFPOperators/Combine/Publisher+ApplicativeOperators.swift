@@ -5,9 +5,10 @@
     import Foundation
 
     // (<*>) :: Publisher<(a -> b), e> -> Publisher<a, e> -> Publisher<b, e>
+    // `ap` derived from the ordered-concat bind: `[f, g] <*> [1, 2]` emits `[f(1), f(2), g(1), g(2)]`
     /// `func`.
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func <*> <A0, A, B: Error>(_ lhs: any Publisher<(A0) -> A, B>, _ rhs: any Publisher<A0, B>)
+    public func <*> <A0, A, B: Error>(_ lhs: any Publisher<@Sendable (A0) -> A, B>, _ rhs: any Publisher<A0, B>)
     -> any Publisher<A, B> {
         AnyPublisher<A, B>.apply(lhs, rhs)
     }

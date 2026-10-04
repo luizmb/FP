@@ -5,6 +5,16 @@
 
     // PublisherTOptional: AnyPublisher<A?, E>
 
+    // (<*>) :: AnyPublisher<(a -> b)?,e> -> AnyPublisher<a?,e> -> AnyPublisher<b?,e>
+    /// `<*>` overload.
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+    public func <*> <A, B, E: Error>(
+        _ fns: AnyPublisher<(@Sendable (A) -> B)?, E>,
+        _ values: AnyPublisher<A?, E>
+    ) -> AnyPublisher<B?, E> {
+        applyPublisherOptional(fns, values)
+    }
+
     // (*>) :: AnyPublisher<a?,e> -> AnyPublisher<b?,e> -> AnyPublisher<b?,e>
     /// `*>` overload.
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
@@ -15,7 +25,7 @@
     // (<*) :: AnyPublisher<a?,e> -> AnyPublisher<b?,e> -> AnyPublisher<a?,e>
     /// `func`.
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func <* <A, B, E: Error>(_ lhs: AnyPublisher<A?, E>, _ rhs: AnyPublisher<B?, E>) -> AnyPublisher<A?, E> {
+    public func <* <A: Sendable, B, E: Error>(_ lhs: AnyPublisher<A?, E>, _ rhs: AnyPublisher<B?, E>) -> AnyPublisher<A?, E> {
         seqLeftPublisherOptional(lhs, rhs)
     }
 #endif

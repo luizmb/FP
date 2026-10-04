@@ -64,8 +64,8 @@
             )
             .store(in: &cancellables)
 
-            // zip pairs elements, not cartesian product
-            #expect(results == [11, 22])
+            // bind-derived ap: cartesian, in order (use `zip` for pairwise)
+            #expect(results == [11, 21, 12, 22])
         }
 
         // MARK: - Monad Tests (Core Methods)

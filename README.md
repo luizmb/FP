@@ -532,7 +532,7 @@ zip(Optional(1), Optional(2))          // Optional((1, 2))
 zip(Optional(1), Optional<Int>.none)   // nil — one nil means the pair is nil
 ```
 
-For `Array`, `zip` pairs elements by index (the shorter array wins). For `Optional`, both values must be present for anything to come out. For `Publisher`, it waits until both have emitted and pairs them as they arrive.
+For `Array`, `zip` pairs elements by index (the shorter array wins). For `Optional`, both values must be present for anything to come out. For `Publisher`, it waits until both have emitted and pairs them as they arrive (`zip` is a named function there; `<*>` on `Publisher` is not zip, see below).
 
 `Result` doesn't have a stdlib `zip`, but this library adds it:
 
@@ -555,6 +555,8 @@ For `Array`, apply gives every combination — each function applied to every va
 ```swift
 [{ $0 + 1 }, { $0 * 10 }].apply([1, 2])  // [2, 3, 10, 20]
 ```
+
+`Publisher` behaves the same way: its `apply` / `<*>` is derived from its ordered-concat bind, so each function runs over the whole value stream, in order. Use `zip` for pairwise combination.
 
 The relationship between `zip` and `apply`: `apply` is essentially `zip` followed by `map`. First zip the function-container with the value-container to get pairs, then map `{ (fn, value) in fn(value) }` over the pairs. This library implements both, and internally they delegate to the same logic.
 
@@ -656,6 +658,8 @@ fetchUser(id: 42)
 ```
 
 Unlike `zip` (which runs effects in parallel), `flatMap` is always serial. Step two *depends on* the result of step one — that's exactly when you reach for `flatMap`.
+
+This library's `Publisher` bind (`bind`, `>>-`, `>=>`) is **ordered concat**, like Haskell streaming libraries: each inner publisher runs to completion, in upstream order, and no upstream value is dropped. Combine's own `flatMap` merges inner publishers concurrently; reach for it (or `switchToLatest`) when that's what you want.
 
 #### Monad operators _(optional, requires CoreFPOperators)_
 

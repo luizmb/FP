@@ -141,8 +141,8 @@ import Testing
             results.append(value)
         }
 
-        // *> zips the streams (pairs elements 1:1) and keeps the right values
-        #expect(results == [5, 10])
+        // *> is bind-derived (concat): the whole right stream once per left value
+        #expect(results == [5, 10, 5, 10])
     }
 
     @Test func applicativeOperatorSequenceLeft() async throws {
@@ -170,7 +170,7 @@ import Testing
             results.append(value)
         }
 
-        // <* zips the streams (pairs elements 1:1) and keeps the left values
-        #expect(results == [5, 10])
+        // <* is bind-derived (concat): each left value once per right value
+        #expect(results == [5, 5, 10, 10])
     }
 }

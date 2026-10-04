@@ -58,8 +58,8 @@ import Testing
             results.append(value)
         }
 
-        // zips element-by-element: (3+10, 6+20) = (13, 26)
-        #expect(results == [13, 26])
+        // bind-derived (concat): each left value over the whole right stream
+        #expect(results == [13, 23, 16, 26])
     }
 
     // MARK: - ReaderT + AsyncSequence Monad Tests

@@ -5,39 +5,51 @@
 
     // PublisherTOptional: outer = AnyPublisher, inner = Optional
     // Type: AnyPublisher<A?, E>
+    // Haskell: MaybeT (Publisher e)
+    //
+    // The applicative is derived from the monad (`<*>` = `ap`): sequential, ordered concat over the
+    // stream, short-circuiting per element. A `.none` on the left emits a single `.none` and never
+    // subscribes to the right side for that element.
+
+    /// apply for PublisherTOptional
+    /// mf <*> ma = mf >>= \f -> fmap f ma
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+    public func applyPublisherOptional<A, B, E: Error>(
+        _ fns: AnyPublisher<(@Sendable (A) -> B)?, E>,
+        _ values: AnyPublisher<A?, E>
+    ) -> AnyPublisher<B?, E> {
+        bindPublisherOptional(fns) { f in mapTPublisherOptional(f, values) }
+    }
 
     /// liftA2 for PublisherTOptional
+    /// liftA2 f ma mb = ma >>= \a -> fmap (f a) mb
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func liftA2PublisherOptional<A, B, C, E: Error>(
+    public func liftA2PublisherOptional<A: Sendable, B, C, E: Error>(
         _ fn: @escaping @Sendable (A, B) -> C
     ) -> (AnyPublisher<A?, E>, AnyPublisher<B?, E>) -> AnyPublisher<C?, E> {
         { pubA, pubB in
-            pubA.zip(pubB)
-                .map { a, b in Optional.liftA2(fn)(a, b) }
-                .eraseToAnyPublisher()
+            bindPublisherOptional(pubA) { a in mapTPublisherOptional({ b in fn(a, b) }, pubB) }
         }
     }
 
     /// seqRight for PublisherTOptional
+    /// ma *> mb = ma >>= \_ -> mb
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
     public func seqRightPublisherOptional<A, B, E: Error>(
         _ lhs: AnyPublisher<A?, E>,
         _ rhs: AnyPublisher<B?, E>
     ) -> AnyPublisher<B?, E> {
-        lhs.zip(rhs)
-            .map { a, b in a.seqRight(b) }
-            .eraseToAnyPublisher()
+        bindPublisherOptional(lhs) { (_: A) in rhs }
     }
 
     /// seqLeft for PublisherTOptional
+    /// ma <* mb = ma >>= \a -> fmap (const a) mb
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func seqLeftPublisherOptional<A, B, E: Error>(
+    public func seqLeftPublisherOptional<A: Sendable, B, E: Error>(
         _ lhs: AnyPublisher<A?, E>,
         _ rhs: AnyPublisher<B?, E>
     ) -> AnyPublisher<A?, E> {
-        lhs.zip(rhs)
-            .map { a, b in a.seqLeft(b) }
-            .eraseToAnyPublisher()
+        bindPublisherOptional(lhs) { a in mapTPublisherOptional({ (_: B) in a }, rhs) }
     }
 
 #endif

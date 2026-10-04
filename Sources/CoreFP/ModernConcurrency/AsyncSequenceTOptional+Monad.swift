@@ -38,3 +38,13 @@ public func bindTAsyncStreamOptional<A, B>(
 ) -> @Sendable (AsyncStream<A?>) -> AsyncStream<B?> where A: Sendable, B: Sendable {
     { @Sendable stream in flatMapTAsyncStreamOptional(stream, fn) }
 }
+
+/// Kleisli composition for AsyncStream<A?> (left-to-right)
+/// (>=>) :: (a -> AsyncStream<b?>) -> (b -> AsyncStream<c?>) -> a -> AsyncStream<c?>
+@available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+public func kleisliTAsyncStreamOptional<A, B, C>(
+    _ fn1: @escaping @Sendable (A) -> AsyncStream<B?>,
+    _ fn2: @escaping @Sendable (B) -> AsyncStream<C?>
+) -> @Sendable (A) -> AsyncStream<C?> where B: Sendable, C: Sendable {
+    { a in flatMapTAsyncStreamOptional(fn1(a), fn2) }
+}

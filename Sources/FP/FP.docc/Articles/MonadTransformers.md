@@ -187,7 +187,7 @@ combos lack a Monad" below. Every `Validation` combination therefore stops at F/
 | `OptionalTWriter` | Yes | Yes | Yes |
 | `ResultTWriter` | Yes | Yes | Yes |
 | `PublisherTWriter` | Yes | Yes | Yes |
-| `AsyncStreamTWriter` | Yes | — | Yes |
+| `AsyncStreamTWriter` | Yes | Yes | Yes |
 
 ### `NonEmpty` combinations
 
@@ -202,6 +202,14 @@ combos lack a Monad" below. Every `Validation` combination therefore stops at F/
 `StatefulTNonEmpty`, `WriterTNonEmpty` — are listed under their respective outer type above; every
 one of them now has an Applicative instance, closing a gap that existed when `IMPLEMENTATION_SUMMARY.md`
 was last updated.)
+
+**Streams (`AsyncStream`) follow Haskell stream semantics** (`pipes`/`conduit`/`fs2`): bind is
+ordered concat (each inner stream runs to completion, in upstream order, nothing dropped), and
+every applicative over a stream (`AsyncStream` itself, `AsyncSequenceTOptional`/`Result`/`Either`,
+`AsyncStreamTWriter`, `ReaderTAsyncSequence`) is `ap` derived from that bind: each left element
+runs over the whole right stream, like the list applicative. It is not zip; `AsyncStream.zip`
+pairs positionally. The right stream is single-pass, so `ap` drains it once into a buffer and
+replays it (`AsyncStream.replayable(_:)`); it must be finite.
 
 ---
 

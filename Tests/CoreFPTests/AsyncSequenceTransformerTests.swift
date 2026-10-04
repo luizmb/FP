@@ -35,7 +35,7 @@ import Testing
         let streamB = makeStream([10, 20] as [Int?])
         let result = liftA2AsyncStreamOptional(+)(streamA, streamB)
         let collected = await collect(result)
-        #expect(collected == [11, 22])
+        #expect(collected == [11, 21, 12, 22])
     }
 
     @Test func asyncStreamOptionalSeqRight() async {
@@ -43,7 +43,7 @@ import Testing
         let streamB = makeStream([10, 20] as [Int?])
         let result = seqRightAsyncStreamOptional(streamA, streamB)
         let collected = await collect(result)
-        #expect(collected == [10, nil])
+        #expect(collected == [10, 20, nil])
     }
 
     @Test func asyncStreamOptionalFlatMapT() async {

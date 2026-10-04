@@ -6,6 +6,16 @@ import DataStructure
 
     // PublisherTEither: AnyPublisher<Either<L,A>, E>
 
+    // (<*>) :: AnyPublisher<Either<l,(a -> b)>,e> -> AnyPublisher<Either<l,a>,e> -> AnyPublisher<Either<l,b>,e>
+    /// `<*>` overload.
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+    public func <*> <L: Sendable, A: Sendable, B: Sendable, E: Error>(
+        _ fns: AnyPublisher<Either<L, @Sendable (A) -> B>, E>,
+        _ values: AnyPublisher<Either<L, A>, E>
+    ) -> AnyPublisher<Either<L, B>, E> {
+        applyPublisherEither(fns, values)
+    }
+
     /// `*>` overload.
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
     public func *> <L: Sendable, A: Sendable, B: Sendable, E: Error>(

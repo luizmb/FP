@@ -71,8 +71,9 @@
 
         @Test func applicativeOperatorApply() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-            let readerFn = Reader<Environment, any Publisher<(Int) -> Int, TestError>> { env in
-                Just { $0 + env.multiplier }
+            let readerFn = Reader<Environment, any Publisher<@Sendable (Int) -> Int, TestError>> { env in
+                let multiplier = env.multiplier
+                return Just<@Sendable (Int) -> Int> { $0 + multiplier }
                     .setFailureType(to: TestError.self)
                     .eraseToAnyPublisher()
             }

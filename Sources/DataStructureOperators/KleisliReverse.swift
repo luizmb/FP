@@ -130,6 +130,20 @@ public func <=< <Env: Sendable, A: Sendable, B: Sendable, C: Sendable>(
         _ fn1: @escaping @Sendable (A) -> Reader<Env, any Publisher<B, E>>
     ) -> @Sendable (A) -> Reader<Env, any Publisher<C, E>> { fn1 >=> fn2 }
 
+    /// `func` for `PublisherT + Either`.
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+    public func <=< <L, A, B, C, E: Error>(
+        _ fn2: @escaping @Sendable (B) -> AnyPublisher<Either<L, C>, E>,
+        _ fn1: @escaping @Sendable (A) -> AnyPublisher<Either<L, B>, E>
+    ) -> @Sendable (A) -> AnyPublisher<Either<L, C>, E> { fn1 >=> fn2 }
+
+    /// `func` for `PublisherT + Writer`.
+    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
+    public func <=< <W: Monoid, A, B, C, E: Error>(
+        _ fn2: @escaping @Sendable (B) -> AnyPublisher<Writer<W, C>, E>,
+        _ fn1: @escaping @Sendable (A) -> AnyPublisher<Writer<W, B>, E>
+    ) -> @Sendable (A) -> AnyPublisher<Writer<W, C>, E> { fn1 >=> fn2 }
+
 #endif
 
 // MARK: - Stateful

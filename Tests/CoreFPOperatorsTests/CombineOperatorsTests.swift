@@ -225,7 +225,8 @@
             )
             .store(in: &cancellables)
 
-            #expect(results == [11, 22])
+            // bind-derived ap: cartesian, in order (not zip)
+            #expect(results == [11, 21, 12, 22])
         }
 
         @Test func zip() {
@@ -253,10 +254,10 @@
 
         @Test func applyOperator() {
             var cancellables = Set<AnyCancellable>()
-            let functions = [{ (x: Int) in x * 2 }, { (x: Int) in x + 10 }].publisher
+            let functions: [@Sendable (Int) -> Int] = [{ $0 * 2 }, { $0 + 10 }]
             let values = [5, 3].publisher
 
-            let applied = functions <*> values
+            let applied = functions.publisher <*> values
 
             var results: [Int] = []
             applied.sink(
@@ -265,7 +266,8 @@
             )
             .store(in: &cancellables)
 
-            #expect(results == [10, 13])
+            // [f, g] <*> [5, 3] == [f 5, f 3, g 5, g 3]
+            #expect(results == [10, 6, 15, 13])
         }
 
         @Test func sequenceRight() {
@@ -282,7 +284,7 @@
             )
             .store(in: &cancellables)
 
-            #expect(results == [10, 20])
+            #expect(results == [10, 20, 10, 20])
         }
 
         @Test func sequenceLeft() {
@@ -299,7 +301,7 @@
             )
             .store(in: &cancellables)
 
-            #expect(results == [1, 2])
+            #expect(results == [1, 1, 2, 2])
         }
 
         @Test func sequenceLeftSubscribesLeftFirst() {

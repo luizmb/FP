@@ -59,6 +59,47 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   branch as well as log; logs combine left to right. The old inner-only continuation
   `(A) -> Writer<W, B>` is removed: write `outer.map { $0.flatMap(f) }` instead (`mapRight` for
   `Either`).
+- **`Publisher` follows Haskell stream semantics** (pipes/conduit/fs2). Bind (`bind`, `kleisli`,
+  `kleisliBack`, `>>-`, `-<<`, `>=>`, `<=<`) is now **ordered concat**: each inner publisher runs to
+  completion, in upstream order, and no upstream value is dropped, even from sources that ignore
+  demand such as `PassthroughSubject` (new `concatMap(_:)`: an unbounded `buffer` before
+  `flatMap(maxPublishers: .max(1))`). It used to be Combine's merging `flatMap`. `apply`/`<*>`,
+  `liftA2`, `seqRight`/`*>` and `seqLeft`/`<*` are now `ap` derived from that bind, cartesian like
+  the list applicative (`[f, g] <*> [1, 2]` emits `f 1, f 2, g 1, g 2`); they used to be `zip`.
+  `zip` stays as a named function with pairwise semantics. `apply`/`<*>` take `@Sendable` inner
+  functions.
+- **Publisher stacks use the concat bind and `<*> == ap`**: `PublisherTEither`, `PublisherTOptional`
+  and `PublisherTResult` (`ExceptT`/`MaybeT` over the stream) bind with ordered concat, and their
+  `liftA2`/`*>`/`<*` are derived from `flatMapT` + `mapT` instead of zipping. New `apply`/`<*>`
+  (`applyPublisherEither`, `applyPublisherOptional`, `applyPublisherResult`) and `kleisliT`/`>=>`/`<=<`
+  for the three. `ReaderTPublisher` binds through the base concat, and its `apply`/`liftA2`/`*>`/`<*`
+  are derived from its `flatMapT` (`apply` now takes `@Sendable` inner functions).
+- **`PublisherTWriter` gets the full-stack `WriterT` bind**: `flatMapT`/`bindT`/`>>-`/`-<<` take
+  `(A) -> AnyPublisher<Writer<W, B>, E>` (concatenated in order, each log `w1 <> w2`) instead of the
+  inner-only `(A) -> Writer<W, B>`, which is removed. New `kleisliT`/`>=>`/`<=<` and
+  `applyPublisherWriter`/`<*>`; `liftA2`/`*>`/`<*` are derived from the bind.
+- **Upgrade note (Publisher)**: code that used `<*>` (or `liftA2`/`*>`/`<*`) on publishers to pair
+  values must call `zip` (`AnyPublisher.zip`, `Publishers.Zip` or Combine's `.zip`). `>>-` is now
+  ordered concat: use Combine's `flatMap` for merge, or `map(_:).switchToLatest()` for latest. An
+  inner-only `PublisherTWriter` continuation `{ a in Writer(b, w) }` becomes
+  `{ a in Just(Writer(b, w)).eraseToAnyPublisher() }` (with `setFailureType(to:)` as needed).
+- **`AsyncStream` applicative is `ap`, not zip** (Haskell stream semantics, like `pipes`/`conduit`):
+  bind (`>>-`, `>=>`) is ordered concat, and `apply`/`<*>`, `liftA2`, `seqRight`/`*>` and
+  `seqLeft`/`<*` are now derived from it. For each left element, in order, the whole right stream
+  runs: `[f, g] <*> [1, 2]` yields `f(1), f(2), g(1), g(2)` (was `f(1), g(2)`), `[1, 2] *> [a, b]`
+  yields `a, b, a, b` and `[1, 2] <* [a, b]` yields `1, 1, 2, 2`. The right stream is single-pass,
+  so it is drained once into a buffer and replayed for each left element (new public
+  `AsyncStream.replayable(_:)`); it must be finite. Same for `ReaderTAsyncSequence` `liftA2`/`*>`/`<*`
+  (now returning `Reader<Env, AsyncStream<_>>`). **Upgrade:** to pair elements positionally, use
+  `AsyncStream.zip(a, b)` (unchanged, still zip) and `map` over the pairs.
+- **Stream transformers are lawful `MaybeT`/`ExceptT`/`WriterT`**: `AsyncSequenceTOptional`,
+  `AsyncSequenceTResult` and `AsyncSequenceTEither` `liftA2`/`*>`/`<*` are derived from `flatMapT`
+  + `mapT` (concat, a failure on the left never touches the right) instead of zipping; new
+  `apply*`/`<*>` and `kleisliT*`/`>=>`/`<=<` for all three. `AsyncStreamTWriter.flatMapT`/`bindT`/`>>-`/`-<<`
+  take the full-stack continuation `(A) -> AsyncStream<Writer<W, B>>` (concat, logs `w1 <> w2`) and
+  return `AsyncStream<Writer<W, B>>`; the inner-only `(A) -> Writer<W, B>` version is removed (lift
+  with a one-element stream). New `kleisliT`/`>=>`/`<=<` and bind-derived
+  `applyAsyncStreamWriter`/`liftA2…`/`seqRight…`/`seqLeft…` (`<*>`/`*>`/`<*`).
 - **Transformer applicatives follow bind** (`<*> == ap`, Haskell's `ExceptT`/`MaybeT` semantics) for
   ArrayT, NonEmptyT, EitherT, OptionalT, StatefulT and WriterT over `Either`/`Optional`/`Result`:
   `apply`, `liftA2`, `*>` and `<*` now short-circuit like `>>-`. A failed function no longer
