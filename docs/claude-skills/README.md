@@ -92,7 +92,7 @@ to the new Validation type I'm adding to the library.
 ```
 
 ### 2. create-readert-transformer.md
-Create monad transformer stacks (`ReaderT` or a flat `OuterTInner`) following library patterns — real module locations, `mapT`/`flatMapT`/`kleisliT` naming, `<£^>`/`<&^>` for the transformer functor map.
+Create monad transformer stacks (`ReaderT` or a flat `OuterTInner`) following library patterns — real module locations, `mapT`/`fmapT`/`flatMapT`/`kleisliT` naming (transformer functor map is the `mapT` method, no operator).
 
 ```
 Use the create-readert-transformer skill to implement ReaderT + Validation

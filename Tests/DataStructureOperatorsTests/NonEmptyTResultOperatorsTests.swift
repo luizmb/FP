@@ -6,8 +6,8 @@ import Testing
 
 private enum TestError: Error, Equatable { case bad(String) }
 
-// Functor operators (<£^>/<&^>) for NonEmpty<Result<A, E>> are covered in
-// NonEmptyTransformerOperatorsTests.swift. This suite covers Applicative and Monad operators.
+// Transformer fmap is the named `mapT` (covered in DataStructureTests). This suite covers
+// Applicative and Monad operators.
 @Suite struct NonEmptyTResultOperatorsTests {
     // MARK: - Applicative: <*> / *> / <*
 

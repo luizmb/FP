@@ -25,7 +25,7 @@ import Testing
 
     @Test func asyncStreamOptionalMapT() async {
         let stream = makeStream([1, nil, 3] as [Int?])
-        let result = mapTAsyncStreamOptional({ $0 * 2 }, stream)
+        let result = stream.mapT { $0 * 2 }
         let collected = await collect(result)
         #expect(collected == [2, nil, 6])
     }
@@ -59,7 +59,7 @@ import Testing
 
     @Test func asyncStreamArrayMapT() async {
         let stream = makeStream([[1, 2], [3, 4]])
-        let result = mapTAsyncStreamArray({ $0 * 2 }, stream)
+        let result = stream.mapT { $0 * 2 }
         let collected = await collect(result)
         #expect(collected == [[2, 4], [6, 8]])
     }
@@ -78,7 +78,7 @@ import Testing
 
     @Test func asyncStreamResultMapTSuccess() async {
         let stream = makeStream([Result<Int, Err>.success(5), .failure(.fail)])
-        let result = mapTAsyncStreamResult({ $0 * 2 }, stream)
+        let result = stream.mapT { $0 * 2 }
         let collected = await collect(result)
         #expect(collected == [.success(10), .failure(.fail)])
     }

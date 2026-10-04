@@ -217,27 +217,27 @@ Log accumulates regardless of whether a value is present.
 
 ```swift
 let w: Writer<[String], Int?> = Writer(.some(5), ["found"])
-{ $0 * 2 } <£^> w   // Writer(Optional(10), ["found"])
+w.mapT { $0 * 2 }   // Writer(Optional(10), ["found"])
 
 let empty: Writer<[String], Int?> = Writer(.none, ["not found"])
-{ $0 * 2 } <£^> empty  // Writer(nil, ["not found"])
+empty.mapT { $0 * 2 }  // Writer(nil, ["not found"])
 ```
 
 ### `WriterTEither` — `Writer<W, Either<L, A>>` (outer = Writer, inner = Either)
 
 ```swift
 let w: Writer<[String], Either<String, Int>> = Writer(.right(5), ["ok"])
-{ $0 * 2 } <£^> w   // Writer(.right(10), ["ok"])
+w.mapT { $0 * 2 }   // Writer(.right(10), ["ok"])
 
 let fail: Writer<[String], Either<String, Int>> = Writer(.left("err"), ["failed"])
-{ $0 * 2 } <£^> fail  // Writer(.left("err"), ["failed"])
+fail.mapT { $0 * 2 }  // Writer(.left("err"), ["failed"])
 ```
 
 ### `WriterTResult` — `Writer<W, Result<A, E>>` (outer = Writer, inner = Result)
 
 ```swift
 let w: Writer<[String], Result<Int, MyError>> = Writer(.success(5), ["ok"])
-{ $0 * 2 } <£^> w   // Writer(.success(10), ["ok"])
+w.mapT { $0 * 2 }   // Writer(.success(10), ["ok"])
 ```
 
 ### `WriterTStateful` — `Writer<W, Stateful<S, A>>` (outer = Writer, inner = Stateful)
@@ -247,7 +247,7 @@ Produces a stateful computation alongside a log entry. Useful when you want to r
 ```swift
 let w: Writer<[String], Stateful<Int, Int>> =
     Writer(Stateful { s in s += 1; return s }, ["will increment"])
-{ $0 * 2 } <£^> w  // Writer<[String], Stateful<Int, Int>> — doubles the result
+w.mapT { $0 * 2 }  // Writer<[String], Stateful<Int, Int>> — doubles the result
 ```
 
 ### `WriterTReader` — `Writer<W, Reader<Env, A>>` (outer = Writer, inner = Reader)
@@ -255,7 +255,7 @@ let w: Writer<[String], Stateful<Int, Int>> =
 ```swift
 let w: Writer<[String], Reader<Config, Int>> =
     Writer(Reader { $0.multiplier }, ["reads multiplier"])
-{ $0 * 2 } <£^> w  // Writer<[String], Reader<Config, Int>>
+w.mapT { $0 * 2 }  // Writer<[String], Reader<Config, Int>>
 ```
 
 ### `OptionalTWriter` — `Writer<W, A>?` (outer = Optional, inner = Writer)

@@ -24,18 +24,6 @@ import Testing
         #expect(result == [nil, nil])
     }
 
-    @Test func fmapOperator() {
-        let arr: [Int?] = [1, nil, 3]
-        let result = { $0 * 2 } <£^> arr
-        #expect(result == [2, nil, 6])
-    }
-
-    @Test func flippedFmapOperator() {
-        let arr: [Int?] = [1, nil, 3]
-        let result = arr <&^> { $0 * 2 }
-        #expect(result == [2, nil, 6])
-    }
-
     // MARK: - Applicative
 
     @Test func liftA2CartesianProduct() {

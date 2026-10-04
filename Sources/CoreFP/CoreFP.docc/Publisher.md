@@ -175,7 +175,7 @@ let pub: AnyPublisher<Int?, Never> = [1, nil, 3].publisher
     .map { $0 as Int? }.eraseToAnyPublisher()
 
 // mapT — transform inner Optional without affecting the Publisher layer
-let doubled = mapTPublisherOptional({ $0 * 2 }, pub)
+let doubled = pub.mapT { $0 * 2 }
 // emits Optional(2), nil, Optional(6)
 
 // liftA2 — derived from flatMapT: for each element of pubA, the whole of pubB runs
@@ -191,7 +191,6 @@ flatMapTPublisherOptional(pub) { n in
 // emits Optional(2), nil, Optional(6)
 
 // Operators
-{ $0 * 2 } <£^> pub   // emits Optional(2), nil, Optional(6)
 pub >>- { n in Just(Optional(n + 1)).eraseToAnyPublisher() }   // ordered concat, like the base bind
 ```
 
@@ -206,7 +205,7 @@ import FP
 
 let pub: AnyPublisher<[Int], Never> = [[1, 2], [3, 4]].publisher.eraseToAnyPublisher()
 
-mapTPublisherArray({ $0 * 2 }, pub)   // emits [2, 4], [6, 8]
+pub.mapT { $0 * 2 }   // emits [2, 4], [6, 8]
 
 // liftA2 — zip two publishers and combine arrays with Array.liftA2
 let pubA: AnyPublisher<[Int], Never> = Just([1, 2]).eraseToAnyPublisher()
@@ -227,7 +226,7 @@ import FP
 let pub: AnyPublisher<Result<Int, MyError>, Never> =
     [.success(5), .failure(.bad)].publisher.eraseToAnyPublisher()
 
-mapTPublisherResult({ $0 * 2 }, pub)  // emits .success(10), .failure(.bad)
+pub.mapT { $0 * 2 }  // emits .success(10), .failure(.bad)
 flatMapTPublisherResult(pub) { n in
     Just(Result<String, MyError>.success("\(n)")).eraseToAnyPublisher()
 }
@@ -244,14 +243,11 @@ import DataStructure
 let pub: AnyPublisher<Either<String, Int>, Never> =
     [Either.right(1), .left("err"), .right(3)].publisher.eraseToAnyPublisher()
 
-mapTPublisherEither({ $0 * 2 }, pub)  // emits .right(2), .left("err"), .right(6)
+pub.mapT { $0 * 2 }  // emits .right(2), .left("err"), .right(6)
 flatMapTPublisherEither(pub) { n in
     Just(Either<String, Int>.right(n * 2)).eraseToAnyPublisher()
 }
 // emits .right(2), .left("err"), .right(6)
-
-// Operators (DataStructureOperators)
-{ $0 * 2 } <£^> pub
 ```
 
 ### `PublisherTWriter` — `AnyPublisher<Writer<W, A>, E>`

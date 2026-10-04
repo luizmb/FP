@@ -195,32 +195,32 @@ Validation participates in transformer stacks either as the **outer** layer or a
 ```swift
 let v: Validation<[String], Int?> = .success(.some(5))
 
-// <£^> maps inside the Optional without touching the Validation layer
-{ $0 * 2 } <£^> v  // .success(Optional(10))
+// mapT maps inside the Optional without touching the Validation layer
+v.mapT { $0 * 2 }  // .success(Optional(10))
 
 let none: Validation<[String], Int?> = .success(.none)
-{ $0 * 2 } <£^> none  // .success(nil)
+none.mapT { $0 * 2 }  // .success(nil)
 
 let failed: Validation<[String], Int?> = .failure(["e"])
-{ $0 * 2 } <£^> failed  // .failure(["e"])
+failed.mapT { $0 * 2 }  // .failure(["e"])
 ```
 
 ### `ValidationTArray` — `Validation<E, [A]>` (outer = Validation, inner = Array)
 
 ```swift
 let v: Validation<[String], [Int]> = .success([1, 2, 3])
-{ $0 * 2 } <£^> v  // .success([2, 4, 6])
+v.mapT { $0 * 2 }  // .success([2, 4, 6])
 ```
 
 ### `ValidationTResult` — `Validation<E, Result<A, Err>>` (outer = Validation, inner = Result)
 
 ```swift
 let v: Validation<[String], Result<Int, MyError>> = .success(.success(5))
-{ $0 * 2 } <£^> v  // .success(.success(10))
+v.mapT { $0 * 2 }  // .success(.success(10))
 
 // Inner failure passes through the outer success
 let innerFail: Validation<[String], Result<Int, MyError>> = .success(.failure(.bad))
-{ $0 * 2 } <£^> innerFail  // .success(.failure(.bad))
+innerFail.mapT { $0 * 2 }  // .success(.failure(.bad))
 ```
 
 ### `OptionalTValidation` — `Validation<E, A>?` (outer = Optional, inner = Validation)

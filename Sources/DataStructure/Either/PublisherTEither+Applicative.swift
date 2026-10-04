@@ -18,7 +18,7 @@
         _ fns: AnyPublisher<Either<L, @Sendable (A) -> B>, E>,
         _ values: AnyPublisher<Either<L, A>, E>
     ) -> AnyPublisher<Either<L, B>, E> {
-        bindPublisherEither(fns) { f in mapTPublisherEither(f, values) }
+        bindPublisherEither(fns) { f in values.mapT(f) }
     }
 
     /// liftA2 for PublisherTEither
@@ -28,7 +28,7 @@
         _ fn: @escaping @Sendable (A, B) -> C
     ) -> (AnyPublisher<Either<L, A>, E>, AnyPublisher<Either<L, B>, E>) -> AnyPublisher<Either<L, C>, E> {
         { pubA, pubB in
-            bindPublisherEither(pubA) { a in mapTPublisherEither({ b in fn(a, b) }, pubB) }
+            bindPublisherEither(pubA) { a in pubB.mapT { b in fn(a, b) } }
         }
     }
 
@@ -49,7 +49,7 @@
         _ lhs: AnyPublisher<Either<L, A>, E>,
         _ rhs: AnyPublisher<Either<L, B>, E>
     ) -> AnyPublisher<Either<L, A>, E> {
-        bindPublisherEither(lhs) { a in mapTPublisherEither({ (_: B) in a }, rhs) }
+        bindPublisherEither(lhs) { a in rhs.mapT { (_: B) in a } }
     }
 
 #endif

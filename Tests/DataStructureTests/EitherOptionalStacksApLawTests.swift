@@ -27,7 +27,7 @@ private enum StackError: Error, Equatable {
     @Test func eitherTOptionalApplyIsAp() {
         for fns in Self.eitherOptionalFns {
             for values in Self.eitherOptionalYs {
-                let viaBind = flatMapTEitherOptional(fns) { fn in mapTEitherOptional(fn, values) }
+                let viaBind = flatMapTEitherOptional(fns) { fn in values.mapT(fn) }
                 #expect(applyEitherOptional(fns, values) == viaBind)
             }
         }
@@ -38,7 +38,7 @@ private enum StackError: Error, Equatable {
             liftA2EitherOptional { a, b in a * 100 + b }
         for lhs in Self.eitherOptionalXs {
             for rhs in Self.eitherOptionalYs {
-                let viaBind = flatMapTEitherOptional(lhs) { a in mapTEitherOptional({ b in a * 100 + b }, rhs) }
+                let viaBind = flatMapTEitherOptional(lhs) { a in rhs.mapT { b in a * 100 + b } }
                 #expect(lifted(lhs, rhs) == viaBind)
             }
         }
@@ -48,7 +48,7 @@ private enum StackError: Error, Equatable {
         for lhs in Self.eitherOptionalXs {
             for rhs in Self.eitherOptionalYs {
                 #expect(seqRightEitherOptional(lhs, rhs) == flatMapTEitherOptional(lhs, const(rhs)))
-                let seqLeftViaBind = flatMapTEitherOptional(lhs) { a in mapTEitherOptional(const(a), rhs) }
+                let seqLeftViaBind = flatMapTEitherOptional(lhs) { a in rhs.mapT(const(a)) }
                 #expect(seqLeftEitherOptional(lhs, rhs) == seqLeftViaBind)
             }
         }
@@ -82,7 +82,7 @@ private enum StackError: Error, Equatable {
     @Test func eitherTResultApplyIsAp() {
         for fns in Self.eitherResultFns {
             for values in Self.eitherResultYs {
-                let viaBind = flatMapTEitherResult(fns) { fn in mapTEitherResult(fn, values) }
+                let viaBind = flatMapTEitherResult(fns) { fn in values.mapT(fn) }
                 #expect(applyEitherResult(fns, values) == viaBind)
             }
         }
@@ -93,7 +93,7 @@ private enum StackError: Error, Equatable {
             -> Either<String, Result<Int, StackError>> = liftA2EitherResult { a, b in a * 100 + b }
         for lhs in Self.eitherResultXs {
             for rhs in Self.eitherResultYs {
-                let viaBind = flatMapTEitherResult(lhs) { a in mapTEitherResult({ b in a * 100 + b }, rhs) }
+                let viaBind = flatMapTEitherResult(lhs) { a in rhs.mapT { b in a * 100 + b } }
                 #expect(lifted(lhs, rhs) == viaBind)
             }
         }
@@ -103,7 +103,7 @@ private enum StackError: Error, Equatable {
         for lhs in Self.eitherResultXs {
             for rhs in Self.eitherResultYs {
                 #expect(seqRightEitherResult(lhs, rhs) == flatMapTEitherResult(lhs, const(rhs)))
-                let seqLeftViaBind = flatMapTEitherResult(lhs) { a in mapTEitherResult(const(a), rhs) }
+                let seqLeftViaBind = flatMapTEitherResult(lhs) { a in rhs.mapT(const(a)) }
                 #expect(seqLeftEitherResult(lhs, rhs) == seqLeftViaBind)
             }
         }

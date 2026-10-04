@@ -24,8 +24,6 @@ let parsed = "42"
 | `<&>` | `<&>` | Functor map, container on the left | `MonadBindLeft` | left |
 | `£>` | `$>` | Replace every element with a constant, container left | `FunctorOps` | left |
 | `<£` | `<$` | Replace every element with a constant, value left | `FunctorOps` | left |
-| `<£^>` | — | Transformer-only `fmap` (`mapT`), function left | `FunctorOps` | left |
-| `<&^>` | — | Transformer-only `fmap` (`mapT`), container left | `MonadBindLeft` | left |
 | `<*>` | `<*>` | Applicative apply | `FunctorOps` | left |
 | `*>` | `*>` | Sequence, discard the left result | `FunctorOps` | left |
 | `<*` | `<*` | Sequence, discard the right result | `FunctorOps` | left |
@@ -51,16 +49,11 @@ A few things worth calling out explicitly:
 - **`£` is a pound sign, not a typo for `$`.** Haskell's `$` can't be reused because `$` is
   reserved for Swift string interpolation delimiters, so the library uses `£` (and offers the
   ASCII-friendly `<|` as an alias for the exact same operator).
-- **`<£^>`/`<&^>` have no base-type overload, on purpose.** They exist solely for transformer
-  (`mapT`) calls — `Writer<W, Either<L, A>>`, `Either<L, Result<A, E>>`, and so on. `<£>`/`<&>`
-  already carry a large number of overloads across every base `Functor` in the library (`Array`,
-  `Optional`, `Result`, `Either`, `Reader`, …). The `<£^>` doc comment in `Operators.swift` states
-  the reason directly: unlike `<£>`, it has no base-type overload at all — only transformer-specific
-  ones — "so Swift can always resolve the correct overload with zero ambiguity." Piling every
-  transformer combination onto the same `<£>` symbol as the base overloads has, in practice, also
-  tripped up SourceKit (the editor's live type checker) with false-positive errors on code that
-  `swift build`/`swift test` compile and pass without issue — giving transformer `fmap` its own
-  symbol sidesteps that too.
+- **Transformer stacks have no map operator.** Mapping one layer inside a stack
+  (`Writer<W, Either<L, A>>`, `Either<L, Result<A, E>>`, …) is the method `.mapT(_:)` (plus the
+  static curried `fmapT(_:)`), never an operator. `£>`/`<£` on a stack are the *base* overloads
+  of the outer type, so `reader £> x` replaces the whole output; replacing the inner value is
+  `stack.mapT(const(x))`.
 - **There is no infix power operator.** Swift's standard library declares `^` (bitwise XOR) in
   `AdditionPrecedence`, and a second declaration with another precedence group is an
   "ambiguous operator declarations" error, so a power `^` would bind like `+`
@@ -93,12 +86,12 @@ fixed and cannot be changed; the custom groups slot around them):
 4.5   CastingPrecedence               (stdlib: as?)
 4.2   NilCoalescingPrecedence         (stdlib: ??)
 4     ComparisonPrecedence            (stdlib: ==, <=)  ≅
-4     FunctorOps                      <£>  £>  <£  <*>  *>  <*  <£^>       left
+4     FunctorOps                      <£>  £>  <£  <*>  *>  <*             left
 3     AlternativePrecedence           <|>                                  left
 3     LogicalConjunctionPrecedence    (stdlib: &&)
 2     LogicalDisjunctionPrecedence    (stdlib: ||)
 1     KleisliCompositionRight         >=>  <=<  -<<  <<-                   right
-1     MonadBindLeft                   >>-  <&>  ->>  <&^>                  left
+1     MonadBindLeft                   >>-  <&>  ->>                        left
 0.5   TernaryPrecedence               (stdlib: ?:)
 0     LowPrecedenceFunctionCallRight  £  <|                                right
 0     LowPrecedenceFunctionCallLeft   |>                                   left
@@ -126,14 +119,13 @@ then this," which is exactly how `do`-notation desugars in Haskell.
 
 Because `>>-` (bind) and `>=>`/`-<<` (Kleisli composition / flipped bind) need *opposite*
 associativity to match their Haskell counterparts, they cannot share one precedence group — hence
-the split into `MonadBindLeft` (left, for `>>-`/`<&>`/`->>`/`<&^>`) and `KleisliCompositionRight`
+the split into `MonadBindLeft` (left, for `>>-`/`<&>`/`->>`) and `KleisliCompositionRight`
 (right, for `>=>`/`<=<`/`-<<`/`<<-`), at adjacent precedence levels so they still interleave
 correctly in mixed expressions.
 
 `<&>` also sits in `MonadBindLeft` rather than alongside `<£>` in `FunctorOps` — matching
 Haskell's own `infixl 1 <&>`, which is lower precedence than `infixl 4 <$>` (`<£>`'s Haskell
-counterpart, `Data.Functor`'s `<$>`) despite both being "functor map." `<&^>`, the transformer
-counterpart of `<&>`, follows it into the same group for the same reason.
+counterpart, `Data.Functor`'s `<$>`) despite both being "functor map."
 
 ---
 
@@ -142,7 +134,7 @@ counterpart of `<&>`, follows it into the same group for the same reason.
 - **Transform a value inside a container, function first** → `<£>` (`<&>` if the container reads
   more naturally first, e.g. mid-pipeline).
 - **Transform the value one layer inside a transformer stack** (`Writer<W, Either<L, A>>`,
-  `Either<L, Result<A, E>>`, …) → `<£^>` / `<&^>`.
+  `Either<L, Result<A, E>>`, …) → `stack.mapT(f)` (no operator).
 - **Combine two independent wrapped values with a function that takes both** → `<*>`, or
   `liftA2`-style named functions for a curried n-ary version.
 - **Run two effects in sequence but only care about one result** → `*>` (keep the right) / `<*`

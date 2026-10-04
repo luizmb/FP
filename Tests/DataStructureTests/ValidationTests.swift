@@ -268,7 +268,7 @@ import Testing
 
     @Test func validationTOptionalFunctor() {
         let v: Validation<[String], Int?> = .success(.some(5))
-        let result = mapTValidationOptional { $0 * 2 }(v)
+        let result = v.mapT { $0 * 2 }
         #expect(result == .success(.some(10)))
     }
 
@@ -282,7 +282,7 @@ import Testing
 
     @Test func validationTArrayFunctor() {
         let v: Validation<[String], [Int]> = .success([1, 2, 3])
-        let result = mapTValidationArray { $0 * 2 }(v)
+        let result = v.mapT { $0 * 2 }
         #expect(result == .success([2, 4, 6]))
     }
 
@@ -296,7 +296,7 @@ import Testing
 
     @Test func eitherTValidationFunctorRight() {
         let e: Either<String, Validation<[Int], Int>> = .right(.success(5))
-        let result = fmapTEitherValidation({ $0 * 2 }, e)
+        let result = e.mapT { $0 * 2 }
         #expect(result == .right(.success(10)))
     }
 

@@ -12,37 +12,16 @@ import Testing
 
     // MARK: - Functor Operators
 
-    @Test func functorOperatorFmap() {
+    @Test func replaceOperatorIsBaseReaderReplace() {
         let reader = Reader<Environment, Either<String, Int>> { env in
-            .right(env.multiplier)
+            .left("ignored \(env.multiplier)")
         }
 
-        let mapped = { $0 * 2 } <£^> reader
+        // No transformer overload: `£>` replaces the whole Reader output, not the inner Right.
+        let replaced: Reader<Environment, Int> = reader £> 42
 
         let env = Environment(multiplier: 5)
-        #expect(mapped(env) == .right(10))
-    }
-
-    @Test func functorOperatorFlippedFmap() {
-        let reader = Reader<Environment, Either<String, Int>> { env in
-            .right(env.multiplier)
-        }
-
-        let mapped = reader <&^> { $0 * 2 }
-
-        let env = Environment(multiplier: 5)
-        #expect(mapped(env) == .right(10))
-    }
-
-    @Test func functorOperatorReplace() {
-        let reader = Reader<Environment, Either<String, Int>> { env in
-            .right(env.multiplier)
-        }
-
-        let replaced = reader £> 42
-
-        let env = Environment(multiplier: 5)
-        #expect(replaced(env) == .right(42))
+        #expect(replaced(env) == 42)
     }
 
     // MARK: - Applicative Operators

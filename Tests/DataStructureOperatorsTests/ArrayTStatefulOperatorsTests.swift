@@ -5,20 +5,6 @@ import DataStructureOperators
 import Testing
 
 @Suite struct ArrayTStatefulOperatorsTests {
-    @Test func fmap() {
-        let arr: [Stateful<Int, Int>] = [.get, .pure(10)]
-        let result = { $0 * 2 } <£^> arr
-        #expect(result[0].eval(5) == 10)
-        #expect(result[1].eval(5) == 20)
-    }
-
-    @Test func flippedFmap() {
-        let arr: [Stateful<Int, Int>] = [.get, .pure(10)]
-        let result = arr <&^> { $0 * 2 }
-        #expect(result[0].eval(5) == 10)
-        #expect(result[1].eval(5) == 20)
-    }
-
     @Test func apply() {
         let fns: [Stateful<Int, @Sendable (Int) -> String>] = [.pure { "\($0)" }]
         let vals: [Stateful<Int, Int>] = [.pure(5)]

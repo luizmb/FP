@@ -53,20 +53,6 @@ import Testing
 
     // MARK: - WriterTValidation operators
 
-    @Test func writerTValidationFmapOperator() {
-        let w = Writer<[String], Validation<[Int], Int>>(.success(3), ["log"])
-        let result = { $0 * 2 } <£^> w
-        #expect(result.value == .success(6))
-        #expect(result.log == ["log"])
-    }
-
-    @Test func writerTValidationFlippedFmapOperator() {
-        let w = Writer<[String], Validation<[Int], Int>>(.success(3), ["log"])
-        let result = w <&^> { $0 * 2 }
-        #expect(result.value == .success(6))
-        #expect(result.log == ["log"])
-    }
-
     @Test func writerTValidationApplyOperator() {
         let wf = Writer<[String], Validation<[Int], @Sendable (Int) -> Int>>(.failure([1]), ["l1"])
         let wa = Writer<[String], Validation<[Int], Int>>(.failure([2]), ["l2"])

@@ -173,7 +173,7 @@
             let fnsPublisher: AnyPublisher<(@Sendable (Int) -> Int)?, Never> = fns.publisher.eraseToAnyPublisher()
             let applied = applyPublisherOptional(fnsPublisher, optPublisher(values))
             let ap = flatMapTPublisherOptional(fnsPublisher) { fn in
-                mapTPublisherOptional(fn, values.publisher.eraseToAnyPublisher())
+                values.publisher.eraseToAnyPublisher().mapT(fn)
             }
             #expect(collect(applied) == collect(ap))
             #expect(collect(applied) == [101, nil, 102, nil, 2, nil, 4])
@@ -227,7 +227,7 @@
             let fnsPublisher: AnyPublisher<Result<@Sendable (Int) -> Int, Boom>, Never> = fns.publisher.eraseToAnyPublisher()
             let applied = applyPublisherResult(fnsPublisher, resPublisher(values))
             let ap = flatMapTPublisherResult(fnsPublisher) { fn in
-                mapTPublisherResult(fn, values.publisher.eraseToAnyPublisher())
+                values.publisher.eraseToAnyPublisher().mapT(fn)
             }
             #expect(collect(applied) == collect(ap))
             #expect(collect(applied) == [.success(101), .success(102), .failure(.boom), .success(2), .success(4)])

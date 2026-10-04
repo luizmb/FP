@@ -6,7 +6,7 @@ import Testing
 
 // NonEmptyTOptional: outer = NonEmpty, inner = Optional
 // Type: NonEmpty<A?> = NonEmpty<Optional<A>>
-// Functor operators (<£^> / <&^>) for this combo are covered in NonEmptyTransformerOperatorsTests.swift
+// Transformer fmap is the named `mapT` (covered in DataStructureTests).
 
 @Suite struct NonEmptyTOptionalOperatorsTests {
     // MARK: - Applicative: <*> / *> / <*

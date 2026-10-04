@@ -49,7 +49,7 @@
             let fnsPublisher: AnyPublisher<Either<String, @Sendable (Int) -> Int>, Never> = fns.publisher.eraseToAnyPublisher()
             let applied = applyPublisherEither(fnsPublisher, eitherPublisher(values))
             let ap = flatMapTPublisherEither(fnsPublisher) { fn in
-                mapTPublisherEither(fn, values.publisher.eraseToAnyPublisher())
+                values.publisher.eraseToAnyPublisher().mapT(fn)
             }
             #expect(collect(applied) == collect(ap))
             #expect(collect(applied) == [.right(101), .right(102), .left("no"), .right(2), .right(4)])

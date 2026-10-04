@@ -45,7 +45,7 @@ import Testing
         let fns: [(@Sendable (Int) -> String)?] = [label("f"), nil, label("g")]
         let xs: [Int?] = [1, nil, 2]
         let applied = await collectAll(applyAsyncStreamOptional(streamOf(fns), streamOf(xs)))
-        let derived = await collectAll(flatMapTAsyncStreamOptional(streamOf(fns)) { fn in mapTAsyncStreamOptional(fn, streamOf(xs)) })
+        let derived = await collectAll(flatMapTAsyncStreamOptional(streamOf(fns)) { fn in streamOf(xs).mapT(fn) })
         #expect(applied == derived)
     }
 
@@ -102,7 +102,7 @@ import Testing
         let fns: [Result<@Sendable (Int) -> String, Err>] = [.success(label("f")), .failure(.boom), .success(label("g"))]
         let xs: [Result<Int, Err>] = [.success(1), .failure(.bang)]
         let applied = await collectAll(applyAsyncStreamResult(streamOf(fns), streamOf(xs)))
-        let derived = await collectAll(flatMapTAsyncStreamResult(streamOf(fns)) { fn in mapTAsyncStreamResult(fn, streamOf(xs)) })
+        let derived = await collectAll(flatMapTAsyncStreamResult(streamOf(fns)) { fn in streamOf(xs).mapT(fn) })
         #expect(applied == derived)
         #expect(applied == [.success("f1"), .failure(.bang), .failure(.boom), .success("g1"), .failure(.bang)])
     }

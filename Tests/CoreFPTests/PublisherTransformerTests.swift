@@ -21,7 +21,7 @@
 
         @Test func publisherTOptionalMapT() {
             let pub: AnyPublisher<Int?, Never> = [1, nil, 3].publisher.map { $0 as Int? }.eraseToAnyPublisher()
-            let result = mapTPublisherOptional({ $0 * 2 }, pub)
+            let result = pub.mapT { $0 * 2 }
             #expect(collect(result) == [2, nil, 6])
         }
 
@@ -45,7 +45,7 @@
 
         @Test func publisherTArrayMapT() {
             let pub: AnyPublisher<[Int], Never> = [[1, 2], [3, 4]].publisher.eraseToAnyPublisher()
-            let result = mapTPublisherArray({ $0 * 2 }, pub)
+            let result = pub.mapT { $0 * 2 }
             #expect(collect(result) == [[2, 4], [6, 8]])
         }
 
@@ -60,7 +60,7 @@
 
         @Test func publisherTResultMapTSuccess() {
             let pub: AnyPublisher<Result<Int, Never>, Never> = [Result<Int, Never>.success(5)].publisher.eraseToAnyPublisher()
-            let result = mapTPublisherResult({ $0 * 2 }, pub)
+            let result = pub.mapT { $0 * 2 }
             #expect(collect(result) == [.success(10)])
         }
 

@@ -16,7 +16,7 @@ public func applyEitherOptional<L: Sendable, A: Sendable, B>(
     _ fns: Either<L, (@Sendable (A) -> B)?>,
     _ values: Either<L, A?>
 ) -> Either<L, B?> {
-    flatMapTEitherOptional(fns) { fn in mapTEitherOptional(fn, values) }
+    flatMapTEitherOptional(fns) { fn in values.mapT(fn) }
 }
 
 /// liftA2 for EitherTOptional
@@ -24,7 +24,7 @@ public func applyEitherOptional<L: Sendable, A: Sendable, B>(
 public func liftA2EitherOptional<L: Sendable, A: Sendable, B: Sendable, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> @Sendable (Either<L, A?>, Either<L, B?>) -> Either<L, C?> {
-    { lhs, rhs in flatMapTEitherOptional(lhs) { a in mapTEitherOptional({ b in fn(a, b) }, rhs) } }
+    { lhs, rhs in flatMapTEitherOptional(lhs) { a in rhs.mapT { b in fn(a, b) } } }
 }
 
 /// seqRight for EitherTOptional
@@ -42,5 +42,5 @@ public func seqLeftEitherOptional<L: Sendable, A: Sendable, B: Sendable>(
     _ lhs: Either<L, A?>,
     _ rhs: Either<L, B?>
 ) -> Either<L, A?> {
-    flatMapTEitherOptional(lhs) { a in mapTEitherOptional(const(a), rhs) }
+    flatMapTEitherOptional(lhs) { a in rhs.mapT(const(a)) }
 }

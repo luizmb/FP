@@ -7,24 +7,6 @@ import Testing
 @Suite struct StatefulTResultOperatorsTests {
     enum TestError: Error, Equatable { case failure }
 
-    @Test func fmapSuccess() {
-        let s = Stateful<Int, Result<Int, TestError>>.pure(.success(5))
-        let result = { $0 * 2 } <£^> s
-        #expect(result.eval(0) == .success(10))
-    }
-
-    @Test func flippedFmapSuccess() {
-        let s = Stateful<Int, Result<Int, TestError>>.pure(.success(5))
-        let result = s <&^> { $0 * 2 }
-        #expect(result.eval(0) == .success(10))
-    }
-
-    @Test func fmapFailure() {
-        let s = Stateful<Int, Result<Int, TestError>>.pure(.failure(.failure))
-        let result = { $0 * 2 } <£^> s
-        #expect(result.eval(0) == .failure(.failure))
-    }
-
     @Test func apply() {
         let sf = Stateful<Int, Result<@Sendable (Int) -> String, TestError>>.pure(.success { "\($0)" })
         let sa = Stateful<Int, Result<Int, TestError>>.pure(.success(9))

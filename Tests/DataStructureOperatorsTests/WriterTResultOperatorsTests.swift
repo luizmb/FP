@@ -7,27 +7,6 @@ import Testing
 @Suite struct WriterTResultOperatorsTests {
     enum TestError: Error, Equatable { case failure }
 
-    @Test func fmapSuccess() {
-        let w = Writer<[String], Result<Int, TestError>>(.success(5), ["log"])
-        let result = { $0 * 2 } <£^> w
-        #expect(result.value == .success(10))
-        #expect(result.log == ["log"])
-    }
-
-    @Test func flippedFmapSuccess() {
-        let w = Writer<[String], Result<Int, TestError>>(.success(5), ["log"])
-        let result = w <&^> { $0 * 2 }
-        #expect(result.value == .success(10))
-        #expect(result.log == ["log"])
-    }
-
-    @Test func fmapFailure() {
-        let w = Writer<[String], Result<Int, TestError>>(.failure(.failure), ["log"])
-        let result = { $0 * 2 } <£^> w
-        #expect(result.value == .failure(.failure))
-        #expect(result.log == ["log"])
-    }
-
     @Test func apply() {
         let wf = Writer<[String], Result<@Sendable (Int) -> String, TestError>>(.success { "\($0)" }, ["fn"])
         let wa = Writer<[String], Result<Int, TestError>>(.success(9), ["val"])

@@ -28,7 +28,7 @@ Every operator here is heavily overloaded — one per type it applies to (`Optio
 
 ## Topics
 
-### Functor — `<£>` / `<&>` (fn-left / container-left), `<£^>` / `<&^>` (transformer)
+### Functor — `<£>` / `<&>` (fn-left / container-left)
 
 - ``<£(_:_:)->A1?``
 - ``<£(_:_:)->[A1]``
@@ -54,28 +54,6 @@ Every operator here is heavily overloaded — one per type it applies to (`Optio
 - ``<&>(_:_:)->Publisher<A1,B>``
 - ``<&>(_:_:)->AsyncThrowingMapSequence<S,T>``
 - ``<&>(_:_:)-4yuvj``
-
-Transformer (nested) functor map:
-- ``<£^>(_:_:)->[B?]``
-- ``<£^>(_:_:)->[B]?``
-- ``<£^>(_:_:)->Result<B,E>?``
-- ``<£^>(_:_:)->[Result<B,E>]``
-- ``<£^>(_:_:)->AnyPublisher<B?,E>``
-- ``<£^>(_:_:)->AnyPublisher<Result<B,E2>,E>``
-- ``<£^>(_:_:)->AnyPublisher<[B],E>``
-- ``<£^>(_:_:)->AsyncStream<B?>``
-- ``<£^>(_:_:)->AsyncStream<Result<B,E>>``
-- ``<£^>(_:_:)->AsyncStream<[B]>``
-- ``<&^>(_:_:)->[B?]``
-- ``<&^>(_:_:)->[B]?``
-- ``<&^>(_:_:)->Result<B,E>?``
-- ``<&^>(_:_:)->[Result<B,E>]``
-- ``<&^>(_:_:)->AnyPublisher<B?,E>``
-- ``<&^>(_:_:)->AnyPublisher<Result<B,E2>,E>``
-- ``<&^>(_:_:)->AnyPublisher<[B],E>``
-- ``<&^>(_:_:)->AsyncStream<B?>``
-- ``<&^>(_:_:)->AsyncStream<Result<B,E>>``
-- ``<&^>(_:_:)->AsyncStream<[B]>``
 
 ### Applicative — `<*>` (apply), `*>` / `<*` (sequence, keep right/left)
 

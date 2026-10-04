@@ -10,8 +10,8 @@ public extension Reader {
         }
     }
 
-    /// The `property` property.
-    static func fmap<A, B>(
+    /// Curried, point-free form of ``mapT(_:)``.
+    static func fmapT<A, B>(
         _ fn: @escaping @Sendable (A) -> B
     ) -> @Sendable (Reader<Environment, [A]>) -> Reader<Environment, [B]>
     where Output == [A] {

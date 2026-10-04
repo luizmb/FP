@@ -31,11 +31,11 @@ A way to combine two monads into one, when you need both effects at once — e.g
 ### Instructions:
 
 1. **Understand the inner monad**: What effects does it provide? (State, error handling, accumulation, etc.)
-2. **Implement Functor**: `mapT` (instance method) — transforms values *inside* the inner monad, reaching through the outer one
+2. **Implement Functor**: `mapT` (instance method) plus the static curried `fmapT` — transforms values *inside* the inner monad, reaching through the outer one. There is no transformer map operator and no free `mapTOuterInner` function
 3. **Implement Applicative**: `liftA2T`/an `apply`-shaped free function, if the combo needs one
 4. **Implement Monad**: `flatMapT` (instance method) — monadic composition through both layers
 5. **Named `kleisliT`**: the `>=>`/`<=<` operators for this combo delegate to a named `kleisliT` function — never inline `{ a in fn1(a).flatMapT(fn2) }` directly in the operator body
-6. **Create Operators, both directions**: every operator with a directional sense (`<£^>`/`<&^>` for transformer functor map, `>>-`/`-<<`, `>=>`/`<=<`) needs its flip added in the same change
+6. **Create Operators, both directions**: every operator with a directional sense (`>>-`/`-<<`, `>=>`/`<=<`) needs its flip added in the same change
 7. **`Sendable`-first**: every escaping closure is `@Sendable`; the combo's own methods require `Environment`/inner-type-parameters to be `Sendable` where the language demands it
 8. **Add Tests in all four targets that apply**: named-function tests in `CoreFPTests`/`DataStructureTests` (no operator symbols), operator tests in `CoreFPOperatorsTests`/`DataStructureOperatorsTests` (must use the operator)
 
@@ -119,22 +119,6 @@ import CoreFP
 import CoreFPOperators
 import DataStructure
 
-// MARK: - Functor Operators
-
-public func <£^> <A, B, Env>(
-    _ transform: @escaping @Sendable (A) -> B,
-    _ reader: Reader<Env, CustomMonad<A>>
-) -> Reader<Env, CustomMonad<B>> {
-    reader.mapT(transform)
-}
-
-public func <&^> <A, B, Env>(
-    _ reader: Reader<Env, CustomMonad<A>>,
-    _ transform: @escaping @Sendable (A) -> B
-) -> Reader<Env, CustomMonad<B>> {
-    transform <£^> reader
-}
-
 // MARK: - Monad Operators
 
 public func >>- <Env, A, B>(
@@ -166,7 +150,7 @@ public func <=< <Env, A, B, C>(
 }
 ```
 
-Note `<&^>` — not `<&>` — is the flipped transformer-functor operator. `<&>`/`<£^>` and `<&^>` live in a deliberately different precedence group from the base `<£>`/`<&>`; see `<doc:OperatorVocabulary>`. There is no separate "flipped Kleisli via `<&>`" — the flipped Kleisli operator is always `<=<`.
+Transformer functor map has no operator (use `mapT`), and no transformer `£>`/`<£` overload either: on a stack those resolve to the outer type's base replace; inner replace is `mapT(const(x))`. There is no separate "flipped Kleisli via `<&>`" — the flipped Kleisli operator is always `<=<`.
 
 #### 5. Tests — both the named-function and operator targets
 
@@ -203,12 +187,6 @@ import Testing
 @Suite("ReaderTCustomMonad — operator delegation")
 struct ReaderTCustomMonadOperatorsTests {
     struct Environment: Sendable { let config: Int }
-
-    @Test func fmapOperatorMatchesMapT() {
-        let reader = Reader<Environment, CustomMonad<Int>> { env in .pure(env.config) }
-        let env = Environment(config: 5)
-        #expect(({ $0 * 3 } <£^> reader)(env) == reader.mapT { $0 * 3 }(env))
-    }
 
     @Test func kleisliOperatorComposes() {
         let f: @Sendable (Int) -> Reader<Environment, CustomMonad<Int>> = { x in

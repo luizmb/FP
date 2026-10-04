@@ -3,24 +3,25 @@
     import Combine
     import Foundation
 
-    // PublisherTEither: outer = AnyPublisher, inner = Either
-    // Type: AnyPublisher<Either<L,A>, E>
+    // PublisherTEither: outer = Publisher, inner = Either
+    // Type: AnyPublisher<Either<L, A>, Failure>
 
-    /// mapT for AnyPublisher<Either<L,A>, E> — maps over the inner Either's right side
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func mapTPublisherEither<L, A, B, E: Error>(
-        _ fn: @escaping @Sendable (A) -> B,
-        _ publisher: AnyPublisher<Either<L, A>, E>
-    ) -> AnyPublisher<Either<L, B>, E> {
-        publisher.map { either in either.mapRight(fn) }.eraseToAnyPublisher()
-    }
+    public extension Publisher {
+        /// Maps the value inside every emitted Either.
+        /// mapT :: (a -> b) -> Publisher (either a) e -> Publisher (either b) e
+        func mapT<L, Inner, B>(_ fn: @escaping @Sendable (Inner) -> B) -> AnyPublisher<Either<L, B>, Failure>
+        where Output == Either<L, Inner> {
+            map { $0.mapRight(fn) }.eraseToAnyPublisher()
+        }
 
-    /// `fmapTPublisherEither`.
-    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func fmapTPublisherEither<L, A, B, E: Error>(
-        _ fn: @escaping @Sendable (A) -> B
-    ) -> (AnyPublisher<Either<L, A>, E>) -> AnyPublisher<Either<L, B>, E> {
-        { publisher in mapTPublisherEither(fn, publisher) }
+        /// Curried, point-free form of ``mapT(_:)``.
+        static func fmapT<L, Inner, B>(
+            _ fn: @escaping @Sendable (Inner) -> B
+        ) -> @Sendable (AnyPublisher<Either<L, Inner>, Failure>) -> AnyPublisher<Either<L, B>, Failure>
+        where Output == Either<L, Inner> {
+            { $0.mapT(fn) }
+        }
     }
 
 #endif

@@ -17,7 +17,7 @@ import Testing
 
     @Test func validationTEitherMapT() {
         let v: Validation<[String], Either<String, Int>> = .success(.right(5))
-        let result = mapTValidationEither { $0 * 2 }(v)
+        let result = v.mapT { $0 * 2 }
         #expect(result == .success(.right(10)))
     }
 
@@ -39,7 +39,7 @@ import Testing
 
     @Test func validationTReaderMapT() {
         let v: Validation<[String], Reader<String, Int>> = .success(Reader { env in env.count })
-        let result = mapTValidationReader { $0 * 2 }(v)
+        let result = v.mapT { $0 * 2 }
         if case let .success(reader) = result {
             #expect(reader("hello") == 10)
         } else {
@@ -71,7 +71,7 @@ import Testing
 
     @Test func validationTResultMapT() {
         let v: Validation<[String], Result<Int, TestError>> = .success(.success(5))
-        let result = mapTValidationResult { $0 * 2 }(v)
+        let result = v.mapT { $0 * 2 }
         if case let .success(inner) = result, case let .success(value) = inner {
             #expect(value == 10)
         } else {
@@ -105,7 +105,7 @@ import Testing
             s += 1
             return s
         })
-        let result = mapTValidationStateful { $0 * 2 }(v)
+        let result = v.mapT { $0 * 2 }
         if case let .success(stateful) = result {
             var state = 0
             #expect(stateful.run(&state) == 2)
@@ -144,7 +144,7 @@ import Testing
 
     @Test func validationTWriterMapT() {
         let v: Validation<[String], Writer<[String], Int>> = .success(Writer(5, ["log"]))
-        let result = mapTValidationWriter { $0 * 2 }(v)
+        let result = v.mapT { $0 * 2 }
         #expect(result == .success(Writer(10, ["log"])))
     }
 

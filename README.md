@@ -2143,7 +2143,6 @@ All operators require `CoreFPOperators` (for built-in types) or `DataStructureOp
 | Operator | Flipped | Description | Types |
 |----------|---------|-------------|-------|
 | `<£>` | `<&>` | Functor map — fn left / container left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `Either`, `Loading`, `Reader`, `Stateful`, `Validation`, `Writer` |
-| `<£^>` | `<&^>` | Transformer map (nested containers) — transformer-only, no base-type overloads | `Either`, `Reader`, `Stateful`, `Validation`, `Writer` transformer variants |
 | `£>` | `<£` | Replace contents with a constant — container left / value left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `Either`, `Loading`, `Reader`, `Stateful`, `Validation`, `Writer` |
 | `<*>` | — | Applicative apply — wrapped function on left, wrapped value on right | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` |
 | `*>` | `<*` | Sequence two effects — keep right / keep left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` |

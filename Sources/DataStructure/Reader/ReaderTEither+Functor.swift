@@ -8,8 +8,8 @@ public extension Reader {
         mapReader(Either<L, A>.fmap(fn))
     }
 
-    /// The `property` property.
-    static func fmap<A, B, L>(
+    /// Curried, point-free form of ``mapT(_:)``.
+    static func fmapT<A, B, L>(
         _ fn: @escaping @Sendable (A) -> B
     ) -> @Sendable (Reader<Environment, Either<L, A>>) -> Reader<Environment, Either<L, B>>
     where A: Sendable, L: Sendable, Output == Either<L, A> {

@@ -310,19 +310,6 @@ infix operator <£: FunctorOps
 /// ```
 infix operator <&>: MonadBindLeft
 
-/// Transformer-specific fmap: `(<£^>) :: (a -> b) -> f (g a) -> f (g b)`
-///
-/// This operator is exclusively for transformer (nested) fmap (`mapT`).
-/// Unlike `<£>`, it has NO base overload — only transformer-specific overloads —
-/// so Swift can always resolve the correct overload with zero ambiguity.
-infix operator <£^>: FunctorOps
-
-/// Flipped transformer-specific fmap: `(<&^>) :: f (g a) -> (a -> b) -> f (g b)`
-///
-/// Flipped version of `<£^>`. The outer type is the first argument,
-/// so Swift resolves the overload from the container type directly.
-infix operator <&^>: MonadBindLeft
-
 // There is no infix power operator: Swift's stdlib owns `infix operator ^: AdditionPrecedence`
 // (bitwise XOR) and a redeclaration in a higher group is an "ambiguous operator declarations"
 // error, so a power `^` would bind like `+`. Use the named function `power(_:_:)`.

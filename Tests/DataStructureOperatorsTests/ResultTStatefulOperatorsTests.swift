@@ -8,24 +8,6 @@ import Testing
 @Suite struct ResultTStatefulOperatorsTests {
     enum TestError: Error, Equatable { case failure }
 
-    @Test func fmapSuccess() {
-        let result: Result<Stateful<Int, Int>, TestError> = .success(.get)
-        let mapped = { $0 * 2 } <£^> result
-        #expect(Result.prism.success.preview(mapped)?.eval(5) == 10)
-    }
-
-    @Test func flippedFmapSuccess() {
-        let result: Result<Stateful<Int, Int>, TestError> = .success(.get)
-        let mapped = result <&^> { $0 * 2 }
-        #expect(Result.prism.success.preview(mapped)?.eval(5) == 10)
-    }
-
-    @Test func fmapFailure() {
-        let result: Result<Stateful<Int, Int>, TestError> = .failure(.failure)
-        let mapped: Result<Stateful<Int, Int>, TestError> = { $0 * 2 } <£^> result
-        if case let .failure(e) = mapped { #expect(e == .failure) } else { Issue.record("Expected .failure") }
-    }
-
     @Test func apply() {
         let rf: Result<Stateful<Int, @Sendable (Int) -> String>, TestError> = .success(.pure { "\($0)" })
         let ra: Result<Stateful<Int, Int>, TestError> = .success(.get)

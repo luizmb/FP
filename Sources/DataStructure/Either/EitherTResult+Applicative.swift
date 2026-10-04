@@ -16,7 +16,7 @@ public func applyEitherResult<L: Sendable, A: Sendable, B, E: Error>(
     _ fns: Either<L, Result<@Sendable (A) -> B, E>>,
     _ values: Either<L, Result<A, E>>
 ) -> Either<L, Result<B, E>> {
-    flatMapTEitherResult(fns) { fn in mapTEitherResult(fn, values) }
+    flatMapTEitherResult(fns) { fn in values.mapT(fn) }
 }
 
 /// liftA2 for EitherTResult
@@ -24,7 +24,7 @@ public func applyEitherResult<L: Sendable, A: Sendable, B, E: Error>(
 public func liftA2EitherResult<L: Sendable, A: Sendable, B: Sendable, C, E: Error>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> @Sendable (Either<L, Result<A, E>>, Either<L, Result<B, E>>) -> Either<L, Result<C, E>> {
-    { lhs, rhs in flatMapTEitherResult(lhs) { a in mapTEitherResult({ b in fn(a, b) }, rhs) } }
+    { lhs, rhs in flatMapTEitherResult(lhs) { a in rhs.mapT { b in fn(a, b) } } }
 }
 
 /// seqRight for EitherTResult
@@ -42,5 +42,5 @@ public func seqLeftEitherResult<L: Sendable, A: Sendable, B: Sendable, E: Error>
     _ lhs: Either<L, Result<A, E>>,
     _ rhs: Either<L, Result<B, E>>
 ) -> Either<L, Result<A, E>> {
-    flatMapTEitherResult(lhs) { a in mapTEitherResult(const(a), rhs) }
+    flatMapTEitherResult(lhs) { a in rhs.mapT(const(a)) }
 }

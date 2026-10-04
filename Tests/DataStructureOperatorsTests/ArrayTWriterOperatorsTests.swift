@@ -5,24 +5,6 @@ import DataStructureOperators
 import Testing
 
 @Suite struct ArrayTWriterOperatorsTests {
-    @Test func fmap() {
-        let arr: [Writer<[String], Int>] = [Writer(3, ["a"]), Writer(4, ["b"])]
-        let result = { $0 * 2 } <£^> arr
-        #expect(result[0].value == 6)
-        #expect(result[0].log == ["a"])
-        #expect(result[1].value == 8)
-        #expect(result[1].log == ["b"])
-    }
-
-    @Test func flippedFmap() {
-        let arr: [Writer<[String], Int>] = [Writer(3, ["a"]), Writer(4, ["b"])]
-        let result = arr <&^> { $0 * 2 }
-        #expect(result[0].value == 6)
-        #expect(result[0].log == ["a"])
-        #expect(result[1].value == 8)
-        #expect(result[1].log == ["b"])
-    }
-
     @Test func bind() {
         let arr: [Writer<[String], Int>] = [Writer(3, ["a"]), Writer(4, ["b"])]
         let fn: @Sendable (Int) -> [Writer<[String], String>] = { n in [Writer("\(n)", ["x"]), Writer("\(-n)", ["y"])] }

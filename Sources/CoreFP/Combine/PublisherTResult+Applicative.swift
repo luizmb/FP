@@ -18,7 +18,7 @@
         _ fns: AnyPublisher<Result<@Sendable (A) -> B, E2>, E>,
         _ values: AnyPublisher<Result<A, E2>, E>
     ) -> AnyPublisher<Result<B, E2>, E> {
-        bindPublisherResult(fns) { f in mapTPublisherResult(f, values) }
+        bindPublisherResult(fns) { f in values.mapT(f) }
     }
 
     /// liftA2 for PublisherTResult
@@ -28,7 +28,7 @@
         _ fn: @escaping @Sendable (A, B) -> C
     ) -> (AnyPublisher<Result<A, E2>, E>, AnyPublisher<Result<B, E2>, E>) -> AnyPublisher<Result<C, E2>, E> {
         { pubA, pubB in
-            bindPublisherResult(pubA) { a in mapTPublisherResult({ b in fn(a, b) }, pubB) }
+            bindPublisherResult(pubA) { a in pubB.mapT { b in fn(a, b) } }
         }
     }
 
@@ -49,7 +49,7 @@
         _ lhs: AnyPublisher<Result<A, E2>, E>,
         _ rhs: AnyPublisher<Result<B, E2>, E>
     ) -> AnyPublisher<Result<A, E2>, E> {
-        bindPublisherResult(lhs) { a in mapTPublisherResult({ (_: B) in a }, rhs) }
+        bindPublisherResult(lhs) { a in rhs.mapT { (_: B) in a } }
     }
 
 #endif

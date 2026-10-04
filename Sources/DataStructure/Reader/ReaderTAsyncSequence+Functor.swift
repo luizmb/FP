@@ -13,9 +13,9 @@ public extension Reader {
         }
     }
 
-    /// The `property` property.
+    /// Curried, point-free form of ``mapT(_:)``.
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    static func fmap<A, B>(
+    static func fmapT<A, B>(
         _ fn: @escaping @Sendable (A) -> B
     ) -> @Sendable (Reader<Environment, AsyncStream<A>>) -> Reader<Environment, AsyncMapSequence<AsyncStream<A>, B>>
     where Output == AsyncStream<A> {

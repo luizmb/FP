@@ -136,11 +136,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **`Zipper.left` / `Zipper.right` are lazy views** instead of copied arrays:
   `ReversedCollection<ArraySlice<A>>` and `ArraySlice<A>`, still closest-to-focus first. Source
   break for code that expects `[A]`; wrap in `Array(...)` where an array is needed.
+- **One `mapT` shape for every transformer stack**: an instance method `.mapT(_:)` plus a static
+  curried `fmapT(_:)`, the same shape as base `map` / `fmap`. The free functions are gone (migrate
+  `mapTEitherArray(f, x)` → `x.mapT(f)`, `fmapTEitherArray(f)` → `Either<L, [A]>.fmapT(f)`):
+  `mapTEither{Array,Optional,NonEmpty,Result}`, `fmapTEither{Array,Optional,NonEmpty,Result}`,
+  both `fmapTEitherValidation` overloads, `fmapTStatefulValidation` (both overloads),
+  `mapTValidation{Array,Optional,NonEmpty,Result,Either,Reader,Stateful,Writer}` (these returned
+  `(V) -> V`; now `v.mapT(f)` / `Validation<E, [A]>.fmapT(f)`),
+  `mapTPublisher{Array,Optional,Result,Either}` / `fmapTPublisher…` (now methods on `Publisher`,
+  returning `AnyPublisher`) and `mapTAsyncStream{Array,Optional,Result,Either}` /
+  `fmapTAsyncStream…` (now methods on `AsyncStream`). ReaderT's curried statics were named `fmap`,
+  overloading `Reader.fmap`; they are now `fmapT` (`ReaderTArray`, `ReaderTOptional`,
+  `ReaderTResult`, `ReaderTEither`, `ReaderTReader`, `ReaderTPublisher`, `ReaderTAsyncSequence`).
 
 ### Removed
 - **Monad surface of transformer stacks that have no lawful monad** (Haskell's `transformers`
   defines none for these shapes). `flatMapT`, `bindT`, `kleisliT`, the free `flatMapT…`/`bindT…`
-  functions and the `>>-`, `-<<`, `>=>`, `<=<` overloads are gone; `mapT`, `<£^>`/`<&^>`,
+  functions and the `>>-`, `-<<`, `>=>`, `<=<` overloads are gone; `mapT`,
   `apply`/`<*>`, `liftA2`, `*>` and `<*` stay.
   - List inside a non-commutative outer layer (`ListT` done wrong, associativity fails):
     `EitherTArray`, `EitherTNonEmpty`, `StatefulTArray`, `StatefulTNonEmpty`, `WriterTArray`,
@@ -158,6 +170,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     the base type's bind now matches instead (e.g. `opt >>- { Stateful.pure(...) }` on
     `Stateful<S, A>?` now resolves to `Optional`'s `>>-`, with the `Stateful` promoted to an
     Optional). Search for `>>-` / `flatMapT` on these shapes rather than relying on compile errors.
+- **`<£^>` and `<&^>`** (transformer functor map), every overload and both `infix operator`
+  declarations. Use the named method: `f <£^> stack` / `stack <&^> f` → `stack.mapT(f)`.
+- **Transformer overloads of `£>` / `<£`** (`ReaderTArray`, `ReaderTOptional`, `ReaderTResult`,
+  `ReaderTEither`, `ReaderTReader`, `ReaderTPublisher`, `ReaderTAsyncSequence`, `OptionalTArray`).
+  They hijacked the base operator (`Reader<Int, [Int]> £> "x"` replaced the inner elements while
+  `Stateful<Int, [Int]> £> "x"` replaced the whole output). `£>` / `<£` on a stack now always
+  resolve to the outer type's base replace (whole output); inner replace is
+  `stack.mapT(const(x))`. **Watch out when upgrading:** old call sites still compile with the new
+  meaning, so search for `£>` / `<£` on `Reader<_, [A]>`, `Reader<_, A?>`, `Reader<_, Either>`,
+  `Reader<_, Result>`, `Reader<_, Reader>`, `Reader<_, Publisher>`, `Reader<_, AsyncStream>` and
+  `[A]?`. The `replaceOutputT(_:)` methods on `ReaderTOptional`, `ReaderTResult` and
+  `ReaderTPublisher`, which only backed those operators, are removed too.
 - **`Gen` runners `generate()`, `generate(seed:)` and `samples(seed:count:)`**: `generate()` read
   `SystemRandomNumberGenerator` behind a pure-looking signature. Inject the RNG and call `run(&rng)`.
 - **Infix `^` (floating-point power)**: Swift's stdlib declares `^` in `AdditionPrecedence`, so it

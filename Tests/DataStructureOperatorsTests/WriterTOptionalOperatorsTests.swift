@@ -5,27 +5,6 @@ import DataStructureOperators
 import Testing
 
 @Suite struct WriterTOptionalOperatorsTests {
-    @Test func fmapSome() {
-        let w = Writer<[String], Int?>(.some(5), ["log"])
-        let result = { $0 * 2 } <£^> w
-        #expect(result.value == .some(10))
-        #expect(result.log == ["log"])
-    }
-
-    @Test func flippedFmapSome() {
-        let w = Writer<[String], Int?>(.some(5), ["log"])
-        let result = w <&^> { $0 * 2 }
-        #expect(result.value == .some(10))
-        #expect(result.log == ["log"])
-    }
-
-    @Test func fmapNone() {
-        let w = Writer<[String], Int?>(nil, ["log"])
-        let result = { $0 * 2 } <£^> w
-        #expect(result.value == nil)
-        #expect(result.log == ["log"])
-    }
-
     @Test func apply() {
         let wf = Writer<[String], (@Sendable (Int) -> String)?>(.some { "\($0)" }, ["fn"])
         let wa = Writer<[String], Int?>(.some(7), ["val"])
