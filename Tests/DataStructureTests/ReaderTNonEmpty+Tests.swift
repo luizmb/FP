@@ -27,32 +27,24 @@ import Testing
 
     @Test func flatMapT_collects_results() {
         let reader = Reader<Env, NonEmpty<Int>>(const(NonEmpty(head: 1, tail: [2, 3])))
-        let result = reader.flatMapT { n -> Reader<Env, NonEmpty<Int>?> in
+        let result = reader.flatMapT { n -> Reader<Env, NonEmpty<Int>> in
             Reader { env in NonEmpty(head: n * env.factor) }
         }
         let env = Env(factor: 10)
         #expect(result.runReader(env) == NonEmpty(head: 10, tail: [20, 30]))
     }
 
-    @Test func flatMapT_nil_results_excluded() {
-        let reader = Reader<Env, NonEmpty<Int>>(const(NonEmpty(head: 1, tail: [2, 3])))
-        let result = reader.flatMapT { n -> Reader<Env, NonEmpty<Int>?> in
-            Reader(const(n == 2 ? nil : NonEmpty(head: n * 10)))
+    @Test func flatMapT_concatenates_in_order() {
+        let reader = Reader<Env, NonEmpty<Int>>(const(NonEmpty(head: 1, tail: [2])))
+        let result = reader.flatMapT { n -> Reader<Env, NonEmpty<Int>> in
+            Reader { env in NonEmpty(head: n, tail: [n * env.factor]) }
         }
-        #expect(result.runReader(Env(factor: 1)) == NonEmpty(head: 10, tail: [30]))
-    }
-
-    @Test func flatMapT_all_nil_returns_nil() {
-        let reader = Reader<Env, NonEmpty<Int>>(const(NonEmpty(head: 1)))
-        let result = reader.flatMapT { _ -> Reader<Env, NonEmpty<Int>?> in
-            Reader<Env, NonEmpty<Int>?>(const(nil))
-        }
-        #expect(result.runReader(Env(factor: 1)) == nil)
+        #expect(result.runReader(Env(factor: 10)) == NonEmpty(head: 1, tail: [10, 2, 20]))
     }
 
     @Test func bindT_curried() {
         let reader = Reader<Env, NonEmpty<Int>> { env in NonEmpty(head: env.factor) }
-        let bound = Reader<Env, NonEmpty<Int>>.bindT { n -> Reader<Env, NonEmpty<Int>?> in
+        let bound = Reader<Env, NonEmpty<Int>>.bindT { n -> Reader<Env, NonEmpty<Int>> in
             Reader(const(NonEmpty(head: n + 1)))
         }(reader)
         #expect(bound.runReader(Env(factor: 4)) == NonEmpty(head: 5))

@@ -52,12 +52,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `inout` parameter types.
 
 ### Changed
+- **`M<Writer>` bind is WriterT's bind** (`WriterT w M`) for `ArrayTWriter`, `OptionalTWriter`,
+  `ResultTWriter` and `EitherTWriter`: the continuation of `flatMapT`, `bindT`, `kleisliT`, `>>-`,
+  `-<<`, `>=>` and `<=<` now returns the full stack (`(A) -> [Writer<W, B>]`, `(A) -> Writer<W, B>?`,
+  `(A) -> Result<Writer<W, B>, E>`, `(A) -> Either<L, Writer<W, B>>`), so it can fail, prune or
+  branch as well as log; logs combine left to right. The old inner-only continuation
+  `(A) -> Writer<W, B>` is removed: write `outer.map { $0.flatMap(f) }` instead (`mapRight` for
+  `Either`).
 - **Transformer applicatives follow bind** (`<*> == ap`, Haskell's `ExceptT`/`MaybeT` semantics) for
   ArrayT, NonEmptyT, EitherT, OptionalT, StatefulT and WriterT over `Either`/`Optional`/`Result`:
   `apply`, `liftA2`, `*>` and `<*` now short-circuit like `>>-`. A failed function no longer
   duplicates per argument (`[.left(e)] <*> [.right(1), .right(2)]` is `[.left(e)]`), the right-hand
   state effect / log is skipped once the left failed (`StatefulT`/`WriterT`), and `StatefulTOptional`
   `*>`/`<*` no longer disagree with its `apply`.
+- **Transformer bind takes the full stack** (`a -> t m b`, Haskell's `>>=`) for `ReaderTWriter`
+  (`ReaderT r (Writer w)`), `ReaderTStateful` (`ReaderT r (State s)`), `StatefulTWriter`
+  (`StateT s (Writer w)`) and `ReaderTNonEmpty` (`ReaderT r NonEmpty`). `flatMapT`, `bindT`,
+  `kleisliT`, `>>-`, `-<<`, `>=>` and `<=<` now take `(A) -> Reader<E, Writer<W, B>>`,
+  `(A) -> Reader<E, Stateful<S, B>>`, `(A) -> Stateful<S, Writer<W, B>>` and
+  `(A) -> Reader<E, NonEmpty<B>>`, so the continuation can read the environment, touch the state
+  and emit its own log (logs append left to right, state threads left to right, the environment is
+  shared). The old inner-only bind (really `fmap` of the inner bind) is removed, not renamed:
+  write `r.mapReader { $0.flatMap(f) }` / `s.mapStateful { $0.flatMap(f) }` instead.
+  `ReaderTNonEmpty` returns `Reader<E, NonEmpty<B>>` (no more `NonEmpty<B>?`), so it chains.
+  `ReaderTStateful` bind requires `Environment: Sendable`; `StatefulTWriter` gains `kleisliT`,
+  `>=>` and `<=<`. Their applicatives already equal `ap` of the new bind (now tested).
 - **`Gen` is generic over the RNG**: `Gen<R: RandomNumberGenerator & Sendable, Value> = Stateful<R, Value>`.
   Run it with an explicitly injected generator, `gen.run(&rng)` (`SplitMix64(seed:)`,
   `SystemRandomNumberGenerator`, or `AnyRandomNumberGenerator`).

@@ -45,24 +45,14 @@ import Testing
     // MARK: - kleisliT
 
     @Test func kleisliTChainsReaderNonEmptyArrows() {
-        let step1: @Sendable (Int) -> Reader<Env, NonEmpty<Int>?> = { n in
+        let step1: @Sendable (Int) -> Reader<Env, NonEmpty<Int>> = { n in
             Reader { env in NonEmpty(head: n + env.factor, tail: [n * env.factor]) }
         }
-        let step2: @Sendable (Int) -> Reader<Env, NonEmpty<String>?> = { n in
+        let step2: @Sendable (Int) -> Reader<Env, NonEmpty<String>> = { n in
             Reader(const(NonEmpty(head: "\(n)")))
         }
         let pipeline = kleisliT(step1, step2)
         let result = pipeline(3).runReader(Env(factor: 10))
         #expect(result == NonEmpty(head: "13", tail: ["30"]))
-    }
-
-    @Test func kleisliTShortCircuitsWhenFirstIsNil() {
-        let step1: @Sendable (Int) -> Reader<Env, NonEmpty<Int>?> = const(Reader(const(nil)))
-        let step2: @Sendable (Int) -> Reader<Env, NonEmpty<String>?> = { n in
-            Reader(const(NonEmpty(head: "\(n)")))
-        }
-        let pipeline = kleisliT(step1, step2)
-        let result = pipeline(3).runReader(Env(factor: 10))
-        #expect(result == nil)
     }
 }

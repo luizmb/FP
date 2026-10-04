@@ -205,6 +205,16 @@ let logged: Stateful<Int, Writer<[String], Int>> = increment.fmap { n in
     Writer(n, ["incremented to \(n)"])
 }
 { $0 * 2 } <£^> logged  // Stateful<Int, Writer<[String], Int>>
+
+// Bind (StateT s (Writer w)): the continuation returns the whole stack, so it can
+// touch the state and emit its own log. State threads left to right, logs append.
+let doubled = logged.flatMapT { n in
+    Stateful<Int, Writer<[String], Int>> { state in
+        state *= 2
+        return Writer(n, ["doubled state"])
+    }
+}
+doubled.runStateful(1)  // (Writer(2, ["incremented to 2", "doubled state"]), 4)
 ```
 
 ### `OptionalTStateful` — `Stateful<S, A>?` (outer = Optional, inner = Stateful)

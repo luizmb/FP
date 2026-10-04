@@ -263,6 +263,9 @@ let w: Writer<[String], Reader<Config, Int>> =
 ```swift
 let w: Writer<[String], Int>? = .some(Writer(42, ["log"]))
 w?.fmap { $0 * 2 }   // Optional(Writer(84, ["log"]))
+
+// WriterT bind: the continuation may fail (nil) as well as log
+w.flatMapT { n in n > 0 ? Writer(n / 2, ["halved"]) : nil }  // Optional(Writer(21, ["log", "halved"]))
 ```
 
 ### `ArrayTWriter` — `[Writer<W, A>]` (outer = Array, inner = Writer)
@@ -270,6 +273,10 @@ w?.fmap { $0 * 2 }   // Optional(Writer(84, ["log"]))
 ```swift
 let ws: [Writer<[String], Int>] = [Writer(1, ["a"]), Writer(2, ["b"])]
 ws.map { $0.fmap { $0 * 10 } }  // [Writer(10, ["a"]), Writer(20, ["b"])]
+
+// WriterT bind: each element's log prefixes the logs of its branches
+ws.flatMapT { n in [Writer(n, ["x"]), Writer(-n, ["y"])] }
+// [Writer(1, ["a", "x"]), Writer(-1, ["a", "y"]), Writer(2, ["b", "x"]), Writer(-2, ["b", "y"])]
 ```
 
 ---

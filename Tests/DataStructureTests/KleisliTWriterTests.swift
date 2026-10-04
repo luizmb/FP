@@ -10,7 +10,7 @@ import Testing
 
     @Test func arrayTWriter() {
         let fn1: @Sendable (Int) -> [Writer<[String], Int>] = { n in [Writer(n * 2, ["fn1"])] }
-        let fn2: @Sendable (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["fn2"]) }
+        let fn2: @Sendable (Int) -> [Writer<[String], String>] = { n in [Writer("\(n)", ["fn2"])] }
 
         let result = kleisliT(fn1, fn2)(5)
         #expect(result.count == 1)
@@ -25,7 +25,7 @@ import Testing
 
     @Test func optionalTWriter() {
         let fn1: @Sendable (Int) -> Writer<[String], Int>? = { n in Writer(n * 2, ["fn1"]) }
-        let fn2: @Sendable (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["fn2"]) }
+        let fn2: @Sendable (Int) -> Writer<[String], String>? = { n in Writer("\(n)", ["fn2"]) }
 
         if let writer = kleisliT(fn1, fn2)(5) {
             #expect(writer.value == "10")
@@ -44,7 +44,7 @@ import Testing
         let fn1: @Sendable (Int) -> Result<Writer<[String], Int>, TestError> = { n in
             .success(Writer(n * 2, ["fn1"]))
         }
-        let fn2: @Sendable (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["fn2"]) }
+        let fn2: @Sendable (Int) -> Result<Writer<[String], String>, TestError> = { n in .success(Writer("\(n)", ["fn2"])) }
 
         switch kleisliT(fn1, fn2)(5) {
         case let .success(writer):

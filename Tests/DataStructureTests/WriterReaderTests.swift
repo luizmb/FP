@@ -43,9 +43,9 @@ import Testing
 
     @Test func readerTWriterFlatMapT() {
         let r: Reader<Int, Writer<[String], Int>> = Reader { env in Writer(env, ["outer"]) }
-        let result = r.flatMapT { n in Writer<[String], String>("\(n)", ["inner"]) }
+        let result = r.flatMapT { n in Reader<Int, Writer<[String], String>> { env in Writer("\(n * env)", ["inner"]) } }
         let w = result.runReader(5)
-        #expect(w.value == "5")
+        #expect(w.value == "25")
         #expect(w.log == ["outer", "inner"])
     }
 }

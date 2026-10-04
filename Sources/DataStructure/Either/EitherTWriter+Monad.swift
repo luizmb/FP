@@ -3,33 +3,47 @@ import CoreFP
 import Foundation
 
 // EitherTWriter: outer = Either, inner = Writer
-// Type: Either<L, Writer<W, A>>
+// Type: Either<L, Writer<W, A>>  (Haskell: WriterT w (Either l) a)
 //
-// flatMapT sequences computations structurally: .left propagates;
-// .right(writer) composes via flatMap, accumulating the log.
+// flatMapT is WriterT's bind: the continuation returns the full stack, so it can fail
+// (`.left`) as well as log. `.left` short-circuits; logs combine left to right.
 
 public extension Either {
-    /// flatMapT :: Either<l, Writer<w, a>> -> (a -> Writer<w, b>) -> Either<l, Writer<w, b>>
-    /// .left(l)         → .left(l)
-    /// .right(writer)   → .right(writer.flatMap(fn))
-    func flatMapT<W: Monoid, Inner, C>(_ fn: @escaping @Sendable (Inner) -> Writer<W, C>) -> Either<A, Writer<W, C>>
+    /// flatMapT :: Either<l, Writer<w, a>> -> (a -> Either<l, Writer<w, c>>) -> Either<l, Writer<w, c>>
+    /// .left(l)   → .left(l)
+    /// .right(w1) → fn(w1.value): .left(l) → .left(l); .right(w2) → .right(Writer(w2.value, w1.log <> w2.log))
+    func flatMapT<W: Monoid, Inner, C>(
+        _ fn: (Inner) -> Either<A, Writer<W, C>>
+    ) -> Either<A, Writer<W, C>>
     where B == Writer<W, Inner> {
-        mapRight { writer in writer.flatMap(fn) }
+        switch self {
+        case let .left(left):
+            .left(left)
+
+        case let .right(w1):
+            switch fn(w1.value) {
+            case let .left(left):
+                .left(left)
+
+            case let .right(w2):
+                .right(Writer(w2.value, W.combine(w1.log, w2.log)))
+            }
+        }
     }
 
-    /// The `property` property.
+    /// bindT :: (a -> Either<l, Writer<w, c>>) -> Either<l, Writer<w, a>> -> Either<l, Writer<w, c>>
     static func bindT<W: Monoid, Inner, C>(
-        _ fn: @escaping @Sendable (Inner) -> Writer<W, C>
+        _ fn: @escaping @Sendable (Inner) -> Either<A, Writer<W, C>>
     ) -> @Sendable (Either<A, Writer<W, Inner>>) -> Either<A, Writer<W, C>> {
         { either in either.flatMapT(fn) }
     }
 }
 
 /// Kleisli composition for `EitherT + Writer` (left-to-right)
-/// (>=>) :: (a -> Either<l, Writer<w, b>>) -> (b -> Writer<w, c>) -> a -> Either<l, Writer<w, c>>
+/// (>=>) :: (a -> Either<l, Writer<w, b>>) -> (b -> Either<l, Writer<w, c>>) -> a -> Either<l, Writer<w, c>>
 public func kleisliT<L, W: Monoid, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Either<L, Writer<W, B>>,
-    _ fn2: @escaping @Sendable (B) -> Writer<W, C>
+    _ fn2: @escaping @Sendable (B) -> Either<L, Writer<W, C>>
 ) -> @Sendable (A) -> Either<L, Writer<W, C>> {
     { a in fn1(a).flatMapT(fn2) }
 }

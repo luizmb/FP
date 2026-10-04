@@ -69,10 +69,10 @@ import Testing
             .pure(env.multiplier)
         }
         let result = r.flatMapT { value in
-            Stateful<Int, String>.pure("\(value)")
+            Reader<Env, Stateful<Int, String>> { env in .pure("\(value)x\(env.multiplier)") }
         }
         let env = Env(multiplier: 9)
-        #expect(result(env).eval(0) == "9")
+        #expect(result(env).eval(0) == "9x9")
     }
 
     @Test func readerTStatefulFlatMapTThreadsState() {
@@ -84,17 +84,19 @@ import Testing
             }
         }
         let result = r.flatMapT { value in
-            Stateful<Int, String> { state in
-                state += value
-                return "\(value)"
+            Reader<Env, Stateful<Int, String>> { env in
+                Stateful<Int, String> { state in
+                    state *= env.multiplier
+                    return "\(value)"
+                }
             }
         }
         let env = Env(multiplier: 3)
-        // env.multiplier=3: first stateful: v=0, state→3, returns 0
-        // flatMapT fn(0): state += 0 → 3, returns "0"
-        let (output, finalState) = result(env).runStateful(0)
-        #expect(output == "0")
-        #expect(finalState == 3)
+        // env.multiplier=3: first stateful: v=1, state→4, returns 1
+        // continuation (same env): state *= 3 → 12, returns "1"
+        let (output, finalState) = result(env).runStateful(1)
+        #expect(output == "1")
+        #expect(finalState == 12)
     }
 
     @Test func applyReaderStatefulTest() {

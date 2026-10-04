@@ -30,23 +30,38 @@ import Testing
 
     @Test func bindSuccess() {
         let result: Result<Writer<[String], Int>, TestError> = .success(Writer(5, ["outer"]))
-        let bound = result >>- { n in Writer<[String], String>("\(n)", ["inner"]) }
-        #expect(Result.prism.success.preview(bound)?.value == "5")
-        #expect(Result.prism.success.preview(bound)?.log == ["outer", "inner"])
+        let fn: @Sendable (Int) -> Result<Writer<[String], String>, TestError> = { n in .success(Writer("\(n)", ["inner"])) }
+        #expect((result >>- fn) == .success(Writer("5", ["outer", "inner"])))
     }
 
     @Test func bindFailure() {
         let result: Result<Writer<[String], Int>, TestError> = .failure(.failure)
-        let bound = result >>- { n in Writer<[String], String>("\(n)", ["inner"]) }
-        if case let .failure(e) = bound { #expect(e == .failure) } else { Issue.record("Expected .failure") }
+        let fn: @Sendable (Int) -> Result<Writer<[String], String>, TestError> = { n in .success(Writer("\(n)", ["inner"])) }
+        #expect((result >>- fn) == .failure(.failure))
+    }
+
+    @Test func bindContinuationFails() {
+        let result: Result<Writer<[String], Int>, TestError> = .success(Writer(5, ["outer"]))
+        let fn: @Sendable (Int) -> Result<Writer<[String], String>, TestError> = const(.failure(.failure))
+        #expect((result >>- fn) == .failure(.failure))
+    }
+
+    @Test func flippedBind() {
+        let result: Result<Writer<[String], Int>, TestError> = .success(Writer(5, ["outer"]))
+        let fn: @Sendable (Int) -> Result<Writer<[String], String>, TestError> = { n in .success(Writer("\(n)", ["inner"])) }
+        #expect((fn -<< result) == .success(Writer("5", ["outer", "inner"])))
     }
 
     @Test func kleisli() {
         let f: @Sendable (Int) -> Result<Writer<[String], Int>, TestError> = { n in .success(Writer(n + 1, ["f"])) }
-        let g: @Sendable (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["g"]) }
-        let result = (f >=> g)(4)
-        #expect(Result.prism.success.preview(result)?.value == "5")
-        #expect(Result.prism.success.preview(result)?.log == ["f", "g"])
+        let g: @Sendable (Int) -> Result<Writer<[String], String>, TestError> = { n in .success(Writer("\(n)", ["g"])) }
+        #expect((f >=> g)(4) == .success(Writer("5", ["f", "g"])))
+    }
+
+    @Test func reverseKleisli() {
+        let f: @Sendable (Int) -> Result<Writer<[String], Int>, TestError> = { n in .success(Writer(n + 1, ["f"])) }
+        let g: @Sendable (Int) -> Result<Writer<[String], String>, TestError> = { n in .success(Writer("\(n)", ["g"])) }
+        #expect((g <=< f)(4) == .success(Writer("5", ["f", "g"])))
     }
 
     @Test func apply() {

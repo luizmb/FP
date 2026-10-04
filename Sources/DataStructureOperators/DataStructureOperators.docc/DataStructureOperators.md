@@ -471,7 +471,7 @@ Every operator here is heavily overloaded — one per type it applies to (`Eithe
 - ``>>-(_:_:)->Reader<Env,AsyncThrowingFlatMapSequence<AsyncThrowingMapSequence<AsyncStream<A>,B>,B>>``
 - ``>>-(_:_:)->Reader<Env,B?>``
 - ``>>-(_:_:)->Reader<Env,Either<L,B>>``
-- ``>>-(_:_:)->Reader<Env,NonEmpty<B>?>``
+- ``>>-(_:_:)->Reader<Env,NonEmpty<B>>``
 - ``>>-(_:_:)->Reader<Env,O1>``
 - ``>>-(_:_:)->Reader<Env,Publisher<B,E>>``
 - ``>>-(_:_:)->Reader<Env,Result<B,E>>``
@@ -482,7 +482,7 @@ Every operator here is heavily overloaded — one per type it applies to (`Eithe
 - ``-<<(_:_:)->Reader<Env,AsyncThrowingFlatMapSequence<AsyncThrowingMapSequence<AsyncStream<A>,B>,B>>``
 - ``-<<(_:_:)->Reader<Env,B?>``
 - ``-<<(_:_:)->Reader<Env,Either<L,B>>``
-- ``-<<(_:_:)->Reader<Env,NonEmpty<B>?>``
+- ``-<<(_:_:)->Reader<Env,NonEmpty<B>>``
 - ``-<<(_:_:)->Reader<Env,O1>``
 - ``-<<(_:_:)->Reader<Env,Publisher<B,E>>``
 - ``-<<(_:_:)->Reader<Env,Result<B,E>>``

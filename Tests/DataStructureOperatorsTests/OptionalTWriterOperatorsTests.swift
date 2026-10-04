@@ -1,4 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
+import CoreFP
 import CoreFPOperators
 import DataStructure
 import DataStructureOperators
@@ -27,23 +28,40 @@ import Testing
 
     @Test func bindSome() {
         let opt: Writer<[String], Int>? = .some(Writer(5, ["outer"]))
-        let result = opt >>- { n in Writer<[String], String>("\(n)", ["inner"]) }
-        #expect(result?.value == "5")
-        #expect(result?.log == ["outer", "inner"])
+        let fn: @Sendable (Int) -> Writer<[String], String>? = { n in Writer("\(n)", ["inner"]) }
+        #expect((opt >>- fn) == Writer("5", ["outer", "inner"]))
     }
 
     @Test func bindNone() {
         let opt: Writer<[String], Int>? = nil
-        let result = opt >>- { n in Writer<[String], String>("\(n)", ["inner"]) }
-        #expect(result == nil)
+        let fn: @Sendable (Int) -> Writer<[String], String>? = { n in Writer("\(n)", ["inner"]) }
+        #expect((opt >>- fn) == nil)
+    }
+
+    @Test func bindContinuationFails() {
+        let opt: Writer<[String], Int>? = .some(Writer(5, ["outer"]))
+        let fn: @Sendable (Int) -> Writer<[String], String>? = const(nil)
+        #expect((opt >>- fn) == nil)
+    }
+
+    @Test func flippedBind() {
+        let opt: Writer<[String], Int>? = .some(Writer(5, ["outer"]))
+        let fn: @Sendable (Int) -> Writer<[String], String>? = { n in Writer("\(n)", ["inner"]) }
+        #expect((fn -<< opt) == Writer("5", ["outer", "inner"]))
     }
 
     @Test func kleisli() {
         let f: @Sendable (Int) -> Writer<[String], Int>? = { n in .some(Writer(n + 1, ["f"])) }
-        let g: @Sendable (Int) -> Writer<[String], String> = { n in Writer("\(n)", ["g"]) }
-        let result = (f >=> g)(4)
-        #expect(result?.value == "5")
-        #expect(result?.log == ["f", "g"])
+        let g: @Sendable (Int) -> Writer<[String], String>? = { n in Writer("\(n)", ["g"]) }
+        let none: @Sendable (Int) -> Writer<[String], String>? = const(nil)
+        #expect((f >=> g)(4) == Writer("5", ["f", "g"]))
+        #expect((f >=> none)(4) == nil)
+    }
+
+    @Test func reverseKleisli() {
+        let f: @Sendable (Int) -> Writer<[String], Int>? = { n in .some(Writer(n + 1, ["f"])) }
+        let g: @Sendable (Int) -> Writer<[String], String>? = { n in Writer("\(n)", ["g"]) }
+        #expect((g <=< f)(4) == Writer("5", ["f", "g"]))
     }
 
     @Test func apply() {
