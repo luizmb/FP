@@ -32,6 +32,10 @@
 
 // 9: Function composition >>> <<<
 // Note: In Haskell, both . and >>> are right-associative (infixr)
+// Swift does not order two groups through relations declared in another module (the stdlib), so
+// every custom group below is also chained to the next custom group with a same-module `higherThan`.
+// That makes the library's groups one total order:
+// >>> / <<<  >  <>  >  <£> <*> …  >  <|>  >  >=>  >  >>-  >  <|  >  |>
 precedencegroup FunctionCompositionForward {
     associativity: right
     higherThan: FunctionCompositionBackwards
@@ -39,7 +43,7 @@ precedencegroup FunctionCompositionForward {
 
 precedencegroup FunctionCompositionBackwards {
     associativity: right
-    higherThan: BitwiseShiftPrecedence
+    higherThan: BitwiseShiftPrecedence, ConcatPrecedence
 }
 
 // 8.5: BitwiseShiftPrecedence >>
@@ -50,7 +54,7 @@ precedencegroup FunctionCompositionBackwards {
 precedencegroup ConcatPrecedence {
     associativity: right
     lowerThan: MultiplicationPrecedence
-    higherThan: AdditionPrecedence
+    higherThan: AdditionPrecedence, FunctorOps
 }
 
 // 6: AdditionPrecedence + -
@@ -75,7 +79,7 @@ precedencegroup FunctorOps {
 // 3: Alternative
 precedencegroup AlternativePrecedence {
     associativity: left
-    higherThan: LogicalConjunctionPrecedence
+    higherThan: LogicalConjunctionPrecedence, KleisliCompositionRight
 }
 
 // 3: LogicalConjunctionPrecedence &&
@@ -94,7 +98,7 @@ precedencegroup KleisliCompositionRight {
 
 precedencegroup MonadBindLeft {
     associativity: left
-    higherThan: TernaryPrecedence
+    higherThan: TernaryPrecedence, LowPrecedenceFunctionCallRight
 }
 
 // 0.5: TernaryPrecedence ?:
