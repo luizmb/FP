@@ -173,7 +173,7 @@ Either<[String], Int>.right(42).toValidation()  // .success(42)
 `Validation` is Traversable when its success type is a container. These operations "flip" the nesting.
 
 ```swift
-// ValidationTArray — Validation<E, [A]> → [Validation<E, A>]
+// sequence: Validation<E, [A]> → [Validation<E, A>]
 Validation<[String], [Int]>.success([1, 2, 3]).sequence()   // [.success(1), .success(2), .success(3)]
 Validation<[String], [Int]>.failure(["e"]).sequence()       // [.failure(["e"])]
 
@@ -181,7 +181,7 @@ Validation<[String], [Int]>.failure(["e"]).sequence()       // [.failure(["e"])]
 Validation.success("42").traverse { Int($0) }   // Optional(.success(42))
 Validation.success("xx").traverse { Int($0) }   // nil
 
-// ValidationTResult — Validation<E, Result<A,Err>>
+// sequence: Validation<E, Result<A, Err>> → Result<Validation<E, A>, Err>
 Validation<[String], Result<Int, MyError>>.success(.success(5)).sequence()
 // .success(.success(5))  — or propagates failure from either layer
 ```
@@ -190,64 +190,66 @@ Validation<[String], Result<Int, MyError>>.success(.success(5)).sequence()
 
 ## Monad Transformers
 
-Validation participates in transformer stacks either as the **outer** layer or as the **inner** layer.
+Validation is the **outer** layer of eight stacks (`ValidationTArray`, `ValidationTOptional`, `ValidationTResult`, `ValidationTEither`, `ValidationTReader`, `ValidationTStateful`, `ValidationTWriter`, `ValidationTNonEmpty`) and the **inner** layer of `EitherTValidation`, `ReaderTValidation`, `StatefulTValidation` and `WriterTValidation`. Each stack is its own struct around the nested value: lift in with `validation.validationT` (or the stack's `init(_:)`), use `map` / `apply` / `liftA2` / the operators, and leave with `.rawValue`. Since Validation has no monad, none of these stacks has `flatMap` (they conform to `TransformerStack`, not `MonadT`).
 
-### `ValidationTOptional` — `Validation<E, A?>` (outer = Validation, inner = Optional)
+### `ValidationTOptional` (wraps `Validation<E, A?>`, outer = Validation, inner = Optional)
 
 ```swift
 let v: Validation<[String], Int?> = .success(.some(5))
 
-// mapT maps inside the Optional without touching the Validation layer
-v.mapT { $0 * 2 }  // .success(Optional(10))
+// map reaches inside the Optional without touching the Validation layer
+v.validationT.map { $0 * 2 }.rawValue  // .success(Optional(10))
 
 let none: Validation<[String], Int?> = .success(.none)
-none.mapT { $0 * 2 }  // .success(nil)
+none.validationT.map { $0 * 2 }.rawValue  // .success(nil)
 
 let failed: Validation<[String], Int?> = .failure(["e"])
-failed.mapT { $0 * 2 }  // .failure(["e"])
+failed.validationT.map { $0 * 2 }.rawValue  // .failure(["e"])
 ```
 
-### `ValidationTArray` — `Validation<E, [A]>` (outer = Validation, inner = Array)
+### `ValidationTArray` (wraps `Validation<E, [A]>`, outer = Validation, inner = Array)
 
 ```swift
-let v: Validation<[String], [Int]> = .success([1, 2, 3])
-v.mapT { $0 * 2 }  // .success([2, 4, 6])
+let v = ValidationTArray<[String], Int>(.success([1, 2, 3]))
+v.map { $0 * 2 }.rawValue  // .success([2, 4, 6])
 ```
 
-### `ValidationTResult` — `Validation<E, Result<A, Err>>` (outer = Validation, inner = Result)
+### `ValidationTResult` (wraps `Validation<E, Result<A, Err>>`, outer = Validation, inner = Result)
+
+Generic order is `ValidationTResult<E, Err, A>`.
 
 ```swift
-let v: Validation<[String], Result<Int, MyError>> = .success(.success(5))
-v.mapT { $0 * 2 }  // .success(.success(10))
+let v = ValidationTResult<[String], MyError, Int>(.success(.success(5)))
+v.map { $0 * 2 }.rawValue  // .success(.success(10))
 
 // Inner failure passes through the outer success
-let innerFail: Validation<[String], Result<Int, MyError>> = .success(.failure(.bad))
-innerFail.mapT { $0 * 2 }  // .success(.failure(.bad))
+let innerFail = ValidationTResult<[String], MyError, Int>(.success(.failure(.bad)))
+innerFail.map { $0 * 2 }.rawValue  // .success(.failure(.bad))
 ```
 
-### `OptionalTValidation` — `Validation<E, A>?` (outer = Optional, inner = Validation)
+### `Validation<E, A>?` and `[Validation<E, A>]`
+
+There are no `OptionalTValidation` / `ArrayTValidation` stacks; map the outer container and the Validation in turn:
 
 ```swift
 let v: Validation<[String], Int>? = .success(5)
-v?.mapT { $0 * 2 }   // Optional(.success(10))
+v.map { $0.mapSuccess { $0 * 2 } }   // Optional(.success(10))
 
-(nil as Validation<[String], Int>?).map { $0.mapSuccess { $0 * 2 } }  // nil
-```
-
-### `ArrayTValidation` — `[Validation<E, A>]` (outer = Array, inner = Validation)
-
-```swift
 let vs: [Validation<[String], Int>] = [.success(1), .failure(["e"]), .success(3)]
 vs.map { $0.mapSuccess { $0 * 2 } }  // [.success(2), .failure(["e"]), .success(6)]
 ```
+
+Escape hatches (the whole nested value in, a new nested value out) follow Haskell's names:
+`mapMaybeT` on `ValidationTOptional`, `mapExceptT` on `ValidationTResult` / `ValidationTEither`,
+`mapWriterT` on `ValidationTWriter`, and `mapValidationT` on the other Validation-outer stacks.
 
 ---
 
 ## Module
 
 ```swift
-import DataStructure         // Validation type + named functions
-import DataStructureOperators // Operators (<£>, <*>, *>, <*…)
+import DataStructure         // Validation type, named functions and the ValidationT* stack structs
+import DataStructureOperators // Operators (<£>, <*>, *>, <*…), also for the stacks
 ```
 
 ---

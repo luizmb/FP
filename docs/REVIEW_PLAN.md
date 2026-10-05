@@ -188,7 +188,7 @@ Done in step 3c (`feature/review-step3c`); PublisherTWriter / AsyncStreamTWriter
 
 ---
 
-## Step 6: newtype transformers (design, not started)
+## Step 6: newtype transformers (done)
 
 Motivation: transformers are plain nested types today (`Reader<E, [A]>` is both "a Reader of an array" and "ReaderTArray"), so the same operator can mean different things depending on overload ranking (`£>` hijacking, 3b's silent fallback) and the API needs `T`-suffixed names and `^` operators. Haskell avoids this because every transformer is its own newtype.
 
@@ -207,5 +207,5 @@ Design notes (2026-10-04):
 - Lifting via properties (key-path friendly), using inner-shape protocols (`ArrayLike`, `OptionalLike`, `ResultLike`, `EitherLike`, `NonEmptyLike`, `WriterLike`, …) because Swift has no parameterized extensions: e.g. `extension Publisher where Output: ArrayLike { var publisherT: PublisherTArray<Output.Element, Failure> }`, `reader.readerT`.
 - **All stacks in one change**, generated from templates by a dev-time generator (checked-in output, no macro in the library). The nested-type surface (`mapT`/`fmapT`/`flatMapT`/`bindT`/`kleisliT` and free `apply…`/`liftA2…`/`seqRight…`/`seqLeft…` on nested types) is removed in the same change; its logic moves into the structs.
 - [x] Protocols, inner-shape protocols, generator and templates (phase A: all 74 structs generated next to the nested surface, delegating to it). Deviation: `TransformerStack` mirrors `RawRepresentable` (`rawValue`, `init(rawValue:)`) instead of refining it — with Swift 6.3, a generic `RawRepresentable` struct whose `RawValue` is an `Optional` (every Optional-outer stack) breaks inference of any generic method returning the struct in a contextual position.
-- [ ] All stacks generated; nested-type surface removed; tests ported to the structs.
+- [x] All stacks generated; nested-type surface removed; tests ported to the structs. Done in phase B (Reader-outer, CoreFP, Stateful-outer and data-outer commits): the nested functions are `internal` (the structs delegate to them) rather than deleted, the nested-shape operator overloads are gone, `AsyncSequenceT*` became `AsyncStreamT*`, and the remaining zip applicatives on stream stacks are now `ap`. Docs (CLAUDE.md, README, DocC, skills, CHANGELOG migration table) updated to the struct API.
 

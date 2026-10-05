@@ -159,27 +159,31 @@ let result = Reader.liftA2({ a, b in a + b })(base, seed)(Config(multiplier: 3))
 
 ## ReaderT — Reader with inner effects
 
-When your environment-dependent computation also has an inner effect (Optional, Result, Array, etc.), use the transformer variants. All operators work through both layers.
+When your environment-dependent computation also has an inner effect (Optional, Result, Array, etc.), wrap it in its transformer stack. A plain `Reader<Config, Int?>` is still just a `Reader` (its `map` and `<£>` see the whole `Int?`); the `.readerT` property lifts it into `ReaderTOptional<Config, Int>`, whose `map`, `flatMap` and operators work through both layers. `.rawValue` gives the `Reader` back.
 
 ```swift
-// Reader<Env, A?> — may not produce a value
+// Reader<Env, A?>: may not produce a value
 let maybeUser = Reader<Config, Int?> { env in
     env.multiplier > 0 ? .some(env.multiplier * 10) : nil
 }
 
-// mapT maps inside the Optional without touching the Reader layer
-let userName = maybeUser.mapT { "User #\($0)" }
-userName(Config(multiplier: 3))   // Optional("User #30")
-userName(Config(multiplier: -1))  // nil
+// map reaches inside the Optional without touching the Reader layer
+let userName = maybeUser.readerT.map { "User #\($0)" }   // ReaderTOptional<Config, String>
+userName.rawValue(Config(multiplier: 3))   // Optional("User #30")
+userName.rawValue(Config(multiplier: -1))  // nil
 
-// All operators work the same way
-{ "User #\($0)" } <£> maybeUser   // Reader<Config, String?> — same result
+// The operators work the same way on the stack
+{ "User #\($0)" } <£> maybeUser.readerT   // ReaderTOptional<Config, String>, same result
 
-// Reader<Env, Result<A, E>> — may fail with a typed error
-// Reader<Env, [A]>           — may return multiple results
-// Reader<Env, Either<L, R>>  — left/right choice
-// Reader<Env, AsyncStream<A>>     — async sequence of values
-// Reader<Env, AnyPublisher<A,E>> — reactive stream (Apple platforms)
+// Escape hatch: the whole Reader, e.g. to change the environment (Haskell's mapReaderT)
+let scoped = userName.mapReaderT { $0.local { (cfg: Config) in Config(multiplier: cfg.multiplier * 2) } }
+
+// Other stacks, same shape:
+// ReaderTResult<Env, E, A>      wraps Reader<Env, Result<A, E>>  (may fail with a typed error)
+// ReaderTArray<Env, A>          wraps Reader<Env, [A]>           (may return multiple results)
+// ReaderTEither<Env, L, A>      wraps Reader<Env, Either<L, A>>  (left/right choice)
+// ReaderTAsyncStream<Env, A>    wraps Reader<Env, AsyncStream<A>> (async sequence of values)
+// ReaderTPublisher<Env, E, A>   wraps Reader<Env, any Publisher<A, E>> (reactive stream, Apple platforms)
 ```
 
 ---

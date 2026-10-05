@@ -92,16 +92,16 @@ to the new Validation type I'm adding to the library.
 ```
 
 ### 2. create-readert-transformer.md
-Create monad transformer stacks (`ReaderT` or a flat `OuterTInner`) following library patterns — real module locations, `mapT`/`fmapT`/`flatMapT`/`kleisliT` naming (transformer functor map is the `mapT` method, no operator).
+Add a monad transformer stack (`OptionalTValidation`, `ArrayTValidation`, …) through the generator: one `Stack(.outer, .inner, kind)` line in `Scripts/GenerateTransformers.swift`, then run it. Every stack is its own struct (`rawValue`, `map`/`flatMap`, the usual operators, a lifting property like `reader.readerT`); generated files are never edited by hand.
 
 ```
-Use the create-readert-transformer skill to implement ReaderT + Validation
-transformer with all operators.
+Use the create-readert-transformer skill to add an OptionalTValidation
+stack (Validation<E, A>?) through the generator.
 ```
 
 ```
-Use the create-readert-transformer skill to implement ArrayTValidation
-([Validation<E,A>]) transformer with all operators.
+Use the create-readert-transformer skill to add an ArrayTValidation
+([Validation<E,A>]) stack through the generator.
 ```
 
 ## Tacit Programming Utilities

@@ -18,6 +18,8 @@ let doubled = Optional(5).map { $0 * 2 }        // Optional(10)
 let ageLens: Lens<Person, Int> = ^\Person.age
 ```
 
+Monad-transformer stacks are structs named `OuterTInner` conforming to `TransformerStack` (or `MonadT` when the stack is a lawful monad). The ones made only of `CoreFP` types (`OptionalTArray`, `ArrayTResult`, `PublisherTOptional`, `AsyncStreamTResult`, …) live here, the rest in [DataStructure](../datastructure); see [MonadTransformers](../fp/monadtransformers).
+
 Import [CoreFPOperators](../corefpoperators) alongside this module for the operator syntax (`<£>`, `<*>`, `>>-`, `>>>`, …) — the full precedence table is in [OperatorVocabulary](../fp/operatorvocabulary).
 
 ## Related Modules
@@ -48,6 +50,24 @@ Import [CoreFPOperators](../corefpoperators) alongside this module for the opera
 - ``Swift/Array``
 - ``_Concurrency/AsyncSequence``
 - ``Combine/Publisher``
+
+### Monad Transformers
+- ``TransformerStack``
+- ``MonadT``
+- ``ArrayLike``
+- ``OptionalLike``
+- ``ResultLike``
+- ``AsyncStreamLike``
+- ``ArrayTOptional``
+- ``ArrayTResult``
+- ``AsyncStreamTArray``
+- ``AsyncStreamTOptional``
+- ``AsyncStreamTResult``
+- ``OptionalTArray``
+- ``OptionalTResult``
+- ``PublisherTArray``
+- ``PublisherTOptional``
+- ``PublisherTResult``
 
 ### SwiftUI Interop
 - <doc:Binding>

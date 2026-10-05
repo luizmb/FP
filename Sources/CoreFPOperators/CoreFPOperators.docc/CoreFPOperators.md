@@ -15,7 +15,9 @@ let result = { $0 * 2 } <£> Optional(5)   // Optional(10)
 
 The full, verified operator/precedence table across both `CoreFPOperators` and `DataStructureOperators` lives in [OperatorVocabulary](../fp/operatorvocabulary).
 
-Every operator here is heavily overloaded — one per type it applies to (`Optional`, `Result`, `Array`, `Publisher`, `AsyncSequence`, and every transformer combo between them). Grouped below by mathematical concept, then by type.
+Every operator here is heavily overloaded, one per type it applies to (`Optional`, `Result`, `Array`, `Publisher`, `AsyncSequence`, and every transformer stack struct). Grouped below by mathematical concept, then by type.
+
+The transformer stack structs in `CoreFP` (`OptionalTArray`, `ArrayTResult`, `PublisherTOptional`, `AsyncStreamTResult`, …) get `<£>`, `<&>`, `£>`, `<£`, `<*>`, `*>`, `<*` on their own type, plus `>>-`, `-<<`, `>=>`, `<=<` on lawful monad stacks (`MonadT`). They are generated (`Sources/CoreFPOperators/Transformer/Generated/`), delegate to the struct's named methods, and are not listed one by one below. There are no operator overloads on bare nested values (`[A?]`, `AnyPublisher<[A], E>`): wrap the value in its stack first (`array.arrayT`, `publisher.publisherT`). See [MonadTransformers](../fp/monadtransformers).
 
 ## Related Modules
 
@@ -59,106 +61,52 @@ Every operator here is heavily overloaded — one per type it applies to (`Optio
 
 - ``<*>(_:_:)->A?``
 - ``<*>(_:_:)->[A1]``
-- ``<*>(_:_:)->[B?]``
-- ``<*>(_:_:)->[B]?``
 - ``<*>(_:_:)->Result<A,B>``
-- ``<*>(_:_:)->Result<B,E>?``
-- ``<*>(_:_:)->[Result<B,E>]``
 - ``<*>(_:_:)->Publisher<A,B>``
 - ``<*>(_:_:)->AsyncStream<B>``
-- ``<*>(_:_:)->AsyncStream<B?>``
-- ``<*>(_:_:)->AsyncStream<Result<B,E>>``
 - ``<*>(_:_:)-3ixm5``
 - ``*>(_:_:)->A?``
 - ``*>(_:_:)->[A1]``
-- ``*>(_:_:)->[B?]``
-- ``*>(_:_:)->[B]?``
 - ``*>(_:_:)->Result<A,B>``
-- ``*>(_:_:)->Result<B,E>?``
-- ``*>(_:_:)->[Result<B,E>]``
-- ``*>(_:_:)->AnyPublisher<B?,E>``
-- ``*>(_:_:)->AnyPublisher<Result<B,E2>,E>``
-- ``*>(_:_:)->AnyPublisher<[B],E>``
 - ``*>(_:_:)->Publisher<A,B>``
 - ``*>(_:_:)->AsyncStream<B>``
-- ``*>(_:_:)->AsyncStream<B?>``
-- ``*>(_:_:)->AsyncStream<Result<B,E>>``
-- ``*>(_:_:)->AsyncStream<[B]>``
 - ``*>(_:_:)-202n9``
 - ``<*(_:_:)->A?``
-- ``<*(_:_:)->[A?]``
 - ``<*(_:_:)->[A]``
-- ``<*(_:_:)->[A]?``
 - ``<*(_:_:)->Result<A,B>``
-- ``<*(_:_:)->Result<A,E>?``
-- ``<*(_:_:)->[Result<A,E>]``
-- ``<*(_:_:)->AnyPublisher<A?,E>``
-- ``<*(_:_:)->AnyPublisher<Result<A,E2>,E>``
-- ``<*(_:_:)->AnyPublisher<[A],E>``
 - ``<*(_:_:)->Publisher<A,B>``
 - ``<*(_:_:)->AsyncStream<A>``
-- ``<*(_:_:)->AsyncStream<A?>``
-- ``<*(_:_:)->AsyncStream<Result<A,E>>``
-- ``<*(_:_:)->AsyncStream<[A]>``
 - ``<*(_:_:)-4d1wn``
 
 ### Monad — `>>-` / `-<<` (bind, container-left / fn-left)
 
 - ``>>-(_:_:)->A1?``
 - ``>>-(_:_:)->[A1]``
-- ``>>-(_:_:)->[B?]``
-- ``>>-(_:_:)->[B]?``
 - ``>>-(_:_:)->Result<A1,B>``
-- ``>>-(_:_:)->Result<B,E>?``
-- ``>>-(_:_:)->[Result<B,E>]``
-- ``>>-(_:_:)->AnyPublisher<B?,E>``
-- ``>>-(_:_:)->AnyPublisher<Result<B,E2>,E>``
-- ``>>-(_:_:)->AnyPublisher<[B],E>``
 - ``>>-(_:_:)->Publisher<A1,B>``
-- ``>>-(_:_:)->AsyncStream<B?>``
-- ``>>-(_:_:)->AsyncStream<Result<B,E>>``
-- ``>>-(_:_:)->AsyncStream<[B]>``
 - ``>>-(_:_:)->AsyncThrowingFlatMapSequence<AsyncThrowingMapSequence<S,T>,T>``
 - ``>>-(_:_:)-3rvkc``
 - ``-<<(_:_:)->A1?``
 - ``-<<(_:_:)->[A1]``
-- ``-<<(_:_:)->[B?]``
-- ``-<<(_:_:)->[B]?``
 - ``-<<(_:_:)->Result<A1,B>``
-- ``-<<(_:_:)->Result<B,E>?``
-- ``-<<(_:_:)->[Result<B,E>]``
-- ``-<<(_:_:)->AnyPublisher<B?,E>``
-- ``-<<(_:_:)->AnyPublisher<Result<B,E2>,E>``
-- ``-<<(_:_:)->AnyPublisher<[B],E>``
 - ``-<<(_:_:)->Publisher<A1,B>``
-- ``-<<(_:_:)->AsyncStream<B?>``
-- ``-<<(_:_:)->AsyncStream<Result<B,E>>``
-- ``-<<(_:_:)->AsyncStream<[B]>``
 - ``-<<(_:_:)->AsyncThrowingFlatMapSequence<AsyncThrowingMapSequence<S,T>,T>``
 - ``-<<(_:_:)-4ni60``
 
 ### Kleisli Composition — `>=>` / `<=<` (left-to-right / right-to-left)
 
-- ``>=>(_:_:)-2ytfj``
-- ``>=>(_:_:)-9eudm``
-- ``>=>(_:_:)-93wat``
-- ``>=>(_:_:)-8x1ft``
-- ``>=>(_:_:)-913mw``
-- ``>=>(_:_:)-9mebb``
-- ``>=>(_:_:)-1ym4s``
-- ``>=>(_:_:)-frcl``
-- ``>=>(_:_:)-7cz88``
-- ``>=>(_:_:)-9wi7y``
-- ``<=<(_:_:)-50t7s``
-- ``<=<(_:_:)-5zndc``
-- ``<=<(_:_:)-479op``
-- ``<=<(_:_:)-72b04``
-- ``<=<(_:_:)-4lxyd``
-- ``<=<(_:_:)-61eoz``
-- ``<=<(_:_:)-61bjj``
-- ``<=<(_:_:)-5uljc``
-- ``<=<(_:_:)-pur6``
-- ``<=<(_:_:)-7yduy``
+- ``>=>(_:_:)-8e1dv``
+- ``>=>(_:_:)-50pt``
+- ``>=>(_:_:)-9twdt``
+- ``>=>(_:_:)-7tcmj``
+- ``>=>(_:_:)-5ppgu``
+- ``>=>(_:_:)-6q2cc``
+- ``<=<(_:_:)-4d759``
+- ``<=<(_:_:)-7hfw7``
+- ``<=<(_:_:)-939h``
+- ``<=<(_:_:)-60ib1``
+- ``<=<(_:_:)-2ps07``
+- ``<=<(_:_:)-39pb0``
 
 ### Alternative — `<|>` (choice, first success wins)
 

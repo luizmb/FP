@@ -1,179 +1,74 @@
 # Create Monad Transformer
 
-Help implement a monad transformer stack — either a `ReaderT` (Reader as outer monad) or a flat transformer where another type (Optional, Array, Either, Publisher, AsyncStream) is the outer monad.
+Help add a monad transformer stack (a `ReaderT` like `ReaderTValidation`, or any other `OuterTInner` such as `ArrayTValidation`) to the library. Stacks are generated, so the work is mostly picking the right line in the generator's table, making sure the nested-type functions it delegates to exist, and writing tests.
 
 ## Skill Prompt
 
-You are helping a developer create a monad transformer following FP library conventions.
+You are helping a developer add a monad transformer stack following FP library conventions.
 
-### Transformer Flavours
+### The model
 
-**`OuterTInner` naming** — see `<doc:MonadTransformers>` for the full picture. `ReaderTOptional` means `Reader<Env, Optional<A>>`; `ArrayTResult` means `[Result<A, E>]`. The outer type names the module the combo's files live in; the inner type is a suffix on the filenames.
+Every stack is its own concrete struct named `OuterTInner` (see `<doc:MonadTransformers>` for the coverage matrix). `ReaderTOptional<Env, A>` wraps `Reader<Env, A?>`, `ArrayTResult<E, A>` wraps `[Result<A, E>]`, `PublisherTOptional<Failure, A>` wraps `AnyPublisher<A?, Failure>`, `AsyncStreamTEither<L, A>` wraps `AsyncStream<Either<L, A>>`. Each struct has:
 
-**ReaderT (Reader as outer monad)**:
-- **Haskell**: `ReaderT r m a = r -> m a`
-- **Swift**: `Reader<Env, M<A>>` where `M` is the inner monad
-- Location: `Sources/DataStructure/Reader/` (implementation, e.g. `ReaderTOptional+Functor.swift`), `Sources/DataStructureOperators/Reader/` (operators)
-- Module: everything lives inside the `DataStructure`/`DataStructureOperators` modules — there is no separate per-type module
+- `rawValue` (the whole nested value), `init(rawValue:)`, `init(_:)`, typealiases `O` (nested value) and `I` (inner layer), a conditional `Sendable`.
+- Functor: `map`, static `fmap`; operators `<£>`, `<&>`, `£>`, `<£`.
+- Applicative (unless functor-only): static `pure`, static `apply`, static `liftA2`, `seqRight`, `seqLeft`; operators `<*>`, `*>`, `<*`.
+- Monad (lawful monads only, conforming to `MonadT`): `flatMap`, static `bind`, static `kleisli` / `kleisliBack`; operators `>>-`, `-<<`, `>=>`, `<=<`. Applicative-only stacks conform to `TransformerStack`.
+- A Haskell-named escape hatch `(O) -> O2`: by the outer layer for Reader / Stateful / streams (`mapReaderT`, `mapStateT`, `mapPublisherT`, `mapAsyncStreamT`), else by the inner layer for Optional / Either / Result / Writer (`mapMaybeT`, `mapExceptT`, `mapWriterT`), else (Compose-like stacks) by the outer layer (`mapArrayT`, `mapOptionalT`, `mapEitherT`, `mapResultT`, `mapNonEmptyT`, `mapValidationT`).
+- A lifting property on the outer type, named after it (`reader.readerT`, `array.arrayT`, `publisher.publisherT`, …), constrained by the inner-shape protocol (`extension Reader where Output: ValidationLike`).
 
-**Flat transformer (non-Reader outer)**:
-- The outer monad wraps the inner: `Outer<Inner<A>>`
-- Real examples already in the library: `[A?]` (`ArrayTOptional`), `[Result<A,E>]` (`ArrayTResult`),
-  `AnyPublisher<A?,E>` (`PublisherTOptional`), `AsyncStream<Either<L,A>>` (`AsyncSequenceTEither`)
-- Location: pure-stdlib/CoreFP combos (Array/Optional/Result/Publisher/AsyncSequence-with-each-other) live in `Sources/CoreFP/`/`Sources/CoreFPOperators/`; combos involving a `DataStructure` type (Either/Validation/Reader/Stateful/Writer/NonEmpty) live in `Sources/DataStructure/`/`Sources/DataStructureOperators/`
-- Use free functions (not extension methods) when the outer type's generic parameters
-  can't be constrained directly in an extension (e.g., some `EitherT*` stacks)
+Module placement: the struct goes in `CoreFP` when both layers are CoreFP / stdlib types (Array, Optional, Result, Publisher, AsyncStream), otherwise in `DataStructure`; its operators go in the matching operator module. Output lands in `Sources/<Module>/Transformer/Generated/<Stack>.swift` and `Sources/<OperatorModule>/Transformer/Generated/<Stack>+Operators.swift`.
+
+**Never hand-edit anything under `Sources/*/Transformer/Generated/`.** The generator wipes and rewrites those directories on every run.
 
 ### What is a monad transformer?
 
-A way to combine two monads into one, when you need both effects at once — e.g. "a dependency-injected computation (`Reader`) that might fail (`Optional`)" is `ReaderTOptional`, not two separate types you juggle by hand.
+A way to combine two monads into one, when you need both effects at once, e.g. "a dependency-injected computation (`Reader`) that might fail (`Optional`)" is `ReaderTOptional`, not two separate types you juggle by hand.
 
-### Instructions:
+### Instructions
 
-1. **Understand the inner monad**: What effects does it provide? (State, error handling, accumulation, etc.)
-2. **Implement Functor**: `mapT` (instance method) plus the static curried `fmapT` — transforms values *inside* the inner monad, reaching through the outer one. There is no transformer map operator and no free `mapTOuterInner` function
-3. **Implement Applicative**: `liftA2T`/an `apply`-shaped free function, if the combo needs one
-4. **Implement Monad**: `flatMapT` (instance method) — monadic composition through both layers
-5. **Named `kleisliT`**: the `>=>`/`<=<` operators for this combo delegate to a named `kleisliT` function — never inline `{ a in fn1(a).flatMapT(fn2) }` directly in the operator body
-6. **Create Operators, both directions**: every operator with a directional sense (`>>-`/`-<<`, `>=>`/`<=<`) needs its flip added in the same change
-7. **`Sendable`-first**: every escaping closure is `@Sendable`; the combo's own methods require `Environment`/inner-type-parameters to be `Sendable` where the language demands it
-8. **Add Tests in all four targets that apply**: named-function tests in `CoreFPTests`/`DataStructureTests` (no operator symbols), operator tests in `CoreFPOperatorsTests`/`DataStructureOperatorsTests` (must use the operator)
+1. **Check it doesn't exist**: look at `<doc:MonadTransformers>`'s matrix and the `inventory` array in `Scripts/GenerateTransformers.swift`.
+2. **Decide the kind**: `.monad` only when the stack has a lawful monad (check the "Why some combos lack a Monad" section: anything with `Validation`, a list inside a non-commutative outer layer, `Writer` outside another monad, a monad outside `Stateful`, or `Stateful` outside Reader / Publisher / AsyncStream is not a monad). Otherwise `.applicative`, or `.functor` when there's no lawful applicative either.
+3. **Make sure the nested-type functions exist** (they are the implementation the struct delegates to, and they are `internal`, never public API): the `mapT` method on the outer type, the free `apply<Outer><Inner>`, `liftA2<Outer><Inner>`, `seqRight<Outer><Inner>`, `seqLeft<Outer><Inner>` functions, and for monads the `flatMapT` method. They live next to the outer type (e.g. `Sources/DataStructure/Reader/ReaderTValidation+Functor.swift`). Implement them with the inner type's own `map` / `liftA2` / `flatMap`. If the stack's functions don't follow those names, use an `Override` instead (next step).
+4. **Add the table line**: one `Stack(.outer, .inner, kind)` line in `inventory`, in the section for its module/outer type, e.g. `Stack(.reader, .validation, .applicative)`. Add `Override`s only when needed:
+   - `.applyViaLiftA2` when there is no `apply<Outer><Inner>` free function (derives `apply` from `liftA2`);
+   - `.freeFlatMap` when the bind is a free `flatMapT<Outer><Inner>(_:_:)` instead of a method;
+   - `.map(body)`, `.liftA2(body)`, `.flatMap(body)`, `.pure(body)` for a custom member body (e.g. a stream stack whose nested `mapT` returns `AsyncMapSequence`, or a `pure` that must build a fresh stream per run).
+5. **A brand-new layer type** (one not in `enum Layer`) needs a `Layer` case: its type spelling, outer/inner context parameters, `outerPure`, module (`isCore`), the lifting extension (`lift`) and, if it can be an inner layer, an inner-shape protocol (`XLike` in `Sources/*/Transformer/InnerShape.swift`: one conformer, identity requirements only, so lifting never copies) plus its `shape` entry.
+6. **Run the generator** from the package root, then lint:
+   ```bash
+   swift Scripts/GenerateTransformers.swift
+   mint run swiftformat --lint .
+   swift build 2>&1 | xcsift
+   ```
+   Commit the script change and the regenerated sources together.
+7. **`Sendable`-first**: the generated members already require `Sendable` context parameters and `@Sendable` closures. Your nested functions must do the same. `inout` state can't be captured in a `@Sendable` closure: when a `Stateful` combinator runs several sub-`Stateful`s, evaluate them before the `@Sendable` body, in left-to-right applicative order.
+8. **Tests in both targets** (`DataStructureTests` + `DataStructureOperatorsTests`, or `CoreFPTests` + `CoreFPOperatorsTests`), written against the struct API only (never the internal nested functions):
+   - named tests use `map` / `apply` / `liftA2` / `flatMap` / `kleisli` / the escape hatch / the lifting property, no operator symbols; verify functor / applicative / monad laws by comparing `rawValue`s (run them for function-like layers);
+   - operator tests use the symbols (`<£>`, `<*>`, `*>`, `>>-`, `>=>`, …) and check they agree with the named members.
 
-### Pattern to Follow:
+### Test sketch
 
-#### 1. Functor Implementation (`Sources/DataStructure/Reader/ReaderTCustomMonad+Functor.swift`)
-
+`DataStructureTests` (named, no operator symbols):
 ```swift
 import CoreFP
-
-public extension Reader {
-    /// Functor map for ReaderT + CustomMonad — maps over the value inside
-    /// `Reader<Environment, CustomMonad<A>>`, reaching through the inner monad.
-    func mapT<A, B>(_ fn: @escaping @Sendable (A) -> B) -> Reader<Environment, CustomMonad<B>>
-        where Output == CustomMonad<A>
-    {
-        mapReader { monadicValue in
-            monadicValue.map(fn)  // Use the inner monad's own Functor
-        }
-    }
-
-    static func fmapT<A, B>(
-        _ fn: @escaping @Sendable (A) -> B
-    ) -> @Sendable (Reader<Environment, CustomMonad<A>>) -> Reader<Environment, CustomMonad<B>>
-        where Output == CustomMonad<A>
-    {
-        { $0.mapT(fn) }
-    }
-}
-```
-
-#### 2. Applicative Implementation
-
-```swift
-public extension Reader {
-    /// liftA2T for ReaderT + CustomMonad.
-    static func liftA2T<Env, A, B, C>(
-        _ fn: @escaping @Sendable (A, B) -> C
-    ) -> @Sendable (Reader<Env, CustomMonad<A>>, Reader<Env, CustomMonad<B>>) -> Reader<Env, CustomMonad<C>> {
-        { readerA, readerB in
-            Reader { env in
-                let ma = readerA(env)
-                let mb = readerB(env)
-                return CustomMonad.liftA2(fn)(ma, mb)  // Use the inner monad's own Applicative
-            }
-        }
-    }
-}
-```
-
-#### 3. Monad Implementation
-
-```swift
-public extension Reader {
-    /// Monadic flatMapT for ReaderT + CustomMonad.
-    /// (>>=) :: Reader e (m a) -> (a -> Reader e (m b)) -> Reader e (m b)
-    func flatMapT<A, B>(
-        _ fn: @escaping @Sendable (A) -> Reader<Environment, CustomMonad<B>>
-    ) -> Reader<Environment, CustomMonad<B>> where Output == CustomMonad<A> {
-        Reader<Environment, CustomMonad<B>> { env in
-            self(env).flatMap { a in
-                fn(a)(env)
-            }
-        }
-    }
-
-    /// Named Kleisli composition — `>=>`/`<=<` delegate to this, never inline the body.
-    static func kleisliT<Env, A, B, C>(
-        _ f: @escaping @Sendable (A) -> Reader<Env, CustomMonad<B>>,
-        _ g: @escaping @Sendable (B) -> Reader<Env, CustomMonad<C>>
-    ) -> @Sendable (A) -> Reader<Env, CustomMonad<C>> {
-        { a in f(a).flatMapT(g) }
-    }
-}
-```
-
-#### 4. Operators (`Sources/DataStructureOperators/Reader/ReaderTCustomMonad+*Operators.swift`)
-
-```swift
-import CoreFP
-import CoreFPOperators
 import DataStructure
-
-// MARK: - Monad Operators
-
-public func >>- <Env, A, B>(
-    _ reader: Reader<Env, CustomMonad<A>>,
-    _ fn: @escaping @Sendable (A) -> Reader<Env, CustomMonad<B>>
-) -> Reader<Env, CustomMonad<B>> {
-    reader.flatMapT(fn)
-}
-
-public func -<< <Env, A, B>(
-    _ fn: @escaping @Sendable (A) -> Reader<Env, CustomMonad<B>>,
-    _ reader: Reader<Env, CustomMonad<A>>
-) -> Reader<Env, CustomMonad<B>> {
-    reader >>- fn
-}
-
-public func >=> <Env, A, B, C>(
-    _ f: @escaping @Sendable (A) -> Reader<Env, CustomMonad<B>>,
-    _ g: @escaping @Sendable (B) -> Reader<Env, CustomMonad<C>>
-) -> @Sendable (A) -> Reader<Env, CustomMonad<C>> {
-    Reader.kleisliT(f, g)
-}
-
-public func <=< <Env, A, B, C>(
-    _ g: @escaping @Sendable (B) -> Reader<Env, CustomMonad<C>>,
-    _ f: @escaping @Sendable (A) -> Reader<Env, CustomMonad<B>>
-) -> @Sendable (A) -> Reader<Env, CustomMonad<C>> {
-    f >=> g
-}
-```
-
-Transformer functor map has no operator (use `mapT`), and no transformer `£>`/`<£` overload either: on a stack those resolve to the outer type's base replace; inner replace is `mapT(const(x))`. There is no separate "flipped Kleisli via `<&>`" — the flipped Kleisli operator is always `<=<`.
-
-#### 5. Tests — both the named-function and operator targets
-
-`DataStructureTests` (named functions, no operator symbols):
-```swift
 import Testing
 
-@Suite("ReaderTCustomMonad — Functor/Monad (named functions)")
-struct ReaderTCustomMonadTests {
-    struct Environment: Sendable { let config: Int }
+@Suite("ReaderTValidation")
+struct ReaderTValidationTests {
+    struct Env: Sendable { let limit: Int }
 
-    @Test func mapTTransformsInnerValue() {
-        let reader = Reader<Environment, CustomMonad<Int>> { env in .pure(env.config) }
-        let mapped = reader.mapT { $0 * 2 }
-        // #expect(...) against CustomMonad's own equality/introspection
+    @Test func mapReachesTheInnerValue() {
+        let stack = Reader<Env, Validation<[String], Int>> { .success($0.limit) }.readerT
+        let mapped = stack.map { $0 * 2 }.rawValue
+        #expect(mapped(Env(limit: 5)) == .success(10))
     }
 
-    @Test func flatMapTChains() {
-        let reader = Reader<Environment, CustomMonad<Int>> { env in .pure(env.config) }
-        let bound = reader.flatMapT { value in
-            Reader<Environment, CustomMonad<Int>> { env in .pure(value + env.config) }
-        }
-        // #expect(...)
+    @Test func applyAccumulatesErrors() {
+        let ff = ReaderTValidation<Env, [String], @Sendable (Int) -> Int>(Reader { _ in .failure(["f"]) })
+        let fa = ReaderTValidation<Env, [String], Int>(Reader { _ in .failure(["a"]) })
+        #expect(ReaderTValidation.apply(ff, fa).rawValue(Env(limit: 0)) == .failure(["f", "a"]))
     }
 }
 ```
@@ -181,49 +76,36 @@ struct ReaderTCustomMonadTests {
 `DataStructureOperatorsTests` (must use the operator symbol):
 ```swift
 import CoreFPOperators
+import DataStructure
 import DataStructureOperators
 import Testing
 
-@Suite("ReaderTCustomMonad — operator delegation")
-struct ReaderTCustomMonadOperatorsTests {
-    struct Environment: Sendable { let config: Int }
+@Suite("ReaderTValidation operators")
+struct ReaderTValidationOperatorsTests {
+    struct Env: Sendable { let limit: Int }
 
-    @Test func kleisliOperatorComposes() {
-        let f: @Sendable (Int) -> Reader<Environment, CustomMonad<Int>> = { x in
-            Reader { env in .pure(x + env.config) }
-        }
-        let g: @Sendable (Int) -> Reader<Environment, CustomMonad<Int>> = { x in
-            Reader { env in .pure(x * env.config) }
-        }
-        let composed = f >=> g
-        let env = Environment(config: 5)
-        #expect(composed(10)(env) == Reader.kleisliT(f, g)(10)(env))
+    @Test func fmapOperatorDelegatesToMap() {
+        let stack = Reader<Env, Validation<[String], Int>> { .success($0.limit) }.readerT
+        let env = Env(limit: 3)
+        #expect(({ $0 + 1 } <£> stack).rawValue(env) == stack.map { $0 + 1 }.rawValue(env))
     }
 }
 ```
 
-### Special Considerations:
+(Adapt equality to the types involved; `Validation` and `Either` are `Equatable` when their parameters are.)
 
-**For async monads (AsyncSequence, Publisher)**:
-- Add `@Sendable` constraints throughout
-- Add platform availability annotations: `@available(macOS 10.15, iOS 13.0, ...)`
-- `Environment` must be `Sendable`
+### Special considerations
 
-**For platform-specific monads (Combine/Publisher)**:
-- Wrap with `#if canImport(Combine)`
-- Add higher platform requirements for parameterized existentials
+- **Streams (Publisher, AsyncStream)**: applicatives are `ap` derived from the ordered-concat bind (each left element over the whole right stream), never zip. The right stream is single-pass and gets buffered with `AsyncStream.replayable(_:)`. A `pure` inside a function-like outer layer (`Reader`, `Stateful`) must build a fresh stream per run. Availability annotations and `#if canImport(Combine)` are emitted by the generator from the `Layer`.
+- **Error-handling inner layers (Result, Either)**: preserve error types and short-circuit on the first failure; `Validation` accumulates instead and never gets a monad.
+- **No new operators**: stacks reuse the base vocabulary, and there are no operator overloads on nested shapes (`Reader<E, Validation<…>>`); the struct is the only public surface.
 
-**For error-handling monads (Result, Either)**:
-- Preserve error types through transformations
-- Consider error short-circuiting behavior
+### Ask the developer
 
-**For `Stateful` as the inner or outer type**: `inout` state cannot be captured in a `@Sendable` closure — when a combinator needs to run multiple sub-`Stateful`s, evaluate them *before* entering the `@Sendable` closure body, in left-to-right applicative order.
+1. What are the outer and inner types, and does this `OuterTInner` already exist?
+2. Is the result a lawful monad, or applicative / functor only?
+3. Does the inner type already have Functor / Applicative / Monad support?
+4. Is it a stream or platform-specific (Combine) layer?
+5. Is a new `Layer` case (and inner-shape protocol) needed?
 
-### Ask the developer:
-1. What is the inner monad type?
-2. Does it already have Functor/Applicative/Monad support?
-3. Is it async or concurrent (needs `Sendable`, availability annotations)?
-4. Is it platform-specific (Combine)?
-5. Does this exact `OuterTInner` combo already exist? Check `<doc:MonadTransformers>`'s coverage matrix first.
-
-Generate complete, working transformer code following FP library patterns — named function + operator (both directions) + all four test targets that apply + `Sendable`-first, every time.
+Deliver: the nested-type functions (internal), one `inventory` line (plus overrides if needed), the regenerated sources, and tests in both the named and operator targets.

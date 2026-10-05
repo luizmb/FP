@@ -48,11 +48,10 @@ A few things worth calling out explicitly:
 - **`£` is a pound sign, not a typo for `$`.** Haskell's `$` can't be reused because `$` is
   reserved for Swift string interpolation delimiters, so `<$>`/`$>`/`<$` become `<£>`/`£>`/`<£`.
   Plain `$` (function application) is spelled `<|`; there is no standalone `£` operator.
-- **Transformer stacks have no map operator.** Mapping one layer inside a stack
-  (`Writer<W, Either<L, A>>`, `Either<L, Result<A, E>>`, …) is the method `.mapT(_:)` (plus the
-  static curried `fmapT(_:)`), never an operator. `£>`/`<£` on a stack are the *base* overloads
-  of the outer type, so `reader £> x` replaces the whole output; replacing the inner value is
-  `stack.mapT(const(x))`.
+- **Transformer stacks use the same operators.** A stack is its own struct (`ReaderTArray`,
+  `WriterTEither`, …), so `<£>`, `£>`, `<*>`, `>>-`, `>=>` on it act on the innermost value. On a
+  bare nested value (`Reader<Env, [A]>`) they are the outer type's operators, so `reader £> x`
+  replaces the whole output; wrap it first (`reader.readerT £> x`) to replace each element.
 - **There is no infix power operator.** Swift's standard library declares `^` (bitwise XOR) in
   `AdditionPrecedence`, and a second declaration with another precedence group is an
   "ambiguous operator declarations" error, so a power `^` would bind like `+`
@@ -131,8 +130,9 @@ counterpart, `Data.Functor`'s `<$>`) despite both being "functor map."
 
 - **Transform a value inside a container, function first** → `<£>` (`<&>` if the container reads
   more naturally first, e.g. mid-pipeline).
-- **Transform the value one layer inside a transformer stack** (`Writer<W, Either<L, A>>`,
-  `Either<L, Result<A, E>>`, …) → `stack.mapT(f)` (no operator).
+- **Transform the value one layer inside a nested value** (`Writer<W, Either<L, A>>`,
+  `Either<L, Result<A, E>>`, …) → wrap it in its stack and use `<£>` as usual
+  (`f <£> writer.writerT`, then `.rawValue` to leave).
 - **Combine two independent wrapped values with a function that takes both** → `<*>`, or
   `liftA2`-style named functions for a curried n-ary version.
 - **Run two effects in sequence but only care about one result** → `*>` (keep the right) / `<*`

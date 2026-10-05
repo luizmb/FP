@@ -129,24 +129,27 @@ let listen = Reader<any EventSource, AsyncStream<Event>> { source in
     source.events()
 }
 
-// mapT maps inside the AsyncStream without touching the Reader layer
-let eventNames = listen.mapT { $0.name }
-// Reader<any EventSource, AsyncStream<String>>
+// Wrapped in ReaderTAsyncStream, map reaches each event without touching the Reader layer
+let eventNames = listen.readerT.map { $0.name }
+// ReaderTAsyncStream<any EventSource, String>
 
-// Provide the dependency at the edge
-let stream = eventNames(LiveEventSource())
+// Provide the dependency at the edge (rawValue is the Reader)
+let stream = eventNames.rawValue(LiveEventSource())
 
 // Swap for tests
-let testStream = eventNames(StubEventSource(events: [testEvent]))
+let testStream = eventNames.rawValue(StubEventSource(events: [testEvent]))
 ```
 
 ---
 
 ## Monad Transformers
 
-AsyncStream can be the outer layer of a transformer stack. The transformer name is `AsyncSequenceT{Inner}`.
+AsyncStream can be the outer layer of a transformer stack. Each stack is its own struct named
+`AsyncStreamT{Inner}` wrapping an `AsyncStream`: lift with the `.asyncStreamT` property (or
+`AsyncStreamTOptional(stream)`), use `map` / `flatMap` / the operators, and leave with `.rawValue`.
+`mapAsyncStreamT` hands you the whole stream for anything the stack doesn't proxy.
 
-### `AsyncSequenceTOptional` — `AsyncStream<A?>`
+### `AsyncStreamTOptional` (`AsyncStream<A?>`)
 
 AsyncStream emitting optional values. `nil` elements stay `nil`.
 
@@ -155,55 +158,61 @@ import FP
 
 let stream = AsyncStream<Int?> { c in
     c.yield(1); c.yield(nil); c.yield(3); c.finish()
-}
+}.asyncStreamT   // AsyncStreamTOptional<Int>
 
-// mapT — transform inner Optional without affecting the stream layer
-let doubled = stream.mapT { $0 * 2 }
+// map: transform the inner Optional without affecting the stream layer
+let doubled = stream.map { $0 * 2 }
 // emits Optional(2), nil, Optional(6)
 
-// liftA2 — derived from flatMapT (MaybeT ap): each left value over the whole right stream
-let sa = AsyncStream<Int?> { c in c.yield(1); c.yield(nil); c.finish() }
-let sb = AsyncStream<Int?> { c in c.yield(10); c.yield(20); c.finish() }
-liftA2AsyncStreamOptional(+)(sa, sb)   // emits Optional(11), Optional(21), nil
-applyAsyncStreamOptional(fns, sb)      // fns: AsyncStream<(@Sendable (Int) -> B)?>
+// liftA2 (MaybeT ap): each left value over the whole right stream
+let sa = AsyncStream<Int?> { c in c.yield(1); c.yield(nil); c.finish() }.asyncStreamT
+let sb = AsyncStream<Int?> { c in c.yield(10); c.yield(20); c.finish() }.asyncStreamT
+AsyncStreamTOptional<Int>.liftA2(+)(sa, sb)   // emits Optional(11), Optional(21), nil
+AsyncStreamTOptional.apply(fns, sb)           // fns: AsyncStreamTOptional<@Sendable (Int) -> B>
 
-// flatMapT — each Optional element produces a new AsyncStream<B?>
-let bound = flatMapTAsyncStreamOptional(stream) { n in
-    AsyncStream<Int?> { $0.yield(Optional(n * 2)); $0.finish() }
+// flatMap: each Optional element produces a new stack
+let bound = stream.flatMap { n in
+    AsyncStream<Int?> { $0.yield(Optional(n * 2)); $0.finish() }.asyncStreamT
 }
 // emits Optional(2), nil, Optional(6)
 
 // Operators
-stream >>- { n in AsyncStream<Int?> { $0.yield(n + 1); $0.finish() } }
+stream >>- { n in AsyncStream<Int?> { $0.yield(n + 1); $0.finish() }.asyncStreamT }
 sa *> sb                 // emits Optional(10), Optional(20), nil
-f >=> g                  // kleisliTAsyncStreamOptional(f, g)
+f >=> g                  // AsyncStreamTOptional.kleisli(f, g), f and g return AsyncStreamTOptional
+
+bound.rawValue           // AsyncStream<Int?>
 ```
 
-`AsyncSequenceTOptional`, `AsyncSequenceTResult` and `AsyncSequenceTEither` are lawful `MaybeT` / `ExceptT` over the stream: `flatMapT` is ordered concat, and `apply` / `liftA2` / `seqRight` / `seqLeft` (`<*>`, `*>`, `<*`) are derived from `flatMapT` + `mapT`. A failure on the left is emitted once and never touches the right stream.
+`AsyncStreamTOptional`, `AsyncStreamTResult` and `AsyncStreamTEither` are lawful `MaybeT` /
+`ExceptT` over the stream (they conform to `MonadT`): `flatMap` is ordered concat, and `apply` /
+`liftA2` / `seqRight` / `seqLeft` (`<*>`, `*>`, `<*`) are `ap` derived from `flatMap` + `map`. A
+failure on the left is emitted once and never touches the right stream.
 
-### `AsyncSequenceTArray` — `AsyncStream<[A]>`
+### `AsyncStreamTArray` (`AsyncStream<[A]>`)
 
-AsyncStream emitting arrays. Inner elements are transformed as a group.
+AsyncStream emitting arrays. Inner elements are transformed as a group. Functor and applicative
+only.
 
 ```swift
 import FP
 
 let stream = AsyncStream<[Int]> { c in
     c.yield([1, 2]); c.yield([3, 4]); c.finish()
-}
+}.asyncStreamT
 
-stream.mapT { $0 * 2 }
+stream.map { $0 * 2 }
 // emits [2, 4], [6, 8]
 
-// liftA2 — zip and combine with Array.liftA2
-let sa = AsyncStream<[Int]> { $0.yield([1, 2]); $0.finish() }
-let sb = AsyncStream<[Int]> { $0.yield([10, 20]); $0.finish() }
-liftA2AsyncStreamArray(+)(sa, sb)   // emits [11, 21, 12, 22]
+// liftA2: each array of sa against every array of sb (ap, not zip), combined with Array.liftA2
+let sa = AsyncStream<[Int]> { $0.yield([1, 2]); $0.finish() }.asyncStreamT
+let sb = AsyncStream<[Int]> { $0.yield([10, 20]); $0.finish() }.asyncStreamT
+AsyncStreamTArray<Int>.liftA2(+)(sa, sb)   // emits [11, 21, 12, 22]
 
 { $0 * 2 } <£> stream   // emits [2, 4], [6, 8]
 ```
 
-### `AsyncSequenceTResult` — `AsyncStream<Result<A,E>>`
+### `AsyncStreamTResult` (`AsyncStream<Result<A, E>>`)
 
 AsyncStream emitting Results. `.failure` elements propagate the inner error.
 
@@ -212,16 +221,16 @@ import FP
 
 let stream = AsyncStream<Result<Int, MyError>> { c in
     c.yield(.success(5)); c.yield(.failure(.bad)); c.finish()
-}
+}.asyncStreamT
 
-stream.mapT { $0 * 2 }  // emits .success(10), .failure(.bad)
-flatMapTAsyncStreamResult(stream) { n in
-    AsyncStream<Result<String, MyError>> { $0.yield(.success("\(n)")); $0.finish() }
+stream.map { $0 * 2 }  // emits .success(10), .failure(.bad)
+stream.flatMap { n in
+    AsyncStream<Result<String, MyError>> { $0.yield(.success("\(n)")); $0.finish() }.asyncStreamT
 }
 // emits .success("5"), .failure(.bad)
 ```
 
-### `AsyncSequenceTEither` — `AsyncStream<Either<L,A>>`
+### `AsyncStreamTEither` (`AsyncStream<Either<L, A>>`)
 
 AsyncStream emitting Either values.
 
@@ -230,40 +239,50 @@ import DataStructure
 
 let stream = AsyncStream<Either<String, Int>> { c in
     c.yield(.right(1)); c.yield(.left("err")); c.yield(.right(3)); c.finish()
-}
+}.asyncStreamT
 
-stream.mapT { $0 * 2 }  // emits .right(2), .left("err"), .right(6)
-flatMapTAsyncStreamEither(stream) { n in
-    AsyncStream<Either<String, Int>> { $0.yield(.right(n * 2)); $0.finish() }
+stream.map { $0 * 2 }  // emits .right(2), .left("err"), .right(6)
+stream.flatMap { n in
+    AsyncStream<Either<String, Int>> { $0.yield(.right(n * 2)); $0.finish() }.asyncStreamT
 }
 // emits .right(2), .left("err"), .right(6)
 ```
 
-### `AsyncStreamTWriter` — `AsyncStream<Writer<W, A>>`
+### `AsyncStreamTWriter` (`AsyncStream<Writer<W, A>>`)
 
-`WriterT w AsyncStream`. `flatMapT` takes the full-stack continuation `(A) -> AsyncStream<Writer<W, B>>`: ordered concat, each result's log is the source log followed by the continuation's (`w1 <> w2`). `kleisliT` / `>=>` / `<=<` compose such functions, and `applyAsyncStreamWriter` / `liftA2AsyncStreamWriter` / `seqRightAsyncStreamWriter` / `seqLeftAsyncStreamWriter` (`<*>`, `*>`, `<*`) are derived from it.
+`WriterT w AsyncStream`. `flatMap` takes the full-stack continuation
+`(A) -> AsyncStreamTWriter<W, B>`: ordered concat, each result's log is the source log followed by
+the continuation's (`w1 <> w2`). `kleisli` / `>=>` / `<=<` compose such functions, and `apply` /
+`liftA2` / `seqRight` / `seqLeft` (`<*>`, `*>`, `<*`) are derived from it.
 
 ```swift
 import DataStructure
 
-let steps = AsyncStream<Writer<[String], Int>> { c in c.yield(Writer(1, ["start"])); c.finish() }
-steps.flatMapT { n in AsyncStream { c in c.yield(Writer(n + 1, ["inc"])); c.yield(Writer(n * 2, ["dbl"])); c.finish() } }
+let steps = AsyncStream<Writer<[String], Int>> { c in c.yield(Writer(1, ["start"])); c.finish() }.asyncStreamT
+steps.flatMap { n in
+    AsyncStream { c in c.yield(Writer(n + 1, ["inc"])); c.yield(Writer(n * 2, ["dbl"])); c.finish() }.asyncStreamT
+}
 // emits Writer(2, ["start", "inc"]), Writer(2, ["start", "dbl"])
 ```
+
+`AsyncStreamTStateful` (`AsyncStream<Stateful<S, A>>`) is functor only. Stacks with the stream
+*inside* are `ReaderTAsyncStream` (shown above), `StatefulTAsyncStream` and `WriterTAsyncStream`.
+`pure` on `ReaderTAsyncStream` and `StatefulTAsyncStream` builds a fresh single-element stream on
+every run, so the same stack can be run more than once.
 
 ---
 
 ## Module
 
 ```swift
-import FP        // Named functions (apply, seqRight, bind…) + AsyncSequenceT stacks
-import CoreFPOperators  // Operators (<£>, <*>, >>-, >=>…) for AsyncStream and AsyncSequenceT stacks
+import FP        // Named functions (apply, seqRight, bind…) + AsyncStreamTOptional / Array / Result
+import CoreFPOperators  // Operators (<£>, <*>, >>-, >=>…) for AsyncStream and those stacks
 
-// For AsyncSequenceTEither:
+// For AsyncStreamTEither / AsyncStreamTWriter / AsyncStreamTStateful:
 import DataStructure
 import DataStructureOperators
 
-// For ReaderT + AsyncStream:
+// For ReaderTAsyncStream / StatefulTAsyncStream / WriterTAsyncStream:
 import DataStructure
 import DataStructureOperators
 ```

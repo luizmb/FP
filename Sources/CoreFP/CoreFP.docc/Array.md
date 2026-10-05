@@ -207,33 +207,42 @@ Useful for **inverting nested structures** — turning an array of optionals or 
 
 ## Monad Transformers
 
-Array can be the **outer** layer of a transformer stack. The transformer name is `ArrayT{Inner}`.
+Array can be the **outer** layer of a transformer stack. Each stack is its own struct named
+`ArrayT{Inner}`, wrapping the nested array: lift with the `.arrayT` property (or `ArrayTOptional(xs)`),
+work with `map` / `flatMap` / the usual operators, and leave with `.rawValue`. A bare `[Int?]` is
+just an array, its `map` and `<£>` see `Int?`; the stack is what reaches the `Int`.
 
-### `ArrayTOptional` — `[A?]`
+### `ArrayTOptional` (`[A?]`)
 
 Array of Optional values. `nil` elements stay `nil`; `some` elements are transformed.
 
 ```swift
 import FP
 
-// mapT — transform non-nil elements, leave nil elements as nil
 let xs: [Int?] = [1, nil, 3]
-xs.mapT { $0 * 2 }              // [Optional(2), nil, Optional(6)]
 
-// applyArrayOptional — cartesian product with optional apply at each pair
-applyArrayOptional([Optional({ $0 * 2 }), nil], [Optional(3), Optional(4)])
+// map: transform non-nil elements, leave nil elements as nil
+xs.arrayT.map { $0 * 2 }.rawValue   // [Optional(2), nil, Optional(6)]
+
+// apply: cartesian product with optional apply at each pair
+let double: @Sendable (Int) -> Int = { $0 * 2 }
+let fns = ArrayTOptional<@Sendable (Int) -> Int>([double, nil])
+ArrayTOptional<Int>.apply(fns, ArrayTOptional([3, 4])).rawValue
 // [Optional(6), Optional(8), nil, nil]
 
-// flatMapT — nil → [nil], some(a) → fn(a)
-xs.flatMapT { n in [n, n + 1] }
+// flatMap: nil → [nil], some(a) → fn(a)
+xs.arrayT.flatMap { n in ArrayTOptional([n, n + 1]) }.rawValue
 // [Optional(1), Optional(2), nil, Optional(3), Optional(4)]
 
 // Operators
-{ $0 * 2 } <£> xs               // [Optional(2), nil, Optional(6)]
-xs >>- { n in [Optional(n), nil] }
+({ $0 * 2 } <£> xs.arrayT).rawValue  // [Optional(2), nil, Optional(6)]
+xs.arrayT >>- { n in ArrayTOptional([n, nil]) }
+
+// Escape hatch (Haskell's mapMaybeT): the whole [Int?]
+xs.arrayT.mapMaybeT { Array($0.reversed()) }
 ```
 
-### `ArrayTResult` — `[Result<A,E>]`
+### `ArrayTResult` (`[Result<A, E>]`)
 
 Array of Result values. `.failure` elements propagate; `.success` elements are transformed.
 
@@ -241,45 +250,50 @@ Array of Result values. `.failure` elements propagate; `.success` elements are t
 import FP
 
 let rs: [Result<Int, MyError>] = [.success(1), .failure(.bad), .success(3)]
-rs.mapT { $0 * 2 }              // [.success(2), .failure(.bad), .success(6)]
+rs.arrayT.map { $0 * 2 }.rawValue   // [.success(2), .failure(.bad), .success(6)]
 
-// flatMapT — .failure → [.failure(e)], .success(a) → fn(a)
-rs.flatMapT { n in [.success(n), .success(n * 10)] }
+// flatMap: .failure → [.failure(e)], .success(a) → fn(a)
+rs.arrayT.flatMap { n in ArrayTResult([.success(n), .success(n * 10)]) }.rawValue
 // [.success(1), .success(10), .failure(.bad), .success(3), .success(30)]
 
 // Operators
-{ $0 * 2 } <£> rs               // [.success(2), .failure(.bad), .success(6)]
-rs >>- { n in [.success(n * 2)] }
+{ $0 * 2 } <£> rs.arrayT            // ArrayTResult wrapping [.success(2), .failure(.bad), .success(6)]
+rs.arrayT >>- { n in .pure(n * 2) }
 ```
 
-### `ArrayTEither` — `[Either<L,A>]`
+### `ArrayTEither` (`[Either<L, A>]`)
 
 Array of Either values. `.left` elements propagate; `.right` elements are transformed.
 
 ```swift
 import DataStructure
+import DataStructureOperators
 
 let es: [Either<String, Int>] = [.right(1), .left("err"), .right(3)]
-es.mapT { $0 * 2 }              // [.right(2), .left("err"), .right(6)]
+es.arrayT.map { $0 * 2 }.rawValue   // [.right(2), .left("err"), .right(6)]
 
-// flatMapT — .left(l) → [.left(l)], .right(a) → fn(a)
-es.flatMapT { n in [.right(n), .right(n * 10)] }
+// flatMap: .left(l) → [.left(l)], .right(a) → fn(a)
+es.arrayT.flatMap { n in ArrayTEither([.right(n), .right(n * 10)]) }.rawValue
 // [.right(1), .right(10), .left("err"), .right(3), .right(30)]
 
-// Operators (EitherOperators)
-{ $0 * 2 } <£> es               // [.right(2), .left("err"), .right(6)]
-es >>- { n in [.right(n * 2)] }
+// Operators
+{ $0 * 2 } <£> es.arrayT            // ArrayTEither wrapping [.right(2), .left("err"), .right(6)]
+es.arrayT >>- { n in .pure(n * 2) }
 ```
+
+The other Array-outer stacks are `ArrayTWriter` (`[Writer<W, A>]`, a lawful `WriterT` over the list)
+and `ArrayTStateful` (`[Stateful<S, A>]`, functor and applicative only); both live in
+`DataStructure`.
 
 ---
 
 ## Module
 
 ```swift
-import FP        // Named functions (fmap, apply, seqRight, bind, kleisli…)
+import FP        // Named functions (fmap, apply, seqRight, bind, kleisli…) and ArrayTOptional / ArrayTResult
 import CoreFPOperators  // Operators (<£>, <*>, >>-, >=>…)
 
-// For Either-inner transformers:
+// For ArrayTEither / ArrayTWriter / ArrayTStateful:
 import DataStructure
 import DataStructureOperators
 ```
