@@ -5,12 +5,12 @@ import Testing
 @Suite struct WriterStatefulTests {
     // MARK: - Writer<W, Stateful<S, A>> — Writer as outer, Stateful as inner
 
-    @Test func mapT() {
+    @Test func map() {
         let w = Writer<[String], Stateful<Int, Int>>(
             Stateful<Int, Int>.get,
             ["log"]
         )
-        let mapped = w.mapT { $0 * 2 }
+        let mapped = w.writerT.map { $0 * 2 }.rawValue
         #expect(mapped.value.eval(5) == 10)
         #expect(mapped.log == ["log"])
     }
@@ -24,7 +24,7 @@ import Testing
             Stateful<Int, Int>.get,
             ["val"]
         )
-        let result = applyWriterStateful(wf, wa)
+        let result = WriterTStateful.apply(wf.writerT, wa.writerT).rawValue
         #expect(result.value.eval(7) == "7")
         #expect(result.log == ["fn", "val"])
     }
@@ -32,7 +32,7 @@ import Testing
     @Test func seqRightWriterStatefulLogsAccumulate() {
         let lhs = Writer<[String], Stateful<Int, Int>>(Stateful<Int, Int>.get, ["a"])
         let rhs = Writer<[String], Stateful<Int, String>>(Stateful<Int, String>.pure("done"), ["b"])
-        let result = seqRightWriterStateful(lhs, rhs)
+        let result = lhs.writerT.seqRight(rhs.writerT).rawValue
         #expect(result.value.eval(0) == "done")
         #expect(result.log == ["a", "b"])
     }

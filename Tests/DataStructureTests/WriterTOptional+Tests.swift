@@ -6,41 +6,41 @@ import Testing
 @Suite struct WriterTOptionalTests {
     // MARK: - Writer<W, A?> — Writer as outer, Optional as inner
 
-    @Test func mapTSome() {
+    @Test func mapSome() {
         let w = Writer<[String], Int?>(.some(5), ["log"])
-        let mapped = w.mapT { $0 * 2 }
+        let mapped = w.writerT.map { $0 * 2 }.rawValue
         #expect(mapped.value == .some(10))
         #expect(mapped.log == ["log"])
     }
 
-    @Test func mapTNone() {
+    @Test func mapNone() {
         let w = Writer<[String], Int?>(nil, ["log"])
-        let mapped = w.mapT { $0 * 2 }
+        let mapped = w.writerT.map { $0 * 2 }.rawValue
         #expect(mapped.value == nil)
         #expect(mapped.log == ["log"])
     }
 
-    @Test func flatMapTSome() {
+    @Test func flatMapSome() {
         let w = Writer<[String], Int?>(.some(5), ["outer"])
-        let result = w.flatMapT { n in
-            Writer<[String], String?>(.some("\(n)"), ["inner"])
-        }
+        let result = w.writerT.flatMap { n in
+            Writer<[String], String?>(.some("\(n)"), ["inner"]).writerT
+        }.rawValue
         #expect(result.value == .some("5"))
         #expect(result.log == ["outer", "inner"])
     }
 
-    @Test func flatMapTNone() {
+    @Test func flatMapNone() {
         let w = Writer<[String], Int?>(nil, ["outer"])
-        let result = w.flatMapT { n in
-            Writer<[String], String?>(.some("\(n)"), ["inner"])
-        }
+        let result = w.writerT.flatMap { n in
+            Writer<[String], String?>(.some("\(n)"), ["inner"]).writerT
+        }.rawValue
         #expect(result.value == nil)
         #expect(result.log == ["outer"])
     }
 
-    @Test func flatMapTInnerNone() {
+    @Test func flatMapInnerNone() {
         let w = Writer<[String], Int?>(.some(5), ["outer"])
-        let result = w.flatMapT(const(Writer<[String], String?>(nil, ["inner"])))
+        let result = w.writerT.flatMap(const(Writer<[String], String?>(nil, ["inner"]).writerT)).rawValue
         #expect(result.value == nil)
         #expect(result.log == ["outer", "inner"])
     }

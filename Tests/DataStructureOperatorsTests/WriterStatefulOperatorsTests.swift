@@ -59,7 +59,7 @@ import Testing
             ["fn"]
         )
         let wa = Writer<[String], Stateful<Int, Int>>(Stateful<Int, Int>.get, ["val"])
-        let result = wf <*> wa
+        let result = (wf.writerT <*> wa.writerT).rawValue
         #expect(result.value.eval(7) == "7")
         #expect(result.log == ["fn", "val"])
     }
@@ -67,7 +67,7 @@ import Testing
     @Test func writerTStatefulSeqRight() {
         let lhs = Writer<[String], Stateful<Int, Int>>(Stateful<Int, Int>.get, ["a"])
         let rhs = Writer<[String], Stateful<Int, String>>(Stateful<Int, String>.pure("done"), ["b"])
-        let result = lhs *> rhs
+        let result = (lhs.writerT *> rhs.writerT).rawValue
         #expect(result.value.eval(0) == "done")
         #expect(result.log == ["a", "b"])
     }
@@ -75,7 +75,7 @@ import Testing
     @Test func writerTStatefulSeqLeft() {
         let lhs = Writer<[String], Stateful<Int, Int>>(Stateful<Int, Int>.pure(42), ["a"])
         let rhs = Writer<[String], Stateful<Int, String>>(Stateful<Int, String>.pure("ignored"), ["b"])
-        let result = lhs <* rhs
+        let result = (lhs.writerT <* rhs.writerT).rawValue
         #expect(result.value.eval(0) == 42)
         #expect(result.log == ["a", "b"])
     }

@@ -220,8 +220,8 @@
 
         @Test func writerTPublisherApplyOperator() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-            let wf = Writer<[String], any Publisher<(Int) -> Int, TestError>>(
-                Just { $0 + 1 }.setFailureType(to: TestError.self).eraseToAnyPublisher(),
+            let wf = Writer<[String], any Publisher<@Sendable (Int) -> Int, TestError>>(
+                Just<@Sendable (Int) -> Int> { $0 + 1 }.setFailureType(to: TestError.self).eraseToAnyPublisher(),
                 ["fn"]
             )
             let wa = Writer<[String], any Publisher<Int, TestError>>(
@@ -229,7 +229,7 @@
                 ["arg"]
             )
 
-            let result = wf <*> wa
+            let result = (WriterTPublisher(wf) <*> WriterTPublisher(wa)).rawValue
 
             var cancellables = Set<AnyCancellable>()
             var capturedValue: Int?
@@ -252,7 +252,7 @@
                 ["b"]
             )
 
-            let result = lhs *> rhs
+            let result = (WriterTPublisher(lhs) *> WriterTPublisher(rhs)).rawValue
 
             var cancellables = Set<AnyCancellable>()
             var capturedValue: Int?
@@ -275,7 +275,7 @@
                 ["b"]
             )
 
-            let result = lhs <* rhs
+            let result = (WriterTPublisher(lhs) <* WriterTPublisher(rhs)).rawValue
 
             var cancellables = Set<AnyCancellable>()
             var capturedValue: Int?

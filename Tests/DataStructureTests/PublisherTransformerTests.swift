@@ -408,14 +408,14 @@
 
         // MARK: - WriterTPublisher (Writer<W, any Publisher<A, E>>)
 
-        @Test func writerTPublisherMapT() {
+        @Test func writerTPublisherMap() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
             let writer = Writer<[String], any Publisher<Int, TestError>>(
                 Just(5).setFailureType(to: TestError.self).eraseToAnyPublisher(),
                 ["created"]
             )
 
-            let mapped = writer.mapT { $0 * 10 }
+            let mapped = WriterTPublisher(writer).map { $0 * 10 }.rawValue
 
             var cancellables = Set<AnyCancellable>()
             var capturedValue: Int?
@@ -427,14 +427,14 @@
             #expect(mapped.log == ["created"])
         }
 
-        @Test func writerTPublisherFmapTStatic() {
+        @Test func writerTPublisherFmapStatic() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
             let writer = Writer<[String], any Publisher<Int, TestError>>(
                 Just(5).setFailureType(to: TestError.self).eraseToAnyPublisher(),
                 ["created"]
             )
-            let fmapT = Writer<[String], any Publisher<Int, TestError>>.fmapT { $0 + 1 }
-            let mapped = fmapT(writer)
+            let fmap = WriterTPublisher<[String], TestError, Int>.fmap { $0 + 1 }
+            let mapped = fmap(WriterTPublisher(writer)).rawValue
 
             var cancellables = Set<AnyCancellable>()
             var capturedValue: Int?
@@ -447,8 +447,8 @@
 
         @Test func writerTPublisherApply() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-            let wf = Writer<[String], any Publisher<(Int) -> Int, TestError>>(
-                Just { $0 + 1 }.setFailureType(to: TestError.self).eraseToAnyPublisher(),
+            let wf = Writer<[String], any Publisher<@Sendable (Int) -> Int, TestError>>(
+                Just<@Sendable (Int) -> Int> { $0 + 1 }.setFailureType(to: TestError.self).eraseToAnyPublisher(),
                 ["fn"]
             )
             let wa = Writer<[String], any Publisher<Int, TestError>>(
@@ -456,7 +456,7 @@
                 ["arg"]
             )
 
-            let result = applyWriterPublisher(wf, wa)
+            let result = WriterTPublisher.apply(WriterTPublisher(wf), WriterTPublisher(wa)).rawValue
 
             var cancellables = Set<AnyCancellable>()
             var capturedValue: Int?
@@ -479,9 +479,7 @@
                 ["b"]
             )
 
-            // Kept as one expression: liftA2WriterPublisher's W/E parameters are only
-            // pinned down once applied to wa/wb.
-            let result = liftA2WriterPublisher { (a: Int, b: Int) in a * b }(wa, wb)
+            let result = WriterTPublisher.liftA2 { (a: Int, b: Int) in a * b }(WriterTPublisher(wa), WriterTPublisher(wb)).rawValue
 
             var cancellables = Set<AnyCancellable>()
             var capturedValue: Int?
@@ -504,7 +502,7 @@
                 ["b"]
             )
 
-            let result = seqRightWriterPublisher(lhs, rhs)
+            let result = WriterTPublisher(lhs).seqRight(WriterTPublisher(rhs)).rawValue
 
             var cancellables = Set<AnyCancellable>()
             var capturedValue: Int?
@@ -527,7 +525,7 @@
                 ["b"]
             )
 
-            let result = seqLeftWriterPublisher(lhs, rhs)
+            let result = WriterTPublisher(lhs).seqLeft(WriterTPublisher(rhs)).rawValue
 
             var cancellables = Set<AnyCancellable>()
             var capturedValue: Int?

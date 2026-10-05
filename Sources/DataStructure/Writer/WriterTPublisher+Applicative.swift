@@ -5,29 +5,17 @@
     import Foundation
 
     // WriterT + Publisher — free functions for Writer<W, any Publisher<A, E>>
-
-    /// apply for Writer<W, Publisher>
-    @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
-    public func applyWriterPublisher<W: Monoid, A, B, E: Error>(
-        _ wf: Writer<W, any Publisher<(A) -> B, E>>,
-        _ wa: Writer<W, any Publisher<A, E>>
-    ) -> Writer<W, any Publisher<B, E>> {
-        let publisherF = wf.value.eraseToAnyPublisher()
-        let publisherA = wa.value.eraseToAnyPublisher()
-        return Writer<W, any Publisher<B, E>>(
-            publisherF.zip(publisherA).map { fn, a in fn(a) }.eraseToAnyPublisher(),
-            W.combine(wf.log, wa.log)
-        )
-    }
+    // The inner applicative is Publisher's own (`ap`: cartesian, derived from the ordered-concat bind);
+    // the logs are combined left to right.
 
     /// liftA2 for Writer<W, Publisher>
     @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
-    public func liftA2WriterPublisher<W: Monoid, A, B, C, E: Error>(
+    func liftA2WriterPublisher<W: Monoid, A, B, C, E: Error>(
         _ fn: @escaping @Sendable (A, B) -> C
     ) -> (Writer<W, any Publisher<A, E>>, Writer<W, any Publisher<B, E>>) -> Writer<W, any Publisher<C, E>> {
         { wa, wb in
             Writer<W, any Publisher<C, E>>(
-                wa.value.eraseToAnyPublisher().zip(wb.value.eraseToAnyPublisher()).map(fn).eraseToAnyPublisher(),
+                AnyPublisher<C, E>.liftA2(fn)(wa.value, wb.value),
                 W.combine(wa.log, wb.log)
             )
         }
@@ -35,24 +23,24 @@
 
     /// seqRight for Writer<W, Publisher>
     @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
-    public func seqRightWriterPublisher<W: Monoid, A, B, E: Error>(
+    func seqRightWriterPublisher<W: Monoid, A, B, E: Error>(
         _ lhs: Writer<W, any Publisher<A, E>>,
         _ rhs: Writer<W, any Publisher<B, E>>
     ) -> Writer<W, any Publisher<B, E>> {
         Writer<W, any Publisher<B, E>>(
-            lhs.value.eraseToAnyPublisher().zip(rhs.value.eraseToAnyPublisher()).map(\.1).eraseToAnyPublisher(),
+            AnyPublisher<B, E>.seqRight(lhs.value, rhs.value),
             W.combine(lhs.log, rhs.log)
         )
     }
 
     /// seqLeft for Writer<W, Publisher>
     @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
-    public func seqLeftWriterPublisher<W: Monoid, A, B, E: Error>(
+    func seqLeftWriterPublisher<W: Monoid, A, B, E: Error>(
         _ lhs: Writer<W, any Publisher<A, E>>,
         _ rhs: Writer<W, any Publisher<B, E>>
     ) -> Writer<W, any Publisher<A, E>> {
         Writer<W, any Publisher<A, E>>(
-            lhs.value.eraseToAnyPublisher().zip(rhs.value.eraseToAnyPublisher()).map(\.0).eraseToAnyPublisher(),
+            AnyPublisher<A, E>.seqLeft(lhs.value, rhs.value),
             W.combine(lhs.log, rhs.log)
         )
     }

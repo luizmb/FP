@@ -3,8 +3,8 @@ import CoreFP
 import DataStructure
 import Testing
 
-// `<*>` must equal `ap` (`mf >>= \f -> fmap f ma`) for `Writer<W, Either/Optional/Result>`, mirroring
-// Haskell's `ExceptT e (Writer w)` / `MaybeT (Writer w)`: once the inner layer fails, the right-hand log
+// `apply` must equal `ap` (`mf >>= \f -> fmap f ma`) for `WriterTEither` / `WriterTOptional` / `WriterTResult`,
+// mirroring Haskell's `ExceptT e (Writer w)` / `MaybeT (Writer w)`: once the inner layer fails, the right-hand log
 // must not be appended.
 
 enum WriterApError: Error, Equatable {
@@ -14,23 +14,23 @@ enum WriterApError: Error, Equatable {
 }
 
 @Suite struct WriterTEitherApLawTests {
-    let functions: [Writer<[String], Either<String, @Sendable (Int) -> Int>>] = [
-        Writer(.right { $0 + 100 }, ["f"]),
-        Writer(.left("f"), ["f!"])
+    let functions: [WriterTEither<[String], String, @Sendable (Int) -> Int>] = [
+        WriterTEither(Writer(.right { $0 + 100 }, ["f"])),
+        WriterTEither(Writer(.left("f"), ["f!"]))
     ]
-    let lhs: [Writer<[String], Either<String, Int>>] = [
-        Writer(.right(1), ["a"]),
-        Writer(.left("a"), ["a!"])
+    let lhs: [WriterTEither<[String], String, Int>] = [
+        WriterTEither(Writer(.right(1), ["a"])),
+        WriterTEither(Writer(.left("a"), ["a!"]))
     ]
-    let rhs: [Writer<[String], Either<String, String>>] = [
-        Writer(.right("b"), ["b"]),
-        Writer(.left("b"), ["b!"])
+    let rhs: [WriterTEither<[String], String, String>] = [
+        WriterTEither(Writer(.right("b"), ["b"])),
+        WriterTEither(Writer(.left("b"), ["b!"]))
     ]
 
     @Test func applyEqualsAp() {
         for wf in functions {
             for wa in lhs {
-                #expect(applyWriterEither(wf, wa) == wf.flatMapT { f in wa.mapT(f) })
+                #expect(WriterTEither.apply(wf, wa).rawValue == wf.flatMap { f in wa.map(f) }.rawValue)
             }
         }
     }
@@ -39,7 +39,9 @@ enum WriterApError: Error, Equatable {
         let combine: @Sendable (Int, String) -> String = { "\($0)-\($1)" }
         for wa in lhs {
             for wb in rhs {
-                #expect(liftA2WriterEither(combine)(wa, wb) == wa.flatMapT { a in wb.mapT { b in combine(a, b) } })
+                #expect(
+                    WriterTEither.liftA2(combine)(wa, wb).rawValue == wa.flatMap { a in wb.map { b in combine(a, b) } }.rawValue
+                )
             }
         }
     }
@@ -47,7 +49,7 @@ enum WriterApError: Error, Equatable {
     @Test func seqRightEqualsBind() {
         for wa in lhs {
             for wb in rhs {
-                #expect(seqRightWriterEither(wa, wb) == wa.flatMapT(const(wb)))
+                #expect(wa.seqRight(wb).rawValue == wa.flatMap(const(wb)).rawValue)
             }
         }
     }
@@ -55,36 +57,36 @@ enum WriterApError: Error, Equatable {
     @Test func seqLeftEqualsBind() {
         for wa in lhs {
             for wb in rhs {
-                #expect(seqLeftWriterEither(wa, wb) == wa.flatMapT { a in wb.mapT(const(a)) })
+                #expect(wa.seqLeft(wb).rawValue == wa.flatMap { a in wb.map(const(a)) }.rawValue)
             }
         }
     }
 
     @Test func leftFunctionSkipsRightLog() {
-        let wf = Writer<[String], Either<String, @Sendable (Int) -> Int>>(.left("e"), ["f"])
-        let wa = Writer<[String], Either<String, Int>>(.right(1), ["a"])
-        #expect(applyWriterEither(wf, wa) == Writer(.left("e"), ["f"]))
+        let wf = WriterTEither<[String], String, @Sendable (Int) -> Int>(Writer(.left("e"), ["f"]))
+        let wa = WriterTEither<[String], String, Int>(Writer(.right(1), ["a"]))
+        #expect(WriterTEither.apply(wf, wa).rawValue == Writer(.left("e"), ["f"]))
     }
 }
 
 @Suite struct WriterTOptionalApLawTests {
-    let functions: [Writer<[String], (@Sendable (Int) -> Int)?>] = [
-        Writer(.some { $0 + 100 }, ["f"]),
-        Writer(nil, ["f!"])
+    let functions: [WriterTOptional<[String], @Sendable (Int) -> Int>] = [
+        WriterTOptional(Writer(.some { $0 + 100 }, ["f"])),
+        WriterTOptional(Writer(nil, ["f!"]))
     ]
-    let lhs: [Writer<[String], Int?>] = [
-        Writer(.some(1), ["a"]),
-        Writer(nil, ["a!"])
+    let lhs: [WriterTOptional<[String], Int>] = [
+        WriterTOptional(Writer(.some(1), ["a"])),
+        WriterTOptional(Writer(nil, ["a!"]))
     ]
-    let rhs: [Writer<[String], String?>] = [
-        Writer(.some("b"), ["b"]),
-        Writer(nil, ["b!"])
+    let rhs: [WriterTOptional<[String], String>] = [
+        WriterTOptional(Writer(.some("b"), ["b"])),
+        WriterTOptional(Writer(nil, ["b!"]))
     ]
 
     @Test func applyEqualsAp() {
         for wf in functions {
             for wa in lhs {
-                #expect(applyWriterOptional(wf, wa) == wf.flatMapT { f in wa.mapT(f) })
+                #expect(WriterTOptional.apply(wf, wa).rawValue == wf.flatMap { f in wa.map(f) }.rawValue)
             }
         }
     }
@@ -93,7 +95,9 @@ enum WriterApError: Error, Equatable {
         let combine: @Sendable (Int, String) -> String = { "\($0)-\($1)" }
         for wa in lhs {
             for wb in rhs {
-                #expect(liftA2WriterOptional(combine)(wa, wb) == wa.flatMapT { a in wb.mapT { b in combine(a, b) } })
+                #expect(
+                    WriterTOptional.liftA2(combine)(wa, wb).rawValue == wa.flatMap { a in wb.map { b in combine(a, b) } }.rawValue
+                )
             }
         }
     }
@@ -101,7 +105,7 @@ enum WriterApError: Error, Equatable {
     @Test func seqRightEqualsBind() {
         for wa in lhs {
             for wb in rhs {
-                #expect(seqRightWriterOptional(wa, wb) == wa.flatMapT(const(wb)))
+                #expect(wa.seqRight(wb).rawValue == wa.flatMap(const(wb)).rawValue)
             }
         }
     }
@@ -109,37 +113,37 @@ enum WriterApError: Error, Equatable {
     @Test func seqLeftEqualsBind() {
         for wa in lhs {
             for wb in rhs {
-                #expect(seqLeftWriterOptional(wa, wb) == wa.flatMapT { a in wb.mapT(const(a)) })
+                #expect(wa.seqLeft(wb).rawValue == wa.flatMap { a in wb.map(const(a)) }.rawValue)
             }
         }
     }
 
     @Test func noneSkipsRightLog() {
-        let none = Writer<[String], Int?>(nil, ["a"])
-        let some = Writer<[String], String?>(.some("b"), ["b"])
-        #expect(seqRightWriterOptional(none, some) == Writer(nil, ["a"]))
-        #expect(seqLeftWriterOptional(none, some) == Writer(nil, ["a"]))
+        let none = WriterTOptional<[String], Int>(Writer(nil, ["a"]))
+        let some = WriterTOptional<[String], String>(Writer(.some("b"), ["b"]))
+        #expect(none.seqRight(some).rawValue == Writer(nil, ["a"]))
+        #expect(none.seqLeft(some).rawValue == Writer(nil, ["a"]))
     }
 }
 
 @Suite struct WriterTResultApLawTests {
-    let functions: [Writer<[String], Result<@Sendable (Int) -> Int, WriterApError>>] = [
-        Writer(.success { $0 + 100 }, ["f"]),
-        Writer(.failure(.function), ["f!"])
+    let functions: [WriterTResult<[String], WriterApError, @Sendable (Int) -> Int>] = [
+        WriterTResult(Writer(.success { $0 + 100 }, ["f"])),
+        WriterTResult(Writer(.failure(.function), ["f!"]))
     ]
-    let lhs: [Writer<[String], Result<Int, WriterApError>>] = [
-        Writer(.success(1), ["a"]),
-        Writer(.failure(.lhs), ["a!"])
+    let lhs: [WriterTResult<[String], WriterApError, Int>] = [
+        WriterTResult(Writer(.success(1), ["a"])),
+        WriterTResult(Writer(.failure(.lhs), ["a!"]))
     ]
-    let rhs: [Writer<[String], Result<String, WriterApError>>] = [
-        Writer(.success("b"), ["b"]),
-        Writer(.failure(.rhs), ["b!"])
+    let rhs: [WriterTResult<[String], WriterApError, String>] = [
+        WriterTResult(Writer(.success("b"), ["b"])),
+        WriterTResult(Writer(.failure(.rhs), ["b!"]))
     ]
 
     @Test func applyEqualsAp() {
         for wf in functions {
             for wa in lhs {
-                #expect(applyWriterResult(wf, wa) == wf.flatMapT { f in wa.mapT(f) })
+                #expect(WriterTResult.apply(wf, wa).rawValue == wf.flatMap { f in wa.map(f) }.rawValue)
             }
         }
     }
@@ -148,7 +152,9 @@ enum WriterApError: Error, Equatable {
         let combine: @Sendable (Int, String) -> String = { "\($0)-\($1)" }
         for wa in lhs {
             for wb in rhs {
-                #expect(liftA2WriterResult(combine)(wa, wb) == wa.flatMapT { a in wb.mapT { b in combine(a, b) } })
+                #expect(
+                    WriterTResult.liftA2(combine)(wa, wb).rawValue == wa.flatMap { a in wb.map { b in combine(a, b) } }.rawValue
+                )
             }
         }
     }
@@ -156,7 +162,7 @@ enum WriterApError: Error, Equatable {
     @Test func seqRightEqualsBind() {
         for wa in lhs {
             for wb in rhs {
-                #expect(seqRightWriterResult(wa, wb) == wa.flatMapT(const(wb)))
+                #expect(wa.seqRight(wb).rawValue == wa.flatMap(const(wb)).rawValue)
             }
         }
     }
@@ -164,14 +170,14 @@ enum WriterApError: Error, Equatable {
     @Test func seqLeftEqualsBind() {
         for wa in lhs {
             for wb in rhs {
-                #expect(seqLeftWriterResult(wa, wb) == wa.flatMapT { a in wb.mapT(const(a)) })
+                #expect(wa.seqLeft(wb).rawValue == wa.flatMap { a in wb.map(const(a)) }.rawValue)
             }
         }
     }
 
     @Test func failedFunctionSkipsRightLog() {
-        let wf = Writer<[String], Result<@Sendable (Int) -> Int, WriterApError>>(.failure(.function), ["f"])
-        let wa = Writer<[String], Result<Int, WriterApError>>(.success(1), ["a"])
-        #expect(applyWriterResult(wf, wa) == Writer(.failure(.function), ["f"]))
+        let wf = WriterTResult<[String], WriterApError, @Sendable (Int) -> Int>(Writer(.failure(.function), ["f"]))
+        let wa = WriterTResult<[String], WriterApError, Int>(Writer(.success(1), ["a"]))
+        #expect(WriterTResult.apply(wf, wa).rawValue == Writer(.failure(.function), ["f"]))
     }
 }

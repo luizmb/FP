@@ -5,7 +5,7 @@ import CoreFP
 /// Type: Writer<W, Validation<E, A>>
 /// Combines logs left-to-right; accumulates Validation errors.
 
-public func applyWriterValidation<W: Monoid, E: Semigroup, A, B>(
+func applyWriterValidation<W: Monoid, E: Semigroup, A, B>(
     _ wf: Writer<W, Validation<E, @Sendable (A) -> B>>,
     _ wa: Writer<W, Validation<E, A>>
 ) -> Writer<W, Validation<E, B>> {
@@ -16,7 +16,7 @@ public func applyWriterValidation<W: Monoid, E: Semigroup, A, B>(
 }
 
 /// `liftA2WriterValidation`.
-public func liftA2WriterValidation<W: Monoid, E: Semigroup, A, B, C>(
+func liftA2WriterValidation<W: Monoid, E: Semigroup, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Writer<W, Validation<E, A>>, Writer<W, Validation<E, B>>) -> Writer<W, Validation<E, C>> {
     { wa, wb in
@@ -28,7 +28,7 @@ public func liftA2WriterValidation<W: Monoid, E: Semigroup, A, B, C>(
 }
 
 /// `seqRightWriterValidation`.
-public func seqRightWriterValidation<W: Monoid, E: Semigroup, A, B>(
+func seqRightWriterValidation<W: Monoid, E: Semigroup, A, B>(
     _ lhs: Writer<W, Validation<E, A>>,
     _ rhs: Writer<W, Validation<E, B>>
 ) -> Writer<W, Validation<E, B>> {
@@ -36,7 +36,7 @@ public func seqRightWriterValidation<W: Monoid, E: Semigroup, A, B>(
 }
 
 /// `seqLeftWriterValidation`.
-public func seqLeftWriterValidation<W: Monoid, E: Semigroup, A, B>(
+func seqLeftWriterValidation<W: Monoid, E: Semigroup, A, B>(
     _ lhs: Writer<W, Validation<E, A>>,
     _ rhs: Writer<W, Validation<E, B>>
 ) -> Writer<W, Validation<E, A>> {

@@ -5,7 +5,7 @@ import Foundation
 // WriterT + Array — free functions for Writer<W, [A]>
 
 /// apply for Writer<W, Array>
-public func applyWriterArray<W: Monoid, A, B>(
+func applyWriterArray<W: Monoid, A, B>(
     _ wf: Writer<W, [@Sendable (A) -> B]>,
     _ wa: Writer<W, [A]>
 ) -> Writer<W, [B]> {
@@ -16,7 +16,7 @@ public func applyWriterArray<W: Monoid, A, B>(
 }
 
 /// liftA2 for Writer<W, Array>
-public func liftA2WriterArray<W: Monoid, A, B, C>(
+func liftA2WriterArray<W: Monoid, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Writer<W, [A]>, Writer<W, [B]>) -> Writer<W, [C]> {
     { wa, wb in
@@ -28,7 +28,7 @@ public func liftA2WriterArray<W: Monoid, A, B, C>(
 }
 
 /// seqRight for Writer<W, Array>
-public func seqRightWriterArray<W: Monoid, A, B>(
+func seqRightWriterArray<W: Monoid, A, B>(
     _ lhs: Writer<W, [A]>,
     _ rhs: Writer<W, [B]>
 ) -> Writer<W, [B]> {
@@ -36,7 +36,7 @@ public func seqRightWriterArray<W: Monoid, A, B>(
 }
 
 /// seqLeft for Writer<W, Array>
-public func seqLeftWriterArray<W: Monoid, A, B>(
+func seqLeftWriterArray<W: Monoid, A, B>(
     _ lhs: Writer<W, [A]>,
     _ rhs: Writer<W, [B]>
 ) -> Writer<W, [A]> {

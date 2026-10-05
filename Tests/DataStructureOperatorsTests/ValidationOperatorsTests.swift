@@ -56,7 +56,7 @@ import Testing
     @Test func writerTValidationApplyOperator() {
         let wf = Writer<[String], Validation<[Int], @Sendable (Int) -> Int>>(.failure([1]), ["l1"])
         let wa = Writer<[String], Validation<[Int], Int>>(.failure([2]), ["l2"])
-        let result = wf <*> wa
+        let result = (wf.writerT <*> wa.writerT).rawValue
         #expect(result.value == .failure([1, 2]))
         #expect(result.log == ["l1", "l2"])
     }

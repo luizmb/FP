@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import Foundation
 
-public extension Writer {
+extension Writer {
     /// WriterT + Result — Writer<W, Result<A, E>>
 
     func mapT<Inner, B, E: Error>(_ fn: (Inner) -> B) -> Writer<W, Result<B, E>>

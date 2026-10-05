@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import Foundation
 
-public extension Writer {
+extension Writer {
     /// WriterT + Either — Writer<W, Either<L, A>>
 
     func mapT<L, Inner, B>(_ fn: @escaping @Sendable (Inner) -> B) -> Writer<W, Either<L, B>>

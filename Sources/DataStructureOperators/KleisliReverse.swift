@@ -188,24 +188,6 @@ public func <=< <W: Monoid, O0: Sendable, A: Sendable, B: Sendable>(
 
 /// `func` for `Writer`.
 public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Writer<W, C?>,
-    _ fn1: @escaping @Sendable (A) -> Writer<W, B?>
-) -> @Sendable (A) -> Writer<W, C?> { fn1 >=> fn2 }
-
-/// `func` for `Writer`.
-public func <=< <W: Monoid, L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Writer<W, Either<L, C>>,
-    _ fn1: @escaping @Sendable (A) -> Writer<W, Either<L, B>>
-) -> @Sendable (A) -> Writer<W, Either<L, C>> { fn1 >=> fn2 }
-
-/// `func` for `Writer`.
-public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable, E: Error>(
-    _ fn2: @escaping @Sendable (B) -> Writer<W, Result<C, E>>,
-    _ fn1: @escaping @Sendable (A) -> Writer<W, Result<B, E>>
-) -> @Sendable (A) -> Writer<W, Result<C, E>> { fn1 >=> fn2 }
-
-/// `func` for `Writer`.
-public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable>(
     _ fn2: @escaping @Sendable (B) -> Writer<W, C>?,
     _ fn1: @escaping @Sendable (A) -> Writer<W, B>?
 ) -> @Sendable (A) -> Writer<W, C>? { fn1 >=> fn2 }

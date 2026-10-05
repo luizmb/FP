@@ -65,62 +65,62 @@ import Testing
         }
     }
 
-    // MARK: - Writer<W, Either<L, A>> — Writer as outer, Either as inner
+    // MARK: - Writer<W, Either<L, A>> — WriterTEither
 
     @Test func writerTEither() {
-        let fn1: @Sendable (Int) -> Writer<[String], Either<String, Int>> = { n in
-            Writer(.right(n * 2), ["fn1"])
+        let fn1: @Sendable (Int) -> WriterTEither<[String], String, Int> = { n in
+            WriterTEither(Writer(.right(n * 2), ["fn1"]))
         }
-        let fn2: @Sendable (Int) -> Writer<[String], Either<String, String>> = { n in
-            Writer(.right("\(n)"), ["fn2"])
+        let fn2: @Sendable (Int) -> WriterTEither<[String], String, String> = { n in
+            WriterTEither(Writer(.right("\(n)"), ["fn2"]))
         }
 
-        let result = kleisliT(fn1, fn2)(5)
+        let result = WriterTEither.kleisli(fn1, fn2)(5).rawValue
         #expect(result.value == .right("10"))
         #expect(result.log == ["fn1", "fn2"])
 
-        let failing: @Sendable (Int) -> Writer<[String], Either<String, Int>> = const(
-            Writer(.left("boom"), ["fn1"])
+        let failing: @Sendable (Int) -> WriterTEither<[String], String, Int> = const(
+            WriterTEither(Writer(.left("boom"), ["fn1"]))
         )
-        let leftResult = kleisliT(failing, fn2)(5)
+        let leftResult = WriterTEither.kleisli(failing, fn2)(5).rawValue
         #expect(leftResult.value == .left("boom"))
         #expect(leftResult.log == ["fn1"])
     }
 
-    // MARK: - Writer<W, A?> — Writer as outer, Optional as inner
+    // MARK: - Writer<W, A?> — WriterTOptional
 
     @Test func writerTOptional() {
-        let fn1: @Sendable (Int) -> Writer<[String], Int?> = { n in Writer(n * 2, ["fn1"]) }
-        let fn2: @Sendable (Int) -> Writer<[String], String?> = { n in Writer("\(n)", ["fn2"]) }
+        let fn1: @Sendable (Int) -> WriterTOptional<[String], Int> = { n in WriterTOptional(Writer(n * 2, ["fn1"])) }
+        let fn2: @Sendable (Int) -> WriterTOptional<[String], String> = { n in WriterTOptional(Writer("\(n)", ["fn2"])) }
 
-        let result = kleisliT(fn1, fn2)(5)
+        let result = WriterTOptional.kleisli(fn1, fn2)(5).rawValue
         #expect(result.value == "10")
         #expect(result.log == ["fn1", "fn2"])
 
-        let none: @Sendable (Int) -> Writer<[String], Int?> = const(Writer(nil, ["fn1"]))
-        let nilResult = kleisliT(none, fn2)(5)
+        let none: @Sendable (Int) -> WriterTOptional<[String], Int> = const(WriterTOptional(Writer(nil, ["fn1"])))
+        let nilResult = WriterTOptional.kleisli(none, fn2)(5).rawValue
         #expect(nilResult.value == nil)
         #expect(nilResult.log == ["fn1"])
     }
 
-    // MARK: - Writer<W, Result<A, E>> — Writer as outer, Result as inner
+    // MARK: - Writer<W, Result<A, E>> — WriterTResult
 
     @Test func writerTResult() {
-        let fn1: @Sendable (Int) -> Writer<[String], Result<Int, TestError>> = { n in
-            Writer(.success(n * 2), ["fn1"])
+        let fn1: @Sendable (Int) -> WriterTResult<[String], TestError, Int> = { n in
+            WriterTResult(Writer(.success(n * 2), ["fn1"]))
         }
-        let fn2: @Sendable (Int) -> Writer<[String], Result<String, TestError>> = { n in
-            Writer(.success("\(n)"), ["fn2"])
+        let fn2: @Sendable (Int) -> WriterTResult<[String], TestError, String> = { n in
+            WriterTResult(Writer(.success("\(n)"), ["fn2"]))
         }
 
-        let result = kleisliT(fn1, fn2)(5)
+        let result = WriterTResult.kleisli(fn1, fn2)(5).rawValue
         #expect(result.value == .success("10"))
         #expect(result.log == ["fn1", "fn2"])
 
-        let failing: @Sendable (Int) -> Writer<[String], Result<Int, TestError>> = const(
-            Writer(.failure(.failure), ["fn1"])
+        let failing: @Sendable (Int) -> WriterTResult<[String], TestError, Int> = const(
+            WriterTResult(Writer(.failure(.failure), ["fn1"]))
         )
-        let failureResult = kleisliT(failing, fn2)(5)
+        let failureResult = WriterTResult.kleisli(failing, fn2)(5).rawValue
         #expect(failureResult.value == .failure(.failure))
         #expect(failureResult.log == ["fn1"])
     }

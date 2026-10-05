@@ -6,7 +6,7 @@ import Foundation
 
 /// apply for Writer<W, Reader>
 /// Both outer logs are accumulated eagerly; the functions and values are composed in the reader.
-public func applyWriterReader<W: Monoid, Env, A, B>(
+func applyWriterReader<W: Monoid, Env, A, B>(
     _ wf: Writer<W, Reader<Env, @Sendable (A) -> B>>,
     _ wa: Writer<W, Reader<Env, A>>
 ) -> Writer<W, Reader<Env, B>> {
@@ -17,7 +17,7 @@ public func applyWriterReader<W: Monoid, Env, A, B>(
 }
 
 /// liftA2 for Writer<W, Reader>
-public func liftA2WriterReader<W: Monoid, Env, A, B, C>(
+func liftA2WriterReader<W: Monoid, Env, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Writer<W, Reader<Env, A>>, Writer<W, Reader<Env, B>>) -> Writer<W, Reader<Env, C>> {
     { wa, wb in
@@ -29,7 +29,7 @@ public func liftA2WriterReader<W: Monoid, Env, A, B, C>(
 }
 
 /// seqRight for Writer<W, Reader>
-public func seqRightWriterReader<W: Monoid, Env, A, B>(
+func seqRightWriterReader<W: Monoid, Env, A, B>(
     _ lhs: Writer<W, Reader<Env, A>>,
     _ rhs: Writer<W, Reader<Env, B>>
 ) -> Writer<W, Reader<Env, B>> {
@@ -37,7 +37,7 @@ public func seqRightWriterReader<W: Monoid, Env, A, B>(
 }
 
 /// seqLeft for Writer<W, Reader>
-public func seqLeftWriterReader<W: Monoid, Env, A, B>(
+func seqLeftWriterReader<W: Monoid, Env, A, B>(
     _ lhs: Writer<W, Reader<Env, A>>,
     _ rhs: Writer<W, Reader<Env, B>>
 ) -> Writer<W, Reader<Env, A>> {

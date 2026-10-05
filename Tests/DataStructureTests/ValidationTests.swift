@@ -324,7 +324,7 @@ import Testing
     @Test func writerTValidationApplyAccumulatesLogsAndErrors() {
         let wf = Writer<[String], Validation<[Int], @Sendable (Int) -> Int>>(.failure([1]), ["log1"])
         let wa = Writer<[String], Validation<[Int], Int>>(.failure([2]), ["log2"])
-        let result = applyWriterValidation(wf, wa)
+        let result = WriterTValidation.apply(wf.writerT, wa.writerT).rawValue
         #expect(result.value == .failure([1, 2]))
         #expect(result.log == ["log1", "log2"])
     }

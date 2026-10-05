@@ -5,9 +5,9 @@ import Testing
 @Suite struct WriterReaderTests {
     // MARK: - Writer<W, Reader<Env, A>> — Writer as outer, Reader as inner
 
-    @Test func mapT() {
+    @Test func map() {
         let w = Writer<[String], Reader<Int, Int>>(Reader { $0 }, ["log"])
-        let mapped = w.mapT { $0 * 2 }
+        let mapped = w.writerT.map { $0 * 2 }.rawValue
         #expect(mapped.value.runReader(5) == 10)
         #expect(mapped.log == ["log"])
     }
@@ -18,7 +18,7 @@ import Testing
             ["fn"]
         )
         let wa = Writer<[String], Reader<Int, Int>>(Reader { $0 }, ["val"])
-        let result = applyWriterReader(wf, wa)
+        let result = WriterTReader.apply(wf.writerT, wa.writerT).rawValue
         #expect(result.value.runReader(3) == "6")
         #expect(result.log == ["fn", "val"])
     }
@@ -26,7 +26,7 @@ import Testing
     @Test func seqRightWriterReaderLogsAccumulate() {
         let lhs = Writer<[String], Reader<Int, Int>>(Reader { $0 }, ["a"])
         let rhs = Writer<[String], Reader<Int, String>>(Reader { "\($0)" }, ["b"])
-        let result = seqRightWriterReader(lhs, rhs)
+        let result = lhs.writerT.seqRight(rhs.writerT).rawValue
         #expect(result.value.runReader(7) == "7")
         #expect(result.log == ["a", "b"])
     }

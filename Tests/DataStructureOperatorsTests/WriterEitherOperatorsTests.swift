@@ -11,11 +11,11 @@ import Testing
         #expect(result == .right(Writer(12, ["y"])))
     }
 
-    @Test func writerFlatMapT() {
-        let w = Writer<[String], Either<String, Int>>(.right(5), ["outer"])
-        let result = w >>- { (n: Int) in
-            Writer<[String], Either<String, String>>(.right("\(n)"), ["inner"])
-        }
+    @Test func writerTEitherBind() {
+        let w = Writer<[String], Either<String, Int>>(.right(5), ["outer"]).writerT
+        let result = (w >>- { (n: Int) in
+            Writer<[String], Either<String, String>>(.right("\(n)"), ["inner"]).writerT
+        }).rawValue
         #expect(result.value == .right("5"))
         #expect(result.log == ["outer", "inner"])
     }

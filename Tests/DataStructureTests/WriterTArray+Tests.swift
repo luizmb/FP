@@ -5,9 +5,9 @@ import Testing
 @Suite struct WriterTArrayTests {
     // MARK: - Writer<W, [A]> — Writer as outer, Array as inner
 
-    @Test func mapT() {
+    @Test func map() {
         let w = Writer<[String], [Int]>([1, 2, 3], ["log"])
-        let mapped = w.mapT { $0 * 10 }
+        let mapped = w.writerT.map { $0 * 10 }.rawValue
         #expect(mapped.value == [10, 20, 30])
         #expect(mapped.log == ["log"])
     }

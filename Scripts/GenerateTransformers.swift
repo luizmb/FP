@@ -414,11 +414,12 @@ let inventory: [Stack] = [
     Stack(.result, .writer, .monad),
     Stack(.writer, .array, .applicative),
     Stack(.writer, .asyncStream, .applicative, [
+        // AsyncStream's own `liftA2` (`ap`: cartesian, derived from concat bind), logs combined.
         .applyViaLiftA2,
         .map("rawValue.mapWriter { AsyncStream<B>.mapStream($0, fn) }"),
         .liftA2("""
         Writer(
-            AsyncStream<A>.mapStream(AsyncStream<(A1, A2)>.zip(lhs.rawValue.value, rhs.rawValue.value)) { fn($0.0, $0.1) },
+            AsyncStream<A>.liftA2(fn)(lhs.rawValue.value, rhs.rawValue.value),
             W.combine(lhs.rawValue.log, rhs.rawValue.log)
         )
         """)
