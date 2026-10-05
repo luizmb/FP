@@ -4,7 +4,7 @@ import Foundation
 // OptionalTStateful: outer = Optional, inner = Stateful
 // Type: Stateful<S, A>? = Optional<Stateful<S, A>>
 
-public extension Optional {
+extension Optional {
     /// Declaration.
     func mapT<S, A, B>(_ fn: @escaping @Sendable (A) -> B) -> Stateful<S, B>?
     where Wrapped == Stateful<S, A> {

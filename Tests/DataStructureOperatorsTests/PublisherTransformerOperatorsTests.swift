@@ -20,7 +20,7 @@
             let pubA = Just(Stateful<Int, Int> { s in s + 1 }).setFailureType(to: TestError.self).eraseToAnyPublisher()
             let pubB = Just(Stateful<Int, Int> { s in s * 2 }).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let result = pubA *> pubB
+            let result = (pubA.publisherT *> pubB.publisherT).rawValue
 
             var capturedValue: Int?
             result.sink(
@@ -37,7 +37,7 @@
             let pubA = Just(Stateful<Int, Int> { s in s + 1 }).setFailureType(to: TestError.self).eraseToAnyPublisher()
             let pubB = Just(Stateful<Int, Int> { s in s * 2 }).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let result = pubA <* pubB
+            let result = (pubA.publisherT <* pubB.publisherT).rawValue
 
             var capturedValue: Int?
             result.sink(
@@ -136,7 +136,7 @@
             let pubA = Just(Writer<[String], Int>(2, ["a"])).setFailureType(to: TestError.self).eraseToAnyPublisher()
             let pubB = Just(Writer<[String], Int>(3, ["b"])).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let result = pubA *> pubB
+            let result = (pubA.publisherT *> pubB.publisherT).rawValue
 
             var capturedValue: Int?
             var capturedLog: [String] = []
@@ -158,7 +158,7 @@
             let pubA = Just(Writer<[String], Int>(2, ["a"])).setFailureType(to: TestError.self).eraseToAnyPublisher()
             let pubB = Just(Writer<[String], Int>(3, ["b"])).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let result = pubA <* pubB
+            let result = (pubA.publisherT <* pubB.publisherT).rawValue
 
             var capturedValue: Int?
             var capturedLog: [String] = []
@@ -180,9 +180,10 @@
             let writer = Writer<[String], Int>(2, ["outer"])
             let publisher = Just(writer).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let bound = publisher >>- { (value: Int) in
-                Just(Writer<[String], String>("\(value * 10)", ["inner"])).setFailureType(to: TestError.self).eraseToAnyPublisher()
-            }
+            let bound = (publisher.publisherT >>- { (value: Int) in
+                Just(Writer<[String], String>("\(value * 10)", ["inner"])).setFailureType(to: TestError.self).publisherT
+            })
+            .rawValue
 
             var captured: Writer<[String], String>?
             bound.sink(
@@ -200,10 +201,10 @@
             let writer = Writer<[String], Int>(2, ["outer"])
             let publisher = Just(writer).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let fn: @Sendable (Int) -> AnyPublisher<Writer<[String], String>, TestError> = { value in
-                Just(Writer<[String], String>("\(value * 10)", ["inner"])).setFailureType(to: TestError.self).eraseToAnyPublisher()
+            let fn: @Sendable (Int) -> PublisherTWriter<TestError, [String], String> = { value in
+                Just(Writer<[String], String>("\(value * 10)", ["inner"])).setFailureType(to: TestError.self).publisherT
             }
-            let bound = fn -<< publisher
+            let bound = (fn -<< publisher.publisherT).rawValue
 
             var captured: Writer<[String], String>?
             bound.sink(
@@ -294,7 +295,7 @@
             let pubA = Just(Either<String, Int>.right(2)).setFailureType(to: TestError.self).eraseToAnyPublisher()
             let pubB = Just(Either<String, Int>.right(3)).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let result = pubA *> pubB
+            let result = (pubA.publisherT *> pubB.publisherT).rawValue
 
             var captured: Either<String, Int>?
             result.sink(receiveCompletion: ignore, receiveValue: { captured = $0 })
@@ -308,7 +309,7 @@
             let pubA = Just(Either<String, Int>.right(2)).setFailureType(to: TestError.self).eraseToAnyPublisher()
             let pubB = Just(Either<String, Int>.right(3)).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let result = pubA <* pubB
+            let result = (pubA.publisherT <* pubB.publisherT).rawValue
 
             var captured: Either<String, Int>?
             result.sink(receiveCompletion: ignore, receiveValue: { captured = $0 })
@@ -322,9 +323,10 @@
             let right: Either<String, Int> = .right(2)
             let publisher = Just(right).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let bound = publisher >>- { value in
-                Just(Either<String, Int>.right(value * 10)).setFailureType(to: TestError.self).eraseToAnyPublisher()
-            }
+            let bound = (publisher.publisherT >>- { value in
+                Just(Either<String, Int>.right(value * 10)).setFailureType(to: TestError.self).publisherT
+            })
+            .rawValue
 
             var captured: Either<String, Int>?
             bound.sink(receiveCompletion: ignore, receiveValue: { captured = $0 })
@@ -338,9 +340,10 @@
             let left: Either<String, Int> = .left("boom")
             let publisher = Just(left).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let bound = publisher >>- { value in
-                Just(Either<String, Int>.right(value * 10)).setFailureType(to: TestError.self).eraseToAnyPublisher()
-            }
+            let bound = (publisher.publisherT >>- { value in
+                Just(Either<String, Int>.right(value * 10)).setFailureType(to: TestError.self).publisherT
+            })
+            .rawValue
 
             var captured: Either<String, Int>?
             bound.sink(receiveCompletion: ignore, receiveValue: { captured = $0 })
@@ -354,10 +357,10 @@
             let right: Either<String, Int> = .right(2)
             let publisher = Just(right).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let fn: @Sendable (Int) -> AnyPublisher<Either<String, Int>, TestError> = { value in
-                Just(Either<String, Int>.right(value + 1)).setFailureType(to: TestError.self).eraseToAnyPublisher()
+            let fn: @Sendable (Int) -> PublisherTEither<TestError, String, Int> = { value in
+                Just(Either<String, Int>.right(value + 1)).setFailureType(to: TestError.self).publisherT
             }
-            let bound = fn -<< publisher
+            let bound = (fn -<< publisher.publisherT).rawValue
 
             var captured: Either<String, Int>?
             bound.sink(receiveCompletion: ignore, receiveValue: { captured = $0 })

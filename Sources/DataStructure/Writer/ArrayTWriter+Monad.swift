@@ -9,7 +9,7 @@ import Foundation
 // (several elements) or prune (empty) as well as log. Each result's log is prefixed by the
 // log of the element it came from; order is outer element first, then continuation results.
 
-public extension Array {
+extension Array {
     /// flatMapT :: [Writer<w, a>] -> (a -> [Writer<w, b>]) -> [Writer<w, b>]
     /// for each w1, for each w2 in fn(w1.value): Writer(w2.value, w1.log <> w2.log)
     func flatMapT<W: Monoid, A, B>(_ fn: (A) -> [Writer<W, B>]) -> [Writer<W, B>]
@@ -27,7 +27,7 @@ public extension Array {
 
 /// Kleisli composition for `ArrayT + Writer` (left-to-right)
 /// (>=>) :: (a -> [Writer<w, b>]) -> (b -> [Writer<w, c>]) -> a -> [Writer<w, c>]
-public func kleisliT<W: Monoid, A, B, C>(
+func kleisliT<W: Monoid, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> [Writer<W, B>],
     _ fn2: @escaping @Sendable (B) -> [Writer<W, C>]
 ) -> @Sendable (A) -> [Writer<W, C>] {

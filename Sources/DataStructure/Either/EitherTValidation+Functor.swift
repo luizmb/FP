@@ -4,7 +4,7 @@ import CoreFP
 // EitherTValidation: outer = Either, inner = Validation
 // Type: Either<L, Validation<E, A>>
 
-public extension Either {
+extension Either {
     /// Maps the value inside the inner Validation, leaving `.left` untouched.
     /// mapT :: (a -> b) -> Either l (validation a) -> Either l (validation b)
     func mapT<E: Semigroup, Inner, C>(_ fn: @escaping @Sendable (Inner) -> C) -> Either<A, Validation<E, C>>

@@ -25,36 +25,6 @@ public func <=< <A: Sendable, B0: Sendable, B: Sendable, B1: Sendable>(
     _ fn1: @escaping @Sendable (B0) -> Either<A, B>
 ) -> @Sendable (B0) -> Either<A, B1> { fn1 >=> fn2 }
 
-/// `func` for `Either`.
-public func <=< <L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Either<L, C?>,
-    _ fn1: @escaping @Sendable (A) -> Either<L, B?>
-) -> @Sendable (A) -> Either<L, C?> { fn1 >=> fn2 }
-
-/// `func` for `Either`.
-public func <=< <L: Sendable, A: Sendable, B: Sendable, C: Sendable, E: Error>(
-    _ fn2: @escaping @Sendable (B) -> Either<L, Result<C, E>>,
-    _ fn1: @escaping @Sendable (A) -> Either<L, Result<B, E>>
-) -> @Sendable (A) -> Either<L, Result<C, E>> { fn1 >=> fn2 }
-
-/// `func` for `Either`.
-public func <=< <L: Sendable, W: Monoid, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Either<L, Writer<W, C>>,
-    _ fn1: @escaping @Sendable (A) -> Either<L, Writer<W, B>>
-) -> @Sendable (A) -> Either<L, Writer<W, C>> { fn1 >=> fn2 }
-
-/// `func` for `Either`.
-public func <=< <L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Either<L, C>?,
-    _ fn1: @escaping @Sendable (A) -> Either<L, B>?
-) -> @Sendable (A) -> Either<L, C>? { fn1 >=> fn2 }
-
-/// `func` for `Either`.
-public func <=< <L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> [Either<L, C>],
-    _ fn1: @escaping @Sendable (A) -> [Either<L, B>]
-) -> @Sendable (A) -> [Either<L, C>] { fn1 >=> fn2 }
-
 // MARK: - These
 
 /// Reverse Kleisli composition for `These`.
@@ -75,20 +45,6 @@ public func <=< <Env: Sendable, O0: Sendable, O: Sendable, O1: Sendable>(
 #if canImport(Combine)
     import Combine
 
-    /// `func` for `PublisherT + Either`.
-    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func <=< <L, A, B, C, E: Error>(
-        _ fn2: @escaping @Sendable (B) -> AnyPublisher<Either<L, C>, E>,
-        _ fn1: @escaping @Sendable (A) -> AnyPublisher<Either<L, B>, E>
-    ) -> @Sendable (A) -> AnyPublisher<Either<L, C>, E> { fn1 >=> fn2 }
-
-    /// `func` for `PublisherT + Writer`.
-    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func <=< <W: Monoid, A, B, C, E: Error>(
-        _ fn2: @escaping @Sendable (B) -> AnyPublisher<Writer<W, C>, E>,
-        _ fn1: @escaping @Sendable (A) -> AnyPublisher<Writer<W, B>, E>
-    ) -> @Sendable (A) -> AnyPublisher<Writer<W, C>, E> { fn1 >=> fn2 }
-
 #endif
 
 // MARK: - Stateful
@@ -107,29 +63,3 @@ public func <=< <W: Monoid, O0: Sendable, A: Sendable, B: Sendable>(
     _ fn1: @escaping @Sendable (O0) -> Writer<W, A>
 ) -> @Sendable (O0) -> Writer<W, B> { fn1 >=> fn2 }
 
-/// `func` for `Writer`.
-public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Writer<W, C>?,
-    _ fn1: @escaping @Sendable (A) -> Writer<W, B>?
-) -> @Sendable (A) -> Writer<W, C>? { fn1 >=> fn2 }
-
-/// `func` for `Writer`.
-public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> [Writer<W, C>],
-    _ fn1: @escaping @Sendable (A) -> [Writer<W, B>]
-) -> @Sendable (A) -> [Writer<W, C>] { fn1 >=> fn2 }
-
-/// `func` for `Writer`.
-public func <=< <W: Monoid, A: Sendable, B: Sendable, C: Sendable, E: Error>(
-    _ fn2: @escaping @Sendable (B) -> Result<Writer<W, C>, E>,
-    _ fn1: @escaping @Sendable (A) -> Result<Writer<W, B>, E>
-) -> @Sendable (A) -> Result<Writer<W, C>, E> { fn1 >=> fn2 }
-
-// MARK: - NonEmpty
-
-/// Reverse Kleisli composition for `NonEmptyTResult`.
-/// `g <=< f` is equivalent to `f >=> g`.
-public func <=< <A, B, C, E>(
-    _ fn2: @escaping @Sendable (B) -> NonEmpty<Result<C, E>>,
-    _ fn1: @escaping @Sendable (A) -> NonEmpty<Result<B, E>>
-) -> @Sendable (A) -> NonEmpty<Result<C, E>> { fn1 >=> fn2 }

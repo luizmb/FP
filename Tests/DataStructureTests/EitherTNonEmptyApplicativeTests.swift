@@ -13,14 +13,14 @@ import Testing
             NonEmpty(head: increment, tail: [timesTen])
         )
         let values: Either<String, NonEmpty<Int>> = .right(NonEmpty(head: 1, tail: [2]))
-        let result = applyEitherNonEmpty(functions, values)
+        let result = EitherTNonEmpty.apply(functions.eitherT, values.eitherT).rawValue
         #expect(result == .right(NonEmpty(head: 2, tail: [3, 10, 20])))
     }
 
     @Test func apply_left_functions_short_circuits() {
         let functions: Either<String, NonEmpty<@Sendable (Int) -> Int>> = .left("fnErr")
         let values: Either<String, NonEmpty<Int>> = .right(NonEmpty(head: 1, tail: [2]))
-        let result = applyEitherNonEmpty(functions, values)
+        let result = EitherTNonEmpty.apply(functions.eitherT, values.eitherT).rawValue
         #expect(result == .left("fnErr"))
     }
 
@@ -28,7 +28,7 @@ import Testing
         let increment: @Sendable (Int) -> Int = { $0 + 1 }
         let functions: Either<String, NonEmpty<@Sendable (Int) -> Int>> = .right(NonEmpty(head: increment))
         let values: Either<String, NonEmpty<Int>> = .left("valErr")
-        let result = applyEitherNonEmpty(functions, values)
+        let result = EitherTNonEmpty.apply(functions.eitherT, values.eitherT).rawValue
         #expect(result == .left("valErr"))
     }
 
@@ -37,14 +37,14 @@ import Testing
     @Test func liftA2_right_right() {
         let lhs: Either<String, NonEmpty<Int>> = .right(NonEmpty(head: 1, tail: [2]))
         let rhs: Either<String, NonEmpty<Int>> = .right(NonEmpty(head: 10, tail: [20]))
-        let result = liftA2EitherNonEmpty { (a: Int, b: Int) in a + b }(lhs, rhs)
+        let result = EitherTNonEmpty<String, Int>.liftA2 { (a: Int, b: Int) in a + b }(lhs.eitherT, rhs.eitherT).rawValue
         #expect(result == .right(NonEmpty(head: 11, tail: [21, 12, 22])))
     }
 
     @Test func liftA2_left_propagates() {
         let lhs: Either<String, NonEmpty<Int>> = .left("err")
         let rhs: Either<String, NonEmpty<Int>> = .right(NonEmpty(head: 10))
-        let result = liftA2EitherNonEmpty { (a: Int, b: Int) in a + b }(lhs, rhs)
+        let result = EitherTNonEmpty<String, Int>.liftA2 { (a: Int, b: Int) in a + b }(lhs.eitherT, rhs.eitherT).rawValue
         #expect(result == .left("err"))
     }
 
@@ -53,28 +53,28 @@ import Testing
     @Test func seqRight_right_right() {
         let lhs: Either<String, NonEmpty<Int>> = .right(NonEmpty(head: 1, tail: [2]))
         let rhs: Either<String, NonEmpty<Int>> = .right(NonEmpty(head: 10))
-        let result = seqRightEitherNonEmpty(lhs, rhs)
+        let result = lhs.eitherT.seqRight(rhs.eitherT).rawValue
         #expect(result == .right(NonEmpty(head: 10, tail: [10])))
     }
 
     @Test func seqRight_left_short_circuits() {
         let lhs: Either<String, NonEmpty<Int>> = .left("err")
         let rhs: Either<String, NonEmpty<Int>> = .right(NonEmpty(head: 10))
-        let result = seqRightEitherNonEmpty(lhs, rhs)
+        let result = lhs.eitherT.seqRight(rhs.eitherT).rawValue
         #expect(result == .left("err"))
     }
 
     @Test func seqLeft_right_right() {
         let lhs: Either<String, NonEmpty<Int>> = .right(NonEmpty(head: 1, tail: [2]))
         let rhs: Either<String, NonEmpty<Int>> = .right(NonEmpty(head: 10))
-        let result = seqLeftEitherNonEmpty(lhs, rhs)
+        let result = lhs.eitherT.seqLeft(rhs.eitherT).rawValue
         #expect(result == .right(NonEmpty(head: 1, tail: [2])))
     }
 
     @Test func seqLeft_left_short_circuits() {
         let lhs: Either<String, NonEmpty<Int>> = .left("err")
         let rhs: Either<String, NonEmpty<Int>> = .right(NonEmpty(head: 10))
-        let result = seqLeftEitherNonEmpty(lhs, rhs)
+        let result = lhs.eitherT.seqLeft(rhs.eitherT).rawValue
         #expect(result == .left("err"))
     }
 }

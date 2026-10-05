@@ -13,54 +13,54 @@ import Testing
     @Test func applyOperator_bothPresent() {
         let fns: NonEmpty<@Sendable (Int) -> Int>? = NonEmpty(head: { $0 + 1 }, tail: [{ $0 * 10 }])
         let values: NonEmpty<Int>? = NonEmpty(head: 1, tail: [2])
-        let result = fns <*> values
+        let result = (fns.optionalT <*> values.optionalT).rawValue
         #expect(result?.toArray == [2, 3, 10, 20])
     }
 
     @Test func applyOperator_nil() {
         let fns: NonEmpty<@Sendable (Int) -> Int>? = nil
         let values: NonEmpty<Int>? = NonEmpty(head: 1)
-        #expect((fns <*> values) == nil)
+        #expect((fns.optionalT <*> values.optionalT).rawValue == nil)
     }
 
     @Test func seqRightOperator() {
         let lhs: NonEmpty<Int>? = NonEmpty(head: 1, tail: [2])
         let rhs: NonEmpty<String>? = NonEmpty(head: "x")
-        #expect((lhs *> rhs)?.toArray == ["x"])
+        #expect((lhs.optionalT *> rhs.optionalT).rawValue?.toArray == ["x"])
     }
 
     @Test func seqLeftOperator() {
         let lhs: NonEmpty<Int>? = NonEmpty(head: 1, tail: [2])
         let rhs: NonEmpty<String>? = NonEmpty(head: "x")
-        #expect((lhs <* rhs)?.toArray == [1, 2])
+        #expect((lhs.optionalT <* rhs.optionalT).rawValue?.toArray == [1, 2])
     }
 
     // MARK: - Monad: >>- / -<< / >=> / <=<
 
     @Test func bindOperator_forward() {
         let opt: NonEmpty<Int>? = NonEmpty(head: 1, tail: [2])
-        let result = opt >>- { n -> NonEmpty<Int>? in n > 1 ? NonEmpty(head: n * 10) : nil }
-        #expect(result?.toArray == [20])
+        let result = opt.optionalT >>- { n in OptionalTNonEmpty(n > 1 ? NonEmpty(head: n * 10) : nil) }
+        #expect(result.rawValue?.toArray == [20])
     }
 
     @Test func bindOperator_flipped() {
         let opt: NonEmpty<Int>? = NonEmpty(head: 3)
-        let fn: @Sendable (Int) -> NonEmpty<Int>? = { NonEmpty(head: $0 + 1) }
-        let result = fn -<< opt
-        #expect(result?.toArray == [4])
+        let fn: @Sendable (Int) -> OptionalTNonEmpty<Int> = { OptionalTNonEmpty(NonEmpty(head: $0 + 1)) }
+        let result = fn -<< opt.optionalT
+        #expect(result.rawValue?.toArray == [4])
     }
 
     @Test func kleisliOperator_forward() {
-        let f: @Sendable (Int) -> NonEmpty<Int>? = { NonEmpty(head: $0 + 1) }
-        let g: @Sendable (Int) -> NonEmpty<Int>? = { NonEmpty(head: $0 * 2) }
+        let f: @Sendable (Int) -> OptionalTNonEmpty<Int> = { OptionalTNonEmpty(NonEmpty(head: $0 + 1)) }
+        let g: @Sendable (Int) -> OptionalTNonEmpty<Int> = { OptionalTNonEmpty(NonEmpty(head: $0 * 2)) }
         let composed = f >=> g
-        #expect(composed(3)?.toArray == [8])
+        #expect(composed(3).rawValue?.toArray == [8])
     }
 
     @Test func kleisliOperator_reverse() {
-        let f: @Sendable (Int) -> NonEmpty<Int>? = { NonEmpty(head: $0 + 1) }
-        let g: @Sendable (Int) -> NonEmpty<Int>? = { NonEmpty(head: $0 * 2) }
+        let f: @Sendable (Int) -> OptionalTNonEmpty<Int> = { OptionalTNonEmpty(NonEmpty(head: $0 + 1)) }
+        let g: @Sendable (Int) -> OptionalTNonEmpty<Int> = { OptionalTNonEmpty(NonEmpty(head: $0 * 2)) }
         let composed = g <=< f
-        #expect(composed(3)?.toArray == [8])
+        #expect(composed(3).rawValue?.toArray == [8])
     }
 }

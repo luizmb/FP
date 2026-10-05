@@ -6,7 +6,7 @@ import Foundation
 // Type: Either<L, Writer<W, A>>
 
 /// apply for EitherTWriter: Either<L,Writer<W,(A->B)>> -> Either<L,Writer<W,A>> -> Either<L,Writer<W,B>>
-public func applyEitherWriter<L, W: Monoid, A, B>(
+func applyEitherWriter<L, W: Monoid, A, B>(
     _ eithF: Either<L, Writer<W, @Sendable (A) -> B>>,
     _ eithA: Either<L, Writer<W, A>>
 ) -> Either<L, Writer<W, B>> {
@@ -14,7 +14,7 @@ public func applyEitherWriter<L, W: Monoid, A, B>(
 }
 
 /// liftA2 for EitherTWriter
-public func liftA2EitherWriter<L, W: Monoid, A, B, C>(
+func liftA2EitherWriter<L, W: Monoid, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Either<L, Writer<W, A>>, Either<L, Writer<W, B>>) -> Either<L, Writer<W, C>> {
     { ea, eb in
@@ -23,7 +23,7 @@ public func liftA2EitherWriter<L, W: Monoid, A, B, C>(
 }
 
 /// seqRight for EitherTWriter
-public func seqRightEitherWriter<L, W: Monoid, A, B>(
+func seqRightEitherWriter<L, W: Monoid, A, B>(
     _ lhs: Either<L, Writer<W, A>>,
     _ rhs: Either<L, Writer<W, B>>
 ) -> Either<L, Writer<W, B>> {
@@ -31,7 +31,7 @@ public func seqRightEitherWriter<L, W: Monoid, A, B>(
 }
 
 /// seqLeft for EitherTWriter
-public func seqLeftEitherWriter<L, W: Monoid, A, B>(
+func seqLeftEitherWriter<L, W: Monoid, A, B>(
     _ lhs: Either<L, Writer<W, A>>,
     _ rhs: Either<L, Writer<W, B>>
 ) -> Either<L, Writer<W, A>> {

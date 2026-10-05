@@ -4,7 +4,7 @@ import DataStructure
 import Testing
 
 // `<*> = ap` law for the Either/Optional-outer, Optional/Result/Either-inner stacks:
-// apply, liftA2, seqRight and seqLeft must agree with their definitions via `flatMapT` + `mapT`
+// apply, liftA2, seqRight and seqLeft must agree with their definitions via `flatMap` + `map`
 // for every combination of outer and inner cases.
 
 private enum StackError: Error, Equatable {
@@ -27,19 +27,18 @@ private enum StackError: Error, Equatable {
     @Test func eitherTOptionalApplyIsAp() {
         for fns in Self.eitherOptionalFns {
             for values in Self.eitherOptionalYs {
-                let viaBind = flatMapTEitherOptional(fns) { fn in values.mapT(fn) }
-                #expect(applyEitherOptional(fns, values) == viaBind)
+                let viaBind = fns.eitherT.flatMap { fn in values.eitherT.map(fn) }.rawValue
+                #expect(EitherTOptional.apply(fns.eitherT, values.eitherT).rawValue == viaBind)
             }
         }
     }
 
     @Test func eitherTOptionalLiftA2IsBind() {
-        let lifted: (Either<String, Int?>, Either<String, Int?>) -> Either<String, Int?> =
-            liftA2EitherOptional { a, b in a * 100 + b }
+        let lifted = EitherTOptional<String, Int>.liftA2 { (a: Int, b: Int) in a * 100 + b }
         for lhs in Self.eitherOptionalXs {
             for rhs in Self.eitherOptionalYs {
-                let viaBind = flatMapTEitherOptional(lhs) { a in rhs.mapT { b in a * 100 + b } }
-                #expect(lifted(lhs, rhs) == viaBind)
+                let viaBind = lhs.eitherT.flatMap { a in rhs.eitherT.map { b in a * 100 + b } }.rawValue
+                #expect(lifted(lhs.eitherT, rhs.eitherT).rawValue == viaBind)
             }
         }
     }
@@ -47,9 +46,9 @@ private enum StackError: Error, Equatable {
     @Test func eitherTOptionalSeqRightSeqLeftAreBind() {
         for lhs in Self.eitherOptionalXs {
             for rhs in Self.eitherOptionalYs {
-                #expect(seqRightEitherOptional(lhs, rhs) == flatMapTEitherOptional(lhs, const(rhs)))
-                let seqLeftViaBind = flatMapTEitherOptional(lhs) { a in rhs.mapT(const(a)) }
-                #expect(seqLeftEitherOptional(lhs, rhs) == seqLeftViaBind)
+                #expect(lhs.eitherT.seqRight(rhs.eitherT).rawValue == lhs.eitherT.flatMap(const(rhs.eitherT)).rawValue)
+                let seqLeftViaBind = lhs.eitherT.flatMap { a in rhs.eitherT.map(const(a)) }.rawValue
+                #expect(lhs.eitherT.seqLeft(rhs.eitherT).rawValue == seqLeftViaBind)
             }
         }
     }
@@ -57,7 +56,7 @@ private enum StackError: Error, Equatable {
     @Test func eitherTOptionalNoneBeforeLeftShortCircuits() {
         let fns: Either<String, (@Sendable (Int) -> Int)?> = .right(nil)
         let values: Either<String, Int?> = .left("l")
-        #expect(applyEitherOptional(fns, values) == .right(nil))
+        #expect(EitherTOptional.apply(fns.eitherT, values.eitherT).rawValue == .right(nil))
     }
 
     // MARK: - EitherTResult (Haskell: ExceptT E (Either L))
@@ -82,19 +81,18 @@ private enum StackError: Error, Equatable {
     @Test func eitherTResultApplyIsAp() {
         for fns in Self.eitherResultFns {
             for values in Self.eitherResultYs {
-                let viaBind = flatMapTEitherResult(fns) { fn in values.mapT(fn) }
-                #expect(applyEitherResult(fns, values) == viaBind)
+                let viaBind = fns.eitherT.flatMap { fn in values.eitherT.map(fn) }.rawValue
+                #expect(EitherTResult.apply(fns.eitherT, values.eitherT).rawValue == viaBind)
             }
         }
     }
 
     @Test func eitherTResultLiftA2IsBind() {
-        let lifted: (Either<String, Result<Int, StackError>>, Either<String, Result<Int, StackError>>)
-            -> Either<String, Result<Int, StackError>> = liftA2EitherResult { a, b in a * 100 + b }
+        let lifted = EitherTResult<String, StackError, Int>.liftA2 { (a: Int, b: Int) in a * 100 + b }
         for lhs in Self.eitherResultXs {
             for rhs in Self.eitherResultYs {
-                let viaBind = flatMapTEitherResult(lhs) { a in rhs.mapT { b in a * 100 + b } }
-                #expect(lifted(lhs, rhs) == viaBind)
+                let viaBind = lhs.eitherT.flatMap { a in rhs.eitherT.map { b in a * 100 + b } }.rawValue
+                #expect(lifted(lhs.eitherT, rhs.eitherT).rawValue == viaBind)
             }
         }
     }
@@ -102,9 +100,9 @@ private enum StackError: Error, Equatable {
     @Test func eitherTResultSeqRightSeqLeftAreBind() {
         for lhs in Self.eitherResultXs {
             for rhs in Self.eitherResultYs {
-                #expect(seqRightEitherResult(lhs, rhs) == flatMapTEitherResult(lhs, const(rhs)))
-                let seqLeftViaBind = flatMapTEitherResult(lhs) { a in rhs.mapT(const(a)) }
-                #expect(seqLeftEitherResult(lhs, rhs) == seqLeftViaBind)
+                #expect(lhs.eitherT.seqRight(rhs.eitherT).rawValue == lhs.eitherT.flatMap(const(rhs.eitherT)).rawValue)
+                let seqLeftViaBind = lhs.eitherT.flatMap { a in rhs.eitherT.map(const(a)) }.rawValue
+                #expect(lhs.eitherT.seqLeft(rhs.eitherT).rawValue == seqLeftViaBind)
             }
         }
     }
@@ -112,7 +110,7 @@ private enum StackError: Error, Equatable {
     @Test func eitherTResultFailureBeforeLeftShortCircuits() {
         let fns: Either<String, Result<@Sendable (Int) -> Int, StackError>> = .right(.failure(.fromFunction))
         let values: Either<String, Result<Int, StackError>> = .left("l")
-        #expect(applyEitherResult(fns, values) == .right(.failure(.fromFunction)))
+        #expect(EitherTResult.apply(fns.eitherT, values.eitherT).rawValue == .right(.failure(.fromFunction)))
     }
 
     // MARK: - OptionalTEither (Haskell: ExceptT L Maybe)
@@ -129,19 +127,18 @@ private enum StackError: Error, Equatable {
     @Test func optionalTEitherApplyIsAp() {
         for fns in Self.optionalEitherFns {
             for values in Self.optionalEitherYs {
-                let viaBind = fns.flatMapT { fn in values.mapT(fn) }
-                #expect(applyOptionalEither(fns, values) == viaBind)
+                let viaBind = fns.optionalT.flatMap { fn in values.optionalT.map(fn) }.rawValue
+                #expect(OptionalTEither.apply(fns.optionalT, values.optionalT).rawValue == viaBind)
             }
         }
     }
 
     @Test func optionalTEitherLiftA2IsBind() {
-        let lifted: (Either<String, Int>?, Either<String, Int>?) -> Either<String, Int>? =
-            liftA2OptionalEither { a, b in a * 100 + b }
+        let lifted = OptionalTEither<String, Int>.liftA2 { (a: Int, b: Int) in a * 100 + b }
         for lhs in Self.optionalEitherXs {
             for rhs in Self.optionalEitherYs {
-                let viaBind = lhs.flatMapT { a in rhs.mapT { b in a * 100 + b } }
-                #expect(lifted(lhs, rhs) == viaBind)
+                let viaBind = lhs.optionalT.flatMap { a in rhs.optionalT.map { b in a * 100 + b } }.rawValue
+                #expect(lifted(lhs.optionalT, rhs.optionalT).rawValue == viaBind)
             }
         }
     }
@@ -149,8 +146,9 @@ private enum StackError: Error, Equatable {
     @Test func optionalTEitherSeqRightSeqLeftAreBind() {
         for lhs in Self.optionalEitherXs {
             for rhs in Self.optionalEitherYs {
-                #expect(seqRightOptionalEither(lhs, rhs) == lhs.flatMapT(const(rhs)))
-                #expect(seqLeftOptionalEither(lhs, rhs) == lhs.flatMapT { a in rhs.mapT(const(a)) })
+                #expect(lhs.optionalT.seqRight(rhs.optionalT).rawValue == lhs.optionalT.flatMap(const(rhs.optionalT)).rawValue)
+                let seqLeftViaBind = lhs.optionalT.flatMap { a in rhs.optionalT.map(const(a)) }.rawValue
+                #expect(lhs.optionalT.seqLeft(rhs.optionalT).rawValue == seqLeftViaBind)
             }
         }
     }
@@ -158,6 +156,6 @@ private enum StackError: Error, Equatable {
     @Test func optionalTEitherLeftBeforeNoneShortCircuits() {
         let fns: Either<String, @Sendable (Int) -> Int>? = .some(.left("l"))
         let values: Either<String, Int>? = nil
-        #expect(applyOptionalEither(fns, values) == .some(.left("l")))
+        #expect(OptionalTEither.apply(fns.optionalT, values.optionalT).rawValue == .some(.left("l")))
     }
 }

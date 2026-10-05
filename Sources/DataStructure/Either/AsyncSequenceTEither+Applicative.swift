@@ -14,7 +14,7 @@ import Foundation
 /// apply for AsyncStream<Either<L,A>>
 /// mf <*> ma = mf >>= \f -> fmap f ma
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func applyAsyncStreamEither<L, A, B>(
+func applyAsyncStreamEither<L, A, B>(
     _ fns: AsyncStream<Either<L, @Sendable (A) -> B>>,
     _ values: AsyncStream<Either<L, A>>
 ) -> AsyncStream<Either<L, B>> where A: Sendable, B: Sendable, L: Sendable {
@@ -25,7 +25,7 @@ public func applyAsyncStreamEither<L, A, B>(
 /// liftA2 for AsyncStream<Either<L,A>>
 /// liftA2 f ma mb = ma >>= \a -> fmap (f a) mb
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func liftA2AsyncStreamEither<L, A, B, C>(
+func liftA2AsyncStreamEither<L, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> @Sendable (AsyncStream<Either<L, A>>, AsyncStream<Either<L, B>>) -> AsyncStream<Either<L, C>>
 where A: Sendable, B: Sendable, C: Sendable, L: Sendable {
@@ -40,7 +40,7 @@ where A: Sendable, B: Sendable, C: Sendable, L: Sendable {
 /// seqRight for AsyncStream<Either<L,A>>
 /// ma *> mb = ma >>= \_ -> mb
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func seqRightAsyncStreamEither<L, A, B>(
+func seqRightAsyncStreamEither<L, A, B>(
     _ lhs: AsyncStream<Either<L, A>>,
     _ rhs: AsyncStream<Either<L, B>>
 ) -> AsyncStream<Either<L, B>> where A: Sendable, B: Sendable, L: Sendable {
@@ -50,7 +50,7 @@ public func seqRightAsyncStreamEither<L, A, B>(
 /// seqLeft for AsyncStream<Either<L,A>>
 /// ma <* mb = ma >>= \a -> fmap (const a) mb
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func seqLeftAsyncStreamEither<L, A, B>(
+func seqLeftAsyncStreamEither<L, A, B>(
     _ lhs: AsyncStream<Either<L, A>>,
     _ rhs: AsyncStream<Either<L, B>>
 ) -> AsyncStream<Either<L, A>> where A: Sendable, B: Sendable, L: Sendable {

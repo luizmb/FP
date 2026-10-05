@@ -7,7 +7,7 @@ import Foundation
 
 /// apply for OptionalTNonEmpty: NonEmpty<(A->B)>? -> NonEmpty<A>? -> NonEmpty<B>?
 /// If outer is nil → nil; otherwise use NonEmpty.apply (cartesian product)
-public func applyOptionalNonEmpty<A: Sendable, B: Sendable>(
+func applyOptionalNonEmpty<A: Sendable, B: Sendable>(
     _ fns: NonEmpty<@Sendable (A) -> B>?,
     _ values: NonEmpty<A>?
 ) -> NonEmpty<B>? {
@@ -15,18 +15,18 @@ public func applyOptionalNonEmpty<A: Sendable, B: Sendable>(
 }
 
 /// liftA2 for OptionalTNonEmpty: (A,B)->C -> NonEmpty<A>? -> NonEmpty<B>? -> NonEmpty<C>?
-public func liftA2OptionalNonEmpty<A: Sendable, B: Sendable, C: Sendable>(
+func liftA2OptionalNonEmpty<A: Sendable, B: Sendable, C: Sendable>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (NonEmpty<A>?, NonEmpty<B>?) -> NonEmpty<C>? {
     Optional.liftA2(NonEmpty.liftA2(fn))
 }
 
 /// seqRight for OptionalTNonEmpty: NonEmpty<A>? -> NonEmpty<B>? -> NonEmpty<B>?
-public func seqRightOptionalNonEmpty<A, B>(_ lhs: NonEmpty<A>?, _ rhs: NonEmpty<B>?) -> NonEmpty<B>? {
+func seqRightOptionalNonEmpty<A, B>(_ lhs: NonEmpty<A>?, _ rhs: NonEmpty<B>?) -> NonEmpty<B>? {
     lhs.seqRight(rhs)
 }
 
 /// seqLeft for OptionalTNonEmpty: NonEmpty<A>? -> NonEmpty<B>? -> NonEmpty<A>?
-public func seqLeftOptionalNonEmpty<A, B>(_ lhs: NonEmpty<A>?, _ rhs: NonEmpty<B>?) -> NonEmpty<A>? {
+func seqLeftOptionalNonEmpty<A, B>(_ lhs: NonEmpty<A>?, _ rhs: NonEmpty<B>?) -> NonEmpty<A>? {
     lhs.seqLeft(rhs)
 }

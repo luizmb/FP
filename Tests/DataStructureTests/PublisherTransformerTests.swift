@@ -13,7 +13,7 @@
 
         // MARK: - PublisherTStateful (AnyPublisher<Stateful<S, A>, E>)
 
-        @Test func publisherTStatefulMapT() {
+        @Test func publisherTStatefulMap() {
             var cancellables = Set<AnyCancellable>()
             let stateful = Stateful<Int, Int> { s in
                 s += 1
@@ -21,7 +21,7 @@
             }
             let publisher = Just(stateful).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let mapped = publisher.mapT { $0 + 100 }
+            let mapped = publisher.publisherT.map { $0 + 100 }.rawValue
 
             var capturedValue: Int?
             var capturedState: Int?
@@ -39,7 +39,7 @@
             #expect(capturedState == 11)
         }
 
-        @Test func publisherTStatefulFmapTStatic() {
+        @Test func publisherTStatefulFmapStatic() {
             var cancellables = Set<AnyCancellable>()
             let stateful = Stateful<Int, Int> { s in
                 s += 1
@@ -48,9 +48,9 @@
             let publisher = Just(stateful).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
             var capturedValue: Int?
-            // Generation and application are kept in a single expression: `fmapT`'s S/Failure
+            // Generation and application are kept in a single expression: `fmap`'s S/Failure
             // generic parameters aren't tied to the closure, only to the publisher it's applied to.
-            AnyPublisher<Stateful<Int, Int>, TestError>.fmapT { (value: Int) in value * 3 }(publisher)
+            PublisherTStateful<TestError, Int, Int>.fmap { (value: Int) in value * 3 }(publisher.publisherT).rawValue
                 .sink(
                     receiveCompletion: ignore,
                     receiveValue: { stateful in capturedValue = stateful.eval(1) }
@@ -66,9 +66,8 @@
             let pubB = Just(Stateful<Int, Int> { s in s * 2 }).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
             var capturedValue: Int?
-            // Kept as one expression: liftA2PublisherStateful's S/E parameters are only
-            // pinned down once applied to pubA/pubB.
-            liftA2PublisherStateful { (a: Int, b: Int) in a + b }(pubA, pubB).sink(
+            let add = PublisherTStateful<TestError, Int, Int>.liftA2 { (a: Int, b: Int) in a + b }
+            add(pubA.publisherT, pubB.publisherT).rawValue.sink(
                 receiveCompletion: ignore,
                 receiveValue: { stateful in capturedValue = stateful.eval(10) }
             )
@@ -82,7 +81,7 @@
             let pubA = Just(Stateful<Int, Int> { s in s + 1 }).setFailureType(to: TestError.self).eraseToAnyPublisher()
             let pubB = Just(Stateful<Int, Int> { s in s * 2 }).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let result = seqRightPublisherStateful(pubA, pubB)
+            let result = pubA.publisherT.seqRight(pubB.publisherT).rawValue
 
             var capturedValue: Int?
             result.sink(
@@ -99,7 +98,7 @@
             let pubA = Just(Stateful<Int, Int> { s in s + 1 }).setFailureType(to: TestError.self).eraseToAnyPublisher()
             let pubB = Just(Stateful<Int, Int> { s in s * 2 }).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let result = seqLeftPublisherStateful(pubA, pubB)
+            let result = pubA.publisherT.seqLeft(pubB.publisherT).rawValue
 
             var capturedValue: Int?
             result.sink(
@@ -257,12 +256,12 @@
 
         // MARK: - PublisherTWriter (AnyPublisher<Writer<W, A>, E>)
 
-        @Test func publisherTWriterMapT() {
+        @Test func publisherTWriterMap() {
             var cancellables = Set<AnyCancellable>()
             let writer = Writer<[String], Int>(5, ["created"])
             let publisher = Just(writer).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let mapped = publisher.mapT { $0 * 10 }
+            let mapped = publisher.publisherT.map { $0 * 10 }.rawValue
 
             var capturedValue: Int?
             var capturedLog: [String] = []
@@ -279,15 +278,15 @@
             #expect(capturedLog == ["created"])
         }
 
-        @Test func publisherTWriterFmapTStatic() {
+        @Test func publisherTWriterFmapStatic() {
             var cancellables = Set<AnyCancellable>()
             let writer = Writer<[String], Int>(5, ["created"])
             let publisher = Just(writer).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
             var capturedValue: Int?
-            // Kept as one expression: `fmapT`'s W/Failure generic parameters aren't tied to
+            // Kept as one expression: `fmap`'s W/Failure generic parameters aren't tied to
             // the closure, only to the publisher it's applied to.
-            AnyPublisher<Writer<[String], Int>, TestError>.fmapT { (value: Int) in value + 1 }(publisher)
+            PublisherTWriter<TestError, [String], Int>.fmap { (value: Int) in value + 1 }(publisher.publisherT).rawValue
                 .sink(
                     receiveCompletion: ignore,
                     receiveValue: { writer in capturedValue = writer.value }
@@ -304,9 +303,8 @@
 
             var capturedValue: Int?
             var capturedLog: [String] = []
-            // Kept as one expression: liftA2PublisherWriter's W/E parameters are only
-            // pinned down once applied to pubA/pubB.
-            liftA2PublisherWriter { (a: Int, b: Int) in a * b }(pubA, pubB).sink(
+            let multiply = PublisherTWriter<TestError, [String], Int>.liftA2 { (a: Int, b: Int) in a * b }
+            multiply(pubA.publisherT, pubB.publisherT).rawValue.sink(
                 receiveCompletion: ignore,
                 receiveValue: { writer in
                     capturedValue = writer.value
@@ -324,7 +322,7 @@
             let pubA = Just(Writer<[String], Int>(2, ["a"])).setFailureType(to: TestError.self).eraseToAnyPublisher()
             let pubB = Just(Writer<[String], Int>(3, ["b"])).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let result = seqRightPublisherWriter(pubA, pubB)
+            let result = pubA.publisherT.seqRight(pubB.publisherT).rawValue
 
             var capturedValue: Int?
             var capturedLog: [String] = []
@@ -346,7 +344,7 @@
             let pubA = Just(Writer<[String], Int>(2, ["a"])).setFailureType(to: TestError.self).eraseToAnyPublisher()
             let pubB = Just(Writer<[String], Int>(3, ["b"])).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let result = seqLeftPublisherWriter(pubA, pubB)
+            let result = pubA.publisherT.seqLeft(pubB.publisherT).rawValue
 
             var capturedValue: Int?
             var capturedLog: [String] = []
@@ -363,17 +361,18 @@
             #expect(capturedLog == ["a", "b"])
         }
 
-        @Test func publisherTWriterFlatMapT() {
+        @Test func publisherTWriterFlatMap() {
             var cancellables = Set<AnyCancellable>()
             let writer = Writer<[String], Int>(2, ["outer"])
             let publisher = Just(writer).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let bound = publisher.flatMapT { (value: Int) in
+            let bound = publisher.publisherT.flatMap { (value: Int) in
                 [Writer<[String], String>("\(value * 10)", ["inner1"]), Writer<[String], String>("\(value)", ["inner2"])]
                     .publisher
                     .setFailureType(to: TestError.self)
-                    .eraseToAnyPublisher()
+                    .publisherT
             }
+            .rawValue
 
             var captured: [Writer<[String], String>] = []
             bound.sink(
@@ -387,16 +386,16 @@
             #expect(captured.map(\.log) == [["outer", "inner1"], ["outer", "inner2"]])
         }
 
-        @Test func publisherTWriterBindTStatic() {
+        @Test func publisherTWriterBindStatic() {
             var cancellables = Set<AnyCancellable>()
             let writer = Writer<[String], Int>(2, ["outer"])
             let publisher = Just(writer).setFailureType(to: TestError.self).eraseToAnyPublisher()
-            let bindT = AnyPublisher<Writer<[String], Int>, TestError>.bindT { (value: Int) in
-                Just(Writer<[String], Int>(value + 1, ["inner"])).setFailureType(to: TestError.self).eraseToAnyPublisher()
+            let bind = PublisherTWriter<TestError, [String], Int>.bind { (value: Int) in
+                Just(Writer<[String], Int>(value + 1, ["inner"])).setFailureType(to: TestError.self).publisherT
             }
 
             var captured: Writer<[String], Int>?
-            bindT(publisher).sink(
+            bind(publisher.publisherT).rawValue.sink(
                 receiveCompletion: ignore,
                 receiveValue: { writer in captured = writer }
             )
@@ -539,12 +538,12 @@
 
         // MARK: - PublisherTEither (AnyPublisher<Either<L, A>, E>)
 
-        @Test func publisherTEitherMapT() {
+        @Test func publisherTEitherMap() {
             var cancellables = Set<AnyCancellable>()
             let right: Either<String, Int> = .right(5)
             let publisher = Just(right).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let mapped = publisher.mapT { $0 * 10 }
+            let mapped = publisher.publisherT.map { $0 * 10 }.rawValue
 
             var captured: Either<String, Int>?
             mapped.sink(receiveCompletion: ignore, receiveValue: { captured = $0 })
@@ -553,12 +552,12 @@
             #expect(captured == .right(50))
         }
 
-        @Test func publisherTEitherMapTLeftPassesThrough() {
+        @Test func publisherTEitherMapLeftPassesThrough() {
             var cancellables = Set<AnyCancellable>()
             let left: Either<String, Int> = .left("boom")
             let publisher = Just(left).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let mapped = publisher.mapT { $0 * 10 }
+            let mapped = publisher.publisherT.map { $0 * 10 }.rawValue
 
             var captured: Either<String, Int>?
             mapped.sink(receiveCompletion: ignore, receiveValue: { captured = $0 })
@@ -567,13 +566,13 @@
             #expect(captured == .left("boom"))
         }
 
-        @Test func publisherTEitherFmapTCurried() {
+        @Test func publisherTEitherFmapCurried() {
             var cancellables = Set<AnyCancellable>()
             let right: Either<String, Int> = .right(5)
             let publisher = Just(right).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let increment = AnyPublisher<Either<String, Int>, TestError>.fmapT { (value: Int) in value + 1 }
-            let mapped = increment(publisher)
+            let increment = PublisherTEither<TestError, String, Int>.fmap { (value: Int) in value + 1 }
+            let mapped = increment(publisher.publisherT).rawValue
 
             var captured: Either<String, Int>?
             mapped.sink(receiveCompletion: ignore, receiveValue: { captured = $0 })
@@ -587,9 +586,8 @@
             let pubA = Just(Either<String, Int>.right(2)).setFailureType(to: TestError.self).eraseToAnyPublisher()
             let pubB = Just(Either<String, Int>.right(3)).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            // Kept as one expression: liftA2PublisherEither's L/E parameters are only
-            // pinned down once applied to pubA/pubB.
-            let result = liftA2PublisherEither { (a: Int, b: Int) in a + b }(pubA, pubB)
+            let add = PublisherTEither<TestError, String, Int>.liftA2 { (a: Int, b: Int) in a + b }
+            let result = add(pubA.publisherT, pubB.publisherT).rawValue
 
             var captured: Either<String, Int>?
             result.sink(receiveCompletion: ignore, receiveValue: { captured = $0 })
@@ -603,7 +601,7 @@
             let pubA = Just(Either<String, Int>.right(2)).setFailureType(to: TestError.self).eraseToAnyPublisher()
             let pubB = Just(Either<String, Int>.right(3)).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let result = seqRightPublisherEither(pubA, pubB)
+            let result = pubA.publisherT.seqRight(pubB.publisherT).rawValue
 
             var captured: Either<String, Int>?
             result.sink(receiveCompletion: ignore, receiveValue: { captured = $0 })
@@ -617,7 +615,7 @@
             let pubA = Just(Either<String, Int>.right(2)).setFailureType(to: TestError.self).eraseToAnyPublisher()
             let pubB = Just(Either<String, Int>.right(3)).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let result = seqLeftPublisherEither(pubA, pubB)
+            let result = pubA.publisherT.seqLeft(pubB.publisherT).rawValue
 
             var captured: Either<String, Int>?
             result.sink(receiveCompletion: ignore, receiveValue: { captured = $0 })
@@ -626,14 +624,15 @@
             #expect(captured == .right(2))
         }
 
-        @Test func publisherTEitherFlatMapT() {
+        @Test func publisherTEitherFlatMap() {
             var cancellables = Set<AnyCancellable>()
             let right: Either<String, Int> = .right(2)
             let publisher = Just(right).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let bound = flatMapTPublisherEither(publisher) { value in
-                Just(Either<String, Int>.right(value * 10)).setFailureType(to: TestError.self).eraseToAnyPublisher()
+            let bound = publisher.publisherT.flatMap { value in
+                Just(Either<String, Int>.right(value * 10)).setFailureType(to: TestError.self).publisherT
             }
+            .rawValue
 
             var captured: Either<String, Int>?
             bound.sink(receiveCompletion: ignore, receiveValue: { captured = $0 })
@@ -642,14 +641,15 @@
             #expect(captured == .right(20))
         }
 
-        @Test func publisherTEitherFlatMapTLeftShortCircuits() {
+        @Test func publisherTEitherFlatMapLeftShortCircuits() {
             var cancellables = Set<AnyCancellable>()
             let left: Either<String, Int> = .left("boom")
             let publisher = Just(left).setFailureType(to: TestError.self).eraseToAnyPublisher()
 
-            let bound = flatMapTPublisherEither(publisher) { value in
-                Just(Either<String, Int>.right(value * 10)).setFailureType(to: TestError.self).eraseToAnyPublisher()
+            let bound = publisher.publisherT.flatMap { value in
+                Just(Either<String, Int>.right(value * 10)).setFailureType(to: TestError.self).publisherT
             }
+            .rawValue
 
             var captured: Either<String, Int>?
             bound.sink(receiveCompletion: ignore, receiveValue: { captured = $0 })
@@ -658,16 +658,16 @@
             #expect(captured == .left("boom"))
         }
 
-        @Test func publisherTEitherBindTCurried() {
+        @Test func publisherTEitherBindCurried() {
             var cancellables = Set<AnyCancellable>()
             let right: Either<String, Int> = .right(2)
             let publisher = Just(right).setFailureType(to: TestError.self).eraseToAnyPublisher()
-            let bindT = bindTPublisherEither { (value: Int) in
-                Just(Either<String, Int>.right(value + 1)).setFailureType(to: TestError.self).eraseToAnyPublisher()
+            let bind = PublisherTEither<TestError, String, Int>.bind { (value: Int) in
+                Just(Either<String, Int>.right(value + 1)).setFailureType(to: TestError.self).publisherT
             }
 
             var captured: Either<String, Int>?
-            bindT(publisher).sink(receiveCompletion: ignore, receiveValue: { captured = $0 })
+            bind(publisher.publisherT).rawValue.sink(receiveCompletion: ignore, receiveValue: { captured = $0 })
                 .store(in: &cancellables)
 
             #expect(captured == .right(3))

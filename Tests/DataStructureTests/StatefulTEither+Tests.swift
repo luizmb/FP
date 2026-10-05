@@ -67,13 +67,13 @@ import Testing
 
     @Test func eitherTStatefulMapTRight() {
         let e: Either<String, Stateful<Int, Int>> = .right(.get)
-        let mapped = e.mapT { $0 * 2 }
+        let mapped = e.eitherT.map { $0 * 2 }.rawValue
         #expect(mapped.mapRight { $0.eval(5) } == .right(10))
     }
 
     @Test func eitherTStatefulMapTLeft() {
         let e: Either<String, Stateful<Int, Int>> = .left("error")
-        let mapped: Either<String, Stateful<Int, Int>> = e.mapT { $0 * 2 }
+        let mapped: Either<String, Stateful<Int, Int>> = e.eitherT.map { $0 * 2 }.rawValue
         if case let .left(l) = mapped {
             #expect(l == "error")
         } else {

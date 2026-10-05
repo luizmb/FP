@@ -30,116 +30,111 @@
 
         // MARK: - PublisherTEither
 
-        private typealias EitherPub = AnyPublisher<Either<String, Int>, Never>
+        private typealias EitherPub = PublisherTEither<Never, String, Int>
 
         private func eitherPublisher(_ values: [Either<String, Int>]) -> EitherPub {
-            values.publisher.eraseToAnyPublisher()
+            values.publisher.publisherT
         }
 
         @Test func publisherTEitherMonadLaws() {
             let fEither: @Sendable (Int) -> EitherPub = { a in
-                [Either<String, Int>.right(a), .left("f"), .right(a * 10)].publisher.eraseToAnyPublisher()
+                [Either<String, Int>.right(a), .left("f"), .right(a * 10)].publisher.publisherT
             }
-            let gEither: @Sendable (Int) -> EitherPub = { a in Just(.right(a + 1)).eraseToAnyPublisher() }
-            let pureEither: @Sendable (Int) -> EitherPub = { a in Just(.right(a)).eraseToAnyPublisher() }
+            let gEither: @Sendable (Int) -> EitherPub = { a in Just(Either<String, Int>.right(a + 1)).publisherT }
             let values: [Either<String, Int>] = [.right(1), .left("m"), .right(2)]
             let m = eitherPublisher(values)
 
-            #expect(collect(flatMapTPublisherEither(pureEither(4), fEither)) == collect(fEither(4)))
-            #expect(collect(flatMapTPublisherEither(m, pureEither)) == values)
-            let lhs = flatMapTPublisherEither(flatMapTPublisherEither(m, fEither), gEither)
-            let rhs = flatMapTPublisherEither(m, kleisliT(fEither, gEither))
-            #expect(collect(lhs) == collect(rhs))
-            #expect(collect(lhs) == [.right(2), .left("f"), .right(11), .left("m"), .right(3), .left("f"), .right(21)])
+            #expect(collect(EitherPub.pure(4).flatMap(fEither).rawValue) == collect(fEither(4).rawValue))
+            #expect(collect(m.flatMap(EitherPub.pure).rawValue) == values)
+            let lhs = m.flatMap(fEither).flatMap(gEither)
+            let rhs = m.flatMap(EitherPub.kleisli(fEither, gEither))
+            #expect(collect(lhs.rawValue) == collect(rhs.rawValue))
+            #expect(collect(lhs.rawValue) == [.right(2), .left("f"), .right(11), .left("m"), .right(3), .left("f"), .right(21)])
         }
 
         @Test func publisherTEitherApEqualsBindDerived() {
             let fns: [Either<String, @Sendable (Int) -> Int>] = [.right { $0 + 100 }, .left("no"), .right { $0 * 2 }]
             let values: [Either<String, Int>] = [.right(1), .right(2)]
-            let fnsPublisher: AnyPublisher<Either<String, @Sendable (Int) -> Int>, Never> = fns.publisher.eraseToAnyPublisher()
-            let applied = applyPublisherEither(fnsPublisher, eitherPublisher(values))
-            let ap = flatMapTPublisherEither(fnsPublisher) { fn in
-                values.publisher.eraseToAnyPublisher().mapT(fn)
+            let fnsPublisher = fns.publisher.publisherT
+            let applied = PublisherTEither.apply(fnsPublisher, eitherPublisher(values))
+            let ap = fnsPublisher.flatMap { fn in
+                values.publisher.publisherT.map(fn)
             }
-            #expect(collect(applied) == collect(ap))
-            #expect(collect(applied) == [.right(101), .right(102), .left("no"), .right(2), .right(4)])
+            #expect(collect(applied.rawValue) == collect(ap.rawValue))
+            #expect(collect(applied.rawValue) == [.right(101), .right(102), .left("no"), .right(2), .right(4)])
         }
 
         @Test func publisherTEitherSeqAndLiftA2() {
             let lhs = eitherPublisher([.right(1), .left("l")])
             let rhs = eitherPublisher([.right(10), .right(20)])
-            #expect(collect(seqRightPublisherEither(lhs, rhs)) == [.right(10), .right(20), .left("l")])
-            #expect(collect(seqLeftPublisherEither(lhs, rhs)) == [.right(1), .right(1), .left("l")])
-            let lifted = liftA2PublisherEither { (a: Int, b: Int) in a + b }(lhs, rhs)
-            #expect(collect(lifted) == [.right(11), .right(21), .left("l")])
+            #expect(collect(lhs.seqRight(rhs).rawValue) == [.right(10), .right(20), .left("l")])
+            #expect(collect(lhs.seqLeft(rhs).rawValue) == [.right(1), .right(1), .left("l")])
+            let lifted = EitherPub.liftA2 { (a: Int, b: Int) in a + b }(lhs, rhs)
+            #expect(collect(lifted.rawValue) == [.right(11), .right(21), .left("l")])
         }
 
         // MARK: - PublisherTWriter
 
-        private typealias WriterPub = AnyPublisher<Writer<[String], Int>, Never>
+        private typealias WriterPub = PublisherTWriter<Never, [String], Int>
 
         private func render(_ writers: [Writer<[String], Int>]) -> [String] {
             writers.map { "\($0.value)|\($0.log.joined(separator: ","))" }
         }
 
         private func writerPublisher(_ values: [Writer<[String], Int>]) -> WriterPub {
-            values.publisher.eraseToAnyPublisher()
+            values.publisher.publisherT
         }
 
-        private let fWriter: @Sendable (Int) -> AnyPublisher<Writer<[String], Int>, Never> = { a in
-            [Writer<[String], Int>(a, ["f1"]), Writer<[String], Int>(a * 10, ["f2"])].publisher.eraseToAnyPublisher()
+        private let fWriter: @Sendable (Int) -> PublisherTWriter<Never, [String], Int> = { a in
+            [Writer<[String], Int>(a, ["f1"]), Writer<[String], Int>(a * 10, ["f2"])].publisher.publisherT
         }
 
-        private let gWriter: @Sendable (Int) -> AnyPublisher<Writer<[String], Int>, Never> = { a in
-            Just(Writer<[String], Int>(a + 1, ["g"])).eraseToAnyPublisher()
-        }
-
-        private let pureWriter: @Sendable (Int) -> AnyPublisher<Writer<[String], Int>, Never> = { a in
-            Just(Writer<[String], Int>(a, [])).eraseToAnyPublisher()
+        private let gWriter: @Sendable (Int) -> PublisherTWriter<Never, [String], Int> = { a in
+            Just(Writer<[String], Int>(a + 1, ["g"])).publisherT
         }
 
         @Test func publisherTWriterLeftIdentity() {
-            #expect(render(collect(pureWriter(3).flatMapT(fWriter))) == render(collect(fWriter(3))))
+            #expect(render(collect(WriterPub.pure(3).flatMap(fWriter).rawValue)) == render(collect(fWriter(3).rawValue)))
         }
 
         @Test func publisherTWriterRightIdentity() {
             let m = writerPublisher([Writer(1, ["a"]), Writer(2, ["b"])])
-            #expect(render(collect(m.flatMapT(pureWriter))) == ["1|a", "2|b"])
+            #expect(render(collect(m.flatMap(WriterPub.pure).rawValue)) == ["1|a", "2|b"])
         }
 
         @Test func publisherTWriterAssociativity() {
             let m = writerPublisher([Writer(1, ["a"]), Writer(2, ["b"])])
-            let lhs = m.flatMapT(fWriter).flatMapT(gWriter)
-            let rhs = m.flatMapT(kleisliT(fWriter, gWriter))
-            #expect(render(collect(lhs)) == render(collect(rhs)))
-            #expect(render(collect(lhs)) == ["2|a,f1,g", "11|a,f2,g", "3|b,f1,g", "21|b,f2,g"])
+            let lhs = m.flatMap(fWriter).flatMap(gWriter)
+            let rhs = m.flatMap(WriterPub.kleisli(fWriter, gWriter))
+            #expect(render(collect(lhs.rawValue)) == render(collect(rhs.rawValue)))
+            #expect(render(collect(lhs.rawValue)) == ["2|a,f1,g", "11|a,f2,g", "3|b,f1,g", "21|b,f2,g"])
         }
 
-        @Test func publisherTWriterBindTMatchesFlatMapT() {
+        @Test func publisherTWriterBindMatchesFlatMap() {
             let m = writerPublisher([Writer(1, ["a"])])
-            let bound = AnyPublisher<Writer<[String], Int>, Never>.bindT(fWriter)(m)
-            #expect(render(collect(bound)) == render(collect(m.flatMapT(fWriter))))
+            let bound = WriterPub.bind(fWriter)(m)
+            #expect(render(collect(bound.rawValue)) == render(collect(m.flatMap(fWriter).rawValue)))
         }
 
         @Test func publisherTWriterApEqualsBindDerived() {
             let fns: [Writer<[String], @Sendable (Int) -> Int>] = [Writer({ $0 + 100 }, ["f"]), Writer({ $0 * 2 }, ["g"])]
             let values: [Writer<[String], Int>] = [Writer(1, ["x"]), Writer(2, ["y"])]
-            let fnsPublisher: AnyPublisher<Writer<[String], @Sendable (Int) -> Int>, Never> = fns.publisher.eraseToAnyPublisher()
-            let applied = applyPublisherWriter(fnsPublisher, writerPublisher(values))
-            let ap = fnsPublisher.flatMapT { fn in
-                values.publisher.eraseToAnyPublisher().mapT(fn)
+            let fnsPublisher = fns.publisher.publisherT
+            let applied = PublisherTWriter.apply(fnsPublisher, writerPublisher(values))
+            let ap = fnsPublisher.flatMap { fn in
+                values.publisher.publisherT.map(fn)
             }
-            #expect(render(collect(applied)) == render(collect(ap)))
-            #expect(render(collect(applied)) == ["101|f,x", "102|f,y", "2|g,x", "4|g,y"])
+            #expect(render(collect(applied.rawValue)) == render(collect(ap.rawValue)))
+            #expect(render(collect(applied.rawValue)) == ["101|f,x", "102|f,y", "2|g,x", "4|g,y"])
         }
 
         @Test func publisherTWriterSeqAndLiftA2() {
             let lhs = writerPublisher([Writer(1, ["a"]), Writer(2, ["b"])])
             let rhs = writerPublisher([Writer(10, ["x"]), Writer(20, ["y"])])
-            #expect(render(collect(seqRightPublisherWriter(lhs, rhs))) == ["10|a,x", "20|a,y", "10|b,x", "20|b,y"])
-            #expect(render(collect(seqLeftPublisherWriter(lhs, rhs))) == ["1|a,x", "1|a,y", "2|b,x", "2|b,y"])
-            let lifted = liftA2PublisherWriter { (a: Int, b: Int) in a + b }(lhs, rhs)
-            #expect(render(collect(lifted)) == ["11|a,x", "21|a,y", "12|b,x", "22|b,y"])
+            #expect(render(collect(lhs.seqRight(rhs).rawValue)) == ["10|a,x", "20|a,y", "10|b,x", "20|b,y"])
+            #expect(render(collect(lhs.seqLeft(rhs).rawValue)) == ["1|a,x", "1|a,y", "2|b,x", "2|b,y"])
+            let lifted = WriterPub.liftA2 { (a: Int, b: Int) in a + b }(lhs, rhs)
+            #expect(render(collect(lifted.rawValue)) == ["11|a,x", "21|a,y", "12|b,x", "22|b,y"])
         }
 
         // MARK: - ReaderTPublisher

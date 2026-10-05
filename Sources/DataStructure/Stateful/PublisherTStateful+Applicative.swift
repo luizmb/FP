@@ -8,7 +8,7 @@
 
     /// liftA2 for PublisherTStateful
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func liftA2PublisherStateful<S, A, B, C, E: Error>(
+    func liftA2PublisherStateful<S, A, B, C, E: Error>(
         _ fn: @escaping @Sendable (A, B) -> C
     ) -> (AnyPublisher<Stateful<S, A>, E>, AnyPublisher<Stateful<S, B>, E>) -> AnyPublisher<Stateful<S, C>, E> {
         { pubA, pubB in
@@ -20,7 +20,7 @@
 
     /// seqRight for PublisherTStateful
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func seqRightPublisherStateful<S, A, B, E: Error>(
+    func seqRightPublisherStateful<S, A, B, E: Error>(
         _ lhs: AnyPublisher<Stateful<S, A>, E>,
         _ rhs: AnyPublisher<Stateful<S, B>, E>
     ) -> AnyPublisher<Stateful<S, B>, E> {
@@ -31,7 +31,7 @@
 
     /// seqLeft for PublisherTStateful
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func seqLeftPublisherStateful<S, A, B, E: Error>(
+    func seqLeftPublisherStateful<S, A, B, E: Error>(
         _ lhs: AnyPublisher<Stateful<S, A>, E>,
         _ rhs: AnyPublisher<Stateful<S, B>, E>
     ) -> AnyPublisher<Stateful<S, A>, E> {

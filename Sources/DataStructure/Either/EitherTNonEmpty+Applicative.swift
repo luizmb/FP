@@ -6,7 +6,7 @@ import Foundation
 // Type: Either<L, NonEmpty<A>>
 
 /// apply for EitherTNonEmpty: Either<L,NonEmpty<(A->B)>> -> Either<L,NonEmpty<A>> -> Either<L,NonEmpty<B>>
-public func applyEitherNonEmpty<L, A, B>(
+func applyEitherNonEmpty<L, A, B>(
     _ eithF: Either<L, NonEmpty<@Sendable (A) -> B>>,
     _ eithA: Either<L, NonEmpty<A>>
 ) -> Either<L, NonEmpty<B>> {
@@ -14,7 +14,7 @@ public func applyEitherNonEmpty<L, A, B>(
 }
 
 /// liftA2 for EitherTNonEmpty
-public func liftA2EitherNonEmpty<L, A: Sendable, B, C>(
+func liftA2EitherNonEmpty<L, A: Sendable, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Either<L, NonEmpty<A>>, Either<L, NonEmpty<B>>) -> Either<L, NonEmpty<C>> {
     { ea, eb in
@@ -23,7 +23,7 @@ public func liftA2EitherNonEmpty<L, A: Sendable, B, C>(
 }
 
 /// seqRight for EitherTNonEmpty
-public func seqRightEitherNonEmpty<L, A, B>(
+func seqRightEitherNonEmpty<L, A, B>(
     _ lhs: Either<L, NonEmpty<A>>,
     _ rhs: Either<L, NonEmpty<B>>
 ) -> Either<L, NonEmpty<B>> {
@@ -31,7 +31,7 @@ public func seqRightEitherNonEmpty<L, A, B>(
 }
 
 /// seqLeft for EitherTNonEmpty
-public func seqLeftEitherNonEmpty<L, A, B>(
+func seqLeftEitherNonEmpty<L, A, B>(
     _ lhs: Either<L, NonEmpty<A>>,
     _ rhs: Either<L, NonEmpty<B>>
 ) -> Either<L, NonEmpty<A>> {

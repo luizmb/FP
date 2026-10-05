@@ -6,7 +6,7 @@ import Foundation
 // Type: AsyncStream<Writer<W, A>>
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public extension AsyncStream {
+extension AsyncStream {
     /// Declaration.
     func mapT<W: Monoid, A, B>(_ fn: @escaping @Sendable (A) -> B) -> AsyncMapSequence<AsyncStream<Writer<W, A>>, Writer<W, B>>
     where Element == Writer<W, A> {

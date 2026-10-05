@@ -5,7 +5,7 @@ import Foundation
 // Type: Either<L,A>? = Optional<Either<L,A>>
 // Haskell: ExceptT l Maybe
 
-public extension Optional {
+extension Optional {
     /// flatMapT for Optional<Either<L,A>>
     /// nil         → nil
     /// .some(.left(l))  → .some(.left(l))
@@ -27,7 +27,7 @@ public extension Optional {
 
 /// Kleisli composition for `OptionalT + Either` (left-to-right)
 /// (>=>) :: (a -> Either<l,b>?) -> (b -> Either<l,c>?) -> a -> Either<l,c>?
-public func kleisliT<L, A, B, C>(
+func kleisliT<L, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Either<L, B>?,
     _ fn2: @escaping @Sendable (B) -> Either<L, C>?
 ) -> @Sendable (A) -> Either<L, C>? {

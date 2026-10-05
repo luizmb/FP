@@ -5,7 +5,7 @@ import Foundation
 // Type: Either<L, Stateful<S, A>>
 
 /// apply for EitherTStateful: Either<L,Stateful<S,(A->B)>> -> Either<L,Stateful<S,A>> -> Either<L,Stateful<S,B>>
-public func applyEitherStateful<L, S, A, B>(
+func applyEitherStateful<L, S, A, B>(
     _ eithF: Either<L, Stateful<S, @Sendable (A) -> B>>,
     _ eithA: Either<L, Stateful<S, A>>
 ) -> Either<L, Stateful<S, B>> {
@@ -13,7 +13,7 @@ public func applyEitherStateful<L, S, A, B>(
 }
 
 /// liftA2 for EitherTStateful
-public func liftA2EitherStateful<L, S, A, B, C>(
+func liftA2EitherStateful<L, S, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Either<L, Stateful<S, A>>, Either<L, Stateful<S, B>>) -> Either<L, Stateful<S, C>> {
     { ea, eb in
@@ -22,7 +22,7 @@ public func liftA2EitherStateful<L, S, A, B, C>(
 }
 
 /// seqRight for EitherTStateful
-public func seqRightEitherStateful<L, S, A, B>(
+func seqRightEitherStateful<L, S, A, B>(
     _ lhs: Either<L, Stateful<S, A>>,
     _ rhs: Either<L, Stateful<S, B>>
 ) -> Either<L, Stateful<S, B>> {
@@ -30,7 +30,7 @@ public func seqRightEitherStateful<L, S, A, B>(
 }
 
 /// seqLeft for EitherTStateful
-public func seqLeftEitherStateful<L, S, A, B>(
+func seqLeftEitherStateful<L, S, A, B>(
     _ lhs: Either<L, Stateful<S, A>>,
     _ rhs: Either<L, Stateful<S, B>>
 ) -> Either<L, Stateful<S, A>> {

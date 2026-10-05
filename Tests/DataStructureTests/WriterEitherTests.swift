@@ -60,25 +60,25 @@ import Testing
 
     @Test func eitherTWriterMapTRight() {
         let e: Either<String, Writer<[String], Int>> = .right(Writer(4, ["x"]))
-        let mapped = e.mapT { $0 * 3 }
+        let mapped = e.eitherT.map { $0 * 3 }.rawValue
         #expect(mapped == .right(Writer(12, ["x"])))
     }
 
     @Test func eitherTWriterMapTLeft() {
         let e: Either<String, Writer<[String], Int>> = .left("err")
-        let mapped: Either<String, Writer<[String], Int>> = e.mapT { $0 * 3 }
+        let mapped: Either<String, Writer<[String], Int>> = e.eitherT.map { $0 * 3 }.rawValue
         #expect(mapped == .left("err"))
     }
 
     @Test func eitherTWriterFlatMapTRight() {
         let e: Either<String, Writer<[String], Int>> = .right(Writer(5, ["outer"]))
-        let result = e.flatMapT { n in Either<String, Writer<[String], String>>.right(Writer("\(n)", ["inner"])) }
+        let result = e.eitherT.flatMap { n in Either<String, Writer<[String], String>>.right(Writer("\(n)", ["inner"])).eitherT }.rawValue
         #expect(result == .right(Writer("5", ["outer", "inner"])))
     }
 
     @Test func eitherTWriterFlatMapTLeft() {
         let e: Either<String, Writer<[String], Int>> = .left("nope")
-        let result = e.flatMapT { n in Either<String, Writer<[String], String>>.right(Writer("\(n)", ["inner"])) }
+        let result = e.eitherT.flatMap { n in Either<String, Writer<[String], String>>.right(Writer("\(n)", ["inner"])).eitherT }.rawValue
         #expect(result == .left("nope"))
     }
 }

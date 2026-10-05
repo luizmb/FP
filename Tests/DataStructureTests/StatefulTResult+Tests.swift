@@ -48,13 +48,13 @@ import Testing
 
     @Test func resultTStatefulMapTSuccess() {
         let r: Result<Stateful<Int, Int>, TestError> = .success(.get)
-        let mapped = r.mapT { $0 * 3 }
+        let mapped = r.resultT.map { $0 * 3 }.rawValue
         #expect(mapped.map { $0.eval(4) } == .success(12))
     }
 
     @Test func resultTStatefulMapTFailure() {
         let r: Result<Stateful<Int, Int>, TestError> = .failure(.failure)
-        let mapped: Result<Stateful<Int, Int>, TestError> = r.mapT { $0 * 3 }
+        let mapped: Result<Stateful<Int, Int>, TestError> = r.resultT.map { $0 * 3 }.rawValue
         if case let .failure(e) = mapped {
             #expect(e == .failure)
         } else {

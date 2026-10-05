@@ -2,7 +2,7 @@
 // OptionalTNonEmpty: outer = Optional, inner = NonEmpty
 // Type: NonEmpty<A>?
 
-public extension Optional {
+extension Optional {
     /// flatMapT for NonEmpty<A>? — nil short-circuits; some sequences the inner NonEmpty.
     /// nil       → nil
     /// some(ne)  → ne.flatMap(fn) wrapped back in Optional
@@ -25,7 +25,7 @@ public extension Optional {
 
 /// Kleisli composition for `OptionalT + NonEmpty` (left-to-right)
 /// (>=>) :: (a -> NonEmpty<b>?) -> (b -> NonEmpty<c>?) -> a -> NonEmpty<c>?
-public func kleisliT<A, B, C>(
+func kleisliT<A, B, C>(
     _ fn1: @escaping @Sendable (A) -> NonEmpty<B>?,
     _ fn2: @escaping @Sendable (B) -> NonEmpty<C>?
 ) -> @Sendable (A) -> NonEmpty<C>? {

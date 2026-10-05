@@ -18,19 +18,19 @@ private let keepRight: @Sendable (Int) -> @Sendable (Int) -> Int = const(idInt)
 private let keepLeft: @Sendable (Int) -> @Sendable (Int) -> Int = const
 
 private func apArray(_ fns: [WF], _ vals: [W]) -> [W] {
-    fns.flatMapT { fn in vals.mapT(fn) }
+    fns.arrayT.flatMap { fn in vals.arrayT.map(fn) }.rawValue
 }
 
 private func apOptional(_ fn: WF?, _ val: W?) -> W? {
-    fn.flatMapT { fn in val.mapT(fn) }
+    fn.optionalT.flatMap { fn in val.optionalT.map(fn) }.rawValue
 }
 
 private func apResult(_ fn: Result<WF, Boom>, _ val: Result<W, Boom>) -> Result<W, Boom> {
-    fn.flatMapT { fn in val.mapT(fn) }
+    fn.resultT.flatMap { fn in val.resultT.map(fn) }.rawValue
 }
 
 private func apEither(_ fn: Either<String, WF>, _ val: Either<String, W>) -> Either<String, W> {
-    fn.flatMapT { fn in val.mapT(fn) }
+    fn.eitherT.flatMap { fn in val.eitherT.map(fn) }.rawValue
 }
 
 @Suite("M<Writer> applicatives equal WriterT ap")
@@ -38,23 +38,24 @@ struct WriterInnerApConsistencyTests {
     @Test func arrayTWriterApplyIsWriterTAp() {
         let fns: [WF] = [WF(plusOne, ["f"]), WF(timesTen, ["g"])]
         let vals: [W] = [W(1, ["a"]), W(2, ["b"])]
-        #expect(applyArrayWriter(fns, vals) == apArray(fns, vals))
-        #expect(applyArrayWriter(fns, vals) == [W(2, ["f", "a"]), W(3, ["f", "b"]), W(10, ["g", "a"]), W(20, ["g", "b"])])
-        #expect(applyArrayWriter([WF](), vals) == apArray([], vals))
-        #expect(applyArrayWriter(fns, [W]()) == apArray(fns, []))
-        #expect(seqRightArrayWriter(vals, vals) == apArray(vals.mapT(keepRight), vals))
-        #expect(seqLeftArrayWriter(vals, vals) == apArray(vals.mapT(keepLeft), vals))
+        #expect(ArrayTWriter.apply(fns.arrayT, vals.arrayT).rawValue == apArray(fns, vals))
+        let expected = [W(2, ["f", "a"]), W(3, ["f", "b"]), W(10, ["g", "a"]), W(20, ["g", "b"])]
+        #expect(ArrayTWriter.apply(fns.arrayT, vals.arrayT).rawValue == expected)
+        #expect(ArrayTWriter.apply([WF]().arrayT, vals.arrayT).rawValue == apArray([], vals))
+        #expect(ArrayTWriter.apply(fns.arrayT, [W]().arrayT).rawValue == apArray(fns, []))
+        #expect(vals.arrayT.seqRight(vals.arrayT).rawValue == apArray(vals.arrayT.map(keepRight).rawValue, vals))
+        #expect(vals.arrayT.seqLeft(vals.arrayT).rawValue == apArray(vals.arrayT.map(keepLeft).rawValue, vals))
     }
 
     @Test func optionalTWriterApplyIsWriterTAp() {
         let fn: WF? = WF(plusOne, ["f"])
         let val: W? = W(1, ["a"])
         for (lhs, rhs) in [(fn, val), (nil, val), (fn, nil), (nil, nil)] {
-            #expect(applyOptionalWriter(lhs, rhs) == apOptional(lhs, rhs))
+            #expect(OptionalTWriter.apply(lhs.optionalT, rhs.optionalT).rawValue == apOptional(lhs, rhs))
         }
-        #expect(applyOptionalWriter(fn, val) == W(2, ["f", "a"]))
-        #expect(seqRightOptionalWriter(val, val) == apOptional(val.mapT(keepRight), val))
-        #expect(seqLeftOptionalWriter(val, val) == apOptional(val.mapT(keepLeft), val))
+        #expect(OptionalTWriter.apply(fn.optionalT, val.optionalT).rawValue == W(2, ["f", "a"]))
+        #expect(val.optionalT.seqRight(val.optionalT).rawValue == apOptional(val.optionalT.map(keepRight).rawValue, val))
+        #expect(val.optionalT.seqLeft(val.optionalT).rawValue == apOptional(val.optionalT.map(keepLeft).rawValue, val))
     }
 
     @Test func resultTWriterApplyIsWriterTAp() {
@@ -63,11 +64,11 @@ struct WriterInnerApConsistencyTests {
         let failedFn: Result<WF, Boom> = .failure(Boom())
         let failedVal: Result<W, Boom> = .failure(Boom())
         for (lhs, rhs) in [(fn, val), (failedFn, val), (fn, failedVal), (failedFn, failedVal)] {
-            #expect(applyResultWriter(lhs, rhs) == apResult(lhs, rhs))
+            #expect(ResultTWriter.apply(lhs.resultT, rhs.resultT).rawValue == apResult(lhs, rhs))
         }
-        #expect(applyResultWriter(fn, val) == .success(W(2, ["f", "a"])))
-        #expect(seqRightResultWriter(val, val) == apResult(val.mapT(keepRight), val))
-        #expect(seqLeftResultWriter(val, val) == apResult(val.mapT(keepLeft), val))
+        #expect(ResultTWriter.apply(fn.resultT, val.resultT).rawValue == .success(W(2, ["f", "a"])))
+        #expect(val.resultT.seqRight(val.resultT).rawValue == apResult(val.resultT.map(keepRight).rawValue, val))
+        #expect(val.resultT.seqLeft(val.resultT).rawValue == apResult(val.resultT.map(keepLeft).rawValue, val))
     }
 
     @Test func eitherTWriterApplyIsWriterTAp() {
@@ -76,11 +77,11 @@ struct WriterInnerApConsistencyTests {
         let failedFn: Either<String, WF> = .left("fn")
         let failedVal: Either<String, W> = .left("val")
         for (lhs, rhs) in [(fn, val), (failedFn, val), (fn, failedVal), (failedFn, failedVal)] {
-            #expect(applyEitherWriter(lhs, rhs) == apEither(lhs, rhs))
+            #expect(EitherTWriter.apply(lhs.eitherT, rhs.eitherT).rawValue == apEither(lhs, rhs))
         }
-        #expect(applyEitherWriter(fn, val) == .right(W(2, ["f", "a"])))
-        #expect(applyEitherWriter(failedFn, failedVal) == .left("fn"))
-        #expect(seqRightEitherWriter(val, val) == apEither(val.mapT(keepRight), val))
-        #expect(seqLeftEitherWriter(val, val) == apEither(val.mapT(keepLeft), val))
+        #expect(EitherTWriter.apply(fn.eitherT, val.eitherT).rawValue == .right(W(2, ["f", "a"])))
+        #expect(EitherTWriter.apply(failedFn.eitherT, failedVal.eitherT).rawValue == .left("fn"))
+        #expect(val.eitherT.seqRight(val.eitherT).rawValue == apEither(val.eitherT.map(keepRight).rawValue, val))
+        #expect(val.eitherT.seqLeft(val.eitherT).rawValue == apEither(val.eitherT.map(keepLeft).rawValue, val))
     }
 }

@@ -29,7 +29,7 @@ import Testing
         let stack = nested.optionalT
         let next: @Sendable (Int) -> OptionalTWriter<[String], Int> = { OptionalTWriter(Writer($0 + 1, ["inc"])) }
 
-        #expect(stack.map { $0 * 2 }.rawValue == nested.mapT { $0 * 2 })
+        #expect(stack.map { $0 * 2 }.rawValue == nested.map { $0.map { $0 * 2 } })
         #expect(stack.flatMap(next).rawValue == Writer(2, ["one", "inc"]))
         #expect(OptionalTWriter<[String], Int>.pure(3).rawValue == Writer(3, []))
         #expect(stack.mapWriterT { (_: Writer<[String], Int>?) -> Writer<[String], Int>? in nil }.rawValue == nil)

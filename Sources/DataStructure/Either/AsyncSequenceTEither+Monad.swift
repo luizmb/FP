@@ -7,7 +7,7 @@ import Foundation
 
 /// `flatMapTAsyncStreamEither`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func flatMapTAsyncStreamEither<L, A, B>(
+func flatMapTAsyncStreamEither<L, A, B>(
     _ stream: AsyncStream<Either<L, A>>,
     _ fn: @escaping @Sendable (A) -> AsyncStream<Either<L, B>>
 ) -> AsyncStream<Either<L, B>> where A: Sendable, B: Sendable, L: Sendable {
@@ -33,7 +33,7 @@ public func flatMapTAsyncStreamEither<L, A, B>(
 
 /// `bindTAsyncStreamEither`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func bindTAsyncStreamEither<L, A, B>(
+func bindTAsyncStreamEither<L, A, B>(
     _ fn: @escaping @Sendable (A) -> AsyncStream<Either<L, B>>
 ) -> @Sendable (AsyncStream<Either<L, A>>) -> AsyncStream<Either<L, B>> where A: Sendable, B: Sendable, L: Sendable {
     { @Sendable stream in flatMapTAsyncStreamEither(stream, fn) }
@@ -42,7 +42,7 @@ public func bindTAsyncStreamEither<L, A, B>(
 /// Kleisli composition for AsyncStream<Either<L,A>> (left-to-right)
 /// (>=>) :: (a -> AsyncStream<Either<l,b>>) -> (b -> AsyncStream<Either<l,c>>) -> a -> AsyncStream<Either<l,c>>
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func kleisliTAsyncStreamEither<L, A, B, C>(
+func kleisliTAsyncStreamEither<L, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> AsyncStream<Either<L, B>>,
     _ fn2: @escaping @Sendable (B) -> AsyncStream<Either<L, C>>
 ) -> @Sendable (A) -> AsyncStream<Either<L, C>> where B: Sendable, C: Sendable, L: Sendable {

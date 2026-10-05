@@ -8,7 +8,7 @@ import Foundation
 // flatMapT is WriterT's bind: the continuation returns the full stack, so it can fail
 // (`nil`) as well as log. `nil` short-circuits; logs combine left to right.
 
-public extension Optional {
+extension Optional {
     /// flatMapT :: Writer<w, a>? -> (a -> Writer<w, b>?) -> Writer<w, b>?
     /// nil      → nil
     /// some(w1) → fn(w1.value): nil → nil; some(w2) → some(Writer(w2.value, w1.log <> w2.log))
@@ -27,7 +27,7 @@ public extension Optional {
 
 /// Kleisli composition for `OptionalT + Writer` (left-to-right)
 /// (>=>) :: (a -> Writer<w, b>?) -> (b -> Writer<w, c>?) -> a -> Writer<w, c>?
-public func kleisliT<W: Monoid, A, B, C>(
+func kleisliT<W: Monoid, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Writer<W, B>?,
     _ fn2: @escaping @Sendable (B) -> Writer<W, C>?
 ) -> @Sendable (A) -> Writer<W, C>? {

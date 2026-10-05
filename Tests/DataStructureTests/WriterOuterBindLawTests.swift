@@ -3,7 +3,7 @@ import CoreFP
 import DataStructure
 import Testing
 
-// `M<Writer<W, A>>` is Haskell's `WriterT w M`. `flatMapT` is WriterT's bind: the continuation
+// `M<Writer<W, A>>` is Haskell's `WriterT w M`. `flatMap` is WriterT's bind: the continuation
 // returns the full stack, so it can use the outer layer (fail, prune, branch) as well as log.
 // Monad laws, checked on values and logs, for every outer `M`.
 
@@ -14,28 +14,31 @@ private struct Boom: Error, Equatable {}
 struct WriterOuterBindLawTests {
     // MARK: - ArrayTWriter
 
-    private static let arrayF: @Sendable (Int) -> [Writer<Log, Int>] = { n in
-        n > 5 ? [] : [Writer(n + 1, ["f\(n)"]), Writer(n * 2, ["F\(n)"])]
+    private static let arrayF: @Sendable (Int) -> ArrayTWriter<Log, Int> = { n in
+        ArrayTWriter(n > 5 ? [] : [Writer(n + 1, ["f\(n)"]), Writer(n * 2, ["F\(n)"])])
     }
 
-    private static let arrayG: @Sendable (Int) -> [Writer<Log, String>] = { n in [Writer("\(n)", ["g\(n)"])] }
+    private static let arrayG: @Sendable (Int) -> ArrayTWriter<Log, String> = { n in ArrayTWriter([Writer("\(n)", ["g\(n)"])]) }
     private static let arrays: [[Writer<Log, Int>]] = [[], [Writer(1, ["m"])], [Writer(2, ["a"]), Writer(9, ["b"])]]
 
     @Test func arrayTWriterLeftIdentity() {
         for a in [0, 3, 7] {
-            #expect([Writer<Log, Int>(a, [])].flatMapT(Self.arrayF) == Self.arrayF(a))
+            #expect([Writer<Log, Int>(a, [])].arrayT.flatMap(Self.arrayF).rawValue == Self.arrayF(a).rawValue)
         }
     }
 
     @Test func arrayTWriterRightIdentity() {
         for m in Self.arrays {
-            #expect(m.flatMapT { [Writer<Log, Int>($0, [])] } == m)
+            #expect(m.arrayT.flatMap { ArrayTWriter([Writer<Log, Int>($0, [])]) }.rawValue == m)
         }
     }
 
     @Test func arrayTWriterAssociativity() {
         for m in Self.arrays {
-            #expect(m.flatMapT(Self.arrayF).flatMapT(Self.arrayG) == m.flatMapT { Self.arrayF($0).flatMapT(Self.arrayG) })
+            #expect(
+                m.arrayT.flatMap(Self.arrayF).flatMap(Self.arrayG).rawValue
+                    == m.arrayT.flatMap { Self.arrayF($0).flatMap(Self.arrayG) }.rawValue
+            )
         }
     }
 
@@ -44,33 +47,37 @@ struct WriterOuterBindLawTests {
         let fromA: [Writer<Log, Int>] = [Writer(2, ["a", "f1"]), Writer(2, ["a", "F1"])]
         let fromC: [Writer<Log, Int>] = [Writer(3, ["c", "f2"]), Writer(4, ["c", "F2"])]
         let expected = fromA + fromC
-        #expect(m.flatMapT(Self.arrayF) == expected)
-        #expect([Writer<Log, Int>].bindT(Self.arrayF)(m) == expected)
-        #expect(kleisliT(Self.arrayF, Self.arrayG)(1) == [Writer("2", ["f1", "g2"]), Writer("2", ["F1", "g2"])])
+        #expect(m.arrayT.flatMap(Self.arrayF).rawValue == expected)
+        #expect(ArrayTWriter<Log, Int>.bind(Self.arrayF)(m.arrayT).rawValue == expected)
+        #expect(ArrayTWriter.kleisli(Self.arrayF, Self.arrayG)(1).rawValue == [Writer("2", ["f1", "g2"]), Writer("2", ["F1", "g2"])])
     }
 
     // MARK: - OptionalTWriter
 
-    private static let optionalF: @Sendable (Int) -> Writer<Log, Int>? = { n in n > 5 ? nil : Writer(n + 1, ["f\(n)"]) }
-    private static let optionalG: @Sendable (Int) -> Writer<Log, String>? = { n in Writer("\(n)", ["g\(n)"]) }
+    private static let optionalF: @Sendable (Int) -> OptionalTWriter<Log, Int> = { n in
+        OptionalTWriter(n > 5 ? nil : Writer(n + 1, ["f\(n)"]))
+    }
+
+    private static let optionalG: @Sendable (Int) -> OptionalTWriter<Log, String> = { n in OptionalTWriter(Writer("\(n)", ["g\(n)"])) }
     private static let optionals: [Writer<Log, Int>?] = [nil, Writer(1, ["m"]), Writer(9, ["m"])]
 
     @Test func optionalTWriterLeftIdentity() {
         for a in [0, 7] {
-            #expect(Writer<Log, Int>?.some(Writer(a, [])).flatMapT(Self.optionalF) == Self.optionalF(a))
+            #expect(Writer<Log, Int>?.some(Writer(a, [])).optionalT.flatMap(Self.optionalF).rawValue == Self.optionalF(a).rawValue)
         }
     }
 
     @Test func optionalTWriterRightIdentity() {
         for m in Self.optionals {
-            #expect(m.flatMapT { Writer<Log, Int>?.some(Writer($0, [])) } == m)
+            #expect(m.optionalT.flatMap { OptionalTWriter(Writer<Log, Int>?.some(Writer($0, []))) }.rawValue == m)
         }
     }
 
     @Test func optionalTWriterAssociativity() {
         for m in Self.optionals {
             #expect(
-                m.flatMapT(Self.optionalF).flatMapT(Self.optionalG) == m.flatMapT { Self.optionalF($0).flatMapT(Self.optionalG) }
+                m.optionalT.flatMap(Self.optionalF).flatMap(Self.optionalG).rawValue
+                    == m.optionalT.flatMap { Self.optionalF($0).flatMap(Self.optionalG) }.rawValue
             )
         }
     }
@@ -78,86 +85,102 @@ struct WriterOuterBindLawTests {
     @Test func optionalTWriterContinuationCanFail() {
         let some: Writer<Log, Int>? = Writer(1, ["a"])
         let tooBig: Writer<Log, Int>? = Writer(6, ["a"])
-        #expect(some.flatMapT(Self.optionalF) == Writer(2, ["a", "f1"]))
-        #expect(tooBig.flatMapT(Self.optionalF) == nil)
-        #expect(Writer<Log, Int>?.bindT(Self.optionalF)(tooBig) == nil)
-        #expect(kleisliT(Self.optionalF, Self.optionalG)(1) == Writer("2", ["f1", "g2"]))
-        #expect(kleisliT(Self.optionalF, Self.optionalG)(6) == nil)
+        #expect(some.optionalT.flatMap(Self.optionalF).rawValue == Writer(2, ["a", "f1"]))
+        #expect(tooBig.optionalT.flatMap(Self.optionalF).rawValue == nil)
+        #expect(OptionalTWriter<Log, Int>.bind(Self.optionalF)(tooBig.optionalT).rawValue == nil)
+        #expect(OptionalTWriter.kleisli(Self.optionalF, Self.optionalG)(1).rawValue == Writer("2", ["f1", "g2"]))
+        #expect(OptionalTWriter.kleisli(Self.optionalF, Self.optionalG)(6).rawValue == nil)
     }
 
     // MARK: - ResultTWriter
 
-    private static let resultF: @Sendable (Int) -> Result<Writer<Log, Int>, Boom> = { n in
-        n > 5 ? .failure(Boom()) : .success(Writer(n + 1, ["f\(n)"]))
+    private static let resultF: @Sendable (Int) -> ResultTWriter<Boom, Log, Int> = { n in
+        ResultTWriter(n > 5 ? .failure(Boom()) : .success(Writer(n + 1, ["f\(n)"])))
     }
 
-    private static let resultG: @Sendable (Int) -> Result<Writer<Log, String>, Boom> = { n in .success(Writer("\(n)", ["g\(n)"])) }
+    private static let resultG: @Sendable (Int) -> ResultTWriter<Boom, Log, String> = { n in
+        ResultTWriter(.success(Writer("\(n)", ["g\(n)"])))
+    }
+
     private static let results: [Result<Writer<Log, Int>, Boom>] = [
         .failure(Boom()), .success(Writer(1, ["m"])), .success(Writer(9, ["m"]))
     ]
 
     @Test func resultTWriterLeftIdentity() {
         for a in [0, 7] {
-            #expect(Result<Writer<Log, Int>, Boom>.success(Writer(a, [])).flatMapT(Self.resultF) == Self.resultF(a))
+            #expect(
+                Result<Writer<Log, Int>, Boom>.success(Writer(a, [])).resultT.flatMap(Self.resultF).rawValue == Self.resultF(a).rawValue
+            )
         }
     }
 
     @Test func resultTWriterRightIdentity() {
         for m in Self.results {
-            #expect(m.flatMapT { Result<Writer<Log, Int>, Boom>.success(Writer($0, [])) } == m)
+            #expect(m.resultT.flatMap { ResultTWriter(Result<Writer<Log, Int>, Boom>.success(Writer($0, []))) }.rawValue == m)
         }
     }
 
     @Test func resultTWriterAssociativity() {
         for m in Self.results {
-            #expect(m.flatMapT(Self.resultF).flatMapT(Self.resultG) == m.flatMapT { Self.resultF($0).flatMapT(Self.resultG) })
+            #expect(
+                m.resultT.flatMap(Self.resultF).flatMap(Self.resultG).rawValue
+                    == m.resultT.flatMap { Self.resultF($0).flatMap(Self.resultG) }.rawValue
+            )
         }
     }
 
     @Test func resultTWriterContinuationCanFail() {
         let ok: Result<Writer<Log, Int>, Boom> = .success(Writer(1, ["a"]))
         let tooBig: Result<Writer<Log, Int>, Boom> = .success(Writer(6, ["a"]))
-        #expect(ok.flatMapT(Self.resultF) == .success(Writer(2, ["a", "f1"])))
-        #expect(tooBig.flatMapT(Self.resultF) == .failure(Boom()))
-        #expect(Result<Writer<Log, Int>, Boom>.bindT(Self.resultF)(tooBig) == .failure(Boom()))
-        #expect(kleisliT(Self.resultF, Self.resultG)(1) == .success(Writer("2", ["f1", "g2"])))
-        #expect(kleisliT(Self.resultF, Self.resultG)(6) == .failure(Boom()))
+        #expect(ok.resultT.flatMap(Self.resultF).rawValue == .success(Writer(2, ["a", "f1"])))
+        #expect(tooBig.resultT.flatMap(Self.resultF).rawValue == .failure(Boom()))
+        #expect(ResultTWriter<Boom, Log, Int>.bind(Self.resultF)(tooBig.resultT).rawValue == .failure(Boom()))
+        #expect(ResultTWriter.kleisli(Self.resultF, Self.resultG)(1).rawValue == .success(Writer("2", ["f1", "g2"])))
+        #expect(ResultTWriter.kleisli(Self.resultF, Self.resultG)(6).rawValue == .failure(Boom()))
     }
 
     // MARK: - EitherTWriter
 
-    private static let eitherF: @Sendable (Int) -> Either<String, Writer<Log, Int>> = { n in
-        n > 5 ? .left("too big: \(n)") : .right(Writer(n + 1, ["f\(n)"]))
+    private static let eitherF: @Sendable (Int) -> EitherTWriter<String, Log, Int> = { n in
+        EitherTWriter(n > 5 ? .left("too big: \(n)") : .right(Writer(n + 1, ["f\(n)"])))
     }
 
-    private static let eitherG: @Sendable (Int) -> Either<String, Writer<Log, String>> = { n in .right(Writer("\(n)", ["g\(n)"])) }
+    private static let eitherG: @Sendable (Int) -> EitherTWriter<String, Log, String> = { n in
+        EitherTWriter(.right(Writer("\(n)", ["g\(n)"])))
+    }
+
     private static let eithers: [Either<String, Writer<Log, Int>>] = [.left("m"), .right(Writer(1, ["m"])), .right(Writer(9, ["m"]))]
 
     @Test func eitherTWriterLeftIdentity() {
         for a in [0, 7] {
-            #expect(Either<String, Writer<Log, Int>>.right(Writer(a, [])).flatMapT(Self.eitherF) == Self.eitherF(a))
+            #expect(
+                Either<String, Writer<Log, Int>>.right(Writer(a, [])).eitherT.flatMap(Self.eitherF).rawValue == Self.eitherF(a).rawValue
+            )
         }
     }
 
     @Test func eitherTWriterRightIdentity() {
         for m in Self.eithers {
-            #expect(m.flatMapT { Either<String, Writer<Log, Int>>.right(Writer($0, [])) } == m)
+            #expect(m.eitherT.flatMap { EitherTWriter(Either<String, Writer<Log, Int>>.right(Writer($0, []))) }.rawValue == m)
         }
     }
 
     @Test func eitherTWriterAssociativity() {
         for m in Self.eithers {
-            #expect(m.flatMapT(Self.eitherF).flatMapT(Self.eitherG) == m.flatMapT { Self.eitherF($0).flatMapT(Self.eitherG) })
+            #expect(
+                m.eitherT.flatMap(Self.eitherF).flatMap(Self.eitherG).rawValue
+                    == m.eitherT.flatMap { Self.eitherF($0).flatMap(Self.eitherG) }.rawValue
+            )
         }
     }
 
     @Test func eitherTWriterContinuationCanFail() {
         let ok: Either<String, Writer<Log, Int>> = .right(Writer(1, ["a"]))
         let tooBig: Either<String, Writer<Log, Int>> = .right(Writer(6, ["a"]))
-        #expect(ok.flatMapT(Self.eitherF) == .right(Writer(2, ["a", "f1"])))
-        #expect(tooBig.flatMapT(Self.eitherF) == .left("too big: 6"))
-        #expect(Either<String, Writer<Log, Int>>.bindT(Self.eitherF)(tooBig) == .left("too big: 6"))
-        #expect(kleisliT(Self.eitherF, Self.eitherG)(1) == .right(Writer("2", ["f1", "g2"])))
-        #expect(kleisliT(Self.eitherF, Self.eitherG)(6) == .left("too big: 6"))
+        #expect(ok.eitherT.flatMap(Self.eitherF).rawValue == .right(Writer(2, ["a", "f1"])))
+        #expect(tooBig.eitherT.flatMap(Self.eitherF).rawValue == .left("too big: 6"))
+        #expect(EitherTWriter<String, Log, Int>.bind(Self.eitherF)(tooBig.eitherT).rawValue == .left("too big: 6"))
+        #expect(EitherTWriter.kleisli(Self.eitherF, Self.eitherG)(1).rawValue == .right(Writer("2", ["f1", "g2"])))
+        #expect(EitherTWriter.kleisli(Self.eitherF, Self.eitherG)(6).rawValue == .left("too big: 6"))
     }
 }

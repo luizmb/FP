@@ -302,7 +302,7 @@ import Testing
 
     @Test func eitherTValidationFunctorRight() {
         let e: Either<String, Validation<[Int], Int>> = .right(.success(5))
-        let result = e.mapT { $0 * 2 }
+        let result = e.eitherT.map { $0 * 2 }.rawValue
         #expect(result == .right(.success(10)))
     }
 
@@ -310,13 +310,13 @@ import Testing
         // Either is right on both sides — Validation accumulates inner errors
         let ef: Either<String, Validation<[Int], @Sendable (Int) -> Int>> = .right(.failure([1]))
         let ea: Either<String, Validation<[Int], Int>> = .right(.failure([2]))
-        #expect(applyEitherValidation(ef, ea) == .right(.failure([1, 2])))
+        #expect(EitherTValidation.apply(ef.eitherT, ea.eitherT).rawValue == .right(.failure([1, 2])))
     }
 
     @Test func eitherTValidationApplyShortCircuitsOnEitherLeft() {
         let ef: Either<String, Validation<[Int], @Sendable (Int) -> Int>> = .left("outer err")
         let ea: Either<String, Validation<[Int], Int>> = .right(.failure([2]))
-        #expect(applyEitherValidation(ef, ea) == .left("outer err"))
+        #expect(EitherTValidation.apply(ef.eitherT, ea.eitherT).rawValue == .left("outer err"))
     }
 
     // MARK: - Transformer: WriterTValidation

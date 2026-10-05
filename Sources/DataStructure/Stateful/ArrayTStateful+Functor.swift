@@ -4,7 +4,7 @@ import Foundation
 // ArrayTStateful: outer = Array, inner = Stateful
 // Type: [Stateful<S, A>] = Array<Stateful<S, A>>
 
-public extension Array {
+extension Array {
     /// Declaration.
     func mapT<S, A, B>(_ fn: @escaping @Sendable (A) -> B) -> [Stateful<S, B>]
     where Element == Stateful<S, A> {

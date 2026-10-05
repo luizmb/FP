@@ -21,50 +21,50 @@
 
         // MARK: - PublisherTEither
 
-        private typealias EitherPub = AnyPublisher<Either<String, Int>, Never>
+        private typealias EitherPub = PublisherTEither<Never, String, Int>
 
-        private let fEither: @Sendable (Int) -> AnyPublisher<Either<String, Int>, Never> = { a in
-            [Either<String, Int>.right(a), .left("f")].publisher.eraseToAnyPublisher()
+        private let fEither: @Sendable (Int) -> PublisherTEither<Never, String, Int> = { a in
+            [Either<String, Int>.right(a), .left("f")].publisher.publisherT
         }
 
-        private let gEither: @Sendable (Int) -> AnyPublisher<Either<String, Int>, Never> = { a in
-            Just(Either<String, Int>.right(a + 1)).eraseToAnyPublisher()
+        private let gEither: @Sendable (Int) -> PublisherTEither<Never, String, Int> = { a in
+            Just(Either<String, Int>.right(a + 1)).publisherT
         }
 
         private func either(_ values: [Either<String, Int>]) -> EitherPub {
-            values.publisher.eraseToAnyPublisher()
+            values.publisher.publisherT
         }
 
         @Test func publisherTEitherBindOperators() {
-            #expect(collect(either([.right(1), .right(2)]) >>- fEither) == [.right(1), .left("f"), .right(2), .left("f")])
-            #expect(collect(fEither -<< either([.left("m")])) == [.left("m")])
-            #expect(collect((fEither >=> gEither)(1)) == [.right(2), .left("f")])
-            #expect(collect((gEither <=< fEither)(1)) == [.right(2), .left("f")])
+            #expect(collect((either([.right(1), .right(2)]) >>- fEither).rawValue) == [.right(1), .left("f"), .right(2), .left("f")])
+            #expect(collect((fEither -<< either([.left("m")])).rawValue) == [.left("m")])
+            #expect(collect((fEither >=> gEither)(1).rawValue) == [.right(2), .left("f")])
+            #expect(collect((gEither <=< fEither)(1).rawValue) == [.right(2), .left("f")])
         }
 
         @Test func publisherTEitherApplicativeOperators() {
             let fns: [Either<String, @Sendable (Int) -> Int>] = [.right { $0 + 100 }, .left("no")]
-            let fnsPublisher: AnyPublisher<Either<String, @Sendable (Int) -> Int>, Never> = fns.publisher.eraseToAnyPublisher()
+            let fnsPublisher = fns.publisher.publisherT
             let values = either([.right(1), .right(2)])
-            #expect(collect(fnsPublisher <*> values) == [.right(101), .right(102), .left("no")])
-            #expect(collect(either([.right(1), .left("l")]) *> values) == [.right(1), .right(2), .left("l")])
-            #expect(collect(either([.right(7), .left("l")]) <* values) == [.right(7), .right(7), .left("l")])
+            #expect(collect((fnsPublisher <*> values).rawValue) == [.right(101), .right(102), .left("no")])
+            #expect(collect((either([.right(1), .left("l")]) *> values).rawValue) == [.right(1), .right(2), .left("l")])
+            #expect(collect((either([.right(7), .left("l")]) <* values).rawValue) == [.right(7), .right(7), .left("l")])
         }
 
         // MARK: - PublisherTWriter
 
-        private typealias WriterPub = AnyPublisher<Writer<[String], Int>, Never>
+        private typealias WriterPub = PublisherTWriter<Never, [String], Int>
 
-        private let fWriter: @Sendable (Int) -> AnyPublisher<Writer<[String], Int>, Never> = { a in
-            [Writer<[String], Int>(a, ["f1"]), Writer<[String], Int>(a * 10, ["f2"])].publisher.eraseToAnyPublisher()
+        private let fWriter: @Sendable (Int) -> PublisherTWriter<Never, [String], Int> = { a in
+            [Writer<[String], Int>(a, ["f1"]), Writer<[String], Int>(a * 10, ["f2"])].publisher.publisherT
         }
 
-        private let gWriter: @Sendable (Int) -> AnyPublisher<Writer<[String], Int>, Never> = { a in
-            Just(Writer<[String], Int>(a + 1, ["g"])).eraseToAnyPublisher()
+        private let gWriter: @Sendable (Int) -> PublisherTWriter<Never, [String], Int> = { a in
+            Just(Writer<[String], Int>(a + 1, ["g"])).publisherT
         }
 
         private func writer(_ values: [Writer<[String], Int>]) -> WriterPub {
-            values.publisher.eraseToAnyPublisher()
+            values.publisher.publisherT
         }
 
         private func render(_ writers: [Writer<[String], Int>]) -> [String] {
@@ -73,20 +73,20 @@
 
         @Test func publisherTWriterBindOperators() {
             let m = writer([Writer(1, ["a"]), Writer(2, ["b"])])
-            #expect(render(collect(m >>- fWriter)) == ["1|a,f1", "10|a,f2", "2|b,f1", "20|b,f2"])
-            #expect(render(collect(gWriter -<< m)) == ["2|a,g", "3|b,g"])
-            #expect(render(collect((fWriter >=> gWriter)(1))) == ["2|f1,g", "11|f2,g"])
-            #expect(render(collect((gWriter <=< fWriter)(1))) == ["2|f1,g", "11|f2,g"])
+            #expect(render(collect((m >>- fWriter).rawValue)) == ["1|a,f1", "10|a,f2", "2|b,f1", "20|b,f2"])
+            #expect(render(collect((gWriter -<< m).rawValue)) == ["2|a,g", "3|b,g"])
+            #expect(render(collect((fWriter >=> gWriter)(1).rawValue)) == ["2|f1,g", "11|f2,g"])
+            #expect(render(collect((gWriter <=< fWriter)(1).rawValue)) == ["2|f1,g", "11|f2,g"])
         }
 
         @Test func publisherTWriterApplicativeOperators() {
             let fns: [Writer<[String], @Sendable (Int) -> Int>] = [Writer({ $0 + 100 }, ["f"]), Writer({ $0 * 2 }, ["g"])]
-            let fnsPublisher: AnyPublisher<Writer<[String], @Sendable (Int) -> Int>, Never> = fns.publisher.eraseToAnyPublisher()
+            let fnsPublisher = fns.publisher.publisherT
             let lhs = writer([Writer(1, ["a"]), Writer(2, ["b"])])
             let rhs = writer([Writer(10, ["x"]), Writer(20, ["y"])])
-            #expect(render(collect(fnsPublisher <*> rhs)) == ["110|f,x", "120|f,y", "20|g,x", "40|g,y"])
-            #expect(render(collect(lhs *> rhs)) == ["10|a,x", "20|a,y", "10|b,x", "20|b,y"])
-            #expect(render(collect(lhs <* rhs)) == ["1|a,x", "1|a,y", "2|b,x", "2|b,y"])
+            #expect(render(collect((fnsPublisher <*> rhs).rawValue)) == ["110|f,x", "120|f,y", "20|g,x", "40|g,y"])
+            #expect(render(collect((lhs *> rhs).rawValue)) == ["10|a,x", "20|a,y", "10|b,x", "20|b,y"])
+            #expect(render(collect((lhs <* rhs).rawValue)) == ["1|a,x", "1|a,y", "2|b,x", "2|b,y"])
         }
 
         // MARK: - ReaderTPublisher

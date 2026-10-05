@@ -5,9 +5,9 @@ import DataStructureOperators
 import Testing
 
 @Suite struct WriterEitherOperatorsTests {
-    @Test func eitherMapTWithWriterInner() {
+    @Test func eitherTWriterMapOperator() {
         let e: Either<String, Writer<[String], Int>> = .right(Writer(3, ["y"]))
-        let result = e.mapT { $0 * 4 }
+        let result = ({ $0 * 4 } <£> e.eitherT).rawValue
         #expect(result == .right(Writer(12, ["y"])))
     }
 
@@ -20,9 +20,9 @@ import Testing
         #expect(result.log == ["outer", "inner"])
     }
 
-    @Test func eitherFlatMapTWithWriterInner() {
+    @Test func eitherTWriterBindOperator() {
         let e: Either<String, Writer<[String], Int>> = .right(Writer(5, ["outer"]))
-        let result = e.flatMapT { n in Either<String, Writer<[String], String>>.right(Writer("\(n)", ["inner"])) }
+        let result = (e.eitherT >>- { n in Either<String, Writer<[String], String>>.right(Writer("\(n)", ["inner"])).eitherT }).rawValue
         #expect(result == .right(Writer("5", ["outer", "inner"])))
     }
 }

@@ -46,13 +46,13 @@ import Testing
 
     @Test func optionalTStatefulMapTSome() {
         let opt: Stateful<Int, Int>? = .some(Stateful<Int, Int>.get)
-        let mapped = opt.mapT { $0 * 3 }
+        let mapped = opt.optionalT.map { $0 * 3 }.rawValue
         #expect(mapped?.eval(4) == 12)
     }
 
     @Test func optionalTStatefulMapTNone() {
         let opt: Stateful<Int, Int>? = nil
-        let mapped: Stateful<Int, Int>? = opt.mapT { $0 * 3 }
+        let mapped: Stateful<Int, Int>? = opt.optionalT.map { $0 * 3 }.rawValue
         #expect(mapped == nil)
     }
 }

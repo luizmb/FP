@@ -55,7 +55,7 @@ import Testing
 
     @Test func resultTWriterMapTSuccess() {
         let r: Result<Writer<[String], Int>, Error> = .success(Writer(4, ["x"]))
-        let mapped = r.mapT { $0 * 3 }
+        let mapped = r.resultT.map { $0 * 3 }.rawValue
         if case let .success(w) = mapped {
             #expect(w.value == 12)
             #expect(w.log == ["x"])
@@ -66,7 +66,9 @@ import Testing
 
     @Test func resultTWriterFlatMapTSuccess() {
         let r: Result<Writer<[String], Int>, Error> = .success(Writer(5, ["outer"]))
-        let result = r.flatMapT { n in Result<Writer<[String], String>, Error>.success(Writer("\(n)", ["inner"])) }
+        let result = r.resultT.flatMap { n in
+            ResultTWriter(Result<Writer<[String], String>, Error>.success(Writer("\(n)", ["inner"])))
+        }.rawValue
         if case let .success(w) = result {
             #expect(w.value == "5")
             #expect(w.log == ["outer", "inner"])

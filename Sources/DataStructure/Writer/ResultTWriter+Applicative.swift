@@ -6,7 +6,7 @@ import Foundation
 // Type: Result<Writer<W, A>, E>
 
 /// apply for ResultTWriter: Result<Writer<W,(A->B)>,E> -> Result<Writer<W,A>,E> -> Result<Writer<W,B>,E>
-public func applyResultWriter<W: Monoid, A, B, E: Error>(
+func applyResultWriter<W: Monoid, A, B, E: Error>(
     _ rf: Result<Writer<W, @Sendable (A) -> B>, E>,
     _ ra: Result<Writer<W, A>, E>
 ) -> Result<Writer<W, B>, E> {
@@ -14,7 +14,7 @@ public func applyResultWriter<W: Monoid, A, B, E: Error>(
 }
 
 /// liftA2 for ResultTWriter
-public func liftA2ResultWriter<W: Monoid, A, B, C, E: Error>(
+func liftA2ResultWriter<W: Monoid, A, B, C, E: Error>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Result<Writer<W, A>, E>, Result<Writer<W, B>, E>) -> Result<Writer<W, C>, E> {
     { ra, rb in
@@ -23,7 +23,7 @@ public func liftA2ResultWriter<W: Monoid, A, B, C, E: Error>(
 }
 
 /// seqRight for ResultTWriter
-public func seqRightResultWriter<W: Monoid, A, B, E: Error>(
+func seqRightResultWriter<W: Monoid, A, B, E: Error>(
     _ lhs: Result<Writer<W, A>, E>,
     _ rhs: Result<Writer<W, B>, E>
 ) -> Result<Writer<W, B>, E> {
@@ -31,7 +31,7 @@ public func seqRightResultWriter<W: Monoid, A, B, E: Error>(
 }
 
 /// seqLeft for ResultTWriter
-public func seqLeftResultWriter<W: Monoid, A, B, E: Error>(
+func seqLeftResultWriter<W: Monoid, A, B, E: Error>(
     _ lhs: Result<Writer<W, A>, E>,
     _ rhs: Result<Writer<W, B>, E>
 ) -> Result<Writer<W, A>, E> {

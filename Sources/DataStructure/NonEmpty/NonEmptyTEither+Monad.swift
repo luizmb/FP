@@ -2,7 +2,7 @@
 // NonEmptyTEither: outer = NonEmpty, inner = Either
 // Type: NonEmpty<Either<L, A>>
 
-public extension NonEmpty {
+extension NonEmpty {
     /// flatMapT for NonEmpty<Either<L, A>> — Right values expand via fn, Lefts propagate.
     /// .left(l)    → NonEmpty<Either<L, B>>(head: .left(l))
     /// .right(a)   → fn(a)  (inner bind)
@@ -35,7 +35,7 @@ public extension NonEmpty {
 
 /// Kleisli composition for `NonEmptyT + Either` (left-to-right)
 /// (>=>) :: (a0 -> NonEmpty<Either<l, a>>) -> (a -> NonEmpty<Either<l, b>>) -> a0 -> NonEmpty<Either<l, b>>
-public func kleisliT<L, A0, A, B>(
+func kleisliT<L, A0, A, B>(
     _ fn1: @escaping @Sendable (A0) -> NonEmpty<Either<L, A>>,
     _ fn2: @escaping @Sendable (A) -> NonEmpty<Either<L, B>>
 ) -> @Sendable (A0) -> NonEmpty<Either<L, B>> {

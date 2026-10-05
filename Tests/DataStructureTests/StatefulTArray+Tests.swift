@@ -25,7 +25,7 @@ import Testing
             .pure(2),
             .pure(3)
         ]
-        let mapped = arr.mapT { $0 * 10 }
+        let mapped = arr.arrayT.map { $0 * 10 }.rawValue
         let results = mapped.map { $0.eval(0) }
         #expect(results == [10, 20, 30])
     }

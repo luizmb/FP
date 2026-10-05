@@ -40,7 +40,7 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func applyEqualsAp() {
         for fns in functions {
             for values in ints {
-                #expect(applyArrayEither(fns, values) == fns.flatMapT { f in values.mapT(f) })
+                #expect(ArrayTEither.apply(fns.arrayT, values.arrayT).rawValue == fns.arrayT.flatMap { f in values.arrayT.map(f) }.rawValue)
             }
         }
     }
@@ -48,8 +48,8 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func liftA2EqualsBind() {
         for lhs in ints {
             for rhs in strings {
-                let expected: [Either<String, String>] = lhs.flatMapT { n in rhs.mapT { s in combine(n, s) } }
-                #expect(liftA2ArrayEither(combine)(lhs, rhs) == expected)
+                let expected: [Either<String, String>] = lhs.arrayT.flatMap { n in rhs.arrayT.map { s in combine(n, s) } }.rawValue
+                #expect(ArrayTEither.liftA2(combine)(lhs.arrayT, rhs.arrayT).rawValue == expected)
             }
         }
     }
@@ -57,7 +57,7 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func seqRightEqualsBind() {
         for lhs in ints {
             for rhs in strings {
-                #expect(seqRightArrayEither(lhs, rhs) == lhs.flatMapT { (_: Int) in rhs })
+                #expect(lhs.arrayT.seqRight(rhs.arrayT).rawValue == lhs.arrayT.flatMap { (_: Int) in rhs.arrayT }.rawValue)
             }
         }
     }
@@ -65,14 +65,14 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func seqLeftEqualsBind() {
         for lhs in ints {
             for rhs in strings {
-                #expect(seqLeftArrayEither(lhs, rhs) == lhs.flatMapT { n in rhs.mapT { (_: String) in n } })
+                #expect(lhs.arrayT.seqLeft(rhs.arrayT).rawValue == lhs.arrayT.flatMap { n in rhs.arrayT.map { (_: String) in n } }.rawValue)
             }
         }
     }
 
     @Test func leftFunctionShortCircuits() {
         let fns: [Either<String, @Sendable (Int) -> Int>] = [.left("e")]
-        #expect(applyArrayEither(fns, [.right(1), .right(2)]) == [.left("e")])
+        #expect(ArrayTEither.apply(fns.arrayT, ArrayTEither<String, Int>([.right(1), .right(2)])).rawValue == [.left("e")])
     }
 }
 
@@ -99,7 +99,9 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func applyEqualsAp() {
         for fns in functions {
             for values in ints {
-                #expect(applyNonEmptyEither(fns, values).toArray == fns.flatMapT { f in values.mapT(f) }.toArray)
+                #expect(NonEmptyTEither.apply(fns.nonEmptyT, values.nonEmptyT).rawValue.toArray == fns.nonEmptyT.flatMap { f in
+                    values.nonEmptyT.map(f)
+                }.rawValue.toArray)
             }
         }
     }
@@ -107,8 +109,10 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func liftA2EqualsBind() {
         for lhs in ints {
             for rhs in strings {
-                let expected: NonEmpty<Either<String, String>> = lhs.flatMapT { n in rhs.mapT { s in combine(n, s) } }
-                #expect(liftA2NonEmptyEither(combine)(lhs, rhs).toArray == expected.toArray)
+                let expected: NonEmpty<Either<String, String>> = lhs.nonEmptyT
+                    .flatMap { n in rhs.nonEmptyT.map { s in combine(n, s) } }
+                    .rawValue
+                #expect(NonEmptyTEither.liftA2(combine)(lhs.nonEmptyT, rhs.nonEmptyT).rawValue.toArray == expected.toArray)
             }
         }
     }
@@ -116,7 +120,9 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func seqRightEqualsBind() {
         for lhs in ints {
             for rhs in strings {
-                #expect(seqRightNonEmptyEither(lhs, rhs).toArray == lhs.flatMapT { (_: Int) in rhs }.toArray)
+                #expect(lhs.nonEmptyT.seqRight(rhs.nonEmptyT).rawValue.toArray == lhs.nonEmptyT.flatMap { (_: Int) in
+                    rhs.nonEmptyT
+                }.rawValue.toArray)
             }
         }
     }
@@ -124,8 +130,8 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func seqLeftEqualsBind() {
         for lhs in ints {
             for rhs in strings {
-                let expected = lhs.flatMapT { n in rhs.mapT { (_: String) in n } }
-                #expect(seqLeftNonEmptyEither(lhs, rhs).toArray == expected.toArray)
+                let expected = lhs.nonEmptyT.flatMap { n in rhs.nonEmptyT.map { (_: String) in n } }.rawValue
+                #expect(lhs.nonEmptyT.seqLeft(rhs.nonEmptyT).rawValue.toArray == expected.toArray)
             }
         }
     }
@@ -154,7 +160,9 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func applyEqualsAp() {
         for fns in functions {
             for values in ints {
-                #expect(applyNonEmptyOptional(fns, values).toArray == fns.flatMapT { f in values.mapT(f) }.toArray)
+                #expect(NonEmptyTOptional.apply(fns.nonEmptyT, values.nonEmptyT).rawValue.toArray == fns.nonEmptyT.flatMap { f in
+                    values.nonEmptyT.map(f)
+                }.rawValue.toArray)
             }
         }
     }
@@ -162,8 +170,8 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func liftA2EqualsBind() {
         for lhs in ints {
             for rhs in strings {
-                let expected: NonEmpty<String?> = lhs.flatMapT { n in rhs.mapT { s in combine(n, s) } }
-                #expect(liftA2NonEmptyOptional(combine)(lhs, rhs).toArray == expected.toArray)
+                let expected: NonEmpty<String?> = lhs.nonEmptyT.flatMap { n in rhs.nonEmptyT.map { s in combine(n, s) } }.rawValue
+                #expect(NonEmptyTOptional.liftA2(combine)(lhs.nonEmptyT, rhs.nonEmptyT).rawValue.toArray == expected.toArray)
             }
         }
     }
@@ -171,7 +179,9 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func seqRightEqualsBind() {
         for lhs in ints {
             for rhs in strings {
-                #expect(seqRightNonEmptyOptional(lhs, rhs).toArray == lhs.flatMapT { (_: Int) in rhs }.toArray)
+                #expect(lhs.nonEmptyT.seqRight(rhs.nonEmptyT).rawValue.toArray == lhs.nonEmptyT.flatMap { (_: Int) in
+                    rhs.nonEmptyT
+                }.rawValue.toArray)
             }
         }
     }
@@ -179,8 +189,8 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func seqLeftEqualsBind() {
         for lhs in ints {
             for rhs in strings {
-                let expected = lhs.flatMapT { n in rhs.mapT { (_: String) in n } }
-                #expect(seqLeftNonEmptyOptional(lhs, rhs).toArray == expected.toArray)
+                let expected = lhs.nonEmptyT.flatMap { n in rhs.nonEmptyT.map { (_: String) in n } }.rawValue
+                #expect(lhs.nonEmptyT.seqLeft(rhs.nonEmptyT).rawValue.toArray == expected.toArray)
             }
         }
     }
@@ -209,7 +219,9 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func applyEqualsAp() {
         for fns in functions {
             for values in ints {
-                #expect(applyNonEmptyResult(fns, values).toArray == fns.flatMapT { f in values.mapT(f) }.toArray)
+                #expect(NonEmptyTResult.apply(fns.nonEmptyT, values.nonEmptyT).rawValue.toArray == fns.nonEmptyT.flatMap { f in
+                    values.nonEmptyT.map(f)
+                }.rawValue.toArray)
             }
         }
     }
@@ -217,8 +229,10 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func liftA2EqualsBind() {
         for lhs in ints {
             for rhs in strings {
-                let expected: NonEmpty<Result<String, ApLawError>> = lhs.flatMapT { n in rhs.mapT { s in combine(n, s) } }
-                #expect(liftA2NonEmptyResult(combine)(lhs, rhs).toArray == expected.toArray)
+                let expected: NonEmpty<Result<String, ApLawError>> = lhs.nonEmptyT
+                    .flatMap { n in rhs.nonEmptyT.map { s in combine(n, s) } }
+                    .rawValue
+                #expect(NonEmptyTResult.liftA2(combine)(lhs.nonEmptyT, rhs.nonEmptyT).rawValue.toArray == expected.toArray)
             }
         }
     }
@@ -226,7 +240,9 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func seqRightEqualsBind() {
         for lhs in ints {
             for rhs in strings {
-                #expect(seqRightNonEmptyResult(lhs, rhs).toArray == lhs.flatMapT { (_: Int) in rhs }.toArray)
+                #expect(lhs.nonEmptyT.seqRight(rhs.nonEmptyT).rawValue.toArray == lhs.nonEmptyT.flatMap { (_: Int) in
+                    rhs.nonEmptyT
+                }.rawValue.toArray)
             }
         }
     }
@@ -234,8 +250,8 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func seqLeftEqualsBind() {
         for lhs in ints {
             for rhs in strings {
-                let expected = lhs.flatMapT { n in rhs.mapT { (_: String) in n } }
-                #expect(seqLeftNonEmptyResult(lhs, rhs).toArray == expected.toArray)
+                let expected = lhs.nonEmptyT.flatMap { n in rhs.nonEmptyT.map { (_: String) in n } }.rawValue
+                #expect(lhs.nonEmptyT.seqLeft(rhs.nonEmptyT).rawValue.toArray == expected.toArray)
             }
         }
     }

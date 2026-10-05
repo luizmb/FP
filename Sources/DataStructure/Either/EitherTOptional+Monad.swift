@@ -9,7 +9,7 @@ import Foundation
 /// .left(l)      → .left(l)
 /// .right(.none) → .right(.none)
 /// .right(.some(a)) → fn(a)
-public func flatMapTEitherOptional<L, A, B>(
+func flatMapTEitherOptional<L, A, B>(
     _ either: Either<L, A?>,
     _ fn: @escaping @Sendable (A) -> Either<L, B?>
 ) -> Either<L, B?> {
@@ -19,7 +19,7 @@ public func flatMapTEitherOptional<L, A, B>(
 }
 
 /// Curried version
-public func bindTEitherOptional<L, A, B>(
+func bindTEitherOptional<L, A, B>(
     _ fn: @escaping @Sendable (A) -> Either<L, B?>
 ) -> @Sendable (Either<L, A?>) -> Either<L, B?> {
     { either in flatMapTEitherOptional(either, fn) }
@@ -27,7 +27,7 @@ public func bindTEitherOptional<L, A, B>(
 
 /// Kleisli composition for `EitherT + Optional` (left-to-right)
 /// (>=>) :: (a -> Either<l,b?>) -> (b -> Either<l,c?>) -> a -> Either<l,c?>
-public func kleisliT<L, A, B, C>(
+func kleisliT<L, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Either<L, B?>,
     _ fn2: @escaping @Sendable (B) -> Either<L, C?>
 ) -> @Sendable (A) -> Either<L, C?> {

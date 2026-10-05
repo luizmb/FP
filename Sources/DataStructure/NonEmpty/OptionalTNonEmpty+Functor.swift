@@ -2,7 +2,7 @@
 // OptionalTNonEmpty: outer = Optional, inner = NonEmpty
 // Type: NonEmpty<A>?
 
-public extension Optional {
+extension Optional {
     /// mapT for NonEmpty<A>? — maps over the inner NonEmpty when present.
     func mapT<A, B>(_ fn: @escaping @Sendable (A) -> B) -> NonEmpty<B>? where Wrapped == NonEmpty<A> {
         map { $0.map(fn) }
