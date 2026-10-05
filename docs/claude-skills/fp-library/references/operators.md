@@ -46,18 +46,15 @@ The rows below are all the same rule, with the Swift stdlib operators slotted in
 | `>>>` / `<<<` with anything else | composition binds tightest (`>>>` is above `<<<`) |
 | `<>` with the functor family, `<\|>`, Kleisli, bind, application | `<>` binds tighter |
 | `<£>`, `<*>`, `£>`, `<£`, `*>`, `<*` with each other | left to right (`f <£> a <*> b` is `(f <£> a) <*> b`) |
-| the functor family with `<\|>`, Kleisli, bind, application, `+`, `&&` | the functor family binds tighter |
-| the functor family with `??` | `??` binds tighter: `f <£> x ?? y` is `f <£> (x ?? y)` |
-| `<\|>` with Kleisli, bind, application, `&&` | `<\|>` binds tighter |
+| the functor family with `<\|>`, Kleisli, bind, application, `&&`, `\|\|` | the functor family binds tighter |
+| the functor family with `*`, `+`, `??` | the stdlib operator binds tighter: `f <£> x ?? y` is `f <£> (x ?? y)` |
+| `<\|>` with Kleisli, bind, application | `<\|>` binds tighter |
+| `<\|>`, Kleisli, bind, `<\|`, `\|>` with `*`, `+`, `??`, `==`, `&&`, `\|\|` | the stdlib operator binds tighter: `a <\|> b ?? c` is `a <\|> (b ?? c)`, `x == y \|> f` is `(x == y) \|> f` |
 | `>=>`, `<=<`, `-<<` with `>>-`, `<&>` | Kleisli binds tighter: `m >>- f >=> g` is `m >>- (f >=> g)` |
 | `>>-`, `<&>`, `->>` with each other | left to right |
 | `<\|` with `\|>` | `<\|` binds tighter, and both sit below every other library operator |
 
-The only mixes that still need parentheses involve a stdlib group that Swift can't order against the library's:
-
-- `<|>`, `>>-` / `<&>` and `|>` with `==`, `+`, `??` (and `&&` for `>>-` and `|>`). For example `a ?? b >>- f` must be `(a ?? b) >>- f` or `a ?? (b >>- f)`.
-- `<|>` with `+`, `==`, `??`.
-- The functor family with `==`.
+The only mix that still needs parentheses is the functor family (`<£>`, `<*>`, `£>`, `<£`, `*>`, `<*`) with `==`: Haskell puts them at the same level and rejects it, so Swift does too.
 
 If you hit "adjacent operators are in unordered precedence groups", that's the cause. It never silently groups the wrong way, it just refuses. When a chain gets parenthesized everywhere, that's usually the hint to switch to the named form (`x.map(f).flatMap(g)`) or to give the intermediate step a name.
 
@@ -68,7 +65,7 @@ Associativity, where it applies, follows Haskell: `>>-` is left associative (`m 
 When asked what a composition does or why it doesn't compile:
 
 1. Write the type of every leaf (each value and each function).
-2. Group by the rules above and write the fully parenthesized form. If two adjacent operators are in unordered groups (a library operator against a stdlib one, see the list above), that's the bug: say so and add the parentheses.
+2. Group by the rules above and write the fully parenthesized form. If two adjacent operators are in unordered groups (the functor family against `==`, see the list above), that's the bug: say so and add the parentheses.
 3. Evaluate the innermost group first, writing the resulting type after each step.
 4. If it still fails, find the first step where the types disagree. That's nearly always the container on the wrong side of `<£>`, a nested value treated as if it were a stack (or the other way around), or a closure that isn't `@Sendable`.
 5. Offer the fix, and when it helps, the named-function form as a readability check.
@@ -159,7 +156,7 @@ let shouted: Reader<Config, String?> = ({ $0.uppercased() } <£> lookup("1").rea
 
 ## Common errors and fixes
 
-"adjacent operators are in unordered precedence groups": one side is a stdlib operator Swift can't order against a library one (see the list above), so add parentheses around the part that should run first.
+"adjacent operators are in unordered precedence groups": almost always a functor-family operator next to `==`, which is unordered on purpose (see the list above), so add parentheses around the part that should run first.
 
 ```swift-sketch
 let broken = numbers.first ?? 0 |> double

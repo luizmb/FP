@@ -97,9 +97,9 @@ fixed and cannot be changed; the custom groups slot around them):
 4.2   NilCoalescingPrecedence         (stdlib: ??)
 4     ComparisonPrecedence            (stdlib: ==, <=)  ≅
 4     FunctorOps                      <£>  £>  <£  <*>  *>  <*             left
-3     AlternativePrecedence           <|>                                  left
 3     LogicalConjunctionPrecedence    (stdlib: &&)
 2     LogicalDisjunctionPrecedence    (stdlib: ||)
+1.8   AlternativePrecedence           <|>                                  left
 1.5   KleisliCompositionRight         >=>  <=<  -<<  <<-                   right
 1     MonadBindLeft                   >>-  <&>  ->>                        left
 0.5   TernaryPrecedence               (stdlib: ?:)
@@ -116,12 +116,18 @@ compiles and groups `>>>` first (`f >>> g <<< h` is `(f >>> g) <<< h`); parenthe
 The library's own groups are chained into one total order (each custom group is declared `higherThan` the
 next one in this module, because Swift won't order two groups through another module's), so any two
 library operators mix without parentheses: `f <£> xs >>- g` is `(f <£> xs) >>- g` and `x |> f >>> g` is
-`x |> (f >>> g)`. What stays unordered is a library operator against some stdlib ones, such as `|>`,
-`>>-` or `<|>` next to `==`, `+` or `??`; those need parentheses.
+`x |> (f >>> g)`.
 
-`FunctorOps` and `ComparisonPrecedence` sit at the same numeric level (4) because `FunctorOps` is
-declared `lowerThan: NilCoalescingPrecedence, higherThan: AlternativePrecedence` — the same slot
-Swift's own comparison operators occupy — rather than being ordered directly against them.
+The stdlib operators that matter in practice follow Haskell's fixities too: `*`, `+`, `??`, `==`, `&&` and
+`||` bind tighter than `<|>`, which binds tighter than `>=>` / `>>-`, which bind tighter than `<|` and `|>`.
+Each of those library groups is declared `lowerThan` each of those stdlib groups (Swift does not see the
+stdlib's own transitive order from another module), so `a <|> b ?? c` is `a <|> (b ?? c)`, `x == y |> f` is
+`(x == y) |> f` and `inc <| 1 + 2 * 3` is `inc <| (1 + 2 * 3)`. The functor family also sits below `*`, `+`
+and `??`, and above `&&`, `||` and `<|>`.
+
+The one gap that is left on purpose is `FunctorOps` against `ComparisonPrecedence`: they share the numeric
+level 4 because Haskell puts `<$>` / `<*>` and `==` at the same fixity (`infix 4`) and rejects the mix.
+Swift refuses it as well ("adjacent operators are in unordered precedence groups"), so parenthesise.
 
 ### Why the associativity choices matter
 

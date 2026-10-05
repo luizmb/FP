@@ -2350,10 +2350,10 @@ Every custom operator lives in one of the precedence groups defined in `Sources/
 | 4.5 | `as?` _(stdlib)_ | none | `CastingPrecedence` |
 | 4.2 | `??` _(stdlib)_ | right | `NilCoalescingPrecedence` |
 | 4 | `==`, `<=` _(stdlib)_, `≅` | none | `ComparisonPrecedence` |
-| below `??`, above `<\|>` | `<£>`, `£>`, `<£`, `<*>`, `*>`, `<*` | left | `FunctorOps` (no declared relation to the comparison operators: parenthesise when mixing with `==`) |
-| 3 | `<\|>` | left | `AlternativePrecedence` |
+| below `??`, above `&&` | `<£>`, `£>`, `<£`, `<*>`, `*>`, `<*` | left | `FunctorOps` (no declared relation to the comparison operators: parenthesise when mixing with `==`) |
 | 3 | `&&` _(stdlib)_ | left | `LogicalConjunctionPrecedence` |
 | 2 | `\|\|` _(stdlib)_ | left | `LogicalDisjunctionPrecedence` |
+| 1.5 | `<\|>` | left | `AlternativePrecedence` |
 | 1.1 | `>=>`, `<=<`, `-<<`, `<<-` | right | `KleisliCompositionRight` |
 | 1 | `>>-`, `<&>`, `->>` | left | `MonadBindLeft` |
 | 0.5 | `?:` _(stdlib)_ | right | `TernaryPrecedence` |
@@ -2362,6 +2362,7 @@ Every custom operator lives in one of the precedence groups defined in `Sources/
 | -1 | `=` _(stdlib)_ | right | `AssignmentPrecedence` |
 
 Practical takeaways:
+- Following Haskell's fixities, the stdlib operators `*`, `+`, `??`, `==`, `&&` and `||` all bind tighter than `<\|>`, which binds tighter than `>=>` / `>>-`, which bind tighter than `<\|` and `\|>`. So `a <\|> b ?? c` is `a <\|> (b ?? c)` and `x == y \|> f` is `(x == y) \|> f`. The one deliberate gap is the functor family (`<£>`, `<*>`, …) against `==`: Haskell has them at the same level and rejects the mix, so parenthesise.
 - `>>>` / `<<<` bind tighter than everything else, so composed functions and optics never need parentheses next to arithmetic or comparisons.
 - `<|` / `|>` sit near the very bottom (just above assignment), which is what lets them wrap an entire expression without parentheses — `f <| a + b * c` parses as `f <| (a + b * c)`.
 - `>=>` / `<=<` / `-<<` / `<<-` (`KleisliCompositionRight`, right-associative) bind slightly tighter than `>>-` / `<&>` / `->>` (`MonadBindLeft`, left-associative). Haskell puts both at level 1 (`infixr 1` / `infixl 1`), where mixing them without parentheses is an error; Swift needs two ordered groups, so `x >>- f >=> g` means `x >>- (f >=> g)`.
