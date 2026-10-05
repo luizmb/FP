@@ -5,7 +5,7 @@
 // Bind runs `self` with the environment, runs `fn(a)` with the same environment for every
 // element and concatenates the results in order (NonEmpty bind).
 
-public extension Reader {
+extension Reader {
     /// flatMapT :: Reader<env, NonEmpty<a>> -> (a -> Reader<env, NonEmpty<b>>) -> Reader<env, NonEmpty<b>>
     func flatMapT<Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> Reader<Environment, NonEmpty<B>>
@@ -26,7 +26,7 @@ public extension Reader {
 
 /// Kleisli composition for `ReaderT + NonEmpty` (left-to-right)
 /// (>=>) :: (a -> Reader<env, NonEmpty<b>>) -> (b -> Reader<env, NonEmpty<c>>) -> a -> Reader<env, NonEmpty<c>>
-public func kleisliT<Env, A, B, C>(
+func kleisliT<Env, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Reader<Env, NonEmpty<B>>,
     _ fn2: @escaping @Sendable (B) -> Reader<Env, NonEmpty<C>>
 ) -> @Sendable (A) -> Reader<Env, NonEmpty<C>> {

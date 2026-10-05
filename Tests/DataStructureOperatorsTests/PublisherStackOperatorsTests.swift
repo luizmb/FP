@@ -93,33 +93,39 @@
 
         private typealias ReaderPub = Reader<Int, any Publisher<Int, Never>>
 
-        private let fReader: @Sendable (Int) -> Reader<Int, any Publisher<Int, Never>> = { a in
-            Reader { env in [a, a * env].publisher }
-        }
-
-        private let gReader: @Sendable (Int) -> Reader<Int, any Publisher<Int, Never>> = { a in
-            Reader { env in Just(a + env) }
-        }
+        @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
+        private typealias ReaderPubT = ReaderTPublisher<Int, Never, Int>
 
         @Test func readerTPublisherBindOperators() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-            let m = ReaderPub { env in [1, env].publisher }
-            #expect(collect((m >>- fReader)(3)) == [1, 3, 3, 9])
-            #expect(collect((gReader -<< m)(3)) == [4, 6])
-            #expect(collect((fReader >=> gReader)(2)(3)) == [5, 9])
-            #expect(collect((gReader <=< fReader)(2)(3)) == [5, 9])
+            let m = ReaderPubT(ReaderPub { env in [1, env].publisher })
+            let f: @Sendable (Int) -> ReaderPubT = { a in ReaderPubT(Reader { env in [a, a * env].publisher }) }
+            let g: @Sendable (Int) -> ReaderPubT = { a in ReaderPubT(Reader { env in Just(a + env) }) }
+            #expect(collect((m >>- f).rawValue(3)) == [1, 3, 3, 9])
+            #expect(collect((g -<< m).rawValue(3)) == [4, 6])
+            #expect(collect((f >=> g)(2).rawValue(3)) == [5, 9])
+            #expect(collect((g <=< f)(2).rawValue(3)) == [5, 9])
+        }
+
+        @Test func readerTPublisherFunctorOperators() {
+            guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
+            let m = ReaderPubT(ReaderPub { env in [1, env].publisher })
+            #expect(collect(({ $0 * 2 } <£> m).rawValue(3)) == [2, 6])
+            #expect(collect((m <&> { $0 + 1 }).rawValue(3)) == [2, 4])
+            #expect(collect((m £> 0).rawValue(3)) == [0, 0])
+            #expect(collect((0 <£ m).rawValue(3)) == [0, 0])
         }
 
         @Test func readerTPublisherApplicativeOperators() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-            let fns = Reader<Int, any Publisher<@Sendable (Int) -> Int, Never>> { env in
+            let fns = ReaderTPublisher(Reader<Int, any Publisher<@Sendable (Int) -> Int, Never>> { env in
                 [{ $0 + env }, { $0 * env }].publisher
-            }
-            let lhs = ReaderPub { env in [env, env + 1].publisher }
-            let rhs = ReaderPub { env in [env * 10, env * 20].publisher }
-            #expect(collect((fns <*> rhs)(1)) == [11, 21, 10, 20])
-            #expect(collect((lhs *> rhs)(1)) == [10, 20, 10, 20])
-            #expect(collect((lhs <* rhs)(1)) == [1, 1, 2, 2])
+            })
+            let lhs = ReaderPubT(ReaderPub { env in [env, env + 1].publisher })
+            let rhs = ReaderPubT(ReaderPub { env in [env * 10, env * 20].publisher })
+            #expect(collect((fns <*> rhs).rawValue(1)) == [11, 21, 10, 20])
+            #expect(collect((lhs *> rhs).rawValue(1)) == [10, 20, 10, 20])
+            #expect(collect((lhs <* rhs).rawValue(1)) == [1, 1, 2, 2])
         }
     }
 #endif

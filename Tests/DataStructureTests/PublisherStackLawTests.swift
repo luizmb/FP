@@ -5,6 +5,16 @@
     @testable import DataStructure
     import Testing
 
+    @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
+    private func fReader(_ a: Int) -> ReaderTPublisher<Int, Never, Int> {
+        ReaderTPublisher(Reader { env in [a, a * env].publisher })
+    }
+
+    @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
+    private func gReader(_ a: Int) -> ReaderTPublisher<Int, Never, Int> {
+        ReaderTPublisher(Reader { env in Just(a + env) })
+    }
+
     /// Publisher stacks (PublisherTEither, PublisherTWriter, ReaderTPublisher) use the Publisher
     /// ordered-concat bind, and their applicatives are the bind-derived `ap`.
     @MainActor
@@ -136,60 +146,50 @@
 
         private typealias ReaderPub = Reader<Int, any Publisher<Int, Never>>
 
-        private let fReader: @Sendable (Int) -> Reader<Int, any Publisher<Int, Never>> = { a in
-            Reader { env in [a, a * env].publisher }
-        }
-
-        private let gReader: @Sendable (Int) -> Reader<Int, any Publisher<Int, Never>> = { a in
-            Reader { env in Just(a + env) }
-        }
-
-        private let pureReader: @Sendable (Int) -> Reader<Int, any Publisher<Int, Never>> = { a in
-            // swiftlint:disable:next closure_ignoring_args
-            Reader { _ in Just(a) }
-        }
+        @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
+        private typealias ReaderPubT = ReaderTPublisher<Int, Never, Int>
 
         @Test func readerTPublisherLeftIdentity() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-            #expect(collect(pureReader(3).flatMapT(fReader)(10)) == collect(fReader(3)(10)))
+            #expect(collect(ReaderPubT.pure(3).flatMap(fReader).rawValue(10)) == collect(fReader(3).rawValue(10)))
         }
 
         @Test func readerTPublisherRightIdentity() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-            let m = ReaderPub { env in [env, env + 1].publisher }
-            #expect(collect(m.flatMapT(pureReader)(10)) == [10, 11])
+            let m = ReaderPubT(ReaderPub { env in [env, env + 1].publisher })
+            #expect(collect(m.flatMap(ReaderPubT.pure).rawValue(10)) == [10, 11])
         }
 
         @Test func readerTPublisherAssociativityIsOrderedConcat() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-            let m = ReaderPub { env in [1, 2].publisher.map { $0 * env } }
-            let lhs = m.flatMapT(fReader).flatMapT(gReader)
-            let rhs = m.flatMapT(kleisliT(fReader, gReader))
-            #expect(collect(lhs(2)) == collect(rhs(2)))
+            let m = ReaderPubT(ReaderPub { env in [1, 2].publisher.map { $0 * env } })
+            let lhs = m.flatMap(fReader).flatMap(gReader)
+            let rhs = m.flatMap(ReaderPubT.kleisli(fReader, gReader))
+            #expect(collect(lhs.rawValue(2)) == collect(rhs.rawValue(2)))
             // m(2) = [2, 4]; f 2 = [2, 4]; f 4 = [4, 8]; g adds env
-            #expect(collect(lhs(2)) == [4, 6, 6, 10])
+            #expect(collect(lhs.rawValue(2)) == [4, 6, 6, 10])
         }
 
         @Test func readerTPublisherApEqualsBindDerived() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-            let fns = Reader<Int, any Publisher<@Sendable (Int) -> Int, Never>> { env in
+            let fns = ReaderTPublisher(Reader<Int, any Publisher<@Sendable (Int) -> Int, Never>> { env in
                 [{ $0 + env }, { $0 * env }].publisher
-            }
-            let values = ReaderPub { env in [1, env].publisher }
-            let applied = applyReaderPublisher(fns, values)
-            let ap = fns.flatMapT { fn in values.mapT(fn) }
-            #expect(collect(applied(10)) == collect(ap(10)))
-            #expect(collect(applied(10)) == [11, 20, 10, 100])
+            })
+            let values = ReaderPubT(ReaderPub { env in [1, env].publisher })
+            let applied = ReaderPubT.apply(fns, values)
+            let ap = fns.flatMap { fn in values.map(fn) }
+            #expect(collect(applied.rawValue(10)) == collect(ap.rawValue(10)))
+            #expect(collect(applied.rawValue(10)) == [11, 20, 10, 100])
         }
 
         @Test func readerTPublisherSeqAndLiftA2() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-            let lhs = ReaderPub { env in [env, env + 1].publisher }
-            let rhs = ReaderPub { env in [env * 10, env * 20].publisher }
-            #expect(collect(seqRightReaderPublisher(lhs, rhs)(1)) == [10, 20, 10, 20])
-            #expect(collect(seqLeftReaderPublisher(lhs, rhs)(1)) == [1, 1, 2, 2])
-            let lifted = liftA2ReaderPublisher { (a: Int, b: Int) in a + b }(lhs, rhs)
-            #expect(collect(lifted(1)) == [11, 21, 12, 22])
+            let lhs = ReaderPubT(ReaderPub { env in [env, env + 1].publisher })
+            let rhs = ReaderPubT(ReaderPub { env in [env * 10, env * 20].publisher })
+            #expect(collect(lhs.seqRight(rhs).rawValue(1)) == [10, 20, 10, 20])
+            #expect(collect(lhs.seqLeft(rhs).rawValue(1)) == [1, 1, 2, 2])
+            let lifted = ReaderPubT.liftA2 { (a: Int, b: Int) in a + b }(lhs, rhs)
+            #expect(collect(lifted.rawValue(1)) == [11, 21, 12, 22])
         }
     }
 #endif

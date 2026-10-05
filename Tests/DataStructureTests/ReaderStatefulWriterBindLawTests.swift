@@ -14,38 +14,39 @@ private let initialStates = [0, 5, -4]
 // MARK: - ReaderTWriter
 
 typealias BindLawRW<A> = Reader<Int, Writer<[String], A>>
+typealias StackRW<A> = ReaderTWriter<Int, [String], A>
 
-private func pureRW<A: Sendable>(_ value: A) -> BindLawRW<A> {
-    BindLawRW<A>.pure(Writer(value, []))
+private func pureRW<A: Sendable>(_ value: A) -> StackRW<A> {
+    StackRW<A>.pure(value)
 }
 
 private func expectSameRW<A: Equatable>(
-    _ actual: BindLawRW<A>,
-    _ expected: BindLawRW<A>,
+    _ actual: StackRW<A>,
+    _ expected: StackRW<A>,
     sourceLocation: SourceLocation = #_sourceLocation
 ) {
     for env in environments {
-        #expect(actual(env) == expected(env), sourceLocation: sourceLocation)
+        #expect(actual.rawValue(env) == expected.rawValue(env), sourceLocation: sourceLocation)
     }
 }
 
 @Suite struct ReaderTWriterBindLawTests {
-    let ms: [BindLawRW<Int>] = [
-        BindLawRW { env in Writer(env, ["m"]) },
-        BindLawRW { env in Writer(env * 10, []) }
+    let ms: [StackRW<Int>] = [
+        StackRW(BindLawRW { env in Writer(env, ["m"]) }),
+        StackRW(BindLawRW { env in Writer(env * 10, []) })
     ]
-    let f: @Sendable (Int) -> BindLawRW<Int> = { a in BindLawRW { env in Writer(a + env, ["f\(a)"]) } }
-    let g: @Sendable (Int) -> BindLawRW<String> = { b in BindLawRW { env in Writer("\(b * env)", ["g\(b)"]) } }
+    let f: @Sendable (Int) -> StackRW<Int> = { a in StackRW(BindLawRW { env in Writer(a + env, ["f\(a)"]) }) }
+    let g: @Sendable (Int) -> StackRW<String> = { b in StackRW(BindLawRW { env in Writer("\(b * env)", ["g\(b)"]) }) }
 
     @Test func leftIdentity() {
         for a in [0, 1, 7] {
-            expectSameRW(pureRW(a).flatMapT(f), f(a))
+            expectSameRW(pureRW(a).flatMap(f), f(a))
         }
     }
 
     @Test func rightIdentity() {
         for m in ms {
-            expectSameRW(m.flatMapT(pureRW), m)
+            expectSameRW(m.flatMap(pureRW), m)
         }
     }
 
@@ -53,36 +54,36 @@ private func expectSameRW<A: Equatable>(
         let f = f
         let g = g
         for m in ms {
-            expectSameRW(m.flatMapT(f).flatMapT(g), m.flatMapT { a in f(a).flatMapT(g) })
+            expectSameRW(m.flatMap(f).flatMap(g), m.flatMap { a in f(a).flatMap(g) })
         }
     }
 
     @Test func applicativeEqualsAp() {
-        let rf = BindLawRW<@Sendable (Int) -> Int> { env in Writer({ $0 + env }, ["fn"]) }
-        let rb = BindLawRW<String> { env in Writer("b\(env)", ["rhs"]) }
+        let rf = StackRW(BindLawRW<@Sendable (Int) -> Int> { env in Writer({ $0 + env }, ["fn"]) })
+        let rb = StackRW(BindLawRW<String> { env in Writer("b\(env)", ["rhs"]) })
         for ra in ms {
-            expectSameRW(applyReaderWriter(rf, ra), rf.flatMapT { fn in ra.mapT(fn) })
+            expectSameRW(StackRW<Int>.apply(rf, ra), rf.flatMap { fn in ra.map(fn) })
             expectSameRW(
-                liftA2ReaderWriter { (a: Int, b: String) in "\(a)\(b)" }(ra, rb),
-                ra.flatMapT { a in rb.mapT { b in "\(a)\(b)" } }
+                StackRW<String>.liftA2 { (a: Int, b: String) in "\(a)\(b)" }(ra, rb),
+                ra.flatMap { a in rb.map { b in "\(a)\(b)" } }
             )
-            expectSameRW(seqRightReaderWriter(ra, rb), ra.flatMapT(const(rb)))
-            expectSameRW(seqLeftReaderWriter(ra, rb), ra.flatMapT { a in rb.mapT(const(a)) })
+            expectSameRW(ra.seqRight(rb), ra.flatMap(const(rb)))
+            expectSameRW(ra.seqLeft(rb), ra.flatMap { a in rb.map(const(a)) })
         }
     }
 
     @Test func continuationReadsEnvironmentAndLogs() {
-        let m = BindLawRW<Int> { env in Writer(env + 1, ["start"]) }
-        let result = m.flatMapT { a in BindLawRW<String> { env in Writer("\(a)/\(env)", ["saw env \(env)"]) } }
-        #expect(result(4) == Writer("5/4", ["start", "saw env 4"]))
+        let m = StackRW(BindLawRW<Int> { env in Writer(env + 1, ["start"]) })
+        let result = m.flatMap { a in StackRW(BindLawRW<String> { env in Writer("\(a)/\(env)", ["saw env \(env)"]) }) }
+        #expect(result.rawValue(4) == Writer("5/4", ["start", "saw env 4"]))
     }
 
-    @Test func bindTAndKleisliTAgreeWithFlatMapT() {
+    @Test func bindAndKleisliAgreeWithFlatMap() {
         for m in ms {
-            expectSameRW(BindLawRW<Int>.bindT(f)(m), m.flatMapT(f))
+            expectSameRW(StackRW<Int>.bind(f)(m), m.flatMap(f))
         }
         for a in [0, 2] {
-            expectSameRW(kleisliT(f, g)(a), f(a).flatMapT(g))
+            expectSameRW(StackRW<Int>.kleisli(f, g)(a), f(a).flatMap(g))
         }
     }
 }
@@ -90,20 +91,21 @@ private func expectSameRW<A: Equatable>(
 // MARK: - ReaderTStateful
 
 typealias BindLawRS<A> = Reader<Int, Stateful<Int, A>>
+typealias StackRS<A> = ReaderTStateful<Int, Int, A>
 
-private func pureRS<A: Sendable>(_ value: A) -> BindLawRS<A> {
-    BindLawRS<A>.pure(.pure(value))
+private func pureRS<A: Sendable>(_ value: A) -> StackRS<A> {
+    StackRS<A>.pure(value)
 }
 
 private func expectSameRS<A: Equatable>(
-    _ actual: BindLawRS<A>,
-    _ expected: BindLawRS<A>,
+    _ actual: StackRS<A>,
+    _ expected: StackRS<A>,
     sourceLocation: SourceLocation = #_sourceLocation
 ) {
     for env in environments {
         for initial in initialStates {
-            let (actualValue, actualState) = actual(env).runStateful(initial)
-            let (expectedValue, expectedState) = expected(env).runStateful(initial)
+            let (actualValue, actualState) = actual.rawValue(env).runStateful(initial)
+            let (expectedValue, expectedState) = expected.rawValue(env).runStateful(initial)
             #expect(actualValue == expectedValue, sourceLocation: sourceLocation)
             #expect(actualState == expectedState, sourceLocation: sourceLocation)
         }
@@ -111,42 +113,42 @@ private func expectSameRS<A: Equatable>(
 }
 
 @Suite struct ReaderTStatefulBindLawTests {
-    let ms: [BindLawRS<Int>] = [
-        BindLawRS { env in
+    let ms: [StackRS<Int>] = [
+        StackRS(BindLawRS { env in
             Stateful { s in
                 s += 1
                 return env * 10 + s
             }
-        },
-        BindLawRS { env in Stateful { s in s * env } }
+        }),
+        StackRS(BindLawRS { env in Stateful { s in s * env } })
     ]
-    let f: @Sendable (Int) -> BindLawRS<Int> = { a in
-        BindLawRS { env in
+    let f: @Sendable (Int) -> StackRS<Int> = { a in
+        StackRS(BindLawRS { env in
             Stateful { s in
                 s = s * 2 + env
                 return a + s
             }
-        }
+        })
     }
 
-    let g: @Sendable (Int) -> BindLawRS<String> = { b in
-        BindLawRS { env in
+    let g: @Sendable (Int) -> StackRS<String> = { b in
+        StackRS(BindLawRS { env in
             Stateful { s in
                 s -= b
                 return "\(b):\(env):\(s)"
             }
-        }
+        })
     }
 
     @Test func leftIdentity() {
         for a in [0, 1, 7] {
-            expectSameRS(pureRS(a).flatMapT(f), f(a))
+            expectSameRS(pureRS(a).flatMap(f), f(a))
         }
     }
 
     @Test func rightIdentity() {
         for m in ms {
-            expectSameRS(m.flatMapT(pureRS), m)
+            expectSameRS(m.flatMap(pureRS), m)
         }
     }
 
@@ -154,60 +156,60 @@ private func expectSameRS<A: Equatable>(
         let f = f
         let g = g
         for m in ms {
-            expectSameRS(m.flatMapT(f).flatMapT(g), m.flatMapT { a in f(a).flatMapT(g) })
+            expectSameRS(m.flatMap(f).flatMap(g), m.flatMap { a in f(a).flatMap(g) })
         }
     }
 
     @Test func applicativeEqualsAp() {
-        let rf = BindLawRS<@Sendable (Int) -> Int> { env in
+        let rf = StackRS(BindLawRS<@Sendable (Int) -> Int> { env in
             Stateful { s in
                 s += 100
                 return { $0 * env }
             }
-        }
-        let rb = BindLawRS<String> { env in
+        })
+        let rb = StackRS(BindLawRS<String> { env in
             Stateful { s in
                 s *= 3
                 return "b\(env)"
             }
-        }
+        })
         for ra in ms {
-            expectSameRS(applyReaderStateful(rf, ra), rf.flatMapT { fn in ra.mapT(fn) })
+            expectSameRS(StackRS<Int>.apply(rf, ra), rf.flatMap { fn in ra.map(fn) })
             expectSameRS(
-                liftA2ReaderStateful { (a: Int, b: String) in "\(a)\(b)" }(ra, rb),
-                ra.flatMapT { a in rb.mapT { b in "\(a)\(b)" } }
+                StackRS<String>.liftA2 { (a: Int, b: String) in "\(a)\(b)" }(ra, rb),
+                ra.flatMap { a in rb.map { b in "\(a)\(b)" } }
             )
-            expectSameRS(seqRightReaderStateful(ra, rb), ra.flatMapT(const(rb)))
-            expectSameRS(seqLeftReaderStateful(ra, rb), ra.flatMapT { a in rb.mapT(const(a)) })
+            expectSameRS(ra.seqRight(rb), ra.flatMap(const(rb)))
+            expectSameRS(ra.seqLeft(rb), ra.flatMap { a in rb.map(const(a)) })
         }
     }
 
     @Test func continuationReadsEnvironmentAndTouchesState() {
-        let m = BindLawRS<Int> { env in
+        let m = StackRS(BindLawRS<Int> { env in
             Stateful { s in
                 s += env
                 return s
             }
-        }
-        let result = m.flatMapT { a in
-            BindLawRS<String> { env in
+        })
+        let result = m.flatMap { a in
+            StackRS(BindLawRS<String> { env in
                 Stateful { s in
                     s *= env
                     return "\(a)/\(env)"
                 }
-            }
+            })
         }
-        let (value, finalState) = result(3).runStateful(1)
+        let (value, finalState) = result.rawValue(3).runStateful(1)
         #expect(value == "4/3")
         #expect(finalState == 12)
     }
 
-    @Test func bindTAndKleisliTAgreeWithFlatMapT() {
+    @Test func bindAndKleisliAgreeWithFlatMap() {
         for m in ms {
-            expectSameRS(BindLawRS<Int>.bindT(f)(m), m.flatMapT(f))
+            expectSameRS(StackRS<Int>.bind(f)(m), m.flatMap(f))
         }
         for a in [0, 2] {
-            expectSameRS(kleisliT(f, g)(a), f(a).flatMapT(g))
+            expectSameRS(StackRS<Int>.kleisli(f, g)(a), f(a).flatMap(g))
         }
     }
 }
@@ -324,38 +326,39 @@ private func expectSameSW<A: Equatable>(
 // MARK: - ReaderTNonEmpty
 
 typealias BindLawRN<A> = Reader<Int, NonEmpty<A>>
+typealias StackRN<A> = ReaderTNonEmpty<Int, A>
 
-private func pureRN<A: Sendable>(_ value: A) -> BindLawRN<A> {
-    BindLawRN<A>.pure(NonEmpty(head: value))
+private func pureRN<A: Sendable>(_ value: A) -> StackRN<A> {
+    StackRN<A>.pure(value)
 }
 
 private func expectSameRN<A: Equatable & Sendable>(
-    _ actual: BindLawRN<A>,
-    _ expected: BindLawRN<A>,
+    _ actual: StackRN<A>,
+    _ expected: StackRN<A>,
     sourceLocation: SourceLocation = #_sourceLocation
 ) {
     for env in environments {
-        #expect(actual(env) == expected(env), sourceLocation: sourceLocation)
+        #expect(actual.rawValue(env) == expected.rawValue(env), sourceLocation: sourceLocation)
     }
 }
 
 @Suite struct ReaderTNonEmptyBindLawTests {
-    let ms: [BindLawRN<Int>] = [
-        BindLawRN { env in NonEmpty(head: env, tail: [env + 1]) },
-        BindLawRN { env in NonEmpty(head: env * 10) }
+    let ms: [StackRN<Int>] = [
+        StackRN(BindLawRN { env in NonEmpty(head: env, tail: [env + 1]) }),
+        StackRN(BindLawRN { env in NonEmpty(head: env * 10) })
     ]
-    let f: @Sendable (Int) -> BindLawRN<Int> = { a in BindLawRN { env in NonEmpty(head: a, tail: [a + env]) } }
-    let g: @Sendable (Int) -> BindLawRN<String> = { b in BindLawRN { env in NonEmpty(head: "\(b)", tail: ["\(b * env)"]) } }
+    let f: @Sendable (Int) -> StackRN<Int> = { a in StackRN(BindLawRN { env in NonEmpty(head: a, tail: [a + env]) }) }
+    let g: @Sendable (Int) -> StackRN<String> = { b in StackRN(BindLawRN { env in NonEmpty(head: "\(b)", tail: ["\(b * env)"]) }) }
 
     @Test func leftIdentity() {
         for a in [0, 1, 7] {
-            expectSameRN(pureRN(a).flatMapT(f), f(a))
+            expectSameRN(pureRN(a).flatMap(f), f(a))
         }
     }
 
     @Test func rightIdentity() {
         for m in ms {
-            expectSameRN(m.flatMapT(pureRN), m)
+            expectSameRN(m.flatMap(pureRN), m)
         }
     }
 
@@ -363,36 +366,36 @@ private func expectSameRN<A: Equatable & Sendable>(
         let f = f
         let g = g
         for m in ms {
-            expectSameRN(m.flatMapT(f).flatMapT(g), m.flatMapT { a in f(a).flatMapT(g) })
+            expectSameRN(m.flatMap(f).flatMap(g), m.flatMap { a in f(a).flatMap(g) })
         }
     }
 
     @Test func applicativeEqualsAp() {
-        let rf = BindLawRN<@Sendable (Int) -> Int> { env in NonEmpty(head: { $0 + env }, tail: [{ $0 * 2 }]) }
-        let rb = BindLawRN<String> { env in NonEmpty(head: "x\(env)", tail: ["y"]) }
+        let rf = StackRN(BindLawRN<@Sendable (Int) -> Int> { env in NonEmpty(head: { $0 + env }, tail: [{ $0 * 2 }]) })
+        let rb = StackRN(BindLawRN<String> { env in NonEmpty(head: "x\(env)", tail: ["y"]) })
         for ra in ms {
-            expectSameRN(applyReaderNonEmpty(rf, ra), rf.flatMapT { fn in ra.mapT(fn) })
+            expectSameRN(StackRN<Int>.apply(rf, ra), rf.flatMap { fn in ra.map(fn) })
             expectSameRN(
-                liftA2ReaderNonEmpty { (a: Int, b: String) in "\(a)\(b)" }(ra, rb),
-                ra.flatMapT { a in rb.mapT { b in "\(a)\(b)" } }
+                StackRN<String>.liftA2 { (a: Int, b: String) in "\(a)\(b)" }(ra, rb),
+                ra.flatMap { a in rb.map { b in "\(a)\(b)" } }
             )
-            expectSameRN(seqRightReaderNonEmpty(ra, rb), ra.flatMapT(const(rb)))
-            expectSameRN(seqLeftReaderNonEmpty(ra, rb), ra.flatMapT { a in rb.mapT(const(a)) })
+            expectSameRN(ra.seqRight(rb), ra.flatMap(const(rb)))
+            expectSameRN(ra.seqLeft(rb), ra.flatMap { a in rb.map(const(a)) })
         }
     }
 
     @Test func continuationReadsEnvironment() {
-        let m = BindLawRN<Int>(const(NonEmpty(head: 1, tail: [2])))
-        let result = m.flatMapT { a in BindLawRN<String> { env in NonEmpty(head: "\(a)", tail: ["\(a)@\(env)"]) } }
-        #expect(result(9) == NonEmpty(head: "1", tail: ["1@9", "2", "2@9"]))
+        let m = StackRN(BindLawRN<Int>(const(NonEmpty(head: 1, tail: [2]))))
+        let result = m.flatMap { a in StackRN(BindLawRN<String> { env in NonEmpty(head: "\(a)", tail: ["\(a)@\(env)"]) }) }
+        #expect(result.rawValue(9) == NonEmpty(head: "1", tail: ["1@9", "2", "2@9"]))
     }
 
-    @Test func bindTAndKleisliTAgreeWithFlatMapT() {
+    @Test func bindAndKleisliAgreeWithFlatMap() {
         for m in ms {
-            expectSameRN(BindLawRN<Int>.bindT(f)(m), m.flatMapT(f))
+            expectSameRN(StackRN<Int>.bind(f)(m), m.flatMap(f))
         }
         for a in [0, 2] {
-            expectSameRN(kleisliT(f, g)(a), f(a).flatMapT(g))
+            expectSameRN(StackRN<Int>.kleisli(f, g)(a), f(a).flatMap(g))
         }
     }
 }

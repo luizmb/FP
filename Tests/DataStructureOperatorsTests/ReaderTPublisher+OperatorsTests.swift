@@ -35,7 +35,7 @@
                     .eraseToAnyPublisher()
             }
 
-            let result = readerFn <*> readerValue
+            let result = (ReaderTPublisher(readerFn) <*> ReaderTPublisher(readerValue)).rawValue
 
             let env = Environment(multiplier: 5)
             var cancellables = Set<AnyCancellable>()
@@ -61,13 +61,13 @@
                     .eraseToAnyPublisher()
             }
 
-            let bound = reader >>- { value in
-                Reader<Environment, any Publisher<String, TestError>> { env in
+            let bound = (ReaderTPublisher(reader) >>- { value in
+                ReaderTPublisher(Reader<Environment, any Publisher<String, TestError>> { env in
                     Just("\(value + env.multiplier)")
                         .setFailureType(to: TestError.self)
                         .eraseToAnyPublisher()
-                }
-            }
+                })
+            }).rawValue
 
             let env = Environment(multiplier: 5)
             var cancellables = Set<AnyCancellable>()
@@ -91,15 +91,15 @@
                     .eraseToAnyPublisher()
             }
 
-            let fn: @Sendable (Int) -> Reader<Environment, any Publisher<String, TestError>> = { value in
-                Reader { env in
+            let fn: @Sendable (Int) -> ReaderTPublisher<Environment, TestError, String> = { value in
+                ReaderTPublisher(Reader { env in
                     Just("\(value + env.multiplier)")
                         .setFailureType(to: TestError.self)
                         .eraseToAnyPublisher()
-                }
+                })
             }
 
-            let bound = fn -<< reader
+            let bound = (fn -<< ReaderTPublisher(reader)).rawValue
 
             let env = Environment(multiplier: 5)
             var cancellables = Set<AnyCancellable>()
@@ -117,21 +117,21 @@
 
         @Test func kleisliComposition() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-            let parse: @Sendable (String) -> Reader<Environment, any Publisher<Int, TestError>> = { s in
+            let parse: @Sendable (String) -> ReaderTPublisher<Environment, TestError, Int> = { s in
                 // swiftlint:disable:next closure_ignoring_args
-                Reader { _ in
+                ReaderTPublisher(Reader { _ in
                     Just(Int(s) ?? 0)
                         .setFailureType(to: TestError.self)
                         .eraseToAnyPublisher()
-                }
+                })
             }
 
-            let scale: @Sendable (Int) -> Reader<Environment, any Publisher<Int, TestError>> = { n in
-                Reader { env in
+            let scale: @Sendable (Int) -> ReaderTPublisher<Environment, TestError, Int> = { n in
+                ReaderTPublisher(Reader { env in
                     Just(n * env.multiplier)
                         .setFailureType(to: TestError.self)
                         .eraseToAnyPublisher()
-                }
+                })
             }
 
             let pipeline = parse >=> scale
@@ -140,7 +140,7 @@
             var cancellables = Set<AnyCancellable>()
             var capturedValue: Int?
 
-            pipeline("7")(env)
+            pipeline("7").rawValue(env)
                 .sink(
                     receiveCompletion: ignore,
                     receiveValue: { value in capturedValue = value }

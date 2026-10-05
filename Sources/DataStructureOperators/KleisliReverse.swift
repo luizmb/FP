@@ -72,63 +72,8 @@ public func <=< <Env: Sendable, O0: Sendable, O: Sendable, O1: Sendable>(
     _ fn1: @escaping @Sendable (O0) -> Reader<Env, O>
 ) -> @Sendable (O0) -> Reader<Env, O1> { fn1 >=> fn2 }
 
-/// `func` for `Reader`.
-public func <=< <Env: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Reader<Env, [C]>,
-    _ fn1: @escaping @Sendable (A) -> Reader<Env, [B]>
-) -> @Sendable (A) -> Reader<Env, [C]> { fn1 >=> fn2 }
-
-/// `func` for `Reader`.
-public func <=< <Env: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Reader<Env, C?>,
-    _ fn1: @escaping @Sendable (A) -> Reader<Env, B?>
-) -> @Sendable (A) -> Reader<Env, C?> { fn1 >=> fn2 }
-
-/// `func` for `Reader`.
-public func <=< <Env: Sendable, L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Reader<Env, Either<L, C>>,
-    _ fn1: @escaping @Sendable (A) -> Reader<Env, Either<L, B>>
-) -> @Sendable (A) -> Reader<Env, Either<L, C>> { fn1 >=> fn2 }
-
-/// `func` for `Reader`.
-public func <=< <Env: Sendable, A: Sendable, B: Sendable, C: Sendable, E: Error>(
-    _ fn2: @escaping @Sendable (B) -> Reader<Env, Result<C, E>>,
-    _ fn1: @escaping @Sendable (A) -> Reader<Env, Result<B, E>>
-) -> @Sendable (A) -> Reader<Env, Result<C, E>> { fn1 >=> fn2 }
-
-/// `func` for `Reader`.
-public func <=< <Env1: Sendable, Env2: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Reader<Env1, Reader<Env2, C>>,
-    _ fn1: @escaping @Sendable (A) -> Reader<Env1, Reader<Env2, B>>
-) -> @Sendable (A) -> Reader<Env1, Reader<Env2, C>> { fn1 >=> fn2 }
-
-/// `func` for `Reader`.
-public func <=< <Env: Sendable, W: Monoid, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Reader<Env, Writer<W, C>>,
-    _ fn1: @escaping @Sendable (A) -> Reader<Env, Writer<W, B>>
-) -> @Sendable (A) -> Reader<Env, Writer<W, C>> { fn1 >=> fn2 }
-
-/// `func` for `Reader`.
-public func <=< <Env: Sendable, S: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Reader<Env, Stateful<S, C>>,
-    _ fn1: @escaping @Sendable (A) -> Reader<Env, Stateful<S, B>>
-) -> @Sendable (A) -> Reader<Env, Stateful<S, C>> { fn1 >=> fn2 }
-
-/// `func` for `Reader`.
-public func <=< <Env: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Reader<Env, NonEmpty<C>>,
-    _ fn1: @escaping @Sendable (A) -> Reader<Env, NonEmpty<B>>
-) -> @Sendable (A) -> Reader<Env, NonEmpty<C>> { fn1 >=> fn2 }
-
 #if canImport(Combine)
     import Combine
-
-    /// `func` for `Reader`.
-    @available(macOS 13.0, iOS 16.0, tvOS 16.0, watchOS 9.0, *)
-    public func <=< <Env: Sendable, A: Sendable, B: Sendable, C: Sendable, E: Error>(
-        _ fn2: @escaping @Sendable (B) -> Reader<Env, any Publisher<C, E>>,
-        _ fn1: @escaping @Sendable (A) -> Reader<Env, any Publisher<B, E>>
-    ) -> @Sendable (A) -> Reader<Env, any Publisher<C, E>> { fn1 >=> fn2 }
 
     /// `func` for `PublisherT + Either`.
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)

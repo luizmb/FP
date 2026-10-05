@@ -76,7 +76,7 @@ import Testing
     @Test func readerTValidationApplyOperator() {
         let rf = Reader<String, Validation<[Int], @Sendable (Int) -> Int>>(const(.failure([1])))
         let ra = Reader<String, Validation<[Int], Int>>(const(.failure([2])))
-        let result = (rf <*> ra)("env")
+        let result = (rf.readerT <*> ra.readerT).rawValue("env")
         #expect(result == .failure([1, 2]))
     }
 

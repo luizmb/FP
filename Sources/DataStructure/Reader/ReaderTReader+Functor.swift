@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import Foundation
 
-public extension Reader {
+extension Reader {
     /// ReaderT + Reader (nested)
     func mapT<A, B, Env2>(_ fn: @escaping @Sendable (A) -> B) -> Reader<Environment, Reader<Env2, B>>
     where Output == Reader<Env2, A> {

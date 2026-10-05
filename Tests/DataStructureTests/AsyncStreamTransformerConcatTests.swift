@@ -151,23 +151,24 @@ import Testing
     @Test func liftA2IsBindDerivedUnderTheSameEnvironment() async {
         let readerA = Reader<Int, AsyncStream<Int>> { env in streamOf([env, env * 2]) }
         let readerB = Reader<Int, AsyncStream<Int>> { env in streamOf([env * 100, env * 1_000]) }
-        let combined = await collectAll(liftA2ReaderAsyncStream { (a: Int, b: Int) in a + b }(readerA, readerB)(1))
+        let combine = ReaderTAsyncStream<Int, Int>.liftA2 { (a: Int, b: Int) in a + b }
+        let combined = await collectAll(combine(readerA.readerT, readerB.readerT).rawValue(1))
         #expect(combined == [101, 1_001, 102, 1_002])
     }
 
     @Test func seqRightAndSeqLeft() async {
         let readerA = Reader<Int, AsyncStream<String>> { env in streamOf(["a\(env)", "b\(env)"]) }
         let readerB = Reader<Int, AsyncStream<Int>> { env in streamOf([env, env + 1]) }
-        let right = await collectAll(seqRightReaderAsyncStream(readerA, readerB)(5))
-        let left = await collectAll(seqLeftReaderAsyncStream(readerA, readerB)(5))
+        let right = await collectAll(readerA.readerT.seqRight(readerB.readerT).rawValue(5))
+        let left = await collectAll(readerA.readerT.seqLeft(readerB.readerT).rawValue(5))
         #expect(right == [5, 6, 5, 6])
         #expect(left == ["a5", "a5", "b5", "b5"])
     }
 
-    @Test func flatMapTIsOrderedConcat() async throws {
+    @Test func flatMapIsOrderedConcat() async {
         let reader = Reader<Int, AsyncStream<Int>>(const(streamOf([1, 2])))
-        let bound = reader.flatMapT { x in Reader<Int, AsyncStream<Int>> { env in streamOf([x, x * env]) } }
-        let result = try await collectAllThrowing(bound(10))
+        let bound = reader.readerT.flatMap { x in ReaderTAsyncStream(Reader<Int, AsyncStream<Int>> { env in streamOf([x, x * env]) }) }
+        let result = await collectAll(bound.rawValue(10))
         #expect(result == [1, 10, 2, 20])
     }
 }

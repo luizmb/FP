@@ -8,16 +8,16 @@ import Testing
 @Suite struct TransformerStackSmokeTests {
     // MARK: - ReaderTArray (ReaderT family)
 
-    @Test func readerTArrayMatchesNestedSurface() {
+    @Test func readerTArraySurface() {
         let nested = Reader<Int, [Int]> { [$0, $0 + 1] }
         let stack = nested.readerT
         let double: @Sendable (Int) -> Int = { $0 * 2 }
         let next: @Sendable (Int) -> ReaderTArray<Int, Int> = { a in ReaderTArray(Reader { [a, $0] }) }
 
-        #expect(stack.map(double).rawValue(1) == nested.mapT(double)(1))
-        #expect(stack.flatMap(next).rawValue(1) == nested.flatMapT { next($0).rawValue }(1))
+        #expect(stack.map(double).rawValue(1) == [2, 4])
+        #expect(stack.flatMap(next).rawValue(1) == [1, 1, 2, 1])
         #expect(ReaderTArray<Int, Int>.pure(5).rawValue(0) == [5])
-        #expect(stack.seqLeft(stack).rawValue(1) == seqLeftReaderArray(nested, nested)(1))
+        #expect(stack.seqLeft(stack).rawValue(1) == [1, 1, 2, 2])
         #expect(ReaderTArray<Int, Int>.kleisli(next, next)(3).rawValue(1) == [3, 1, 1, 1])
         #expect(stack.mapReaderT { $0.local { $0 * 10 } }.rawValue(1) == [10, 11])
     }

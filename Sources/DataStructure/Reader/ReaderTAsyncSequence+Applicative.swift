@@ -12,7 +12,7 @@ import Foundation
 /// liftA2 for ReaderT AsyncStream
 /// liftA2 f ra rb = ReaderT $ \env -> liftA2 f (ra env) (rb env)
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func liftA2ReaderAsyncStream<Env, A, B, C>(
+func liftA2ReaderAsyncStream<Env, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Reader<Env, AsyncStream<A>>, Reader<Env, AsyncStream<B>>) -> Reader<Env, AsyncStream<C>>
 where A: Sendable, B: Sendable, C: Sendable {
@@ -25,7 +25,7 @@ where A: Sendable, B: Sendable, C: Sendable {
 
 /// seqRight for ReaderT AsyncStream
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func seqRightReaderAsyncStream<Env, A, B>(
+func seqRightReaderAsyncStream<Env, A, B>(
     _ lhs: Reader<Env, AsyncStream<A>>,
     _ rhs: Reader<Env, AsyncStream<B>>
 ) -> Reader<Env, AsyncStream<B>>
@@ -35,7 +35,7 @@ where A: Sendable, B: Sendable {
 
 /// seqLeft for ReaderT AsyncStream
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func seqLeftReaderAsyncStream<Env, A, B>(
+func seqLeftReaderAsyncStream<Env, A, B>(
     _ lhs: Reader<Env, AsyncStream<A>>,
     _ rhs: Reader<Env, AsyncStream<B>>
 ) -> Reader<Env, AsyncStream<A>>

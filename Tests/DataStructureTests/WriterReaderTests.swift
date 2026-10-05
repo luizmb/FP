@@ -33,17 +33,19 @@ import Testing
 
     // MARK: - Reader<Env, Writer<W, A>> — Reader as outer, Writer as inner
 
-    @Test func readerTWriterMapT() {
+    @Test func readerTWriterMap() {
         let r: Reader<Int, Writer<[String], Int>> = Reader { env in Writer(env, ["x"]) }
-        let mapped = r.mapT { $0 * 2 }
+        let mapped = r.readerT.map { $0 * 2 }.rawValue
         let w = mapped.runReader(4)
         #expect(w.value == 8)
         #expect(w.log == ["x"])
     }
 
-    @Test func readerTWriterFlatMapT() {
+    @Test func readerTWriterFlatMap() {
         let r: Reader<Int, Writer<[String], Int>> = Reader { env in Writer(env, ["outer"]) }
-        let result = r.flatMapT { n in Reader<Int, Writer<[String], String>> { env in Writer("\(n * env)", ["inner"]) } }
+        let result = r.readerT.flatMap { n in
+            ReaderTWriter(Reader<Int, Writer<[String], String>> { env in Writer("\(n * env)", ["inner"]) })
+        }.rawValue
         let w = result.runReader(5)
         #expect(w.value == "25")
         #expect(w.log == ["outer", "inner"])

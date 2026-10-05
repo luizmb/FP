@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import Foundation
 
-public extension Reader where Environment: Sendable {
+extension Reader where Environment: Sendable {
     // MARK: - ReaderT + Either
 
     /// Monadic bind for ReaderT Either
@@ -28,7 +28,7 @@ public extension Reader where Environment: Sendable {
 
 /// Kleisli composition for `ReaderT + Either` (left-to-right)
 /// (>=>) :: (a -> m b) -> (b -> m c) -> a -> m c
-public func kleisliT<Env: Sendable, L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
+func kleisliT<Env: Sendable, L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
     _ fn1: @escaping @Sendable (A) -> Reader<Env, Either<L, B>>,
     _ fn2: @escaping @Sendable (B) -> Reader<Env, Either<L, C>>
 ) -> @Sendable (A) -> Reader<Env, Either<L, C>> {

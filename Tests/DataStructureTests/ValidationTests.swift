@@ -344,7 +344,7 @@ import Testing
     @Test func readerTValidationApplyAccumulatesErrors() {
         let rf = Reader<String, Validation<[Int], @Sendable (Int) -> Int>>(const(.failure([1])))
         let ra = Reader<String, Validation<[Int], Int>>(const(.failure([2])))
-        let result = applyReaderValidation(rf, ra)("env")
+        let result = ReaderTValidation<String, [Int], Int>.apply(rf.readerT, ra.readerT).rawValue("env")
         #expect(result == .failure([1, 2]))
     }
 

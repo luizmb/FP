@@ -55,27 +55,27 @@ import Testing
 
     // MARK: - Reader<Env, Stateful<S, A>> — Reader as outer, Stateful as inner
 
-    @Test func readerTStatefulMapT() {
+    @Test func readerTStatefulMap() {
         let r = Reader<Env, Stateful<Int, Int>> { env in
             .pure(env.multiplier)
         }
-        let mapped = r.mapT { $0 * 3 }
+        let mapped = r.readerT.map { $0 * 3 }.rawValue
         let env = Env(multiplier: 4)
         #expect(mapped(env).eval(0) == 12)
     }
 
-    @Test func readerTStatefulFlatMapT() {
+    @Test func readerTStatefulFlatMap() {
         let r = Reader<Env, Stateful<Int, Int>> { env in
             .pure(env.multiplier)
         }
-        let result = r.flatMapT { value in
-            Reader<Env, Stateful<Int, String>> { env in .pure("\(value)x\(env.multiplier)") }
-        }
+        let result = r.readerT.flatMap { value in
+            ReaderTStateful(Reader<Env, Stateful<Int, String>> { env in .pure("\(value)x\(env.multiplier)") })
+        }.rawValue
         let env = Env(multiplier: 9)
         #expect(result(env).eval(0) == "9x9")
     }
 
-    @Test func readerTStatefulFlatMapTThreadsState() {
+    @Test func readerTStatefulFlatMapThreadsState() {
         let r = Reader<Env, Stateful<Int, Int>> { env in
             Stateful { state in
                 let v = state
@@ -83,14 +83,14 @@ import Testing
                 return v
             }
         }
-        let result = r.flatMapT { value in
-            Reader<Env, Stateful<Int, String>> { env in
+        let result = r.readerT.flatMap { value in
+            ReaderTStateful(Reader<Env, Stateful<Int, String>> { env in
                 Stateful<Int, String> { state in
                     state *= env.multiplier
                     return "\(value)"
                 }
-            }
-        }
+            })
+        }.rawValue
         let env = Env(multiplier: 3)
         // env.multiplier=3: first stateful: v=1, state→4, returns 1
         // continuation (same env): state *= 3 → 12, returns "1"
@@ -103,7 +103,7 @@ import Testing
         let fn2: @Sendable (Int) -> String = { "\($0)" }
         let rf = Reader<Env, Stateful<Int, @Sendable (Int) -> String>>(const(.pure(fn2)))
         let ra = Reader<Env, Stateful<Int, Int>> { env in .pure(env.multiplier) }
-        let result = DataStructure.applyReaderStateful(rf, ra)
+        let result = ReaderTStateful<Env, Int, String>.apply(rf.readerT, ra.readerT).rawValue
         let env = Env(multiplier: 5)
         #expect(result(env).eval(0) == "5")
     }
@@ -111,7 +111,7 @@ import Testing
     @Test func seqRightReaderStatefulTest() {
         let lhs = Reader<Env, Stateful<Int, Int>>(const(.pure(1)))
         let rhs = Reader<Env, Stateful<Int, String>>(const(.pure("hello")))
-        let result = DataStructure.seqRightReaderStateful(lhs, rhs)
+        let result = lhs.readerT.seqRight(rhs.readerT).rawValue
         let env = Env(multiplier: 0)
         #expect(result(env).eval(0) == "hello")
     }
@@ -119,7 +119,7 @@ import Testing
     @Test func seqLeftReaderStatefulTest() {
         let lhs = Reader<Env, Stateful<Int, Int>>(const(.pure(99)))
         let rhs = Reader<Env, Stateful<Int, String>>(const(.pure("ignored")))
-        let result = DataStructure.seqLeftReaderStateful(lhs, rhs)
+        let result = lhs.readerT.seqLeft(rhs.readerT).rawValue
         let env = Env(multiplier: 0)
         #expect(result(env).eval(0) == 99)
     }

@@ -5,7 +5,7 @@ import Foundation
 // ReaderT + Result
 
 /// Apply for ReaderT Result
-public func applyReaderResult<Env, A, B, E: Error>(
+func applyReaderResult<Env, A, B, E: Error>(
     _ readerF: Reader<Env, Result<@Sendable (A) -> B, E>>,
     _ readerA: Reader<Env, Result<A, E>>
 ) -> Reader<Env, Result<B, E>> {
@@ -15,7 +15,7 @@ public func applyReaderResult<Env, A, B, E: Error>(
 }
 
 /// liftA2 for ReaderT Result
-public func liftA2ReaderResult<Env, A, B, C, E: Error>(
+func liftA2ReaderResult<Env, A, B, C, E: Error>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Reader<Env, Result<A, E>>, Reader<Env, Result<B, E>>) -> Reader<Env, Result<C, E>> {
     { readerA, readerB in
@@ -26,7 +26,7 @@ public func liftA2ReaderResult<Env, A, B, C, E: Error>(
 }
 
 /// seqRight for ReaderT Result
-public func seqRightReaderResult<Env, A, B, E: Error>(
+func seqRightReaderResult<Env, A, B, E: Error>(
     _ lhs: Reader<Env, Result<A, E>>,
     _ rhs: Reader<Env, Result<B, E>>
 ) -> Reader<Env, Result<B, E>> {
@@ -34,7 +34,7 @@ public func seqRightReaderResult<Env, A, B, E: Error>(
 }
 
 /// seqLeft for ReaderT Result
-public func seqLeftReaderResult<Env, A, B, E: Error>(
+func seqLeftReaderResult<Env, A, B, E: Error>(
     _ lhs: Reader<Env, Result<A, E>>,
     _ rhs: Reader<Env, Result<B, E>>
 ) -> Reader<Env, Result<A, E>> {

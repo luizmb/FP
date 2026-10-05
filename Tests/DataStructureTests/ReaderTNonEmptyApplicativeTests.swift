@@ -9,50 +9,51 @@ import Testing
     // MARK: - apply
 
     @Test func applyCombinesFunctionsAndValues() {
-        let readerF = Reader<Env, NonEmpty<@Sendable (Int) -> String>> { env in
+        let stackF = ReaderTNonEmpty(Reader<Env, NonEmpty<@Sendable (Int) -> String>> { env in
             NonEmpty(head: { "\($0 + env.factor)" }, tail: [{ "\($0 * env.factor)" }])
-        }
-        let readerA = Reader<Env, NonEmpty<Int>>(const(NonEmpty(head: 1, tail: [2])))
-        let result = applyReaderNonEmpty(readerF, readerA).runReader(Env(factor: 10))
+        })
+        let stackA = ReaderTNonEmpty(Reader<Env, NonEmpty<Int>>(const(NonEmpty(head: 1, tail: [2]))))
+        let result = ReaderTNonEmpty<Env, String>.apply(stackF, stackA).rawValue.runReader(Env(factor: 10))
         #expect(result == NonEmpty(head: "11", tail: ["12", "10", "20"]))
     }
 
     // MARK: - liftA2
 
     @Test func liftA2CombinesElementwise() {
-        let readerA = Reader<Env, NonEmpty<Int>> { env in NonEmpty(head: env.factor, tail: [env.factor * 2]) }
-        let readerB = Reader<Env, NonEmpty<Int>>(const(NonEmpty(head: 100, tail: [200])))
-        let result = liftA2ReaderNonEmpty { (a: Int, b: Int) in a + b }(readerA, readerB).runReader(Env(factor: 3))
+        let stackA = ReaderTNonEmpty(Reader<Env, NonEmpty<Int>> { env in NonEmpty(head: env.factor, tail: [env.factor * 2]) })
+        let stackB = ReaderTNonEmpty(Reader<Env, NonEmpty<Int>>(const(NonEmpty(head: 100, tail: [200]))))
+        let combine = ReaderTNonEmpty<Env, Int>.liftA2 { (a: Int, b: Int) in a + b }
+        let result = combine(stackA, stackB).rawValue.runReader(Env(factor: 3))
         #expect(result == NonEmpty(head: 103, tail: [203, 106, 206]))
     }
 
     // MARK: - seqRight / seqLeft
 
     @Test func seqRightKeepsRightValue() {
-        let lhs = Reader<Env, NonEmpty<Int>> { env in NonEmpty(head: env.factor) }
-        let rhs = Reader<Env, NonEmpty<String>>(const(NonEmpty(head: "b")))
-        let result = seqRightReaderNonEmpty(lhs, rhs).runReader(Env(factor: 1))
+        let lhs = ReaderTNonEmpty(Reader<Env, NonEmpty<Int>> { env in NonEmpty(head: env.factor) })
+        let rhs = ReaderTNonEmpty(Reader<Env, NonEmpty<String>>(const(NonEmpty(head: "b"))))
+        let result = lhs.seqRight(rhs).rawValue.runReader(Env(factor: 1))
         #expect(result == NonEmpty(head: "b"))
     }
 
     @Test func seqLeftKeepsLeftValue() {
-        let lhs = Reader<Env, NonEmpty<Int>> { env in NonEmpty(head: env.factor) }
-        let rhs = Reader<Env, NonEmpty<String>>(const(NonEmpty(head: "b")))
-        let result = seqLeftReaderNonEmpty(lhs, rhs).runReader(Env(factor: 7))
+        let lhs = ReaderTNonEmpty(Reader<Env, NonEmpty<Int>> { env in NonEmpty(head: env.factor) })
+        let rhs = ReaderTNonEmpty(Reader<Env, NonEmpty<String>>(const(NonEmpty(head: "b"))))
+        let result = lhs.seqLeft(rhs).rawValue.runReader(Env(factor: 7))
         #expect(result == NonEmpty(head: 7))
     }
 
-    // MARK: - kleisliT
+    // MARK: - kleisli
 
-    @Test func kleisliTChainsReaderNonEmptyArrows() {
-        let step1: @Sendable (Int) -> Reader<Env, NonEmpty<Int>> = { n in
-            Reader { env in NonEmpty(head: n + env.factor, tail: [n * env.factor]) }
+    @Test func kleisliChainsReaderNonEmptyArrows() {
+        let step1: @Sendable (Int) -> ReaderTNonEmpty<Env, Int> = { n in
+            ReaderTNonEmpty(Reader { env in NonEmpty(head: n + env.factor, tail: [n * env.factor]) })
         }
-        let step2: @Sendable (Int) -> Reader<Env, NonEmpty<String>> = { n in
-            Reader(const(NonEmpty(head: "\(n)")))
+        let step2: @Sendable (Int) -> ReaderTNonEmpty<Env, String> = { n in
+            ReaderTNonEmpty(Reader(const(NonEmpty(head: "\(n)"))))
         }
-        let pipeline = kleisliT(step1, step2)
-        let result = pipeline(3).runReader(Env(factor: 10))
+        let pipeline = ReaderTNonEmpty<Env, Int>.kleisli(step1, step2)
+        let result = pipeline(3).rawValue.runReader(Env(factor: 10))
         #expect(result == NonEmpty(head: "13", tail: ["30"]))
     }
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import Foundation
 
-public extension Reader {
+extension Reader {
     // MARK: - ReaderT + Result
 
     /// Monadic bind for ReaderT Result
@@ -28,7 +28,7 @@ public extension Reader {
 
 /// Kleisli composition for `ReaderT + Result` (left-to-right)
 /// (>=>) :: (a -> m b) -> (b -> m c) -> a -> m c
-public func kleisliT<Env, A, B, C, E: Error>(
+func kleisliT<Env, A, B, C, E: Error>(
     _ fn1: @escaping @Sendable (A) -> Reader<Env, Result<B, E>>,
     _ fn2: @escaping @Sendable (B) -> Reader<Env, Result<C, E>>
 ) -> @Sendable (A) -> Reader<Env, Result<C, E>> {

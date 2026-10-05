@@ -17,7 +17,7 @@
 
         // MARK: - ReaderT + Publisher Functor Tests
 
-        @Test func mapT() {
+        @Test func map() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
             let reader = Reader<Environment, any Publisher<Int, TestError>> { env in
                 Just(env.multiplier)
@@ -25,7 +25,7 @@
                     .eraseToAnyPublisher()
             }
 
-            let mapped = reader.mapT { $0 * 2 }
+            let mapped = ReaderTPublisher(reader).map { $0 * 2 }.rawValue
 
             let env = Environment(multiplier: 5)
             var cancellables = Set<AnyCancellable>()
@@ -59,7 +59,9 @@
                     .eraseToAnyPublisher()
             }
 
-            let result = applyReaderPublisher(readerFn, readerValue)
+            let result = ReaderTPublisher<Environment, TestError, Int>
+                .apply(ReaderTPublisher(readerFn), ReaderTPublisher(readerValue))
+                .rawValue
 
             let env = Environment(multiplier: 5)
             var cancellables = Set<AnyCancellable>()
@@ -77,7 +79,7 @@
 
         // MARK: - ReaderT + Publisher Monad Tests
 
-        @Test func flatMapT() {
+        @Test func flatMap() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
             let reader = Reader<Environment, any Publisher<Int, TestError>> { env in
                 Just(env.multiplier)
@@ -85,13 +87,13 @@
                     .eraseToAnyPublisher()
             }
 
-            let bound = reader.flatMapT { value in
-                Reader<Environment, any Publisher<String, TestError>> { env in
+            let bound = ReaderTPublisher(reader).flatMap { value in
+                ReaderTPublisher<Environment, TestError, String>(Reader { env in
                     Just("\(value + env.multiplier)")
                         .setFailureType(to: TestError.self)
                         .eraseToAnyPublisher()
-                }
-            }
+                })
+            }.rawValue
 
             let env = Environment(multiplier: 5)
             var cancellables = Set<AnyCancellable>()

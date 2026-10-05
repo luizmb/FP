@@ -4,7 +4,7 @@ import Foundation
 // ReaderT + Reader (nested)
 
 /// Apply for ReaderT Reader
-public func applyReaderReader<Env1, Env2, A, B>(
+func applyReaderReader<Env1, Env2, A, B>(
     _ readerF: Reader<Env1, Reader<Env2, @Sendable (A) -> B>>,
     _ readerA: Reader<Env1, Reader<Env2, A>>
 ) -> Reader<Env1, Reader<Env2, B>> {
@@ -20,7 +20,7 @@ public func applyReaderReader<Env1, Env2, A, B>(
 }
 
 /// liftA2 for ReaderT Reader
-public func liftA2ReaderReader<Env1, Env2, A, B, C>(
+func liftA2ReaderReader<Env1, Env2, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Reader<Env1, Reader<Env2, A>>, Reader<Env1, Reader<Env2, B>>) -> Reader<Env1, Reader<Env2, C>> {
     { readerA, readerB in
@@ -37,7 +37,7 @@ public func liftA2ReaderReader<Env1, Env2, A, B, C>(
 }
 
 /// seqRight for ReaderT Reader (nested)
-public func seqRightReaderReader<Env1, Env2, A, B>(
+func seqRightReaderReader<Env1, Env2, A, B>(
     _ lhs: Reader<Env1, Reader<Env2, A>>,
     _ rhs: Reader<Env1, Reader<Env2, B>>
 ) -> Reader<Env1, Reader<Env2, B>> {
@@ -45,7 +45,7 @@ public func seqRightReaderReader<Env1, Env2, A, B>(
 }
 
 /// seqLeft for ReaderT Reader (nested)
-public func seqLeftReaderReader<Env1, Env2, A, B>(
+func seqLeftReaderReader<Env1, Env2, A, B>(
     _ lhs: Reader<Env1, Reader<Env2, A>>,
     _ rhs: Reader<Env1, Reader<Env2, B>>
 ) -> Reader<Env1, Reader<Env2, A>> {
