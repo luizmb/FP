@@ -39,9 +39,6 @@ let parsed = ({ $0 * 2 } <£> Int("42")) ?? 0   // 84
 ### Code Generation
 - <doc:Macros>
 
-### Upgrading
-- <doc:Migrating3>
-
 ### Concepts
 - <doc:MonadTransformers>
 - <doc:OperatorVocabulary>

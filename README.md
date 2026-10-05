@@ -803,8 +803,6 @@ and `Stateful` outside `Reader` or streams (`StatefulTReader`, `StatefulTPublish
 `StatefulTAsyncStream`). `AsyncStreamTStateful` is functor-only. The full matrix and the reasons are in the
 [Monad Transformers](Sources/FP/FP.docc/Articles/MonadTransformers.md) article.
 
-**Upgrading from 2.x:** operator overloads on nested shapes were removed, and a nested value is now just its outer type. Some old call sites still compile with a different meaning: `*>` on a `Stateful<S, Either<L, A>>` is now `Stateful`'s `*>` (it no longer skips the right side on `.left`), and `<£>` / `>>-` / `£>` on a `Reader<E, [A]>` act on the whole array. Search for `<£>`, `<&>`, `£>`, `<£`, `<*>`, `*>`, `<*`, `>>-`, `-<<`, `>=>`, `<=<` applied to nested values and wrap them in their stack (`.readerT`, `.statefulT`, …). See the CHANGELOG migration table.
-
 ---
 
 ### Fold (Foldable)
