@@ -6,7 +6,7 @@ import Foundation
 // Type: Reader<Env, Writer<W, A>>
 
 /// apply for ReaderTWriter: Reader<Env,Writer<W,(A->B)>> -> Reader<Env,Writer<W,A>> -> Reader<Env,Writer<W,B>>
-public func applyReaderWriter<Env, W: Monoid, A, B>(
+func applyReaderWriter<Env, W: Monoid, A, B>(
     _ rf: Reader<Env, Writer<W, @Sendable (A) -> B>>,
     _ ra: Reader<Env, Writer<W, A>>
 ) -> Reader<Env, Writer<W, B>> {
@@ -14,7 +14,7 @@ public func applyReaderWriter<Env, W: Monoid, A, B>(
 }
 
 /// liftA2 for ReaderTWriter
-public func liftA2ReaderWriter<Env, W: Monoid, A, B, C>(
+func liftA2ReaderWriter<Env, W: Monoid, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Reader<Env, Writer<W, A>>, Reader<Env, Writer<W, B>>) -> Reader<Env, Writer<W, C>> {
     { ra, rb in
@@ -23,7 +23,7 @@ public func liftA2ReaderWriter<Env, W: Monoid, A, B, C>(
 }
 
 /// seqRight for ReaderTWriter
-public func seqRightReaderWriter<Env, W: Monoid, A, B>(
+func seqRightReaderWriter<Env, W: Monoid, A, B>(
     _ lhs: Reader<Env, Writer<W, A>>,
     _ rhs: Reader<Env, Writer<W, B>>
 ) -> Reader<Env, Writer<W, B>> {
@@ -31,7 +31,7 @@ public func seqRightReaderWriter<Env, W: Monoid, A, B>(
 }
 
 /// seqLeft for ReaderTWriter
-public func seqLeftReaderWriter<Env, W: Monoid, A, B>(
+func seqLeftReaderWriter<Env, W: Monoid, A, B>(
     _ lhs: Reader<Env, Writer<W, A>>,
     _ rhs: Reader<Env, Writer<W, B>>
 ) -> Reader<Env, Writer<W, A>> {

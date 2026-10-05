@@ -8,7 +8,7 @@ import Foundation
 // Bind threads the state through `self` and then through `fn(a)`, appending the logs
 // left to right.
 
-public extension Stateful {
+extension Stateful {
     /// flatMapT :: Stateful<s, Writer<w, a>> -> (a -> Stateful<s, Writer<w, b>>) -> Stateful<s, Writer<w, b>>
     func flatMapT<W: Monoid, Inner, B>(
         _ fn: @escaping @Sendable (Inner) -> Stateful<S, Writer<W, B>>
@@ -32,7 +32,7 @@ public extension Stateful {
 
 /// Kleisli composition for `StatefulT + Writer` (left-to-right)
 /// (>=>) :: (a -> Stateful<s, Writer<w, b>>) -> (b -> Stateful<s, Writer<w, c>>) -> a -> Stateful<s, Writer<w, c>>
-public func kleisliT<S, W: Monoid, A, B, C>(
+func kleisliT<S, W: Monoid, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Stateful<S, Writer<W, B>>,
     _ fn2: @escaping @Sendable (B) -> Stateful<S, Writer<W, C>>
 ) -> @Sendable (A) -> Stateful<S, Writer<W, C>> {

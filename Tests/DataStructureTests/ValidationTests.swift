@@ -298,39 +298,11 @@ import Testing
         #expect(success.map(String.init) == success.mapSuccess(String.init))
     }
 
-    // MARK: - Transformer: ValidationTOptional
-
-    @Test func validationTOptionalFunctor() {
-        let v: Validation<[String], Int?> = .success(.some(5))
-        let result = v.mapT { $0 * 2 }
-        #expect(result == .success(.some(10)))
-    }
-
-    @Test func validationTOptionalApplyBothFailures() {
-        let vf: Validation<[String], (@Sendable (Int) -> Int)?> = .failure(["e1"])
-        let va: Validation<[String], Int?> = .failure(["e2"])
-        #expect(applyValidationOptional(vf, va) == .failure(["e1", "e2"]))
-    }
-
-    // MARK: - Transformer: ValidationTArray
-
-    @Test func validationTArrayFunctor() {
-        let v: Validation<[String], [Int]> = .success([1, 2, 3])
-        let result = v.mapT { $0 * 2 }
-        #expect(result == .success([2, 4, 6]))
-    }
-
-    @Test func validationTArrayApplyAccumulatesErrors() {
-        let vf: Validation<[String], [@Sendable (Int) -> Int]> = .failure(["e1"])
-        let va: Validation<[String], [Int]> = .failure(["e2"])
-        #expect(applyValidationArray(vf, va) == .failure(["e1", "e2"]))
-    }
-
     // MARK: - Transformer: EitherTValidation
 
     @Test func eitherTValidationFunctorRight() {
         let e: Either<String, Validation<[Int], Int>> = .right(.success(5))
-        let result = e.mapT { $0 * 2 }
+        let result = e.eitherT.map { $0 * 2 }.rawValue
         #expect(result == .right(.success(10)))
     }
 
@@ -338,13 +310,13 @@ import Testing
         // Either is right on both sides — Validation accumulates inner errors
         let ef: Either<String, Validation<[Int], @Sendable (Int) -> Int>> = .right(.failure([1]))
         let ea: Either<String, Validation<[Int], Int>> = .right(.failure([2]))
-        #expect(applyEitherValidation(ef, ea) == .right(.failure([1, 2])))
+        #expect(EitherTValidation.apply(ef.eitherT, ea.eitherT).rawValue == .right(.failure([1, 2])))
     }
 
     @Test func eitherTValidationApplyShortCircuitsOnEitherLeft() {
         let ef: Either<String, Validation<[Int], @Sendable (Int) -> Int>> = .left("outer err")
         let ea: Either<String, Validation<[Int], Int>> = .right(.failure([2]))
-        #expect(applyEitherValidation(ef, ea) == .left("outer err"))
+        #expect(EitherTValidation.apply(ef.eitherT, ea.eitherT).rawValue == .left("outer err"))
     }
 
     // MARK: - Transformer: WriterTValidation
@@ -352,7 +324,7 @@ import Testing
     @Test func writerTValidationApplyAccumulatesLogsAndErrors() {
         let wf = Writer<[String], Validation<[Int], @Sendable (Int) -> Int>>(.failure([1]), ["log1"])
         let wa = Writer<[String], Validation<[Int], Int>>(.failure([2]), ["log2"])
-        let result = applyWriterValidation(wf, wa)
+        let result = WriterTValidation.apply(wf.writerT, wa.writerT).rawValue
         #expect(result.value == .failure([1, 2]))
         #expect(result.log == ["log1", "log2"])
     }
@@ -363,7 +335,7 @@ import Testing
         let sf = Stateful<Int, Validation<[String], @Sendable (Int) -> Int>>.pure(.failure(["e1"]))
         let sa = Stateful<Int, Validation<[String], Int>>.pure(.failure(["e2"]))
         var state = 0
-        let result = applyStatefulValidation(sf, sa).run(&state)
+        let result = StatefulTValidation.apply(sf.statefulT, sa.statefulT).rawValue.run(&state)
         #expect(result == .failure(["e1", "e2"]))
     }
 
@@ -372,7 +344,7 @@ import Testing
     @Test func readerTValidationApplyAccumulatesErrors() {
         let rf = Reader<String, Validation<[Int], @Sendable (Int) -> Int>>(const(.failure([1])))
         let ra = Reader<String, Validation<[Int], Int>>(const(.failure([2])))
-        let result = applyReaderValidation(rf, ra)("env")
+        let result = ReaderTValidation<String, [Int], Int>.apply(rf.readerT, ra.readerT).rawValue("env")
         #expect(result == .failure([1, 2]))
     }
 

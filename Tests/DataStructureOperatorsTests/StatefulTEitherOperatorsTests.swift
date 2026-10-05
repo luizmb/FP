@@ -8,40 +8,40 @@ import Testing
     @Test func apply() {
         let sf = Stateful<Int, Either<String, @Sendable (Int) -> String>>.pure(.right { "\($0)" })
         let sa = Stateful<Int, Either<String, Int>>.pure(.right(42))
-        let result = sf <*> sa
-        #expect(result.eval(0) == .right("42"))
+        let result = sf.statefulT <*> sa.statefulT
+        #expect(result.rawValue.eval(0) == .right("42"))
     }
 
     @Test func seqRight() {
         let lhs = Stateful<Int, Either<String, Int>>.pure(.right(1))
         let rhs = Stateful<Int, Either<String, String>>.pure(.right("b"))
-        let result = lhs *> rhs
-        #expect(result.eval(0) == .right("b"))
+        let result = lhs.statefulT *> rhs.statefulT
+        #expect(result.rawValue.eval(0) == .right("b"))
     }
 
     @Test func seqLeft() {
         let lhs = Stateful<Int, Either<String, Int>>.pure(.right(1))
         let rhs = Stateful<Int, Either<String, String>>.pure(.right("b"))
-        let result = lhs <* rhs
-        #expect(result.eval(0) == .right(1))
+        let result = lhs.statefulT <* rhs.statefulT
+        #expect(result.rawValue.eval(0) == .right(1))
     }
 
     @Test func bind() {
         let s = Stateful<Int, Either<String, Int>>.pure(.right(5))
-        let result = s >>- { (n: Int) in Stateful<Int, Either<String, String>>.pure(.right("\(n)")) }
-        #expect(result.eval(0) == .right("5"))
+        let result = s.statefulT >>- { (n: Int) in Stateful<Int, Either<String, String>>.pure(.right("\(n)")).statefulT }
+        #expect(result.rawValue.eval(0) == .right("5"))
     }
 
     @Test func bindLeft() {
         let s = Stateful<Int, Either<String, Int>>.pure(.left("err"))
-        let result = s >>- { (n: Int) in Stateful<Int, Either<String, String>>.pure(.right("\(n)")) }
-        #expect(result.eval(0) == .left("err"))
+        let result = s.statefulT >>- { (n: Int) in Stateful<Int, Either<String, String>>.pure(.right("\(n)")).statefulT }
+        #expect(result.rawValue.eval(0) == .left("err"))
     }
 
     @Test func kleisli() {
-        let f: @Sendable (Int) -> Stateful<Int, Either<String, Int>> = { n in .pure(.right(n + 1)) }
-        let g: @Sendable (Int) -> Stateful<Int, Either<String, String>> = { n in .pure(.right("\(n)")) }
+        let f: @Sendable (Int) -> StatefulTEither<Int, String, Int> = { n in StatefulTEither(.pure(.right(n + 1))) }
+        let g: @Sendable (Int) -> StatefulTEither<Int, String, String> = { n in StatefulTEither(.pure(.right("\(n)"))) }
         let result = (f >=> g)(4)
-        #expect(result.eval(0) == .right("5"))
+        #expect(result.rawValue.eval(0) == .right("5"))
     }
 }

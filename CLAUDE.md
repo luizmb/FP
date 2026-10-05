@@ -36,9 +36,16 @@ Every operation is implemented twice: once as a **named function** in a core mod
 
 The `FP` umbrella product re-exports all four. **Operators must always delegate to a named function in the core module — never implement logic inside an operator definition** (exception: inverted-direction operators like `<£` vs `£>`).
 
-### Monad Transformer Naming
+### Monad Transformers
 
-Transformers are named `OuterTInner`, e.g. `OptionalTArray` means `Optional<[A]>`, `ReaderTEither` means `Reader<Env, Either<L, A>>`. Transformer fmap is always the instance method `.mapT(_:)` plus the static curried `fmapT(_:)` (never a free `mapTOuterInner` function); `liftA2*` and `flatMapT` follow per-stack conventions.
+Every transformer stack is its own concrete struct named `OuterTInner`, wrapping the whole nested value: `ReaderTEither<Env, L, A>` wraps `Reader<Env, Either<L, A>>`, `PublisherTOptional<Failure, A>` wraps `AnyPublisher<A?, Failure>`, `StatefulTWriter<S, W, A>` wraps `Stateful<S, Writer<W, A>>`. A plain `Reader<Env, [A]>` is just a `Reader` (its operators are the Reader ones); the stack behaviour only exists once you wrap it.
+
+- **Protocols** (`Sources/CoreFP/Transformer/TransformerStack.swift`): `TransformerStack<O, I>` (`O` is the whole nested value, `I` its inner layer) and `MonadT<O, I>` for stacks with a lawful monad. Applicative-only stacks (no lawful monad, e.g. `ReaderTValidation`, `StatefulTArray`, `PublisherTArray`) conform to `TransformerStack` only. `TransformerStack` mirrors `RawRepresentable` (`rawValue`, `init(rawValue:)`) but doesn't refine it, because Swift 6.3 breaks type inference for generic `RawRepresentable` structs whose `RawValue` is an `Optional`. Neither protocol refines `Sendable`; each struct has its own conditional conformance.
+- **Members** of every struct: `rawValue`, `init(rawValue:)`, `init(_:)`, `map` + static `fmap`, static `pure`, static `apply`, static `liftA2`, `seqRight`, `seqLeft`, and on `MonadT` stacks `flatMap`, static `bind`, static `kleisli` / `kleisliBack`. No `T`-suffixed names. Operators in the companion module: `<£>`, `<&>`, `£>`, `<£`, `<*>`, `*>`, `<*`, plus `>>-`, `-<<`, `>=>`, `<=<` on `MonadT` stacks.
+- **Lifting in**: a property on the outer type named after it (`reader.readerT`, `stateful.statefulT`, `publisher.publisherT`, `asyncStream.asyncStreamT`, `array.arrayT`, `optional.optionalT`, `either.eitherT`, …), constrained through the inner-shape protocols (`ArrayLike`, `OptionalLike`, `ResultLike`, `AsyncStreamLike`, `EitherLike`, `NonEmptyLike`, `WriterLike`, `ValidationLike`, `ReaderLike`, `StatefulLike`) since Swift has no parameterized extensions. `Stack(nested)` works too. **Leaving**: `.rawValue`.
+- **Escape hatch** `(O) -> O2`, Haskell-named, to reach the whole API of the underlying types: by the outer layer for Reader / Stateful / streams (`mapReaderT`, `mapStateT`, `mapPublisherT`, `mapAsyncStreamT`), else by the inner layer for Optional / Either / Result / Writer (`mapMaybeT`, `mapExceptT`, `mapWriterT`), else (Compose-like stacks) by the outer layer (`mapArrayT`, `mapOptionalT`, `mapEitherT`, `mapResultT`, `mapNonEmptyT`, `mapValidationT`). The rule lives in CONTRIBUTING.
+- **Generated code**: all 74 stacks come from `swift Scripts/GenerateTransformers.swift` into `Sources/*/Transformer/Generated/` (structs in `CoreFP` / `DataStructure`, operators in the operator modules). **Never hand-edit generated files**; change the templates or add a `Stack(.outer, .inner, kind)` line to the generator's `inventory` table and rerun it, then commit script and output together.
+- The nested-type functions (`mapT`, `flatMapT`, free `apply<Outer><Inner>`, `liftA2<Outer><Inner>`, …) still exist but are `internal`: they are the implementation the structs delegate to, not public API. Don't document or re-export them, and don't add operator overloads on nested shapes (`Reader<E, [A]>`); the struct is the only public transformer surface.
 
 ### Key Types
 
@@ -76,7 +83,7 @@ Every operator that has a directional sense has a **flipped counterpart**. When 
 **Notes:**
 - `<|` is function application (`fn <| value`, Haskell's `$`); `|>` is its flip. There is no plain `£` operator: `£` only appears inside other operators such as `<£>`, `£>`, `<£`.
 - There is no `++`: concatenate arrays and strings with `<>`.
-- Transformer (nested) functor map has **no operator**: every stack exposes the method `.mapT(_:)` plus the static curried `fmapT(_:)` (same shape as base `map` / `fmap`). `£>` / `<£` on a stack resolve to the base type (they replace the whole output); inner replace is `mapT(const(x))`.
+- Transformer stacks reuse the base operators (`<£>`, `£>`, `<*>`, `*>`, `>>-`, `>=>`, …) on their own struct type (see Monad Transformers above); there are no transformer-specific operators. On a bare nested value (`Reader<E, [A]>`) the operators are the outer type's, so `£>` replaces the whole output; wrap it (`.readerT`) to act on the inner value.
 - Optics (`Lens`, `Prism`, `AffineTraversal`) compose via `>>>` / `<<<` alongside regular function composition.
 
 ## Sendable Contract — MANDATORY
@@ -85,7 +92,7 @@ The library is **Sendable-first**. Composition (functor / applicative / monad / 
 
 - **All algebraic value types** (`Either`, `Validation`, `Reader`, `Stateful`, `Writer`, `Loading`, `NonEmpty`, `Newtype`, `Endo`, `EndoMut`, `Iso`, `Lens`, `Prism`, `AffineTraversal`, …) carry a conditional `extension X: Sendable where T: Sendable [, ...]` conformance. Stored closures are `@Sendable`.
 - **Algebra protocols** (`Semigroup`, `Monoid`, `SumType2`, `FunctionWrapper`, `CaseMatchable`, `HasCases`, `HasMax`, `HasMin`, `SIMDMonoidScalar`) refine `Sendable`. Conformers must be Sendable.
-- **`apply` / `<*>` and friends** require the *inner* closure type to be `@Sendable`, e.g. `Either<L, @Sendable (A) -> B>`, `Reader<E, @Sendable (A) -> B>`, `Stateful<S, @Sendable (A) -> B>`, `[@Sendable (A) -> B]`, `Result<@Sendable (A) -> B, E>`, etc. The Either pattern is the template — copy it for new transformer combinations.
+- **`apply` / `<*>` and friends** require the *inner* closure type to be `@Sendable`, e.g. `Either<L, @Sendable (A) -> B>`, `Reader<E, @Sendable (A) -> B>`, `Stateful<S, @Sendable (A) -> B>`, `[@Sendable (A) -> B]`, `Result<@Sendable (A) -> B, E>`, etc. The Either pattern is the template for base types; transformer stacks get theirs from the generator (`apply` takes `Stack<…, @Sendable (Input) -> A>`).
 - **Composition free functions** (`compose`, `compose3`, `compose4`, `withArg`, `tuple`, `untuple`, `uncurry`, `flipU`, `call(then:)`, `lazy(_function:)`, `unlazy(_:)`) return `@Sendable` functions unconditionally — they only capture their input closures (which are already `@Sendable`).
 - **Helpers that capture a generic-typed value** (`curry`, `curryT`, `partialApply`, `flip` (2-arg + curried), `partialApplyFlip`, `lazy(value:)`, `pure`) require the captured generic to be `Sendable` to return `@Sendable`. The library exposes both: a non-Sendable original and a `<A: Sendable>` overload returning `@Sendable`. Compiler picks based on context.
 - **KeyPath → function**: Swift's implicit `KeyPath → (Root) -> Value` conversion is **not** `@Sendable`. Use `get(_:)` (CoreFP) or `prefix ^` (CoreFPOperators) to lift explicitly.
@@ -97,7 +104,7 @@ The library is **Sendable-first**. Composition (functor / applicative / monad / 
       return ...          // pure combine inside @Sendable body
   }
   ```
-- **Operator overload ambiguity:** When the same operator (`*>`, `<*`, etc.) has both a generic `Either<A, B>` overload and a specialised `Either<L, Stateful<S, A>>` transformer overload, Sendable constraints must be placed in `where` clauses (not inline on type parameters) on the generic version, with matching `where L: Sendable, S: Sendable, …` clauses on the transformer version. Otherwise Swift can't pick the more-specific overload.
+- **Operator overload ambiguity:** there are no operator overloads on nested shapes any more (stacks are structs), so the old "specialised `Either<L, Stateful<S, A>>` overload vs generic `Either<A, B>` overload" ranking problem is gone. If two overloads of one operator ever compete on the same base type again, put Sendable constraints in `where` clauses (not inline on type parameters) on both, otherwise Swift can't pick the more-specific one.
 - **`Result.Monoids.Pessimistic` semigroup** — Failure is constrained to `Semigroup` but Success is **not**. Swift forbids `Success: Sendable` in a `Semigroup` conditional conformance (marker-protocol rule), so Pessimistic ships a separate `extension … : Sendable where Success: Sendable, Failure: Sendable {}` alongside its `: Semigroup` conformance. Same pattern for the other three `Result.Monoids.*` variants.
 - **What does NOT need `: Sendable`:** uninhabited phantom-namespace enums (`Of<T>`, `Of2<T,U>`, `Of3<T,U,V>`, `Result.Monoids`, `Bool.Monoids`). They have no instances; conformance would be vacuous. Same for the `Mutable` marker protocol — its conformers are arbitrary value types and most are already Sendable; forcing the protocol bound would over-restrict.
 

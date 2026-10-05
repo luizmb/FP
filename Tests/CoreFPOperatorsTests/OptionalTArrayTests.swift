@@ -1,23 +1,25 @@
 // SPDX-License-Identifier: Apache-2.0
-@testable import CoreFP
-@testable import CoreFPOperators
+import CoreFP
+import CoreFPOperators
 
 // swiftlint:disable discouraged_optional_collection
 import Testing
 
 @Suite struct OptionalTArrayTests {
+    private let add: @Sendable (Int) -> @Sendable (Int) -> Int = { x in { y in x + y } }
+
     // MARK: - Functor
 
-    @Test func mapTSome() {
+    @Test func mapSome() {
         let opt: [Int]? = [1, 2, 3]
-        let result = opt.mapT { $0 * 2 }
-        #expect(result == [2, 4, 6])
+        let result = { $0 * 2 } <£> opt.optionalT
+        #expect(result.rawValue == [2, 4, 6])
     }
 
-    @Test func mapTNone() {
+    @Test func mapNone() {
         let opt: [Int]? = nil
-        let result = opt.mapT { $0 * 2 }
-        #expect(result == nil)
+        let result = opt.optionalT <&> { $0 * 2 }
+        #expect(result.rawValue == nil)
     }
 
     // MARK: - Applicative
@@ -25,84 +27,85 @@ import Testing
     @Test func liftA2BothPresent() {
         let a: [Int]? = [1, 2]
         let b: [Int]? = [10, 20]
-        let result = liftA2OptionalArray(+)(a, b)
-        #expect(result == [11, 21, 12, 22])
+        let result = add <£> a.optionalT <*> b.optionalT
+        #expect(result.rawValue == [11, 21, 12, 22])
     }
 
     @Test func liftA2LeftNil() {
         let a: [Int]? = nil
         let b: [Int]? = [10, 20]
-        let result = liftA2OptionalArray(+)(a, b)
-        #expect(result == nil)
+        let result = add <£> a.optionalT <*> b.optionalT
+        #expect(result.rawValue == nil)
     }
 
     @Test func liftA2RightNil() {
         let a: [Int]? = [1, 2]
         let b: [Int]? = nil
-        let result = liftA2OptionalArray(+)(a, b)
-        #expect(result == nil)
+        let result = add <£> a.optionalT <*> b.optionalT
+        #expect(result.rawValue == nil)
     }
 
     @Test func seqRightBothPresent() {
         let a: [Int]? = [1, 2]
         let b: [String]? = ["x", "y"]
-        let result = a *> b
-        #expect(result == ["x", "y"])
+        let result = a.optionalT *> b.optionalT
+        #expect(result.rawValue == ["x", "y"])
     }
 
     @Test func seqRightLeftNil() {
         let a: [Int]? = nil
         let b: [String]? = ["x"]
-        let result = a *> b
-        #expect(result == nil)
+        let result = a.optionalT *> b.optionalT
+        #expect(result.rawValue == nil)
     }
 
     @Test func seqLeftBothPresent() {
         let a: [Int]? = [1, 2]
         let b: [String]? = ["x", "y"]
-        let result = a <* b
-        #expect(result == [1, 2])
+        let result = a.optionalT <* b.optionalT
+        #expect(result.rawValue == [1, 2])
     }
 
     // MARK: - Monad
 
-    @Test func flatMapTSomeAllSucceed() {
+    @Test func bindSomeAllSucceed() {
         let opt: [Int]? = [1, 2, 3]
-        let result = opt.flatMapT { n in [n, n * 10] as [Int]? }
-        #expect(result == [1, 10, 2, 20, 3, 30])
+        let result = opt.optionalT >>- { n in OptionalTArray([n, n * 10]) }
+        #expect(result.rawValue == [1, 10, 2, 20, 3, 30])
     }
 
-    @Test func flatMapTSomeOneNil() {
+    @Test func bindSomeOneNil() {
         let opt: [Int]? = [1, 2, 3]
-        let result = opt.flatMapT { n -> [Int]? in
-            n == 2 ? nil : [n, n * 10]
+        let result = opt.optionalT >>- { n in
+            OptionalTArray(n == 2 ? nil : [n, n * 10])
         }
-        #expect(result == nil)
+        #expect(result.rawValue == nil)
     }
 
-    @Test func flatMapTNone() {
+    @Test func bindNone() {
         let opt: [Int]? = nil
-        let result = opt.flatMapT { n in [n * 2] as [Int]? }
-        #expect(result == nil)
+        let result = opt.optionalT >>- { n in OptionalTArray([n * 2]) }
+        #expect(result.rawValue == nil)
     }
 
-    @Test func flatMapTEmpty() {
+    @Test func bindEmpty() {
         let opt: [Int]? = []
-        let result = opt.flatMapT { n in [n * 2] as [Int]? }
-        #expect(result == [])
+        let result = { n in OptionalTArray([n * 2]) } -<< opt.optionalT
+        #expect(result.rawValue == [])
     }
 
     @Test func bindOperator() {
         let opt: [Int]? = [1, 2]
-        let result = opt >>- { n in [n, n + 100] as [Int]? }
-        #expect(result == [1, 101, 2, 102])
+        let result = opt.optionalT >>- { n in OptionalTArray([n, n + 100]) }
+        #expect(result.rawValue == [1, 101, 2, 102])
     }
 
     @Test func kleisliOperator() {
-        let f: @Sendable (Int) -> [Int]? = { n in [n, n * 2] }
-        let g: @Sendable (Int) -> [String]? = { n in ["\(n)"] }
+        let f: @Sendable (Int) -> OptionalTArray<Int> = { n in OptionalTArray([n, n * 2]) }
+        let g: @Sendable (Int) -> OptionalTArray<String> = { n in OptionalTArray(["\(n)"]) }
         let h = f >=> g
-        #expect(h(3) == ["3", "6"])
+        #expect(h(3).rawValue == ["3", "6"])
+        #expect((g <=< f)(3).rawValue == ["3", "6"])
     }
 }
 

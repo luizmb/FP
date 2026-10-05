@@ -7,13 +7,13 @@ import Foundation
 
 /// apply for OptionalTArray: [(A->B)]? -> [A]? -> [B]?
 /// If outer is nil → nil; otherwise use Array.apply
-public func applyOptionalArray<A, B>(_ fns: [@Sendable (A) -> B]?, _ values: [A]?) -> [B]? {
+func applyOptionalArray<A, B>(_ fns: [@Sendable (A) -> B]?, _ values: [A]?) -> [B]? {
     fns.flatMap { fs in values.map { arr in Array.apply(fs, arr) } }
 }
 
 /// liftA2 for OptionalTArray: (A,B)->C -> [A]? -> [B]? -> [C]?
 /// Double-lift through Optional then Array
-public func liftA2OptionalArray<A, B, C>(
+func liftA2OptionalArray<A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> ([A]?, [B]?) -> [C]? {
     { optA, optB in
@@ -23,12 +23,12 @@ public func liftA2OptionalArray<A, B, C>(
 }
 
 /// seqRight for OptionalTArray: [A]? -> [B]? -> [B]?
-public func seqRightOptionalArray<A, B>(_ lhs: [A]?, _ rhs: [B]?) -> [B]? {
+func seqRightOptionalArray<A, B>(_ lhs: [A]?, _ rhs: [B]?) -> [B]? {
     lhs.seqRight(rhs)
 }
 
 /// seqLeft for OptionalTArray: [A]? -> [B]? -> [A]?
-public func seqLeftOptionalArray<A, B>(_ lhs: [A]?, _ rhs: [B]?) -> [A]? {
+func seqLeftOptionalArray<A, B>(_ lhs: [A]?, _ rhs: [B]?) -> [A]? {
     lhs.seqLeft(rhs)
 }
 

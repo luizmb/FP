@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-@testable import CoreFP
+import CoreFP
 import Testing
 
 @Suite struct AsyncSequenceTransformerTests {
@@ -21,74 +21,74 @@ import Testing
         }
     }
 
-    // MARK: - AsyncSequenceTOptional
+    // MARK: - AsyncStreamTOptional
 
-    @Test func asyncStreamOptionalMapT() async {
+    @Test func asyncStreamOptionalMap() async {
         let stream = makeStream([1, nil, 3] as [Int?])
-        let result = stream.mapT { $0 * 2 }
-        let collected = await collect(result)
+        let result = stream.asyncStreamT.map { $0 * 2 }
+        let collected = await collect(result.rawValue)
         #expect(collected == [2, nil, 6])
     }
 
     @Test func asyncStreamOptionalLiftA2() async {
         let streamA = makeStream([1, 2] as [Int?])
         let streamB = makeStream([10, 20] as [Int?])
-        let result = liftA2AsyncStreamOptional(+)(streamA, streamB)
-        let collected = await collect(result)
+        let result = AsyncStreamTOptional<Int>.liftA2(+)(streamA.asyncStreamT, streamB.asyncStreamT)
+        let collected = await collect(result.rawValue)
         #expect(collected == [11, 21, 12, 22])
     }
 
     @Test func asyncStreamOptionalSeqRight() async {
         let streamA = makeStream([1, nil] as [Int?])
         let streamB = makeStream([10, 20] as [Int?])
-        let result = seqRightAsyncStreamOptional(streamA, streamB)
-        let collected = await collect(result)
+        let result = streamA.asyncStreamT.seqRight(streamB.asyncStreamT)
+        let collected = await collect(result.rawValue)
         #expect(collected == [10, 20, nil])
     }
 
-    @Test func asyncStreamOptionalFlatMapT() async {
+    @Test func asyncStreamOptionalFlatMap() async {
         let stream = makeStream([1, nil, 2] as [Int?])
-        let result = flatMapTAsyncStreamOptional(stream) { n in
-            makeStream([n, n * 10] as [Int?])
+        let result = stream.asyncStreamT.flatMap { n in
+            makeStream([n, n * 10] as [Int?]).asyncStreamT
         }
-        let collected = await collect(result)
+        let collected = await collect(result.rawValue)
         #expect(collected == [1, 10, nil, 2, 20])
     }
 
-    // MARK: - AsyncSequenceTArray
+    // MARK: - AsyncStreamTArray
 
-    @Test func asyncStreamArrayMapT() async {
+    @Test func asyncStreamArrayMap() async {
         let stream = makeStream([[1, 2], [3, 4]])
-        let result = stream.mapT { $0 * 2 }
-        let collected = await collect(result)
+        let result = stream.asyncStreamT.map { $0 * 2 }
+        let collected = await collect(result.rawValue)
         #expect(collected == [[2, 4], [6, 8]])
     }
 
     @Test func asyncStreamArrayLiftA2() async {
         let streamA = makeStream([[1, 2]])
         let streamB = makeStream([[10, 20]])
-        let result = liftA2AsyncStreamArray(+)(streamA, streamB)
-        let collected = await collect(result)
+        let result = AsyncStreamTArray<Int>.liftA2(+)(streamA.asyncStreamT, streamB.asyncStreamT)
+        let collected = await collect(result.rawValue)
         #expect(collected == [[11, 21, 12, 22]])
     }
 
-    // MARK: - AsyncSequenceTResult
+    // MARK: - AsyncStreamTResult
 
     private enum Err: Error, Equatable { case fail }
 
-    @Test func asyncStreamResultMapTSuccess() async {
+    @Test func asyncStreamResultMapSuccess() async {
         let stream = makeStream([Result<Int, Err>.success(5), .failure(.fail)])
-        let result = stream.mapT { $0 * 2 }
-        let collected = await collect(result)
+        let result = stream.asyncStreamT.map { $0 * 2 }
+        let collected = await collect(result.rawValue)
         #expect(collected == [.success(10), .failure(.fail)])
     }
 
-    @Test func asyncStreamResultFlatMapTSuccess() async {
+    @Test func asyncStreamResultFlatMapSuccess() async {
         let stream = makeStream([Result<Int, Err>.success(3), .failure(.fail)])
-        let result = flatMapTAsyncStreamResult(stream) { n in
-            makeStream([Result<String, Err>.success("\(n)")])
+        let result = stream.asyncStreamT.flatMap { n in
+            makeStream([Result<String, Err>.success("\(n)")]).asyncStreamT
         }
-        let collected = await collect(result)
+        let collected = await collect(result.rawValue)
         #expect(collected == [.success("3"), .failure(.fail)])
     }
 }

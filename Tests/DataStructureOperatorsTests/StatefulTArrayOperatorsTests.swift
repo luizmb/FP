@@ -8,21 +8,21 @@ import Testing
     @Test func apply() {
         let sf = Stateful<Int, [@Sendable (Int) -> Int]>.pure([{ $0 + 1 }, { $0 * 10 }])
         let sa = Stateful<Int, [Int]>.pure([1, 2])
-        let result = sf <*> sa
-        #expect(result.eval(0) == [2, 3, 10, 20])
+        let result = sf.statefulT <*> sa.statefulT
+        #expect(result.rawValue.eval(0) == [2, 3, 10, 20])
     }
 
     @Test func seqRight() {
         let lhs = Stateful<Int, [Int]>.pure([1, 2])
         let rhs = Stateful<Int, [String]>.pure(["a", "b"])
-        let result = lhs *> rhs
-        #expect(result.eval(0) == ["a", "b", "a", "b"])
+        let result = lhs.statefulT *> rhs.statefulT
+        #expect(result.rawValue.eval(0) == ["a", "b", "a", "b"])
     }
 
     @Test func seqLeft() {
         let lhs = Stateful<Int, [Int]>.pure([1, 2])
         let rhs = Stateful<Int, [String]>.pure(["a", "b"])
-        let result = lhs <* rhs
-        #expect(result.eval(0) == [1, 1, 2, 2])
+        let result = lhs.statefulT <* rhs.statefulT
+        #expect(result.rawValue.eval(0) == [1, 1, 2, 2])
     }
 }

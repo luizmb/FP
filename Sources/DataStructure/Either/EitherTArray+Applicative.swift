@@ -6,7 +6,7 @@ import Foundation
 // Type: Either<L, [A]> = Either<L, Array<A>>
 
 /// apply for EitherTArray: Either<L, [(A->B)]> -> Either<L, [A]> -> Either<L, [B]>
-public func applyEitherArray<L, A, B>(
+func applyEitherArray<L, A, B>(
     _ fns: Either<L, [@Sendable (A) -> B]>,
     _ values: Either<L, [A]>
 ) -> Either<L, [B]> {
@@ -14,14 +14,14 @@ public func applyEitherArray<L, A, B>(
 }
 
 /// liftA2 for EitherTArray
-public func liftA2EitherArray<L, A, B, C>(
+func liftA2EitherArray<L, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Either<L, [A]>, Either<L, [B]>) -> Either<L, [C]> {
     Either.liftA2(Array.liftA2(fn))
 }
 
 /// seqRight for EitherTArray
-public func seqRightEitherArray<L, A, B>(
+func seqRightEitherArray<L, A, B>(
     _ lhs: Either<L, [A]>,
     _ rhs: Either<L, [B]>
 ) -> Either<L, [B]> {
@@ -29,7 +29,7 @@ public func seqRightEitherArray<L, A, B>(
 }
 
 /// seqLeft for EitherTArray
-public func seqLeftEitherArray<L, A, B>(
+func seqLeftEitherArray<L, A, B>(
     _ lhs: Either<L, [A]>,
     _ rhs: Either<L, [B]>
 ) -> Either<L, [A]> {

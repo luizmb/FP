@@ -9,7 +9,7 @@ import Foundation
 /// .none → emit .none
 /// .some(a) → flatten fn(a) elements
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func flatMapTAsyncStreamOptional<A, B>(
+func flatMapTAsyncStreamOptional<A, B>(
     _ stream: AsyncStream<A?>,
     _ fn: @escaping @Sendable (A) -> AsyncStream<B?>
 ) -> AsyncStream<B?> where A: Sendable, B: Sendable {
@@ -33,7 +33,7 @@ public func flatMapTAsyncStreamOptional<A, B>(
 
 /// `bindTAsyncStreamOptional`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func bindTAsyncStreamOptional<A, B>(
+func bindTAsyncStreamOptional<A, B>(
     _ fn: @escaping @Sendable (A) -> AsyncStream<B?>
 ) -> @Sendable (AsyncStream<A?>) -> AsyncStream<B?> where A: Sendable, B: Sendable {
     { @Sendable stream in flatMapTAsyncStreamOptional(stream, fn) }
@@ -42,7 +42,7 @@ public func bindTAsyncStreamOptional<A, B>(
 /// Kleisli composition for AsyncStream<A?> (left-to-right)
 /// (>=>) :: (a -> AsyncStream<b?>) -> (b -> AsyncStream<c?>) -> a -> AsyncStream<c?>
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func kleisliTAsyncStreamOptional<A, B, C>(
+func kleisliTAsyncStreamOptional<A, B, C>(
     _ fn1: @escaping @Sendable (A) -> AsyncStream<B?>,
     _ fn2: @escaping @Sendable (B) -> AsyncStream<C?>
 ) -> @Sendable (A) -> AsyncStream<C?> where B: Sendable, C: Sendable {

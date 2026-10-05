@@ -2,7 +2,7 @@
 // ReaderTNonEmpty: outer = Reader, inner = NonEmpty
 // Type: Reader<Environment, NonEmpty<A>>
 
-public extension Reader {
+extension Reader {
     /// Declaration.
     func mapT<Inner, B>(_ fn: @escaping @Sendable (Inner) -> B) -> Reader<Environment, NonEmpty<B>>
     where Output == NonEmpty<Inner> {

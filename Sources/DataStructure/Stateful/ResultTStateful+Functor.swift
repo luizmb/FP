@@ -4,7 +4,7 @@ import Foundation
 // ResultTStateful: outer = Result, inner = Stateful
 // Type: Result<Stateful<S, A>, E> = Result wrapping a Stateful computation
 
-public extension Result {
+extension Result {
     /// Declaration.
     func mapT<S, A, B>(_ fn: @escaping @Sendable (A) -> B) -> Result<Stateful<S, B>, Failure>
     where Success == Stateful<S, A> {

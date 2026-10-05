@@ -7,7 +7,7 @@
     // Type: AnyPublisher<Result<A, E2>, Failure>
 
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public extension Publisher {
+    extension Publisher {
         /// Maps the value inside every emitted Result.
         /// mapT :: (a -> b) -> Publisher (result a) e -> Publisher (result b) e
         func mapT<Inner, B, E2: Error>(_ fn: @escaping @Sendable (Inner) -> B) -> AnyPublisher<Result<B, E2>, Failure>

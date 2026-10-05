@@ -27,7 +27,9 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func applyEqualsAp() {
         for fns in functions {
             for values in ints {
-                #expect(applyArrayOptional(fns, values) == fns.flatMapT { f in values.mapT(f) })
+                #expect(ArrayTOptional.apply(ArrayTOptional(fns), ArrayTOptional(values)).rawValue == fns.arrayT.flatMap { f in
+                    values.arrayT.map(f)
+                }.rawValue)
             }
         }
     }
@@ -35,8 +37,8 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func liftA2EqualsBind() {
         for lhs in ints {
             for rhs in strings {
-                let expected: [String?] = lhs.flatMapT { n in rhs.mapT { s in combine(n, s) } }
-                #expect(liftA2ArrayOptional(combine)(lhs, rhs) == expected)
+                let expected: [String?] = lhs.arrayT.flatMap { n in rhs.arrayT.map { s in combine(n, s) } }.rawValue
+                #expect(ArrayTOptional.liftA2(combine)(lhs.arrayT, rhs.arrayT).rawValue == expected)
             }
         }
     }
@@ -44,7 +46,7 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func seqRightEqualsBind() {
         for lhs in ints {
             for rhs in strings {
-                #expect(seqRightArrayOptional(lhs, rhs) == lhs.flatMapT { (_: Int) in rhs })
+                #expect(lhs.arrayT.seqRight(rhs.arrayT).rawValue == lhs.arrayT.flatMap { (_: Int) in rhs.arrayT }.rawValue)
             }
         }
     }
@@ -52,14 +54,14 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func seqLeftEqualsBind() {
         for lhs in ints {
             for rhs in strings {
-                #expect(seqLeftArrayOptional(lhs, rhs) == lhs.flatMapT { n in rhs.mapT { (_: String) in n } })
+                #expect(lhs.arrayT.seqLeft(rhs.arrayT).rawValue == lhs.arrayT.flatMap { n in rhs.arrayT.map { (_: String) in n } }.rawValue)
             }
         }
     }
 
     @Test func nilFunctionShortCircuits() {
         let fns: [(@Sendable (Int) -> Int)?] = [nil]
-        #expect(applyArrayOptional(fns, [1, 2]) == [nil])
+        #expect(ArrayTOptional.apply(fns.arrayT, ArrayTOptional([1, 2])).rawValue == [nil])
     }
 }
 
@@ -89,7 +91,9 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func applyEqualsAp() {
         for fns in functions {
             for values in ints {
-                #expect(applyArrayResult(fns, values) == fns.flatMapT { f in values.mapT(f) })
+                #expect(ArrayTResult.apply(ArrayTResult(fns), ArrayTResult(values)).rawValue == fns.arrayT.flatMap { f in
+                    values.arrayT.map(f)
+                }.rawValue)
             }
         }
     }
@@ -97,8 +101,8 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func liftA2EqualsBind() {
         for lhs in ints {
             for rhs in strings {
-                let expected: [Result<String, ApLawError>] = lhs.flatMapT { n in rhs.mapT { s in combine(n, s) } }
-                #expect(liftA2ArrayResult(combine)(lhs, rhs) == expected)
+                let expected: [Result<String, ApLawError>] = lhs.arrayT.flatMap { n in rhs.arrayT.map { s in combine(n, s) } }.rawValue
+                #expect(ArrayTResult.liftA2(combine)(lhs.arrayT, rhs.arrayT).rawValue == expected)
             }
         }
     }
@@ -106,7 +110,7 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func seqRightEqualsBind() {
         for lhs in ints {
             for rhs in strings {
-                #expect(seqRightArrayResult(lhs, rhs) == lhs.flatMapT { (_: Int) in rhs })
+                #expect(lhs.arrayT.seqRight(rhs.arrayT).rawValue == lhs.arrayT.flatMap { (_: Int) in rhs.arrayT }.rawValue)
             }
         }
     }
@@ -114,13 +118,13 @@ private let combine: @Sendable (Int, String) -> String = { n, s in "\(n)\(s)" }
     @Test func seqLeftEqualsBind() {
         for lhs in ints {
             for rhs in strings {
-                #expect(seqLeftArrayResult(lhs, rhs) == lhs.flatMapT { n in rhs.mapT { (_: String) in n } })
+                #expect(lhs.arrayT.seqLeft(rhs.arrayT).rawValue == lhs.arrayT.flatMap { n in rhs.arrayT.map { (_: String) in n } }.rawValue)
             }
         }
     }
 
     @Test func failureFunctionShortCircuits() {
         let fns: [Result<@Sendable (Int) -> Int, ApLawError>] = [.failure(.first)]
-        #expect(applyArrayResult(fns, [.success(1), .success(2)]) == [.failure(.first)])
+        #expect(ArrayTResult.apply(fns.arrayT, ArrayTResult([.success(1), .success(2)])).rawValue == [.failure(.first)])
     }
 }

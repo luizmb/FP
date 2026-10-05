@@ -4,7 +4,7 @@ import CoreFP
 // EitherTResult: outer = Either, inner = Result
 // Type: Either<L, Result<A, E>>
 
-public extension Either {
+extension Either {
     /// Maps the value inside the inner Result, leaving `.left` untouched.
     /// mapT :: (a -> b) -> Either l (result a) -> Either l (result b)
     func mapT<Inner, C, E: Error>(_ fn: @escaping @Sendable (Inner) -> C) -> Either<A, Result<C, E>>

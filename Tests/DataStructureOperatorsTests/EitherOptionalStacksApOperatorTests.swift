@@ -20,10 +20,10 @@ private enum StackError: Error, Equatable {
         let fns: Either<String, (@Sendable (Int) -> Int)?> = .right(nil)
         let lhs: Either<String, Int?> = .right(nil)
         let rhs: Either<String, Int?> = .left("rhs")
-        #expect((fns <*> rhs) == flatMapTEitherOptional(fns) { fn in rhs.mapT(fn) })
-        #expect((fns <*> rhs) == .right(nil))
-        #expect((lhs *> rhs) == .right(nil))
-        #expect((lhs <* rhs) == .right(nil))
+        #expect((fns.eitherT <*> rhs.eitherT).rawValue == (fns.eitherT >>- { fn in fn <£> rhs.eitherT }).rawValue)
+        #expect((fns.eitherT <*> rhs.eitherT).rawValue == .right(nil))
+        #expect((lhs.eitherT *> rhs.eitherT).rawValue == .right(nil))
+        #expect((lhs.eitherT <* rhs.eitherT).rawValue == .right(nil))
     }
 
     // MARK: - EitherTResult
@@ -32,10 +32,10 @@ private enum StackError: Error, Equatable {
         let fns: Either<String, Result<@Sendable (Int) -> Int, StackError>> = .right(.failure(.fromLhs))
         let lhs: Either<String, Result<Int, StackError>> = .right(.failure(.fromLhs))
         let rhs: Either<String, Result<Int, StackError>> = .left("rhs")
-        #expect((fns <*> rhs) == flatMapTEitherResult(fns) { fn in rhs.mapT(fn) })
-        #expect((fns <*> rhs) == .right(.failure(.fromLhs)))
-        #expect((lhs *> rhs) == .right(.failure(.fromLhs)))
-        #expect((lhs <* rhs) == .right(.failure(.fromLhs)))
+        #expect((fns.eitherT <*> rhs.eitherT).rawValue == (fns.eitherT >>- { fn in fn <£> rhs.eitherT }).rawValue)
+        #expect((fns.eitherT <*> rhs.eitherT).rawValue == .right(.failure(.fromLhs)))
+        #expect((lhs.eitherT *> rhs.eitherT).rawValue == .right(.failure(.fromLhs)))
+        #expect((lhs.eitherT <* rhs.eitherT).rawValue == .right(.failure(.fromLhs)))
     }
 
     // MARK: - OptionalTEither
@@ -44,9 +44,9 @@ private enum StackError: Error, Equatable {
         let fns: Either<String, @Sendable (Int) -> Int>? = .some(.left("lhs"))
         let lhs: Either<String, Int>? = .some(.left("lhs"))
         let rhs: Either<String, Int>? = nil
-        #expect((fns <*> rhs) == fns.flatMapT { fn in rhs.mapT(fn) })
-        #expect((fns <*> rhs) == .some(.left("lhs")))
-        #expect((lhs *> rhs) == .some(.left("lhs")))
-        #expect((lhs <* rhs) == .some(.left("lhs")))
+        #expect((fns.optionalT <*> rhs.optionalT).rawValue == (fns.optionalT >>- { fn in fn <£> rhs.optionalT }).rawValue)
+        #expect((fns.optionalT <*> rhs.optionalT).rawValue == .some(.left("lhs")))
+        #expect((lhs.optionalT *> rhs.optionalT).rawValue == .some(.left("lhs")))
+        #expect((lhs.optionalT <* rhs.optionalT).rawValue == .some(.left("lhs")))
     }
 }

@@ -56,7 +56,7 @@ import Testing
     @Test func writerTValidationApplyOperator() {
         let wf = Writer<[String], Validation<[Int], @Sendable (Int) -> Int>>(.failure([1]), ["l1"])
         let wa = Writer<[String], Validation<[Int], Int>>(.failure([2]), ["l2"])
-        let result = wf <*> wa
+        let result = (wf.writerT <*> wa.writerT).rawValue
         #expect(result.value == .failure([1, 2]))
         #expect(result.log == ["l1", "l2"])
     }
@@ -67,7 +67,7 @@ import Testing
         let sf = Stateful<Int, Validation<[String], @Sendable (Int) -> Int>>.pure(.failure(["sf"]))
         let sa = Stateful<Int, Validation<[String], Int>>.pure(.failure(["sa"]))
         var state = 0
-        let result = (sf <*> sa).run(&state)
+        let result = (sf.statefulT <*> sa.statefulT).rawValue.run(&state)
         #expect(result == .failure(["sf", "sa"]))
     }
 
@@ -76,7 +76,7 @@ import Testing
     @Test func readerTValidationApplyOperator() {
         let rf = Reader<String, Validation<[Int], @Sendable (Int) -> Int>>(const(.failure([1])))
         let ra = Reader<String, Validation<[Int], Int>>(const(.failure([2])))
-        let result = (rf <*> ra)("env")
+        let result = (rf.readerT <*> ra.readerT).rawValue("env")
         #expect(result == .failure([1, 2]))
     }
 

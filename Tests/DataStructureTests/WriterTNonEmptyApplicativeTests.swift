@@ -12,7 +12,7 @@ import Testing
             ["fns"]
         )
         let wa = Writer<[String], NonEmpty<Int>>(NonEmpty(head: 1, tail: [2]), ["vals"])
-        let result = applyWriterNonEmpty(wf, wa)
+        let result = WriterTNonEmpty.apply(wf.writerT, wa.writerT).rawValue
         #expect(result.value == NonEmpty(head: "2", tail: ["3", "10", "20"]))
         #expect(result.log == ["fns", "vals"])
     }
@@ -22,7 +22,7 @@ import Testing
     @Test func liftA2CombinesElementwise() {
         let wa = Writer<[String], NonEmpty<Int>>(NonEmpty(head: 3, tail: [6]), ["a"])
         let wb = Writer<[String], NonEmpty<Int>>(NonEmpty(head: 100, tail: [200]), ["b"])
-        let result = liftA2WriterNonEmpty { (a: Int, b: Int) in a + b }(wa, wb)
+        let result = WriterTNonEmpty.liftA2 { (a: Int, b: Int) in a + b }(wa.writerT, wb.writerT).rawValue
         #expect(result.value == NonEmpty(head: 103, tail: [203, 106, 206]))
         #expect(result.log == ["a", "b"])
     }
@@ -32,7 +32,7 @@ import Testing
     @Test func seqRightKeepsRightValue() {
         let lhs = Writer<[String], NonEmpty<Int>>(NonEmpty(head: 1), ["lhs"])
         let rhs = Writer<[String], NonEmpty<String>>(NonEmpty(head: "b"), ["rhs"])
-        let result = seqRightWriterNonEmpty(lhs, rhs)
+        let result = lhs.writerT.seqRight(rhs.writerT).rawValue
         #expect(result.value == NonEmpty(head: "b"))
         #expect(result.log == ["lhs", "rhs"])
     }
@@ -40,7 +40,7 @@ import Testing
     @Test func seqLeftKeepsLeftValue() {
         let lhs = Writer<[String], NonEmpty<Int>>(NonEmpty(head: 1), ["lhs"])
         let rhs = Writer<[String], NonEmpty<String>>(NonEmpty(head: "b"), ["rhs"])
-        let result = seqLeftWriterNonEmpty(lhs, rhs)
+        let result = lhs.writerT.seqLeft(rhs.writerT).rawValue
         #expect(result.value == NonEmpty(head: 1))
         #expect(result.log == ["lhs", "rhs"])
     }

@@ -6,7 +6,7 @@ import Foundation
 // Type: Writer<W, A>? = Optional<Writer<W, A>>
 
 /// apply for OptionalTWriter: Writer<W,(A->B)>? -> Writer<W,A>? -> Writer<W,B>?
-public func applyOptionalWriter<W: Monoid, A, B>(
+func applyOptionalWriter<W: Monoid, A, B>(
     _ wf: Writer<W, @Sendable (A) -> B>?,
     _ wa: Writer<W, A>?
 ) -> Writer<W, B>? {
@@ -14,7 +14,7 @@ public func applyOptionalWriter<W: Monoid, A, B>(
 }
 
 /// liftA2 for OptionalTWriter
-public func liftA2OptionalWriter<W: Monoid, A, B, C>(
+func liftA2OptionalWriter<W: Monoid, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Writer<W, A>?, Writer<W, B>?) -> Writer<W, C>? {
     { wa, wb in
@@ -23,7 +23,7 @@ public func liftA2OptionalWriter<W: Monoid, A, B, C>(
 }
 
 /// seqRight for OptionalTWriter
-public func seqRightOptionalWriter<W: Monoid, A, B>(
+func seqRightOptionalWriter<W: Monoid, A, B>(
     _ lhs: Writer<W, A>?,
     _ rhs: Writer<W, B>?
 ) -> Writer<W, B>? {
@@ -31,7 +31,7 @@ public func seqRightOptionalWriter<W: Monoid, A, B>(
 }
 
 /// seqLeft for OptionalTWriter
-public func seqLeftOptionalWriter<W: Monoid, A, B>(
+func seqLeftOptionalWriter<W: Monoid, A, B>(
     _ lhs: Writer<W, A>?,
     _ rhs: Writer<W, B>?
 ) -> Writer<W, A>? {

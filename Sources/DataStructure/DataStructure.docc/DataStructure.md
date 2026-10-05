@@ -1,6 +1,6 @@
 # ``DataStructure``
 
-The library's own algebraic and effect types: sum types, monad transformers, and the property-based-testing generator.
+The library's own algebraic and effect types: sum types, monad-transformer stacks, and the property-based-testing generator.
 
 ## Overview
 
@@ -12,7 +12,7 @@ import DataStructure
 let parsed: Either<String, Int> = Int("42").map(Either.right) ?? .left("not a number")
 ```
 
-Import [DataStructureOperators](../datastructureoperators) alongside this module for the operator syntax (`<£>`, `<*>`, `>>-`, `>=>`, …) — the full precedence table is in [OperatorVocabulary](../fp/operatorvocabulary). The `OuterTInner` monad-transformer naming convention this module follows throughout is explained in [MonadTransformers](../fp/monadtransformers).
+Import [DataStructureOperators](../datastructureoperators) alongside this module for the operator syntax (`<£>`, `<*>`, `>>-`, `>=>`, …); the full precedence table is in [OperatorVocabulary](../fp/operatorvocabulary). Every monad-transformer stack with a `DataStructure` layer is its own struct here, named `OuterTInner` (`ReaderTEither<Env, L, A>` wraps `Reader<Env, Either<L, A>>`): lift a nested value in with the property on the outer type (`reader.readerT`) or `ReaderTEither(reader)`, use `map` / `apply` / `flatMap` or the operators, and leave with `.rawValue`. The model is explained in [MonadTransformers](../fp/monadtransformers); the protocols (`TransformerStack`, `MonadT`) and the stacks made only of `CoreFP` types live in [CoreFP](../corefp).
 
 ## Related Modules
 
@@ -44,3 +44,97 @@ Import [DataStructureOperators](../datastructureoperators) alongside this module
 ### Foundations
 - ``Newtype``
 - ``Gen``
+
+### Transformer Stack Inner Shapes
+- ``EitherLike``
+- ``NonEmptyLike``
+- ``WriterLike``
+- ``ValidationLike``
+- ``ReaderLike``
+- ``StatefulLike``
+
+### Transformer Stacks (outer Array)
+- ``ArrayTEither``
+- ``ArrayTStateful``
+- ``ArrayTWriter``
+
+### Transformer Stacks (outer AsyncStream)
+- ``AsyncStreamTEither``
+- ``AsyncStreamTStateful``
+- ``AsyncStreamTWriter``
+
+### Transformer Stacks (outer Either)
+- ``EitherTArray``
+- ``EitherTNonEmpty``
+- ``EitherTOptional``
+- ``EitherTResult``
+- ``EitherTStateful``
+- ``EitherTValidation``
+- ``EitherTWriter``
+
+### Transformer Stacks (outer NonEmpty)
+- ``NonEmptyTEither``
+- ``NonEmptyTOptional``
+- ``NonEmptyTResult``
+
+### Transformer Stacks (outer Optional)
+- ``OptionalTEither``
+- ``OptionalTNonEmpty``
+- ``OptionalTStateful``
+- ``OptionalTWriter``
+
+### Transformer Stacks (outer Publisher)
+- ``PublisherTEither``
+- ``PublisherTStateful``
+- ``PublisherTWriter``
+
+### Transformer Stacks (outer Reader)
+- ``ReaderTArray``
+- ``ReaderTAsyncStream``
+- ``ReaderTEither``
+- ``ReaderTNonEmpty``
+- ``ReaderTOptional``
+- ``ReaderTPublisher``
+- ``ReaderTReader``
+- ``ReaderTResult``
+- ``ReaderTStateful``
+- ``ReaderTValidation``
+- ``ReaderTWriter``
+
+### Transformer Stacks (outer Result)
+- ``ResultTStateful``
+- ``ResultTWriter``
+
+### Transformer Stacks (outer Stateful)
+- ``StatefulTArray``
+- ``StatefulTAsyncStream``
+- ``StatefulTEither``
+- ``StatefulTNonEmpty``
+- ``StatefulTOptional``
+- ``StatefulTPublisher``
+- ``StatefulTReader``
+- ``StatefulTResult``
+- ``StatefulTValidation``
+- ``StatefulTWriter``
+
+### Transformer Stacks (outer Validation)
+- ``ValidationTArray``
+- ``ValidationTEither``
+- ``ValidationTNonEmpty``
+- ``ValidationTOptional``
+- ``ValidationTReader``
+- ``ValidationTResult``
+- ``ValidationTStateful``
+- ``ValidationTWriter``
+
+### Transformer Stacks (outer Writer)
+- ``WriterTArray``
+- ``WriterTAsyncStream``
+- ``WriterTEither``
+- ``WriterTNonEmpty``
+- ``WriterTOptional``
+- ``WriterTPublisher``
+- ``WriterTReader``
+- ``WriterTResult``
+- ``WriterTStateful``
+- ``WriterTValidation``

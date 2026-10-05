@@ -241,7 +241,7 @@ struct MockDatabase: Database {
 
 #### Pattern 4: ReaderT for Multiple Effects
 
-Combine Reader with other monads using the `ReaderTX`/`XTReader` transformer combos — see `<doc:MonadTransformers>` for the full `OuterTInner` naming convention and coverage matrix.
+Combine Reader with other monads through the transformer stacks (`ReaderTOptional`, `ReaderTResult`, `ReaderTAsyncStream`, …). Each stack is its own struct: lift a nested Reader in with `.readerT` (or `ReaderTOptional(reader)`), use `map` / `flatMap` / `<£>` / `>>-` as usual, and leave with `.rawValue`. See `<doc:MonadTransformers>` for the `OuterTInner` naming convention and coverage matrix.
 
 **ReaderT + Optional** (for nullable results with dependencies):
 ```swift
@@ -251,9 +251,9 @@ let findUserOptional: (String) -> Reader<Dependencies, User?> = { id in
     }
 }
 
-// mapT reaches through the Optional wrapped inside the Reader
+// .readerT lifts into ReaderTOptional, whose map reaches through the Optional
 let getUserName: (String) -> Reader<Dependencies, String?> = { id in
-    findUserOptional(id).mapT(get(\.name))
+    findUserOptional(id).readerT.map(get(\.name)).rawValue
 }
 ```
 
@@ -273,13 +273,13 @@ let findUserResult: (String) -> Reader<Dependencies, Result<User, DatabaseError>
     }
 }
 
-// mapT reaches through the Result
+// ReaderTResult's map reaches through the Result
 let getUserName2: (String) -> Reader<Dependencies, Result<String, DatabaseError>> = { id in
-    findUserResult(id).mapT(get(\.name))
+    findUserResult(id).readerT.map(get(\.name)).rawValue
 }
 ```
 
-**ReaderT + AsyncSequence** (for streaming with dependencies):
+**ReaderT + AsyncStream** (for streaming with dependencies):
 ```swift
 @available(macOS 10.15, *)
 let streamUsers: Reader<Dependencies, AsyncStream<User>> = Reader { deps in
@@ -291,7 +291,8 @@ let streamUsers: Reader<Dependencies, AsyncStream<User>> = Reader { deps in
     }
 }
 
-let userNames = streamUsers.mapT(get(\.name))
+// ReaderTAsyncStream<Dependencies, String>; .rawValue is Reader<Dependencies, AsyncStream<String>>
+let userNames = streamUsers.readerT.map(get(\.name))
 ```
 
 ### Advanced Techniques:
@@ -407,7 +408,7 @@ let fetchUser: (String) -> Reader<Deps, User?> = { id in
 }
 
 let processUser: (String) -> Reader<Deps, String?> = { id in
-    fetchUser(id).mapT(get(\.name))
+    fetchUser(id).readerT.map(get(\.name)).rawValue
 }
 ```
 
@@ -429,7 +430,7 @@ let processUser: (String) -> Reader<Deps, String?> = { id in
 ✅ **Split concerns**: Use multiple environment types for different layers
 
 ❌ **Ignoring the transformer combos**: Trying to handle effects manually
-✅ **Use `mapT`/`flatMapT`**: Combine Reader with Optional, Result, etc. through the `ReaderTX` combos
+✅ **Use the stacks**: lift with `.readerT` and combine Reader with Optional, Result, etc. through `ReaderTOptional`, `ReaderTResult`, …
 
 ### Ask the developer:
 1. What dependencies do they want to inject?

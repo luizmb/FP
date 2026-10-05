@@ -5,7 +5,7 @@ import Foundation
 // OptionalTArray: outer = Optional, inner = Array
 // Type: [A]? = Optional<[A]>
 
-public extension Optional {
+extension Optional {
     /// mapT for Optional<[A]> — maps over the inner Array
     /// fmap :: (a -> b) -> [a]? -> [b]?
     func mapT<A, B>(_ fn: @escaping @Sendable (A) -> B) -> [B]? where Wrapped == [A] {

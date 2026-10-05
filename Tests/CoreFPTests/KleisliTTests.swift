@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: Apache-2.0
 import CoreFP
 
-// swiftlint:disable discouraged_optional_collection
 import Testing
 
 @Suite struct KleisliTTests {
@@ -12,66 +11,64 @@ import Testing
     // MARK: - ArrayTOptional
 
     @Test func arrayTOptionalSuccessPath() {
-        let branch: @Sendable (Int) -> [Int?] = { n in [n, n + 1] }
-        let tenfold: @Sendable (Int) -> [Int?] = { n in [n * 10] }
-        let composed = kleisliT(branch, tenfold)
-        #expect(composed(1) == [10, 20])
+        let branch: @Sendable (Int) -> ArrayTOptional<Int> = { n in ArrayTOptional([n, n + 1]) }
+        let tenfold: @Sendable (Int) -> ArrayTOptional<Int> = { n in ArrayTOptional([n * 10]) }
+        let composed = ArrayTOptional<Int>.kleisli(branch, tenfold)
+        #expect(composed(1).rawValue == [10, 20])
     }
 
     @Test func arrayTOptionalNilPath() {
-        let stop: @Sendable (Int) -> [Int?] = const([nil])
-        let tenfold: @Sendable (Int) -> [Int?] = { n in [n * 10] }
-        let composed = kleisliT(stop, tenfold)
-        #expect(composed(1) == [nil])
+        let stop: @Sendable (Int) -> ArrayTOptional<Int> = const(ArrayTOptional([nil]))
+        let tenfold: @Sendable (Int) -> ArrayTOptional<Int> = { n in ArrayTOptional([n * 10]) }
+        let composed = ArrayTOptional<Int>.kleisli(stop, tenfold)
+        #expect(composed(1).rawValue == [nil])
     }
 
     // MARK: - ArrayTResult
 
     @Test func arrayTResultSuccessPath() {
-        let branch: @Sendable (Int) -> [Result<Int, TestError>] = { n in [.success(n), .success(n + 1)] }
-        let tenfold: @Sendable (Int) -> [Result<Int, TestError>] = { n in [.success(n * 10)] }
-        let composed = kleisliT(branch, tenfold)
-        #expect(composed(1) == [.success(10), .success(20)])
+        let branch: @Sendable (Int) -> ArrayTResult<TestError, Int> = { n in ArrayTResult([.success(n), .success(n + 1)]) }
+        let tenfold: @Sendable (Int) -> ArrayTResult<TestError, Int> = { n in ArrayTResult([.success(n * 10)]) }
+        let composed = ArrayTResult<TestError, Int>.kleisli(branch, tenfold)
+        #expect(composed(1).rawValue == [.success(10), .success(20)])
     }
 
     @Test func arrayTResultFailurePath() {
-        let fail: @Sendable (Int) -> [Result<Int, TestError>] = const([.failure(.broken)])
-        let tenfold: @Sendable (Int) -> [Result<Int, TestError>] = { n in [.success(n * 10)] }
-        let composed = kleisliT(fail, tenfold)
-        #expect(composed(1) == [.failure(.broken)])
+        let fail: @Sendable (Int) -> ArrayTResult<TestError, Int> = const(ArrayTResult([.failure(.broken)]))
+        let tenfold: @Sendable (Int) -> ArrayTResult<TestError, Int> = { n in ArrayTResult([.success(n * 10)]) }
+        let composed = ArrayTResult<TestError, Int>.kleisli(fail, tenfold)
+        #expect(composed(1).rawValue == [.failure(.broken)])
     }
 
     // MARK: - OptionalTArray
 
     @Test func optionalTArraySuccessPath() {
-        let branch: @Sendable (Int) -> [Int]? = { n in [n, n + 1] }
-        let tenfold: @Sendable (Int) -> [Int]? = { n in [n * 10] }
-        let composed = kleisliT(branch, tenfold)
-        #expect(composed(1) == [10, 20])
+        let branch: @Sendable (Int) -> OptionalTArray<Int> = { n in OptionalTArray([n, n + 1]) }
+        let tenfold: @Sendable (Int) -> OptionalTArray<Int> = { n in OptionalTArray([n * 10]) }
+        let composed = OptionalTArray<Int>.kleisli(branch, tenfold)
+        #expect(composed(1).rawValue == [10, 20])
     }
 
     @Test func optionalTArrayNilPath() {
-        let stop: @Sendable (Int) -> [Int]? = const(nil)
-        let tenfold: @Sendable (Int) -> [Int]? = { n in [n * 10] }
-        let composed = kleisliT(stop, tenfold)
-        #expect(composed(1) == nil)
+        let stop: @Sendable (Int) -> OptionalTArray<Int> = const(OptionalTArray(nil))
+        let tenfold: @Sendable (Int) -> OptionalTArray<Int> = { n in OptionalTArray([n * 10]) }
+        let composed = OptionalTArray<Int>.kleisli(stop, tenfold)
+        #expect(composed(1).rawValue == nil)
     }
 
     // MARK: - OptionalTResult
 
     @Test func optionalTResultSuccessPath() {
-        let increment: @Sendable (Int) -> Result<Int, TestError>? = { n in .success(n + 1) }
-        let tenfold: @Sendable (Int) -> Result<Int, TestError>? = { n in .success(n * 10) }
-        let composed = kleisliT(increment, tenfold)
-        #expect(composed(1) == .success(20))
+        let increment: @Sendable (Int) -> OptionalTResult<TestError, Int> = { n in OptionalTResult(.success(n + 1)) }
+        let tenfold: @Sendable (Int) -> OptionalTResult<TestError, Int> = { n in OptionalTResult(.success(n * 10)) }
+        let composed = OptionalTResult<TestError, Int>.kleisli(increment, tenfold)
+        #expect(composed(1).rawValue == .success(20))
     }
 
     @Test func optionalTResultFailurePath() {
-        let fail: @Sendable (Int) -> Result<Int, TestError>? = const(.failure(.broken))
-        let tenfold: @Sendable (Int) -> Result<Int, TestError>? = { n in .success(n * 10) }
-        let composed = kleisliT(fail, tenfold)
-        #expect(composed(1) == .failure(.broken))
+        let fail: @Sendable (Int) -> OptionalTResult<TestError, Int> = const(OptionalTResult(.failure(.broken)))
+        let tenfold: @Sendable (Int) -> OptionalTResult<TestError, Int> = { n in OptionalTResult(.success(n * 10)) }
+        let composed = OptionalTResult<TestError, Int>.kleisli(fail, tenfold)
+        #expect(composed(1).rawValue == .failure(.broken))
     }
 }
-
-// swiftlint:enable discouraged_optional_collection

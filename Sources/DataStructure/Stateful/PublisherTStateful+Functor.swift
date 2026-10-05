@@ -7,7 +7,7 @@
     // Type: AnyPublisher<Stateful<S, A>, E>
 
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public extension Publisher {
+    extension Publisher {
         /// Declaration.
         func mapT<S, A, B>(_ fn: @escaping @Sendable (A) -> B) -> AnyPublisher<Stateful<S, B>, Failure>
         where Output == Stateful<S, A> {

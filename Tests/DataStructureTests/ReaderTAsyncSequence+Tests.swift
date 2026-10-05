@@ -10,7 +10,7 @@ import Testing
 
     // MARK: - ReaderT + AsyncSequence Functor Tests
 
-    @Test func mapT() async throws {
+    @Test func map() async throws {
         let reader = Reader<Environment, AsyncStream<Int>> { env in
             AsyncStream { continuation in
                 continuation.yield(env.multiplier)
@@ -19,7 +19,7 @@ import Testing
             }
         }
 
-        let mapped = reader.mapT { $0 * 2 }
+        let mapped = reader.readerT.map { $0 * 2 }.rawValue
 
         let env = Environment(multiplier: 5)
         var results: [Int] = []
@@ -49,7 +49,7 @@ import Testing
         }
         let readerB = Reader<Environment, AsyncStream<Int>>(const(fixedStream))
 
-        let combined = liftA2ReaderAsyncStream { a, b in a + b }(readerA, readerB)
+        let combined = ReaderTAsyncStream<Environment, Int>.liftA2 { a, b in a + b }(readerA.readerT, readerB.readerT).rawValue
 
         let env = Environment(multiplier: 3)
         var results: [Int] = []
@@ -64,7 +64,7 @@ import Testing
 
     // MARK: - ReaderT + AsyncSequence Monad Tests
 
-    @Test func flatMapT() async throws {
+    @Test func flatMap() async throws {
         let reader = Reader<Environment, AsyncStream<Int>> { env in
             AsyncStream { continuation in
                 continuation.yield(env.multiplier)
@@ -72,14 +72,14 @@ import Testing
             }
         }
 
-        let bound = reader.flatMapT { value in
-            Reader<Environment, AsyncStream<String>> { env in
+        let bound = reader.readerT.flatMap { value in
+            ReaderTAsyncStream<Environment, String>(Reader { env in
                 AsyncStream { continuation in
                     continuation.yield("\(value * env.multiplier)")
                     continuation.finish()
                 }
-            }
-        }
+            })
+        }.rawValue
 
         let env = Environment(multiplier: 4)
         var results: [String] = []

@@ -177,9 +177,9 @@ let fetchUser: (String) -> Reader<Config, User?> = { id in
     }
 }
 
-// ReaderTOptional's mapT reaches through the Optional wrapped inside the Reader
+// .readerT lifts into ReaderTOptional, whose map reaches through the Optional
 let processUser: (String) -> Reader<Config, String?> = { id in
-    fetchUser(id).mapT { $0.name }
+    fetchUser(id).readerT.map { $0.name }.rawValue
 }
 
 // Usage:

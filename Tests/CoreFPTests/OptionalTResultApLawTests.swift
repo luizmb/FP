@@ -3,7 +3,7 @@ import CoreFP
 import Testing
 
 // `<*> = ap` law for OptionalTResult (Haskell: ExceptT E Maybe): apply, liftA2, seqRight and
-// seqLeft must agree with their definitions via `flatMapT` + `mapT` for every case combination.
+// seqLeft must agree with their definitions via `flatMap` + `map` for every case combination.
 
 private enum StackError: Error, Equatable {
     case fromFunction
@@ -24,19 +24,19 @@ private enum StackError: Error, Equatable {
     @Test func applyIsAp() {
         for fns in Self.fnStacks {
             for values in Self.rhsStacks {
-                let viaBind = fns.flatMapT { fn in values.mapT(fn) }
-                #expect(applyOptionalResult(fns, values) == viaBind)
+                let viaBind = fns.optionalT.flatMap { fn in values.optionalT.map(fn) }.rawValue
+                #expect(OptionalTResult.apply(OptionalTResult(fns), OptionalTResult(values)).rawValue == viaBind)
             }
         }
     }
 
     @Test func liftA2IsBind() {
-        let lifted: (Result<Int, StackError>?, Result<Int, StackError>?) -> Result<Int, StackError>? =
-            liftA2OptionalResult { a, b in a * 100 + b }
+        let lifted: (OptionalTResult<StackError, Int>, OptionalTResult<StackError, Int>) -> OptionalTResult<StackError, Int> =
+            OptionalTResult.liftA2 { a, b in a * 100 + b }
         for lhs in Self.lhsStacks {
             for rhs in Self.rhsStacks {
-                let viaBind = lhs.flatMapT { a in rhs.mapT { b in a * 100 + b } }
-                #expect(lifted(lhs, rhs) == viaBind)
+                let viaBind = lhs.optionalT.flatMap { a in rhs.optionalT.map { b in a * 100 + b } }.rawValue
+                #expect(lifted(OptionalTResult(lhs), OptionalTResult(rhs)).rawValue == viaBind)
             }
         }
     }
@@ -44,8 +44,10 @@ private enum StackError: Error, Equatable {
     @Test func seqRightSeqLeftAreBind() {
         for lhs in Self.lhsStacks {
             for rhs in Self.rhsStacks {
-                #expect(seqRightOptionalResult(lhs, rhs) == lhs.flatMapT(const(rhs)))
-                #expect(seqLeftOptionalResult(lhs, rhs) == lhs.flatMapT { a in rhs.mapT(const(a)) })
+                let lhsT = OptionalTResult(lhs)
+                let rhsT = OptionalTResult(rhs)
+                #expect(lhsT.seqRight(rhsT).rawValue == lhsT.flatMap(const(rhsT)).rawValue)
+                #expect(lhsT.seqLeft(rhsT).rawValue == lhsT.flatMap { a in rhsT.map(const(a)) }.rawValue)
             }
         }
     }
@@ -54,7 +56,7 @@ private enum StackError: Error, Equatable {
         let fns: Result<@Sendable (Int) -> Int, StackError>? = .some(.failure(.fromFunction))
         let values: Result<Int, StackError>? = nil
         let lhs: Result<Int, StackError>? = .some(.failure(.fromLhs))
-        #expect(applyOptionalResult(fns, values) == .some(.failure(.fromFunction)))
-        #expect(seqRightOptionalResult(lhs, values) == .some(.failure(.fromLhs)))
+        #expect(OptionalTResult.apply(OptionalTResult(fns), OptionalTResult(values)).rawValue == .some(.failure(.fromFunction)))
+        #expect(OptionalTResult(lhs).seqRight(OptionalTResult(values)).rawValue == .some(.failure(.fromLhs)))
     }
 }

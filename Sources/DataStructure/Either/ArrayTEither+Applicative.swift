@@ -11,7 +11,7 @@ import Foundation
 
 /// apply for ArrayTEither
 /// mf <*> ma = mf >>= \f -> fmap f ma
-public func applyArrayEither<L: Sendable, A: Sendable, B: Sendable>(
+func applyArrayEither<L: Sendable, A: Sendable, B: Sendable>(
     _ fns: [Either<L, @Sendable (A) -> B>],
     _ values: [Either<L, A>]
 ) -> [Either<L, B>] {
@@ -20,7 +20,7 @@ public func applyArrayEither<L: Sendable, A: Sendable, B: Sendable>(
 
 /// liftA2 for ArrayTEither
 /// liftA2 f ma mb = ma >>= \a -> fmap (f a) mb
-public func liftA2ArrayEither<L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
+func liftA2ArrayEither<L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> ([Either<L, A>], [Either<L, B>]) -> [Either<L, C>] {
     { arrA, arrB in
@@ -30,7 +30,7 @@ public func liftA2ArrayEither<L: Sendable, A: Sendable, B: Sendable, C: Sendable
 
 /// seqRight for ArrayTEither
 /// ma *> mb = ma >>= \_ -> mb
-public func seqRightArrayEither<L: Sendable, A: Sendable, B: Sendable>(
+func seqRightArrayEither<L: Sendable, A: Sendable, B: Sendable>(
     _ lhs: [Either<L, A>],
     _ rhs: [Either<L, B>]
 ) -> [Either<L, B>] {
@@ -39,7 +39,7 @@ public func seqRightArrayEither<L: Sendable, A: Sendable, B: Sendable>(
 
 /// seqLeft for ArrayTEither
 /// ma <* mb = ma >>= \a -> fmap (const a) mb
-public func seqLeftArrayEither<L: Sendable, A: Sendable, B: Sendable>(
+func seqLeftArrayEither<L: Sendable, A: Sendable, B: Sendable>(
     _ lhs: [Either<L, A>],
     _ rhs: [Either<L, B>]
 ) -> [Either<L, A>] {

@@ -5,7 +5,7 @@ import Foundation
 // ArrayTWriter: outer = Array, inner = Writer
 // Type: [Writer<W, A>]
 
-public extension Array {
+extension Array {
     /// Declaration.
     func mapT<W: Monoid, A, B>(_ fn: (A) -> B) -> [Writer<W, B>]
     where Element == Writer<W, A> {

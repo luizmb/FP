@@ -5,7 +5,7 @@ import Foundation
 // ReaderTWriter: outer = Reader, inner = Writer
 // Type: Reader<Env, Writer<W, A>>
 
-public extension Reader {
+extension Reader {
     /// Declaration.
     func mapT<W: Monoid, A, B>(_ fn: @escaping @Sendable (A) -> B) -> Reader<Environment, Writer<W, B>>
     where Output == Writer<W, A> {

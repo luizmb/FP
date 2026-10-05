@@ -11,7 +11,7 @@ import Foundation
 
 /// apply for NonEmptyTEither: NonEmpty<Either<L, (A->B)>> -> NonEmpty<Either<L, A>> -> NonEmpty<Either<L, B>>
 /// mf <*> ma = mf >>= \f -> fmap f ma
-public func applyNonEmptyEither<L: Sendable, A: Sendable, B>(
+func applyNonEmptyEither<L: Sendable, A: Sendable, B>(
     _ fns: NonEmpty<Either<L, @Sendable (A) -> B>>,
     _ values: NonEmpty<Either<L, A>>
 ) -> NonEmpty<Either<L, B>> {
@@ -20,7 +20,7 @@ public func applyNonEmptyEither<L: Sendable, A: Sendable, B>(
 
 /// liftA2 for NonEmptyTEither: (A,B)->C -> NonEmpty<Either<L, A>> -> NonEmpty<Either<L, B>> -> NonEmpty<Either<L, C>>
 /// liftA2 f ma mb = ma >>= \a -> fmap (f a) mb
-public func liftA2NonEmptyEither<L: Sendable, A: Sendable, B: Sendable, C>(
+func liftA2NonEmptyEither<L: Sendable, A: Sendable, B: Sendable, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (NonEmpty<Either<L, A>>, NonEmpty<Either<L, B>>) -> NonEmpty<Either<L, C>> {
     { neA, neB in
@@ -30,7 +30,7 @@ public func liftA2NonEmptyEither<L: Sendable, A: Sendable, B: Sendable, C>(
 
 /// seqRight for NonEmptyTEither: NonEmpty<Either<L, A>> -> NonEmpty<Either<L, B>> -> NonEmpty<Either<L, B>>
 /// ma *> mb = ma >>= \_ -> mb
-public func seqRightNonEmptyEither<L: Sendable, A: Sendable, B: Sendable>(
+func seqRightNonEmptyEither<L: Sendable, A: Sendable, B: Sendable>(
     _ lhs: NonEmpty<Either<L, A>>,
     _ rhs: NonEmpty<Either<L, B>>
 ) -> NonEmpty<Either<L, B>> {
@@ -39,7 +39,7 @@ public func seqRightNonEmptyEither<L: Sendable, A: Sendable, B: Sendable>(
 
 /// seqLeft for NonEmptyTEither: NonEmpty<Either<L, A>> -> NonEmpty<Either<L, B>> -> NonEmpty<Either<L, A>>
 /// ma <* mb = ma >>= \a -> fmap (const a) mb
-public func seqLeftNonEmptyEither<L: Sendable, A: Sendable, B: Sendable>(
+func seqLeftNonEmptyEither<L: Sendable, A: Sendable, B: Sendable>(
     _ lhs: NonEmpty<Either<L, A>>,
     _ rhs: NonEmpty<Either<L, B>>
 ) -> NonEmpty<Either<L, A>> {

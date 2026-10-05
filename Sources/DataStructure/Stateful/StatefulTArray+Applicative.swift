@@ -5,7 +5,7 @@ import Foundation
 // StatefulT + Array — free functions for Stateful<S, [A]>
 
 /// apply for Stateful<S, Array>
-public func applyStatefulArray<S, A, B>(
+func applyStatefulArray<S, A, B>(
     _ sf: Stateful<S, [@Sendable (A) -> B]>,
     _ sa: Stateful<S, [A]>
 ) -> Stateful<S, [B]> {
@@ -17,7 +17,7 @@ public func applyStatefulArray<S, A, B>(
 }
 
 /// liftA2 for Stateful<S, Array>
-public func liftA2StatefulArray<S, A, B, C>(
+func liftA2StatefulArray<S, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Stateful<S, [A]>, Stateful<S, [B]>) -> Stateful<S, [C]> {
     { sa, sb in
@@ -28,7 +28,7 @@ public func liftA2StatefulArray<S, A, B, C>(
 }
 
 /// seqRight for Stateful<S, Array>
-public func seqRightStatefulArray<S, A, B>(
+func seqRightStatefulArray<S, A, B>(
     _ lhs: Stateful<S, [A]>,
     _ rhs: Stateful<S, [B]>
 ) -> Stateful<S, [B]> {
@@ -36,7 +36,7 @@ public func seqRightStatefulArray<S, A, B>(
 }
 
 /// seqLeft for Stateful<S, Array>
-public func seqLeftStatefulArray<S, A, B>(
+func seqLeftStatefulArray<S, A, B>(
     _ lhs: Stateful<S, [A]>,
     _ rhs: Stateful<S, [B]>
 ) -> Stateful<S, [A]> {

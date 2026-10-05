@@ -7,7 +7,7 @@ import Foundation
 /// apply for Writer<W, Result>
 /// Equals `ap`: `wf >>= \f -> fmap f wa`. Sequential and short-circuiting like `flatMapT`:
 /// when the function side fails, the right-hand log is not appended.
-public func applyWriterResult<W: Monoid, A, B, E: Error>(
+func applyWriterResult<W: Monoid, A, B, E: Error>(
     _ wf: Writer<W, Result<@Sendable (A) -> B, E>>,
     _ wa: Writer<W, Result<A, E>>
 ) -> Writer<W, Result<B, E>> {
@@ -16,7 +16,7 @@ public func applyWriterResult<W: Monoid, A, B, E: Error>(
 
 /// liftA2 for Writer<W, Result>
 /// Equals `a >>= \x -> fmap (f x) b`. When `a` fails, `b`'s log is not appended.
-public func liftA2WriterResult<W: Monoid, A, B, C, E: Error>(
+func liftA2WriterResult<W: Monoid, A, B, C, E: Error>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Writer<W, Result<A, E>>, Writer<W, Result<B, E>>) -> Writer<W, Result<C, E>> {
     { wa, wb in
@@ -26,7 +26,7 @@ public func liftA2WriterResult<W: Monoid, A, B, C, E: Error>(
 
 /// seqRight for Writer<W, Result>
 /// Equals `a >>= \_ -> b`. When `lhs` fails, `rhs`'s log is not appended.
-public func seqRightWriterResult<W: Monoid, A, B, E: Error>(
+func seqRightWriterResult<W: Monoid, A, B, E: Error>(
     _ lhs: Writer<W, Result<A, E>>,
     _ rhs: Writer<W, Result<B, E>>
 ) -> Writer<W, Result<B, E>> {
@@ -35,7 +35,7 @@ public func seqRightWriterResult<W: Monoid, A, B, E: Error>(
 
 /// seqLeft for Writer<W, Result>
 /// Equals `a >>= \x -> fmap (const x) b`. When `lhs` fails, `rhs`'s log is not appended.
-public func seqLeftWriterResult<W: Monoid, A, B, E: Error>(
+func seqLeftWriterResult<W: Monoid, A, B, E: Error>(
     _ lhs: Writer<W, Result<A, E>>,
     _ rhs: Writer<W, Result<B, E>>
 ) -> Writer<W, Result<A, E>> {

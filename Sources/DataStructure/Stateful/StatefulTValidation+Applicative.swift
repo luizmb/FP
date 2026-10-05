@@ -5,7 +5,7 @@ import CoreFP
 /// Type: Stateful<S, Validation<E, A>>
 /// Threads state sequentially; accumulates Validation errors across both branches.
 
-public func applyStatefulValidation<S, E: Semigroup, A, B>(
+func applyStatefulValidation<S, E: Semigroup, A, B>(
     _ sf: Stateful<S, Validation<E, @Sendable (A) -> B>>,
     _ sa: Stateful<S, Validation<E, A>>
 ) -> Stateful<S, Validation<E, B>> {
@@ -15,7 +15,7 @@ public func applyStatefulValidation<S, E: Semigroup, A, B>(
 }
 
 /// `liftA2StatefulValidation`.
-public func liftA2StatefulValidation<S, E: Semigroup, A, B, C>(
+func liftA2StatefulValidation<S, E: Semigroup, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Stateful<S, Validation<E, A>>, Stateful<S, Validation<E, B>>) -> Stateful<S, Validation<E, C>> {
     { sa, sb in
@@ -26,7 +26,7 @@ public func liftA2StatefulValidation<S, E: Semigroup, A, B, C>(
 }
 
 /// `seqRightStatefulValidation`.
-public func seqRightStatefulValidation<S, E: Semigroup, A, B>(
+func seqRightStatefulValidation<S, E: Semigroup, A, B>(
     _ lhs: Stateful<S, Validation<E, A>>,
     _ rhs: Stateful<S, Validation<E, B>>
 ) -> Stateful<S, Validation<E, B>> {
@@ -34,7 +34,7 @@ public func seqRightStatefulValidation<S, E: Semigroup, A, B>(
 }
 
 /// `seqLeftStatefulValidation`.
-public func seqLeftStatefulValidation<S, E: Semigroup, A, B>(
+func seqLeftStatefulValidation<S, E: Semigroup, A, B>(
     _ lhs: Stateful<S, Validation<E, A>>,
     _ rhs: Stateful<S, Validation<E, B>>
 ) -> Stateful<S, Validation<E, A>> {

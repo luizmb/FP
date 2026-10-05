@@ -10,21 +10,21 @@ import Testing
     @Test func apply() {
         let sf = Stateful<Int, NonEmpty<@Sendable (Int) -> String>>.pure(NonEmpty(head: { "\($0)" }))
         let sa = Stateful<Int, NonEmpty<Int>>.pure(NonEmpty(head: 9, tail: [10]))
-        let result = sf <*> sa
-        #expect(result.eval(0) == NonEmpty(head: "9", tail: ["10"]))
+        let result = sf.statefulT <*> sa.statefulT
+        #expect(result.rawValue.eval(0) == NonEmpty(head: "9", tail: ["10"]))
     }
 
     @Test func seqRight() {
         let lhs = Stateful<Int, NonEmpty<Int>>.pure(NonEmpty(head: 1))
         let rhs = Stateful<Int, NonEmpty<String>>.pure(NonEmpty(head: "b"))
-        let result = lhs *> rhs
-        #expect(result.eval(0) == NonEmpty(head: "b"))
+        let result = lhs.statefulT *> rhs.statefulT
+        #expect(result.rawValue.eval(0) == NonEmpty(head: "b"))
     }
 
     @Test func seqLeft() {
         let lhs = Stateful<Int, NonEmpty<Int>>.pure(NonEmpty(head: 1))
         let rhs = Stateful<Int, NonEmpty<String>>.pure(NonEmpty(head: "b"))
-        let result = lhs <* rhs
-        #expect(result.eval(0) == NonEmpty(head: 1))
+        let result = lhs.statefulT <* rhs.statefulT
+        #expect(result.rawValue.eval(0) == NonEmpty(head: 1))
     }
 }

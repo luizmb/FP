@@ -8,7 +8,7 @@ import Foundation
 // flatMapT is WriterT's bind: the continuation returns the full stack, so it can fail
 // (`.left`) as well as log. `.left` short-circuits; logs combine left to right.
 
-public extension Either {
+extension Either {
     /// flatMapT :: Either<l, Writer<w, a>> -> (a -> Either<l, Writer<w, c>>) -> Either<l, Writer<w, c>>
     /// .left(l)   → .left(l)
     /// .right(w1) → fn(w1.value): .left(l) → .left(l); .right(w2) → .right(Writer(w2.value, w1.log <> w2.log))
@@ -41,7 +41,7 @@ public extension Either {
 
 /// Kleisli composition for `EitherT + Writer` (left-to-right)
 /// (>=>) :: (a -> Either<l, Writer<w, b>>) -> (b -> Either<l, Writer<w, c>>) -> a -> Either<l, Writer<w, c>>
-public func kleisliT<L, W: Monoid, A, B, C>(
+func kleisliT<L, W: Monoid, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Either<L, Writer<W, B>>,
     _ fn2: @escaping @Sendable (B) -> Either<L, Writer<W, C>>
 ) -> @Sendable (A) -> Either<L, Writer<W, C>> {

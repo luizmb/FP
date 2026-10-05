@@ -5,7 +5,7 @@ import Foundation
 // ReaderT + Array
 
 /// Apply for ReaderT Array
-public func applyReaderArray<Env, A, B>(
+func applyReaderArray<Env, A, B>(
     _ readerF: Reader<Env, [@Sendable (A) -> B]>,
     _ readerA: Reader<Env, [A]>
 ) -> Reader<Env, [B]> {
@@ -17,7 +17,7 @@ public func applyReaderArray<Env, A, B>(
 }
 
 /// liftA2 for ReaderT Array
-public func liftA2ReaderArray<Env, A, B, C>(
+func liftA2ReaderArray<Env, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Reader<Env, [A]>, Reader<Env, [B]>) -> Reader<Env, [C]> {
     { readerA, readerB in
@@ -28,7 +28,7 @@ public func liftA2ReaderArray<Env, A, B, C>(
 }
 
 /// seqRight for ReaderT Array
-public func seqRightReaderArray<Env, A, B>(
+func seqRightReaderArray<Env, A, B>(
     _ lhs: Reader<Env, [A]>,
     _ rhs: Reader<Env, [B]>
 ) -> Reader<Env, [B]> {
@@ -36,7 +36,7 @@ public func seqRightReaderArray<Env, A, B>(
 }
 
 /// seqLeft for ReaderT Array
-public func seqLeftReaderArray<Env, A, B>(
+func seqLeftReaderArray<Env, A, B>(
     _ lhs: Reader<Env, [A]>,
     _ rhs: Reader<Env, [B]>
 ) -> Reader<Env, [A]> {

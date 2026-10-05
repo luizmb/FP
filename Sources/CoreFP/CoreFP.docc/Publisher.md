@@ -142,145 +142,152 @@ let fetchUsers = Reader<any HTTPClient, AnyPublisher<[User], Error>> { client in
         .eraseToAnyPublisher()
 }
 
-// mapT maps inside the Publisher without touching the Reader layer
-let userNames = fetchUsers.mapT { $0.map(\.name) }
-// Reader<any HTTPClient, AnyPublisher<[String], Error>>
+// Wrapped in ReaderTPublisher, map reaches the emitted values without touching the Reader layer
+let userNames = fetchUsers.readerT.map { users in users.map { $0.name } }
+// ReaderTPublisher<any HTTPClient, Error, [String]>
 
-// All operators work through both layers
-{ $0.map(\.name) } <£> fetchUsers
-// Reader<any HTTPClient, AnyPublisher<[String], Error>>
+// The operators work through both layers too
+{ users in users.map { $0.name } } <£> fetchUsers.readerT
 
-// Provide the real dependency at the edge
-let publisher = userNames(LiveHTTPClient())
-// publisher is AnyPublisher<[String], Error>
+// Provide the real dependency at the edge (rawValue is the Reader)
+let publisher = userNames.rawValue(LiveHTTPClient())
+// publisher is any Publisher<[String], Error>
 
-// Swap for tests — no mocking framework needed
-let testPublisher = userNames(StubHTTPClient(response: testData))
+// Swap for tests, no mocking framework needed
+let testPublisher = userNames.rawValue(StubHTTPClient(response: testData))
 ```
 
 ---
 
 ## Monad Transformers
 
-Publisher can be the outer layer of a transformer stack, threading another monad's effects through its emission. The transformer name is `PublisherT{Inner}`.
+Publisher can be the outer layer of a transformer stack, threading another monad's effects through
+its emission. Each stack is its own struct named `PublisherT{Inner}` wrapping an `AnyPublisher`:
+lift any publisher with the `.publisherT` property (or `PublisherTOptional(anyPublisher)`), use `map` /
+`flatMap` / the operators, and leave with `.rawValue` (an `AnyPublisher`). For Combine operators the
+stack doesn't proxy (`receive(on:)`, `buffer`, …) use the escape hatch `mapPublisherT`.
 
-### `PublisherTOptional` — `AnyPublisher<A?, E>`
+### `PublisherTOptional` (`AnyPublisher<A?, Failure>`)
 
 Publisher emitting optional values. Inner `nil` elements stay `nil`.
 
 ```swift
 import FP
 
-let pub: AnyPublisher<Int?, Never> = [1, nil, 3].publisher
-    .map { $0 as Int? }.eraseToAnyPublisher()
+let pub: PublisherTOptional<Never, Int> = ([1, nil, 3] as [Int?]).publisher.publisherT
 
-// mapT — transform inner Optional without affecting the Publisher layer
-let doubled = pub.mapT { $0 * 2 }
+// map: transform the inner Optional without affecting the Publisher layer
+let doubled = pub.map { $0 * 2 }
 // emits Optional(2), nil, Optional(6)
 
-// liftA2 — derived from flatMapT: for each element of pubA, the whole of pubB runs
-let pubA: AnyPublisher<Int?, Never> = [1, nil].publisher.eraseToAnyPublisher()
-let pubB: AnyPublisher<Int?, Never> = [10, 20].publisher.eraseToAnyPublisher()
-liftA2PublisherOptional(+)(pubA, pubB)
+// liftA2 (MaybeT ap): for each element of pubA, the whole of pubB runs
+let pubA: PublisherTOptional<Never, Int> = ([1, nil] as [Int?]).publisher.publisherT
+let pubB: PublisherTOptional<Never, Int> = ([10, 20] as [Int?]).publisher.publisherT
+PublisherTOptional<Never, Int>.liftA2(+)(pubA, pubB)
 // emits Optional(11), Optional(21), nil  (a nil short-circuits that element once)
 
-// flatMapT — each Optional element produces a new Publisher<B?, E>
-flatMapTPublisherOptional(pub) { n in
-    Just(Optional(n * 2)).setFailureType(to: Never.self).eraseToAnyPublisher()
-}
+// flatMap: each Optional element produces a new stack
+pub.flatMap { n in Just(Optional(n * 2)).publisherT }
 // emits Optional(2), nil, Optional(6)
 
 // Operators
-pub >>- { n in Just(Optional(n + 1)).eraseToAnyPublisher() }   // ordered concat, like the base bind
+pub >>- { n in Just(Optional(n + 1)).publisherT }   // ordered concat, like the base bind
+
+// Escape hatch: any Combine operator on the whole AnyPublisher<Int?, Never>
+pub.mapPublisherT { $0.receive(on: DispatchQueue.main).eraseToAnyPublisher() }
+
+doubled.rawValue   // AnyPublisher<Int?, Never>
 ```
 
-`PublisherTOptional`, `PublisherTResult` and `PublisherTEither` are lawful `MaybeT` / `ExceptT` stacks over the stream: `flatMapT` uses the ordered-concat bind, `kleisliT` / `>=>` compose, and `apply` / `<*>`, `liftA2`, `*>` and `<*` are derived from `flatMapT` and `mapT`.
+`PublisherTOptional`, `PublisherTResult` and `PublisherTEither` are lawful `MaybeT` / `ExceptT`
+stacks over the stream (they conform to `MonadT`): `flatMap` uses the ordered-concat bind,
+`kleisli` / `>=>` compose, and `apply` / `<*>`, `liftA2`, `*>` and `<*` are `ap` derived from
+`flatMap` and `map`.
 
-### `PublisherTArray` — `AnyPublisher<[A], E>`
+### `PublisherTArray` (`AnyPublisher<[A], Failure>`)
 
-Publisher emitting arrays. Inner elements are transformed as a group.
+Publisher emitting arrays. Inner elements are transformed as a group. Functor and applicative only
+(see "Why some combos lack a Monad" in the Monad Transformers article).
 
 ```swift
 import FP
 
-let pub: AnyPublisher<[Int], Never> = [[1, 2], [3, 4]].publisher.eraseToAnyPublisher()
+let pub: PublisherTArray<Never, Int> = [[1, 2], [3, 4]].publisher.publisherT
 
-pub.mapT { $0 * 2 }   // emits [2, 4], [6, 8]
+pub.map { $0 * 2 }   // emits [2, 4], [6, 8]
 
-// liftA2 — zip two publishers and combine arrays with Array.liftA2
-let pubA: AnyPublisher<[Int], Never> = Just([1, 2]).eraseToAnyPublisher()
-let pubB: AnyPublisher<[Int], Never> = Just([10, 20]).eraseToAnyPublisher()
-liftA2PublisherArray(+)(pubA, pubB)   // emits [11, 21, 12, 22]
+// liftA2: each array of pubA against every array of pubB (ap, not zip), combined with Array.liftA2
+let pubA: PublisherTArray<Never, Int> = Just([1, 2]).publisherT
+let pubB: PublisherTArray<Never, Int> = Just([10, 20]).publisherT
+PublisherTArray<Never, Int>.liftA2(+)(pubA, pubB)   // emits [11, 21, 12, 22]
 
 // Operators
 { $0 * 2 } <£> pub   // emits [2, 4], [6, 8]
 ```
 
-### `PublisherTResult` — `AnyPublisher<Result<A,E2>, E>`
+### `PublisherTResult` (`AnyPublisher<Result<A, E>, Failure>`)
 
 Publisher emitting Results. `.failure` elements propagate the inner error.
 
 ```swift
 import FP
 
-let pub: AnyPublisher<Result<Int, MyError>, Never> =
-    [.success(5), .failure(.bad)].publisher.eraseToAnyPublisher()
+let pub: PublisherTResult<Never, MyError, Int> =
+    [Result<Int, MyError>.success(5), .failure(.bad)].publisher.publisherT
 
-pub.mapT { $0 * 2 }  // emits .success(10), .failure(.bad)
-flatMapTPublisherResult(pub) { n in
-    Just(Result<String, MyError>.success("\(n)")).eraseToAnyPublisher()
-}
+pub.map { $0 * 2 }  // emits .success(10), .failure(.bad)
+pub.flatMap { n in Just(Result<String, MyError>.success("\(n)")).publisherT }
 // emits .success("5"), .failure(.bad)
 ```
 
-### `PublisherTEither` — `AnyPublisher<Either<L,A>, E>`
+### `PublisherTEither` (`AnyPublisher<Either<L, A>, Failure>`)
 
 Publisher emitting Either values.
 
 ```swift
 import DataStructure
 
-let pub: AnyPublisher<Either<String, Int>, Never> =
-    [Either.right(1), .left("err"), .right(3)].publisher.eraseToAnyPublisher()
+let pub: PublisherTEither<Never, String, Int> =
+    [Either.right(1), .left("err"), .right(3)].publisher.publisherT
 
-pub.mapT { $0 * 2 }  // emits .right(2), .left("err"), .right(6)
-flatMapTPublisherEither(pub) { n in
-    Just(Either<String, Int>.right(n * 2)).eraseToAnyPublisher()
-}
+pub.map { $0 * 2 }  // emits .right(2), .left("err"), .right(6)
+pub.flatMap { n in Just(Either<String, Int>.right(n * 2)).publisherT }
 // emits .right(2), .left("err"), .right(6)
 ```
 
-### `PublisherTWriter` — `AnyPublisher<Writer<W, A>, E>`
+### `PublisherTWriter` (`AnyPublisher<Writer<W, A>, Failure>`)
 
-`WriterT w` over the stream. The bind takes the whole stack as its continuation, concatenates the inner streams in order and combines every log as `outer <> inner`.
+`WriterT w` over the stream. `flatMap` takes the whole stack as its continuation, concatenates the
+inner streams in order and combines every log as `outer <> inner`.
 
 ```swift
 import DataStructure
 
-let pub: AnyPublisher<Writer<[String], Int>, Never> =
-    Just(Writer(2, ["start"])).eraseToAnyPublisher()
+let pub: PublisherTWriter<Never, [String], Int> = Just(Writer(2, ["start"])).publisherT
 
-pub.flatMapT { n in
-    [Writer(n, ["a"]), Writer(n * 10, ["b"])].publisher.eraseToAnyPublisher()
-}
+pub.flatMap { n in [Writer(n, ["a"]), Writer(n * 10, ["b"])].publisher.publisherT }
 // emits Writer(2, ["start", "a"]), Writer(20, ["start", "b"])
 
 // Operators (DataStructureOperators): >>-, -<<, >=>, <=<, <*>, *>, <*
 ```
+
+`PublisherTStateful` (`AnyPublisher<Stateful<S, A>, Failure>`) is functor and applicative only.
+Stacks with the Publisher *inside* are `ReaderTPublisher` (shown above), `StatefulTPublisher` and
+`WriterTPublisher`.
 
 ---
 
 ## Module
 
 ```swift
-import FP        // Named functions (fmap, apply, seqRight, bind…) + PublisherT stacks
-import CoreFPOperators  // Operators (<£>, <*>, >>-, >=>…) for Publisher and PublisherT stacks
+import FP        // Named functions (fmap, apply, seqRight, bind…) + PublisherTOptional / Array / Result
+import CoreFPOperators  // Operators (<£>, <*>, >>-, >=>…) for Publisher and those stacks
 
-// For PublisherTEither:
+// For PublisherTEither / PublisherTWriter / PublisherTStateful:
 import DataStructure
 import DataStructureOperators
 
-// For ReaderT + Publisher:
+// For ReaderTPublisher / StatefulTPublisher / WriterTPublisher:
 import DataStructure
 import DataStructureOperators
 ```

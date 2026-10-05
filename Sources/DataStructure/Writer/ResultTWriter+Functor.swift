@@ -5,7 +5,7 @@ import Foundation
 // ResultTWriter: outer = Result, inner = Writer
 // Type: Result<Writer<W, A>, E>
 
-public extension Result {
+extension Result {
     /// Declaration.
     func mapT<W: Monoid, A, B>(_ fn: @escaping @Sendable (A) -> B) -> Result<Writer<W, B>, Failure>
     where Success == Writer<W, A> {

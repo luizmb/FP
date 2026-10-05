@@ -12,7 +12,7 @@ import Foundation
 
 /// apply for OptionalTEither: Either<L,(A->B)>? -> Either<L,A>? -> Either<L,B>?
 /// (<*>) = ap :: mf >>= \f -> fmap f ma
-public func applyOptionalEither<L: Sendable, A: Sendable, B: Sendable>(
+func applyOptionalEither<L: Sendable, A: Sendable, B: Sendable>(
     _ fns: Either<L, @Sendable (A) -> B>?,
     _ values: Either<L, A>?
 ) -> Either<L, B>? {
@@ -21,7 +21,7 @@ public func applyOptionalEither<L: Sendable, A: Sendable, B: Sendable>(
 
 /// liftA2 for OptionalTEither
 /// liftA2 f ma mb = ma >>= \a -> fmap (f a) mb
-public func liftA2OptionalEither<L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
+func liftA2OptionalEither<L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Either<L, A>?, Either<L, B>?) -> Either<L, C>? {
     { lhs, rhs in lhs.flatMapT { a in rhs.mapT { b in fn(a, b) } } }
@@ -29,12 +29,12 @@ public func liftA2OptionalEither<L: Sendable, A: Sendable, B: Sendable, C: Senda
 
 /// seqRight for OptionalTEither
 /// ma *> mb = ma >>= \_ -> mb
-public func seqRightOptionalEither<L: Sendable, A: Sendable, B: Sendable>(_ lhs: Either<L, A>?, _ rhs: Either<L, B>?) -> Either<L, B>? {
+func seqRightOptionalEither<L: Sendable, A: Sendable, B: Sendable>(_ lhs: Either<L, A>?, _ rhs: Either<L, B>?) -> Either<L, B>? {
     lhs.flatMapT(const(rhs))
 }
 
 /// seqLeft for OptionalTEither
 /// ma <* mb = ma >>= \a -> fmap (const a) mb
-public func seqLeftOptionalEither<L: Sendable, A: Sendable, B: Sendable>(_ lhs: Either<L, A>?, _ rhs: Either<L, B>?) -> Either<L, A>? {
+func seqLeftOptionalEither<L: Sendable, A: Sendable, B: Sendable>(_ lhs: Either<L, A>?, _ rhs: Either<L, B>?) -> Either<L, A>? {
     lhs.flatMapT { a in rhs.mapT(const(a)) }
 }

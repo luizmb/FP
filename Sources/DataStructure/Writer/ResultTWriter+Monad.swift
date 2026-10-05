@@ -8,7 +8,7 @@ import Foundation
 // flatMapT is WriterT's bind: the continuation returns the full stack, so it can fail
 // (`.failure`) as well as log. `.failure` short-circuits; logs combine left to right.
 
-public extension Result {
+extension Result {
     /// flatMapT :: Result<Writer<w, a>, e> -> (a -> Result<Writer<w, b>, e>) -> Result<Writer<w, b>, e>
     /// .failure(e)  → .failure(e)
     /// .success(w1) → fn(w1.value): .failure(e) → .failure(e); .success(w2) → .success(Writer(w2.value, w1.log <> w2.log))
@@ -27,7 +27,7 @@ public extension Result {
 
 /// Kleisli composition for `ResultT + Writer` (left-to-right)
 /// (>=>) :: (a -> Result<Writer<w, b>, e>) -> (b -> Result<Writer<w, c>, e>) -> a -> Result<Writer<w, c>, e>
-public func kleisliT<W: Monoid, A, B, C, E: Error>(
+func kleisliT<W: Monoid, A, B, C, E: Error>(
     _ fn1: @escaping @Sendable (A) -> Result<Writer<W, B>, E>,
     _ fn2: @escaping @Sendable (B) -> Result<Writer<W, C>, E>
 ) -> @Sendable (A) -> Result<Writer<W, C>, E> {

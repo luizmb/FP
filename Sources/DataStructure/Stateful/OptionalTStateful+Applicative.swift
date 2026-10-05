@@ -5,7 +5,7 @@ import Foundation
 // Type: Stateful<S, A>? = Optional<Stateful<S, A>>
 
 /// apply for OptionalTStateful: Stateful<S,(A->B)>? -> Stateful<S,A>? -> Stateful<S,B>?
-public func applyOptionalStateful<S, A, B>(
+func applyOptionalStateful<S, A, B>(
     _ sf: Stateful<S, @Sendable (A) -> B>?,
     _ sa: Stateful<S, A>?
 ) -> Stateful<S, B>? {
@@ -13,7 +13,7 @@ public func applyOptionalStateful<S, A, B>(
 }
 
 /// liftA2 for OptionalTStateful
-public func liftA2OptionalStateful<S, A, B, C>(
+func liftA2OptionalStateful<S, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Stateful<S, A>?, Stateful<S, B>?) -> Stateful<S, C>? {
     { sa, sb in
@@ -22,7 +22,7 @@ public func liftA2OptionalStateful<S, A, B, C>(
 }
 
 /// seqRight for OptionalTStateful
-public func seqRightOptionalStateful<S, A, B>(
+func seqRightOptionalStateful<S, A, B>(
     _ lhs: Stateful<S, A>?,
     _ rhs: Stateful<S, B>?
 ) -> Stateful<S, B>? {
@@ -30,7 +30,7 @@ public func seqRightOptionalStateful<S, A, B>(
 }
 
 /// seqLeft for OptionalTStateful
-public func seqLeftOptionalStateful<S, A, B>(
+func seqLeftOptionalStateful<S, A, B>(
     _ lhs: Stateful<S, A>?,
     _ rhs: Stateful<S, B>?
 ) -> Stateful<S, A>? {

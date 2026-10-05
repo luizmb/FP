@@ -1,30 +1,32 @@
 // SPDX-License-Identifier: Apache-2.0
-@testable import CoreFP
-@testable import CoreFPOperators
+import CoreFP
+import CoreFPOperators
 import Testing
 
 @Suite struct OptionalTResultTests {
     private enum Err: Error, Equatable { case fail }
 
+    private let add: @Sendable (Int) -> @Sendable (Int) -> Int = { x in { y in x + y } }
+
     // MARK: - Functor
 
-    @Test func mapTSomeSuccess() throws {
+    @Test func mapSomeSuccess() throws {
         let opt: Result<Int, Err>? = .success(5)
-        let result = opt.mapT { $0 * 2 }
+        let result = ({ $0 * 2 } <£> opt.optionalT).rawValue
         try #require(result != nil)
         #expect(try result?.get() == 10)
     }
 
-    @Test func mapTSomeFailure() {
+    @Test func mapSomeFailure() {
         let opt: Result<Int, Err>? = .failure(.fail)
-        let result = opt.mapT { $0 * 2 }
-        #expect(result == .some(.failure(.fail)))
+        let result = opt.optionalT <&> { $0 * 2 }
+        #expect(result.rawValue == .some(.failure(.fail)))
     }
 
-    @Test func mapTNone() {
+    @Test func mapNone() {
         let opt: Result<Int, Err>? = nil
-        let result = opt.mapT { $0 * 2 }
-        #expect(result == nil)
+        let result = { $0 * 2 } <£> opt.optionalT
+        #expect(result.rawValue == nil)
     }
 
     // MARK: - Applicative
@@ -32,72 +34,72 @@ import Testing
     @Test func liftA2BothSuccess() throws {
         let a: Result<Int, Err>? = .success(3)
         let b: Result<Int, Err>? = .success(4)
-        let result = liftA2OptionalResult(+)(a, b)
-        #expect(try result?.get() == 7)
+        let result = add <£> a.optionalT <*> b.optionalT
+        #expect(try result.rawValue?.get() == 7)
     }
 
     @Test func liftA2LeftNil() {
         let a: Result<Int, Err>? = nil
         let b: Result<Int, Err>? = .success(4)
-        let result = liftA2OptionalResult(+)(a, b)
-        #expect(result == nil)
+        let result = add <£> a.optionalT <*> b.optionalT
+        #expect(result.rawValue == nil)
     }
 
     @Test func liftA2LeftFailure() {
         let a: Result<Int, Err>? = .failure(.fail)
         let b: Result<Int, Err>? = .success(4)
-        let result = liftA2OptionalResult(+)(a, b)
-        #expect(result == .some(.failure(.fail)))
+        let result = add <£> a.optionalT <*> b.optionalT
+        #expect(result.rawValue == .some(.failure(.fail)))
     }
 
     @Test func seqRightBothSuccess() throws {
         let a: Result<Int, Err>? = .success(1)
         let b: Result<String, Err>? = .success("x")
-        let result = a *> b
-        #expect(try result?.get() == "x")
+        let result = a.optionalT *> b.optionalT
+        #expect(try result.rawValue?.get() == "x")
     }
 
     // MARK: - Monad
 
-    @Test func flatMapTSomeSuccess() throws {
+    @Test func bindSomeSuccess() throws {
         let opt: Result<Int, Err>? = .success(5)
-        let result = opt.flatMapT { n in Result<String, Err>.success("\(n)") }
-        #expect(try result?.get() == "5")
+        let result = opt.optionalT >>- { n in OptionalTResult<Err, String>(.success("\(n)")) }
+        #expect(try result.rawValue?.get() == "5")
     }
 
-    @Test func flatMapTSomeFailure() {
+    @Test func bindSomeFailure() {
         let opt: Result<Int, Err>? = .failure(.fail)
-        let result = opt.flatMapT { n in Result<String, Err>.success("\(n)") }
-        #expect(result == .some(.failure(.fail)))
+        let result = opt.optionalT >>- { n in OptionalTResult<Err, String>(.success("\(n)")) }
+        #expect(result.rawValue == .some(.failure(.fail)))
     }
 
-    @Test func flatMapTNone() {
+    @Test func bindNone() {
         let opt: Result<Int, Err>? = nil
-        let result = opt.flatMapT { n in Result<String, Err>.success("\(n)") }
-        #expect(result == nil)
+        let result = { n in OptionalTResult<Err, String>(.success("\(n)")) } -<< opt.optionalT
+        #expect(result.rawValue == nil)
     }
 
-    @Test func flatMapTFnReturnsNil() {
+    @Test func bindFnReturnsNil() {
         let opt: Result<Int, Err>? = .success(5)
-        let result = opt.flatMapT { _ -> Result<String, Err>? in nil }
-        #expect(result == nil)
+        let result = opt.optionalT >>- const(OptionalTResult<Err, String>(nil))
+        #expect(result.rawValue == nil)
     }
 
     @Test func bindOperator() throws {
         let opt: Result<Int, Err>? = .success(5)
-        let result = opt >>- { n -> Result<Int, Err>? in .success(n * 2) }
-        #expect(try result?.get() == 10)
+        let result = opt.optionalT >>- { n in OptionalTResult<Err, Int>(.success(n * 2)) }
+        #expect(try result.rawValue?.get() == 10)
     }
 
     // MARK: - Applicative is ap (mixed failures)
 
     @Test func applicativeOperatorsMatchBindOnMixedFailure() {
-        let fns: Result<@Sendable (Int) -> Int, Err>? = .some(.failure(.fail))
-        let lhs: Result<Int, Err>? = .some(.failure(.fail))
-        let rhs: Result<Int, Err>? = nil
-        #expect((fns <*> rhs) == fns.flatMapT { fn in rhs.mapT(fn) })
-        #expect((fns <*> rhs) == .some(.failure(.fail)))
-        #expect((lhs *> rhs) == .some(.failure(.fail)))
-        #expect((lhs <* rhs) == .some(.failure(.fail)))
+        let fns = OptionalTResult<Err, @Sendable (Int) -> Int>(.some(.failure(.fail)))
+        let lhs = OptionalTResult<Err, Int>(.some(.failure(.fail)))
+        let rhs = OptionalTResult<Err, Int>(nil)
+        #expect((fns <*> rhs).rawValue == (fns >>- { fn in fn <£> rhs }).rawValue)
+        #expect((fns <*> rhs).rawValue == .some(.failure(.fail)))
+        #expect((lhs *> rhs).rawValue == .some(.failure(.fail)))
+        #expect((lhs <* rhs).rawValue == .some(.failure(.fail)))
     }
 }

@@ -158,80 +158,82 @@ Either<String, Int>.left("error").bimap(
 
 ## Monad Transformers
 
-Either participates in transformer stacks in two ways: as the **outer** layer (`EitherT{Inner}`) or as the **inner** layer (`{Outer}TEither`).
+Either participates in transformer stacks in two ways: as the **outer** layer (`EitherT{Inner}`) or as the **inner** layer (`{Outer}TEither`). Each stack is its own struct wrapping the nested value: lift a nested value in with the property on the outer type (`either.eitherT`, `optional.optionalT`, `array.arrayT`) or the stack's `init(_:)`, use `map` / `flatMap` / `apply` / `liftA2` or the operators, and leave with `.rawValue`. A bare `Either<L, A?>` is still just an `Either`, so its own `map` and `<£>` see the whole `A?`.
 
-### `EitherTOptional` — `Either<L, A?>` (outer = Either, inner = Optional)
+### `EitherTOptional` (wraps `Either<L, A?>`, outer = Either, inner = Optional)
 
-Either containing an Optional. `.left` propagates; `.right(.none)` re-wraps as `.right(.none)`.
+Either containing an Optional. `.left` propagates; `.right(.none)` stays `.right(.none)`.
 
 ```swift
 import DataStructure
+import DataStructureOperators
 
-let e: Either<String, Int?> = .right(.some(5))
-e.mapT { $0 * 2 }  // .right(Optional(10))
-flatMapTEitherOptional(e) { n in .right(.some(n * 2)) }  // .right(Optional(10))
+let e: EitherTOptional<String, Int> = Either<String, Int?>.right(.some(5)).eitherT
+e.map { $0 * 2 }.rawValue  // .right(Optional(10))
+e.flatMap { n in EitherTOptional(.right(.some(n * 2))) }.rawValue  // .right(Optional(10))
 
-let none: Either<String, Int?> = .right(.none)
-flatMapTEitherOptional(none) { n in .right(.some(n * 2)) }  // .right(nil)  — nothing to bind
+let none = EitherTOptional<String, Int>(.right(.none))
+none.flatMap { n in EitherTOptional(.right(.some(n * 2))) }.rawValue  // .right(nil), nothing to bind
 
-let left: Either<String, Int?> = .left("err")
-flatMapTEitherOptional(left) { n in .right(.some(n * 2)) }  // .left("err")
+let left = EitherTOptional<String, Int>(.left("err"))
+left.flatMap { n in EitherTOptional(.right(.some(n * 2))) }.rawValue  // .left("err")
 
 // Operators
-{ $0 * 2 } <£> e   // .right(Optional(10))
-e >>- { n in .right(.some(n + 1)) }
+({ $0 * 2 } <£> e).rawValue   // .right(Optional(10))
+e >>- { n in .pure(n + 1) }    // EitherTOptional wrapping .right(Optional(6))
 ```
 
-### `EitherTArray` — `Either<L, [A]>` (outer = Either, inner = Array)
+### `EitherTArray` (wraps `Either<L, [A]>`, outer = Either, inner = Array)
 
 Either containing an Array. `.left` propagates; `.right(arr)` maps and combines elements.
-Functor and Applicative only: there is no lawful monad for a list inside a non-commutative
-outer layer (Haskell's old `ListT` problem), so there is no `flatMapT`/`>>-` for this stack.
+Functor and Applicative only (the struct conforms to `TransformerStack`, not `MonadT`): there is no
+lawful monad for a list inside a non-commutative outer layer (Haskell's old `ListT` problem), so
+there is no `flatMap` / `>>-` for this stack.
 
 ```swift
 import DataStructure
 
-let e: Either<String, [Int]> = .right([1, 2, 3])
-e.mapT { $0 * 2 }  // .right([2, 4, 6])
-liftA2EitherArray(+)(e, .right([10, 20]))  // .right([11, 21, 12, 22, 13, 23])
+let e = EitherTArray<String, Int>(.right([1, 2, 3]))
+e.map { $0 * 2 }.rawValue  // .right([2, 4, 6])
+EitherTArray.liftA2(+)(e, EitherTArray(.right([10, 20]))).rawValue  // .right([11, 21, 12, 22, 13, 23])
 
-liftA2EitherArray(+)(Either<String, [Int]>.left("err"), e)  // .left("err")
+EitherTArray.liftA2(+)(EitherTArray<String, Int>(.left("err")), e).rawValue  // .left("err")
 ```
 
-### `EitherTResult` — `Either<L, Result<A,E>>` (outer = Either, inner = Result)
+### `EitherTResult` (wraps `Either<L, Result<A, E>>`, outer = Either, inner = Result)
 
-Either containing a Result — two independent error channels.
+Either containing a Result, two independent error channels. Generic order is `EitherTResult<L, E, A>`.
 
 ```swift
 import DataStructure
 
-let e: Either<String, Result<Int, MyError>> = .right(.success(5))
-e.mapT { $0 * 2 }  // .right(.success(10))
-flatMapTEitherResult(e) { n in .right(.success(n * 2)) }  // .right(.success(10))
+let e = EitherTResult<String, MyError, Int>(.right(.success(5)))
+e.map { $0 * 2 }.rawValue  // .right(.success(10))
+e.flatMap { n in EitherTResult(.right(.success(n * 2))) }.rawValue  // .right(.success(10))
 
 // Inner failure preserves outer .right
-let innerFail: Either<String, Result<Int, MyError>> = .right(.failure(.bad))
-flatMapTEitherResult(innerFail) { n in .right(.success(n)) }  // .right(.failure(.bad))
+let innerFail = EitherTResult<String, MyError, Int>(.right(.failure(.bad)))
+innerFail.flatMap { n in .pure(n) }.rawValue  // .right(.failure(.bad))
 ```
 
-### `OptionalTEither` — `Either<L,A>?` (outer = Optional, inner = Either)
+### `OptionalTEither` (wraps `Either<L, A>?`, outer = Optional, inner = Either)
 
 Optional wrapping an Either. `nil` propagates; `.some(.left(l))` also propagates.
 
 ```swift
 import DataStructure
 
-let e: Either<String, Int>? = .right(5)
-e.mapT { $0 * 2 }                       // Optional(.right(10))
-e.flatMapT { n in .right(n * 2) }       // Optional(.right(10))
+let e: OptionalTEither<String, Int> = Optional(Either<String, Int>.right(5)).optionalT
+e.map { $0 * 2 }.rawValue                               // Optional(.right(10))
+e.flatMap { n in OptionalTEither(.right(n * 2)) }.rawValue  // Optional(.right(10))
 
-(nil as Either<String, Int>?).mapT { $0 * 2 }   // nil
+OptionalTEither<String, Int>(nil).map { $0 * 2 }.rawValue   // nil
 
-let left: Either<String, Int>? = .left("err")
-left.mapT { $0 * 2 }                    // Optional(.left("err"))
+let left = OptionalTEither<String, Int>(.left("err"))
+left.map { $0 * 2 }.rawValue                            // Optional(.left("err"))
 ```
 
-### `ArrayTEither` — `[Either<L,A>]` (outer = Array, inner = Either)
+### `ArrayTEither` (wraps `[Either<L, A>]`, outer = Array, inner = Either)
 
 Array of Either values. `.left` elements propagate; `.right` elements are transformed.
 
@@ -239,18 +241,22 @@ Array of Either values. `.left` elements propagate; `.right` elements are transf
 import DataStructure
 
 let es: [Either<String, Int>] = [.right(1), .left("err"), .right(3)]
-es.mapT { $0 * 2 }              // [.right(2), .left("err"), .right(6)]
-es.flatMapT { n in [.right(n), .right(n * 10)] }
+es.arrayT.map { $0 * 2 }.rawValue              // [.right(2), .left("err"), .right(6)]
+es.arrayT.flatMap { n in ArrayTEither([.right(n), .right(n * 10)]) }.rawValue
 // [.right(1), .right(10), .left("err"), .right(3), .right(30)]
 ```
+
+Each stack also has an escape hatch that hands you the whole nested value, named after Haskell:
+`mapMaybeT` on `EitherTOptional`, `mapExceptT` on `EitherTResult` / `OptionalTEither` /
+`ArrayTEither`, and `mapEitherT` on Compose-like stacks such as `EitherTArray`.
 
 ---
 
 ## Module
 
 ```swift
-import DataStructure          // Either type + named functions + transformer implementations
-import DataStructureOperators // Operators (<£>, <*>, >>-, >=>…) for Either and all EitherT stacks
+import DataStructure          // Either type, named functions and the EitherT* / *TEither stack structs
+import DataStructureOperators // Operators (<£>, <*>, >>-, >=>…) for Either and those stacks
 ```
 
 ---

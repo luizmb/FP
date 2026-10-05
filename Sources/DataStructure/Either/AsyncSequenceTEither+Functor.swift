@@ -5,7 +5,7 @@ import Foundation
 // Type: AsyncStream<Either<L, A>>
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public extension AsyncStream {
+extension AsyncStream {
     /// Maps the value inside every emitted Either.
     /// mapT :: (a -> b) -> AsyncStream (either a) -> AsyncStream (either b)
     func mapT<L, Inner, B: Sendable>(_ fn: @escaping @Sendable (Inner) -> B) -> AsyncStream<Either<L, B>>

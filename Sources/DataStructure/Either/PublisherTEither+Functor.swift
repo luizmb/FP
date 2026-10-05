@@ -7,7 +7,7 @@
     // Type: AnyPublisher<Either<L, A>, Failure>
 
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public extension Publisher {
+    extension Publisher {
         /// Maps the value inside every emitted Either.
         /// mapT :: (a -> b) -> Publisher (either a) e -> Publisher (either b) e
         func mapT<L, Inner, B>(_ fn: @escaping @Sendable (Inner) -> B) -> AnyPublisher<Either<L, B>, Failure>

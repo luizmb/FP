@@ -21,14 +21,14 @@ import Testing
             }
         }
 
-        let bound = reader >>- { value in
+        let bound = (reader.readerT >>- { value in
             Reader<Environment, AsyncStream<Int>> { env in
                 AsyncStream { continuation in
                     continuation.yield(value + env.multiplier)
                     continuation.finish()
                 }
-            }
-        }
+            }.readerT
+        }).rawValue
 
         let env = Environment(multiplier: 5)
         var results: [Int] = []
@@ -49,16 +49,16 @@ import Testing
             }
         }
 
-        let fn: @Sendable (Int) async throws -> Reader<Environment, AsyncStream<Int>> = { value in
+        let fn: @Sendable (Int) -> ReaderTAsyncStream<Environment, Int> = { value in
             Reader<Environment, AsyncStream<Int>> { env in
                 AsyncStream { continuation in
                     continuation.yield(value + env.multiplier)
                     continuation.finish()
                 }
-            }
+            }.readerT
         }
 
-        let bound = fn -<< reader
+        let bound = (fn -<< reader.readerT).rawValue
 
         let env = Environment(multiplier: 5)
         var results: [Int] = []
@@ -88,7 +88,7 @@ import Testing
             }
         }
 
-        let result = readerA *> readerB
+        let result = (readerA.readerT *> readerB.readerT).rawValue
 
         let env = Environment(multiplier: 5)
         var results: [Int] = []
@@ -117,7 +117,7 @@ import Testing
         }
         let readerB = Reader<Environment, AsyncStream<Int>>(const(streamB))
 
-        let result = readerA <* readerB
+        let result = (readerA.readerT <* readerB.readerT).rawValue
 
         let env = Environment(multiplier: 5)
         var results: [Int] = []

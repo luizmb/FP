@@ -4,7 +4,7 @@ import CoreFP
 // EitherTOptional: outer = Either, inner = Optional
 // Type: Either<L, A?>
 
-public extension Either {
+extension Either {
     /// Maps the value inside the inner Optional, leaving `.left` untouched.
     /// mapT :: (a -> b) -> Either l (optional a) -> Either l (optional b)
     func mapT<Inner, C>(_ fn: @escaping @Sendable (Inner) -> C) -> Either<A, C?>

@@ -4,7 +4,7 @@ import Foundation
 // ReaderT + Either
 
 /// Apply for ReaderT Either
-public func applyReaderEither<Env: Sendable, L: Sendable, A: Sendable, B: Sendable>(
+func applyReaderEither<Env: Sendable, L: Sendable, A: Sendable, B: Sendable>(
     _ readerF: Reader<Env, Either<L, @Sendable (A) -> B>>,
     _ readerA: Reader<Env, Either<L, A>>
 ) -> Reader<Env, Either<L, B>> {
@@ -14,7 +14,7 @@ public func applyReaderEither<Env: Sendable, L: Sendable, A: Sendable, B: Sendab
 }
 
 /// liftA2 for ReaderT Either
-public func liftA2ReaderEither<Env, L, A, B, C>(
+func liftA2ReaderEither<Env, L, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Reader<Env, Either<L, A>>, Reader<Env, Either<L, B>>) -> Reader<Env, Either<L, C>> {
     { readerA, readerB in
@@ -25,7 +25,7 @@ public func liftA2ReaderEither<Env, L, A, B, C>(
 }
 
 /// seqRight for ReaderT Either
-public func seqRightReaderEither<Env, L: Sendable, A: Sendable, B: Sendable>(
+func seqRightReaderEither<Env, L: Sendable, A: Sendable, B: Sendable>(
     _ lhs: Reader<Env, Either<L, A>>,
     _ rhs: Reader<Env, Either<L, B>>
 ) -> Reader<Env, Either<L, B>> {
@@ -33,7 +33,7 @@ public func seqRightReaderEither<Env, L: Sendable, A: Sendable, B: Sendable>(
 }
 
 /// seqLeft for ReaderT Either
-public func seqLeftReaderEither<Env, L: Sendable, A: Sendable, B: Sendable>(
+func seqLeftReaderEither<Env, L: Sendable, A: Sendable, B: Sendable>(
     _ lhs: Reader<Env, Either<L, A>>,
     _ rhs: Reader<Env, Either<L, B>>
 ) -> Reader<Env, Either<L, A>> {

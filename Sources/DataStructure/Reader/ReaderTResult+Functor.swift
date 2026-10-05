@@ -2,7 +2,7 @@
 import CoreFP
 import Foundation
 
-public extension Reader {
+extension Reader {
     /// ReaderT + Result
     func mapT<A, B, E: Error>(_ fn: @escaping @Sendable (A) -> B) -> Reader<Environment, Result<B, E>>
     where Output == Result<A, E>, A: Sendable {

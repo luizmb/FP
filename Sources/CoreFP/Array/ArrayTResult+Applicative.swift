@@ -10,7 +10,7 @@ import Foundation
 
 /// apply for ArrayTResult: [Result<(A->B),E>] -> [Result<A,E>] -> [Result<B,E>]
 /// mf <*> ma = mf >>= \f -> fmap f ma
-public func applyArrayResult<A: Sendable, B, E: Error>(
+func applyArrayResult<A: Sendable, B, E: Error>(
     _ fns: [Result<@Sendable (A) -> B, E>],
     _ values: [Result<A, E>]
 ) -> [Result<B, E>] {
@@ -19,7 +19,7 @@ public func applyArrayResult<A: Sendable, B, E: Error>(
 
 /// liftA2 for ArrayTResult: (A,B)->C -> [Result<A,E>] -> [Result<B,E>] -> [Result<C,E>]
 /// liftA2 f ma mb = ma >>= \a -> fmap (f a) mb
-public func liftA2ArrayResult<A: Sendable, B: Sendable, C, E: Error>(
+func liftA2ArrayResult<A: Sendable, B: Sendable, C, E: Error>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> @Sendable ([Result<A, E>], [Result<B, E>]) -> [Result<C, E>] {
     { arrA, arrB in
@@ -29,7 +29,7 @@ public func liftA2ArrayResult<A: Sendable, B: Sendable, C, E: Error>(
 
 /// seqRight for ArrayTResult: [Result<A,E>] -> [Result<B,E>] -> [Result<B,E>]
 /// ma *> mb = ma >>= \_ -> mb
-public func seqRightArrayResult<A, B: Sendable, E: Error>(
+func seqRightArrayResult<A, B: Sendable, E: Error>(
     _ lhs: [Result<A, E>],
     _ rhs: [Result<B, E>]
 ) -> [Result<B, E>] {
@@ -38,7 +38,7 @@ public func seqRightArrayResult<A, B: Sendable, E: Error>(
 
 /// seqLeft for ArrayTResult: [Result<A,E>] -> [Result<B,E>] -> [Result<A,E>]
 /// ma <* mb = ma >>= \a -> fmap (const a) mb
-public func seqLeftArrayResult<A: Sendable, B: Sendable, E: Error>(
+func seqLeftArrayResult<A: Sendable, B: Sendable, E: Error>(
     _ lhs: [Result<A, E>],
     _ rhs: [Result<B, E>]
 ) -> [Result<A, E>] {

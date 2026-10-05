@@ -12,7 +12,7 @@
     // in upstream order (ordered, lossless; see `concatMap`), and each emitted log is `w1 <> w2`.
 
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public extension Publisher {
+    extension Publisher {
         /// flatMapT :: Publisher<Writer<w, a>, e> -> (a -> Publisher<Writer<w, b>, e>) -> Publisher<Writer<w, b>, e>
         func flatMapT<W: Monoid, A, B>(
             _ fn: @escaping @Sendable (A) -> AnyPublisher<Writer<W, B>, Failure>
@@ -30,7 +30,7 @@
 
         /// The bind behind `flatMapT`, also used by the bind-derived applicative,
         /// whose continuation captures a (non-`Sendable`) publisher.
-        internal func bindWriterT<W: Monoid, A, B>(
+        func bindWriterT<W: Monoid, A, B>(
             _ fn: @escaping (A) -> AnyPublisher<Writer<W, B>, Failure>
         ) -> AnyPublisher<Writer<W, B>, Failure>
         where Output == Writer<W, A> {
@@ -43,7 +43,7 @@
     /// Kleisli composition for `PublisherT + Writer` (left-to-right)
     /// (>=>) :: (a -> Publisher<Writer<w, b>, e>) -> (b -> Publisher<Writer<w, c>, e>) -> a -> Publisher<Writer<w, c>, e>
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func kleisliT<W: Monoid, A, B, C, E: Error>(
+    func kleisliT<W: Monoid, A, B, C, E: Error>(
         _ fn1: @escaping @Sendable (A) -> AnyPublisher<Writer<W, B>, E>,
         _ fn2: @escaping @Sendable (B) -> AnyPublisher<Writer<W, C>, E>
     ) -> @Sendable (A) -> AnyPublisher<Writer<W, C>, E> {

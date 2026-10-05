@@ -4,7 +4,7 @@ import Foundation
 // ReaderTStateful: outer = Reader, inner = Stateful
 // Type: Reader<Env, Stateful<S, A>>
 
-public extension Reader {
+extension Reader {
     /// Declaration.
     func mapT<S, A, B>(_ fn: @escaping @Sendable (A) -> B) -> Reader<Environment, Stateful<S, B>>
     where Output == Stateful<S, A> {

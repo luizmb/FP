@@ -6,7 +6,7 @@ import Foundation
 // Type: Stateful<S, Writer<W, A>>
 
 /// apply for StatefulTWriter: Stateful<S,Writer<W,(A->B)>> -> Stateful<S,Writer<W,A>> -> Stateful<S,Writer<W,B>>
-public func applyStatefulWriter<S, W: Monoid, A, B>(
+func applyStatefulWriter<S, W: Monoid, A, B>(
     _ sf: Stateful<S, Writer<W, @Sendable (A) -> B>>,
     _ sa: Stateful<S, Writer<W, A>>
 ) -> Stateful<S, Writer<W, B>> {
@@ -18,7 +18,7 @@ public func applyStatefulWriter<S, W: Monoid, A, B>(
 }
 
 /// liftA2 for StatefulTWriter
-public func liftA2StatefulWriter<S, W: Monoid, A, B, C>(
+func liftA2StatefulWriter<S, W: Monoid, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Stateful<S, Writer<W, A>>, Stateful<S, Writer<W, B>>) -> Stateful<S, Writer<W, C>> {
     { sa, sb in
@@ -31,7 +31,7 @@ public func liftA2StatefulWriter<S, W: Monoid, A, B, C>(
 }
 
 /// seqRight for StatefulTWriter
-public func seqRightStatefulWriter<S, W: Monoid, A, B>(
+func seqRightStatefulWriter<S, W: Monoid, A, B>(
     _ lhs: Stateful<S, Writer<W, A>>,
     _ rhs: Stateful<S, Writer<W, B>>
 ) -> Stateful<S, Writer<W, B>> {
@@ -39,7 +39,7 @@ public func seqRightStatefulWriter<S, W: Monoid, A, B>(
 }
 
 /// seqLeft for StatefulTWriter
-public func seqLeftStatefulWriter<S, W: Monoid, A, B>(
+func seqLeftStatefulWriter<S, W: Monoid, A, B>(
     _ lhs: Stateful<S, Writer<W, A>>,
     _ rhs: Stateful<S, Writer<W, B>>
 ) -> Stateful<S, Writer<W, A>> {

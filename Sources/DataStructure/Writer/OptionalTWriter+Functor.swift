@@ -5,7 +5,7 @@ import Foundation
 // OptionalTWriter: outer = Optional, inner = Writer
 // Type: Writer<W, A>? = Optional<Writer<W, A>>
 
-public extension Optional {
+extension Optional {
     /// Declaration.
     func mapT<W: Monoid, A, B>(_ fn: (A) -> B) -> Writer<W, B>?
     where Wrapped == Writer<W, A> {

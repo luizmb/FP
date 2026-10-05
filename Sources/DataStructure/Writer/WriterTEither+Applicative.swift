@@ -7,7 +7,7 @@ import Foundation
 /// apply for Writer<W, Either>
 /// Equals `ap`: `wf >>= \f -> fmap f wa`. Sequential and short-circuiting like `flatMapT`:
 /// when the function side fails, the right-hand log is not appended.
-public func applyWriterEither<W: Monoid, L: Sendable, A: Sendable, B: Sendable>(
+func applyWriterEither<W: Monoid, L: Sendable, A: Sendable, B: Sendable>(
     _ wf: Writer<W, Either<L, @Sendable (A) -> B>>,
     _ wa: Writer<W, Either<L, A>>
 ) -> Writer<W, Either<L, B>> {
@@ -16,7 +16,7 @@ public func applyWriterEither<W: Monoid, L: Sendable, A: Sendable, B: Sendable>(
 
 /// liftA2 for Writer<W, Either>
 /// Equals `a >>= \x -> fmap (f x) b`. When `a` fails, `b`'s log is not appended.
-public func liftA2WriterEither<W: Monoid, L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
+func liftA2WriterEither<W: Monoid, L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Writer<W, Either<L, A>>, Writer<W, Either<L, B>>) -> Writer<W, Either<L, C>> {
     { wa, wb in
@@ -26,7 +26,7 @@ public func liftA2WriterEither<W: Monoid, L: Sendable, A: Sendable, B: Sendable,
 
 /// seqRight for Writer<W, Either>
 /// Equals `a >>= \_ -> b`. When `lhs` fails, `rhs`'s log is not appended.
-public func seqRightWriterEither<W: Monoid, L: Sendable, A: Sendable, B: Sendable>(
+func seqRightWriterEither<W: Monoid, L: Sendable, A: Sendable, B: Sendable>(
     _ lhs: Writer<W, Either<L, A>>,
     _ rhs: Writer<W, Either<L, B>>
 ) -> Writer<W, Either<L, B>> {
@@ -35,7 +35,7 @@ public func seqRightWriterEither<W: Monoid, L: Sendable, A: Sendable, B: Sendabl
 
 /// seqLeft for Writer<W, Either>
 /// Equals `a >>= \x -> fmap (const x) b`. When `lhs` fails, `rhs`'s log is not appended.
-public func seqLeftWriterEither<W: Monoid, L: Sendable, A: Sendable, B: Sendable>(
+func seqLeftWriterEither<W: Monoid, L: Sendable, A: Sendable, B: Sendable>(
     _ lhs: Writer<W, Either<L, A>>,
     _ rhs: Writer<W, Either<L, B>>
 ) -> Writer<W, Either<L, A>> {

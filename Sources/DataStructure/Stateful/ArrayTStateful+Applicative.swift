@@ -5,7 +5,7 @@ import Foundation
 // Type: [Stateful<S, A>]
 
 /// apply for ArrayTStateful: [Stateful<S,(A->B)>] -> [Stateful<S,A>] -> [Stateful<S,B>]
-public func applyArrayStateful<S, A, B>(
+func applyArrayStateful<S, A, B>(
     _ fns: [Stateful<S, @Sendable (A) -> B>],
     _ vals: [Stateful<S, A>]
 ) -> [Stateful<S, B>] {
@@ -13,7 +13,7 @@ public func applyArrayStateful<S, A, B>(
 }
 
 /// liftA2 for ArrayTStateful
-public func liftA2ArrayStateful<S, A, B, C>(
+func liftA2ArrayStateful<S, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> ([Stateful<S, A>], [Stateful<S, B>]) -> [Stateful<S, C>] {
     { arrA, arrB in
@@ -22,7 +22,7 @@ public func liftA2ArrayStateful<S, A, B, C>(
 }
 
 /// seqRight for ArrayTStateful
-public func seqRightArrayStateful<S, A, B>(
+func seqRightArrayStateful<S, A, B>(
     _ lhs: [Stateful<S, A>],
     _ rhs: [Stateful<S, B>]
 ) -> [Stateful<S, B>] {
@@ -30,7 +30,7 @@ public func seqRightArrayStateful<S, A, B>(
 }
 
 /// seqLeft for ArrayTStateful
-public func seqLeftArrayStateful<S, A, B>(
+func seqLeftArrayStateful<S, A, B>(
     _ lhs: [Stateful<S, A>],
     _ rhs: [Stateful<S, B>]
 ) -> [Stateful<S, A>] {

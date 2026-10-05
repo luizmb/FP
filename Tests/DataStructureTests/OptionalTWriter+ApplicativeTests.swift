@@ -8,7 +8,7 @@ import Testing
     @Test func applyBothSome() {
         let wf: Writer<[String], @Sendable (Int) -> String>? = Writer({ "\($0)" }, ["fn"])
         let wa: Writer<[String], Int>? = Writer(7, ["val"])
-        let result = applyOptionalWriter(wf, wa)
+        let result = OptionalTWriter.apply(wf.optionalT, wa.optionalT).rawValue
         #expect(result?.value == "7")
         #expect(result?.log == ["fn", "val"])
     }
@@ -16,28 +16,28 @@ import Testing
     @Test func applyNilFn() {
         let wf: Writer<[String], @Sendable (Int) -> String>? = nil
         let wa: Writer<[String], Int>? = Writer(7, ["val"])
-        let result = applyOptionalWriter(wf, wa)
+        let result = OptionalTWriter.apply(wf.optionalT, wa.optionalT).rawValue
         #expect(result == nil)
     }
 
     @Test func applyNilVal() {
         let wf: Writer<[String], @Sendable (Int) -> String>? = Writer({ "\($0)" }, ["fn"])
         let wa: Writer<[String], Int>? = nil
-        let result = applyOptionalWriter(wf, wa)
+        let result = OptionalTWriter.apply(wf.optionalT, wa.optionalT).rawValue
         #expect(result == nil)
     }
 
     @Test func applyBothNil() {
         let wf: Writer<[String], @Sendable (Int) -> String>? = nil
         let wa: Writer<[String], Int>? = nil
-        let result = applyOptionalWriter(wf, wa)
+        let result = OptionalTWriter.apply(wf.optionalT, wa.optionalT).rawValue
         #expect(result == nil)
     }
 
     @Test func seqRightBothSome() {
         let lhs: Writer<[String], Int>? = Writer(1, ["a"])
         let rhs: Writer<[String], String>? = Writer("hello", ["b"])
-        let result = seqRightOptionalWriter(lhs, rhs)
+        let result = lhs.optionalT.seqRight(rhs.optionalT).rawValue
         #expect(result?.value == "hello")
         #expect(result?.log == ["a", "b"])
     }
@@ -45,14 +45,14 @@ import Testing
     @Test func seqRightNil() {
         let lhs: Writer<[String], Int>? = nil
         let rhs: Writer<[String], String>? = Writer("hello", ["b"])
-        let result = seqRightOptionalWriter(lhs, rhs)
+        let result = lhs.optionalT.seqRight(rhs.optionalT).rawValue
         #expect(result == nil)
     }
 
     @Test func seqLeftBothSome() {
         let lhs: Writer<[String], Int>? = Writer(99, ["a"])
         let rhs: Writer<[String], String>? = Writer("ignored", ["b"])
-        let result = seqLeftOptionalWriter(lhs, rhs)
+        let result = lhs.optionalT.seqLeft(rhs.optionalT).rawValue
         #expect(result?.value == 99)
         #expect(result?.log == ["a", "b"])
     }
@@ -60,7 +60,7 @@ import Testing
     @Test func seqLeftNil() {
         let lhs: Writer<[String], Int>? = Writer(99, ["a"])
         let rhs: Writer<[String], String>? = nil
-        let result = seqLeftOptionalWriter(lhs, rhs)
+        let result = lhs.optionalT.seqLeft(rhs.optionalT).rawValue
         #expect(result == nil)
     }
 }

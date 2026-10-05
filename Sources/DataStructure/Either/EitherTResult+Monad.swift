@@ -9,7 +9,7 @@ import Foundation
 /// .left(l)           → .left(l)
 /// .right(.failure(e)) → .right(.failure(e))
 /// .right(.success(a)) → fn(a)
-public func flatMapTEitherResult<L, A, B, E: Error>(
+func flatMapTEitherResult<L, A, B, E: Error>(
     _ either: Either<L, Result<A, E>>,
     _ fn: @escaping @Sendable (A) -> Either<L, Result<B, E>>
 ) -> Either<L, Result<B, E>> {
@@ -25,7 +25,7 @@ public func flatMapTEitherResult<L, A, B, E: Error>(
 }
 
 /// Curried version
-public func bindTEitherResult<L, A, B, E: Error>(
+func bindTEitherResult<L, A, B, E: Error>(
     _ fn: @escaping @Sendable (A) -> Either<L, Result<B, E>>
 ) -> @Sendable (Either<L, Result<A, E>>) -> Either<L, Result<B, E>> {
     { either in flatMapTEitherResult(either, fn) }
@@ -33,7 +33,7 @@ public func bindTEitherResult<L, A, B, E: Error>(
 
 /// Kleisli composition for `EitherT + Result` (left-to-right)
 /// (>=>) :: (a -> Either<l,Result<b,e>>) -> (b -> Either<l,Result<c,e>>) -> a -> Either<l,Result<c,e>>
-public func kleisliT<L, A, B, C, E: Error>(
+func kleisliT<L, A, B, C, E: Error>(
     _ fn1: @escaping @Sendable (A) -> Either<L, Result<B, E>>,
     _ fn2: @escaping @Sendable (B) -> Either<L, Result<C, E>>
 ) -> @Sendable (A) -> Either<L, Result<C, E>> {

@@ -192,26 +192,27 @@ NonEmpty<Int?>(head: 1, tail: [nil]).sequence()            // nil
 
 ---
 
-## Transformer: `NonEmpty<A?>` — threading Optional
+## Transformer: `NonEmptyTOptional` (wraps `NonEmpty<A?>`)
 
-Map or flatMap over the present values while preserving `nil` slots in place.
+Map or flatMap over the present values while preserving `nil` slots in place. Lift with `.nonEmptyT` (or `NonEmptyTOptional(ne)`), leave with `.rawValue`.
 
 ```swift
 let ne = NonEmpty<Int?>(head: 1, tail: [nil, 3])
 
-// mapT — maps only over present values
-ne.mapT { $0 * 10 }.toArray         // [Optional(10), nil, Optional(30)]
+// map: only over present values
+ne.nonEmptyT.map { $0 * 10 }.rawValue.toArray         // [Optional(10), nil, Optional(30)]
 
-// flatMapT — inner function returns NonEmpty<B?>;
-//            nil slots become nil in result, some slots follow the function
-ne.flatMapT { n in NonEmpty<Int?>(head: n * 2) }.toArray  // [Optional(2), nil, Optional(6)]
+// flatMap: the continuation returns the whole stack (NonEmptyTOptional<B>);
+//          nil slots stay nil in the result, present slots follow the function
+ne.nonEmptyT.flatMap { n in NonEmptyTOptional(NonEmpty<Int?>(head: n * 2)) }.rawValue.toArray
+// [Optional(2), nil, Optional(6)]
 ```
 
 ---
 
-## Transformer: `NonEmpty<Result<A, E>>` — threading Result
+## Transformer: `NonEmptyTResult` (wraps `NonEmpty<Result<A, E>>`)
 
-Map or flatMap over success values while preserving failures in place.
+Map or flatMap over success values while preserving failures in place. Generic order is `NonEmptyTResult<E, A>`.
 
 ```swift
 let ne = NonEmpty<Result<Int, MyError>>(
@@ -219,34 +220,36 @@ let ne = NonEmpty<Result<Int, MyError>>(
     tail: [.failure(.err), .success(3)]
 )
 
-// mapT — maps over success values
-ne.mapT { $0 * 10 }.toArray
+// map: over success values
+ne.nonEmptyT.map { $0 * 10 }.rawValue.toArray
 // [.success(10), .failure(.err), .success(30)]
 
-// flatMapT — inner function returns NonEmpty<Result<B, E>>;
-//            failures propagate, successes follow the function
-ne.flatMapT { n in NonEmpty<Result<Int, MyError>>(head: .success(n * 2)) }.toArray
+// flatMap: the continuation returns NonEmptyTResult<E, B>;
+//          failures propagate, successes follow the function
+ne.nonEmptyT.flatMap { n in NonEmptyTResult(NonEmpty<Result<Int, MyError>>(head: .success(n * 2))) }.rawValue.toArray
 // [.success(2), .failure(.err), .success(6)]
 ```
 
 ---
 
-## Transformer: `NonEmpty<A>?` — threading Optional
+## Transformer: `OptionalTNonEmpty` (wraps `NonEmpty<A>?`)
 
-`Optional<NonEmpty<A>>` — when the whole collection may be absent.
+`Optional<NonEmpty<A>>`, when the whole collection may be absent. Lift with `.optionalT`.
 
 ```swift
 let opt: NonEmpty<Int>? = nonEmpty(head: 1, tail: [2, 3])
 
-// mapT — maps inside when present
-opt.mapT { $0 * 10 }?.toArray  // [10, 20, 30]
-(nil as NonEmpty<Int>?).mapT { $0 * 10 }  // nil
+// map: inside when present
+opt.optionalT.map { $0 * 10 }.rawValue?.toArray  // [10, 20, 30]
+OptionalTNonEmpty<Int>(nil).map { $0 * 10 }.rawValue  // nil
 
-// flatMapT — element-level Optional; nils are dropped
-opt.flatMapT { n -> NonEmpty<Int>? in
-    n > 1 ? NonEmpty(head: n * 10) : nil
-}?.toArray  // [20, 30]   (1 → nil, dropped; 2 → 20; 3 → 30)
+// flatMap: element-level Optional; nils are dropped
+opt.optionalT.flatMap { n in
+    OptionalTNonEmpty(n > 1 ? NonEmpty(head: n * 10) : nil)
+}.rawValue?.toArray  // [20, 30]   (1 → nil, dropped; 2 → 20; 3 → 30)
 ```
+
+The escape hatches are `mapMaybeT` (`NonEmptyTOptional`), `mapExceptT` (`NonEmptyTResult`, `NonEmptyTEither`) and `mapOptionalT` (`OptionalTNonEmpty`). `NonEmpty` is also the inner layer of `EitherTNonEmpty`, `ReaderTNonEmpty`, `StatefulTNonEmpty`, `ValidationTNonEmpty` and `WriterTNonEmpty`, see [MonadTransformers](../fp/monadtransformers).
 
 ---
 

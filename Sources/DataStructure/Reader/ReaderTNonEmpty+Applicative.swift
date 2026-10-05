@@ -6,7 +6,7 @@ import Foundation
 // Type: Reader<Environment, NonEmpty<A>>
 
 /// Apply for ReaderT NonEmpty
-public func applyReaderNonEmpty<Env, A, B>(
+func applyReaderNonEmpty<Env, A, B>(
     _ readerF: Reader<Env, NonEmpty<@Sendable (A) -> B>>,
     _ readerA: Reader<Env, NonEmpty<A>>
 ) -> Reader<Env, NonEmpty<B>> {
@@ -16,7 +16,7 @@ public func applyReaderNonEmpty<Env, A, B>(
 }
 
 /// liftA2 for ReaderT NonEmpty
-public func liftA2ReaderNonEmpty<Env, A, B, C>(
+func liftA2ReaderNonEmpty<Env, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Reader<Env, NonEmpty<A>>, Reader<Env, NonEmpty<B>>) -> Reader<Env, NonEmpty<C>> where A: Sendable {
     { readerA, readerB in
@@ -27,7 +27,7 @@ public func liftA2ReaderNonEmpty<Env, A, B, C>(
 }
 
 /// seqRight for ReaderT NonEmpty
-public func seqRightReaderNonEmpty<Env, A, B>(
+func seqRightReaderNonEmpty<Env, A, B>(
     _ lhs: Reader<Env, NonEmpty<A>>,
     _ rhs: Reader<Env, NonEmpty<B>>
 ) -> Reader<Env, NonEmpty<B>> {
@@ -35,7 +35,7 @@ public func seqRightReaderNonEmpty<Env, A, B>(
 }
 
 /// seqLeft for ReaderT NonEmpty
-public func seqLeftReaderNonEmpty<Env, A, B>(
+func seqLeftReaderNonEmpty<Env, A, B>(
     _ lhs: Reader<Env, NonEmpty<A>>,
     _ rhs: Reader<Env, NonEmpty<B>>
 ) -> Reader<Env, NonEmpty<A>> {

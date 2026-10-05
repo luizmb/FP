@@ -2,7 +2,7 @@
 // NonEmptyTResult: outer = NonEmpty, inner = Result
 // Type: NonEmpty<Result<A, E>>  (Success = A, Failure = E)
 
-public extension NonEmpty {
+extension NonEmpty {
     /// flatMapT for NonEmpty<Result<A, E>> — maps over success values, preserves failures.
     /// .failure → .failure
     /// .success(a) → fn(a)  (inner flatMap)
@@ -35,7 +35,7 @@ public extension NonEmpty {
 
 /// Kleisli composition for `NonEmptyTResult` (left-to-right)
 /// (>=>) :: (a -> NonEmpty<Result<b,e>>) -> (b -> NonEmpty<Result<c,e>>) -> a -> NonEmpty<Result<c,e>>
-public func kleisliT<A, B, C, E>(
+func kleisliT<A, B, C, E>(
     _ fn1: @escaping @Sendable (A) -> NonEmpty<Result<B, E>>,
     _ fn2: @escaping @Sendable (B) -> NonEmpty<Result<C, E>>
 ) -> @Sendable (A) -> NonEmpty<Result<C, E>> {

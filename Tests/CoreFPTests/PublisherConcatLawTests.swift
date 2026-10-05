@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
     import Combine
-    @testable import CoreFP
+    import CoreFP
     import Testing
 
     /// Publisher follows Haskell stream semantics: bind is ordered concat, `<*>` is the bind-derived `ap`.
@@ -149,42 +149,44 @@
         // MARK: - PublisherTOptional
 
         private let optValues: [Int?] = [1, nil, 2]
-        private func optPublisher(_ values: [Int?]) -> AnyPublisher<Int?, Never> {
-            values.publisher.eraseToAnyPublisher()
+        private func optPublisher(_ values: [Int?]) -> PublisherTOptional<Never, Int> {
+            values.publisher.eraseToAnyPublisher().publisherT
         }
 
         @Test func publisherTOptionalMonadLaws() {
-            let fOpt: @Sendable (Int) -> AnyPublisher<Int?, Never> = { a in [a, nil, a * 10].publisher.eraseToAnyPublisher() }
-            let gOpt: @Sendable (Int) -> AnyPublisher<Int?, Never> = { a in [a + 1].publisher.eraseToAnyPublisher() }
-            let pureOpt: @Sendable (Int) -> AnyPublisher<Int?, Never> = { a in Just(a).eraseToAnyPublisher() }
+            let fOpt: @Sendable (Int) -> PublisherTOptional<Never, Int> = { a in
+                PublisherTOptional([a, nil, a * 10].publisher.eraseToAnyPublisher())
+            }
+            let gOpt: @Sendable (Int) -> PublisherTOptional<Never, Int> = { a in
+                PublisherTOptional([a + 1].publisher.eraseToAnyPublisher())
+            }
+            let pureOpt: @Sendable (Int) -> PublisherTOptional<Never, Int> = { a in PublisherTOptional(Just(a).eraseToAnyPublisher()) }
             let m = optPublisher(optValues)
 
-            #expect(collect(flatMapTPublisherOptional(pureOpt(4), fOpt)) == collect(fOpt(4)))
-            #expect(collect(flatMapTPublisherOptional(m, pureOpt)) == optValues)
-            let lhs = flatMapTPublisherOptional(flatMapTPublisherOptional(m, fOpt), gOpt)
-            let rhs = flatMapTPublisherOptional(m, kleisliT(fOpt, gOpt))
-            #expect(collect(lhs) == collect(rhs))
-            #expect(collect(lhs) == [2, nil, 11, nil, 3, nil, 21])
+            #expect(collect(pureOpt(4).flatMap(fOpt).rawValue) == collect(fOpt(4).rawValue))
+            #expect(collect(m.flatMap(pureOpt).rawValue) == optValues)
+            let lhs = m.flatMap(fOpt).flatMap(gOpt)
+            let rhs = m.flatMap(PublisherTOptional<Never, Int>.kleisli(fOpt, gOpt))
+            #expect(collect(lhs.rawValue) == collect(rhs.rawValue))
+            #expect(collect(lhs.rawValue) == [2, nil, 11, nil, 3, nil, 21])
         }
 
         @Test func publisherTOptionalApEqualsBindDerived() {
             let fns: [(@Sendable (Int) -> Int)?] = [{ $0 + 100 }, nil, { $0 * 2 }]
             let values = optValues
-            let fnsPublisher: AnyPublisher<(@Sendable (Int) -> Int)?, Never> = fns.publisher.eraseToAnyPublisher()
-            let applied = applyPublisherOptional(fnsPublisher, optPublisher(values))
-            let ap = flatMapTPublisherOptional(fnsPublisher) { fn in
-                values.publisher.eraseToAnyPublisher().mapT(fn)
-            }
-            #expect(collect(applied) == collect(ap))
-            #expect(collect(applied) == [101, nil, 102, nil, 2, nil, 4])
+            let fnsPublisher = PublisherTOptional<Never, @Sendable (Int) -> Int>(fns.publisher.eraseToAnyPublisher())
+            let applied = PublisherTOptional.apply(fnsPublisher, optPublisher(values))
+            let ap = fnsPublisher.flatMap { fn in PublisherTOptional(values.publisher.eraseToAnyPublisher()).map(fn) }
+            #expect(collect(applied.rawValue) == collect(ap.rawValue))
+            #expect(collect(applied.rawValue) == [101, nil, 102, nil, 2, nil, 4])
         }
 
         @Test func publisherTOptionalSeqAndLiftA2() {
             let lhs = optPublisher([1, nil, 2])
             let rhs = optPublisher([10, 20])
-            #expect(collect(seqRightPublisherOptional(lhs, rhs)) == [10, 20, nil, 10, 20])
-            #expect(collect(seqLeftPublisherOptional(lhs, rhs)) == [1, 1, nil, 2, 2])
-            #expect(collect(liftA2PublisherOptional { (a: Int, b: Int) in a + b }(lhs, rhs)) == [11, 21, nil, 12, 22])
+            #expect(collect(lhs.seqRight(rhs).rawValue) == [10, 20, nil, 10, 20])
+            #expect(collect(lhs.seqLeft(rhs).rawValue) == [1, 1, nil, 2, 2])
+            #expect(collect(PublisherTOptional.liftA2 { (a: Int, b: Int) in a + b }(lhs, rhs).rawValue) == [11, 21, nil, 12, 22])
         }
 
         // MARK: - PublisherTResult
@@ -193,53 +195,51 @@
             case boom
         }
 
-        private func resPublisher(_ values: [Result<Int, Boom>]) -> AnyPublisher<Result<Int, Boom>, Never> {
-            values.publisher.eraseToAnyPublisher()
+        private func resPublisher(_ values: [Result<Int, Boom>]) -> PublisherTResult<Never, Boom, Int> {
+            values.publisher.eraseToAnyPublisher().publisherT
         }
 
         @Test func publisherTResultMonadLaws() {
-            let fRes: @Sendable (Int) -> AnyPublisher<Result<Int, Boom>, Never> = { a in
-                [Result<Int, Boom>.success(a), .failure(.boom), .success(a * 10)].publisher.eraseToAnyPublisher()
+            let fRes: @Sendable (Int) -> PublisherTResult<Never, Boom, Int> = { a in
+                PublisherTResult([Result<Int, Boom>.success(a), .failure(.boom), .success(a * 10)].publisher.eraseToAnyPublisher())
             }
-            let gRes: @Sendable (Int) -> AnyPublisher<Result<Int, Boom>, Never> = { a in
-                Just(Result<Int, Boom>.success(a + 1)).eraseToAnyPublisher()
+            let gRes: @Sendable (Int) -> PublisherTResult<Never, Boom, Int> = { a in
+                PublisherTResult(Just(Result<Int, Boom>.success(a + 1)).eraseToAnyPublisher())
             }
-            let pureRes: @Sendable (Int) -> AnyPublisher<Result<Int, Boom>, Never> = { a in
-                Just(Result<Int, Boom>.success(a)).eraseToAnyPublisher()
+            let pureRes: @Sendable (Int) -> PublisherTResult<Never, Boom, Int> = { a in
+                PublisherTResult(Just(Result<Int, Boom>.success(a)).eraseToAnyPublisher())
             }
             let values: [Result<Int, Boom>] = [.success(1), .failure(.boom), .success(2)]
             let m = resPublisher(values)
 
-            #expect(collect(flatMapTPublisherResult(pureRes(4), fRes)) == collect(fRes(4)))
-            #expect(collect(flatMapTPublisherResult(m, pureRes)) == values)
-            let lhs = flatMapTPublisherResult(flatMapTPublisherResult(m, fRes), gRes)
-            let rhs = flatMapTPublisherResult(m, kleisliT(fRes, gRes))
-            #expect(collect(lhs) == collect(rhs))
+            #expect(collect(pureRes(4).flatMap(fRes).rawValue) == collect(fRes(4).rawValue))
+            #expect(collect(m.flatMap(pureRes).rawValue) == values)
+            let lhs = m.flatMap(fRes).flatMap(gRes)
+            let rhs = m.flatMap(PublisherTResult<Never, Boom, Int>.kleisli(fRes, gRes))
+            #expect(collect(lhs.rawValue) == collect(rhs.rawValue))
             let expected: [Result<Int, Boom>] = [
                 .success(2), .failure(.boom), .success(11), .failure(.boom), .success(3), .failure(.boom), .success(21)
             ]
-            #expect(collect(lhs) == expected)
+            #expect(collect(lhs.rawValue) == expected)
         }
 
         @Test func publisherTResultApEqualsBindDerived() {
             let fns: [Result<@Sendable (Int) -> Int, Boom>] = [.success { $0 + 100 }, .failure(.boom), .success { $0 * 2 }]
             let values: [Result<Int, Boom>] = [.success(1), .success(2)]
-            let fnsPublisher: AnyPublisher<Result<@Sendable (Int) -> Int, Boom>, Never> = fns.publisher.eraseToAnyPublisher()
-            let applied = applyPublisherResult(fnsPublisher, resPublisher(values))
-            let ap = flatMapTPublisherResult(fnsPublisher) { fn in
-                values.publisher.eraseToAnyPublisher().mapT(fn)
-            }
-            #expect(collect(applied) == collect(ap))
-            #expect(collect(applied) == [.success(101), .success(102), .failure(.boom), .success(2), .success(4)])
+            let fnsPublisher = PublisherTResult<Never, Boom, @Sendable (Int) -> Int>(fns.publisher.eraseToAnyPublisher())
+            let applied = PublisherTResult.apply(fnsPublisher, resPublisher(values))
+            let ap = fnsPublisher.flatMap { fn in PublisherTResult(values.publisher.eraseToAnyPublisher()).map(fn) }
+            #expect(collect(applied.rawValue) == collect(ap.rawValue))
+            #expect(collect(applied.rawValue) == [.success(101), .success(102), .failure(.boom), .success(2), .success(4)])
         }
 
         @Test func publisherTResultSeqAndLiftA2() {
             let lhs = resPublisher([.success(1), .failure(.boom)])
             let rhs = resPublisher([.success(10), .success(20)])
-            #expect(collect(seqRightPublisherResult(lhs, rhs)) == [.success(10), .success(20), .failure(.boom)])
-            #expect(collect(seqLeftPublisherResult(lhs, rhs)) == [.success(1), .success(1), .failure(.boom)])
-            let lifted = liftA2PublisherResult { (a: Int, b: Int) in a + b }(lhs, rhs)
-            #expect(collect(lifted) == [.success(11), .success(21), .failure(.boom)])
+            #expect(collect(lhs.seqRight(rhs).rawValue) == [.success(10), .success(20), .failure(.boom)])
+            #expect(collect(lhs.seqLeft(rhs).rawValue) == [.success(1), .success(1), .failure(.boom)])
+            let lifted = PublisherTResult.liftA2 { (a: Int, b: Int) in a + b }(lhs, rhs)
+            #expect(collect(lifted.rawValue) == [.success(11), .success(21), .failure(.boom)])
         }
     }
 #endif

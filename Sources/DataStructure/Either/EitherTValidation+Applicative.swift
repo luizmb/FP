@@ -5,7 +5,7 @@ import CoreFP
 /// Type: Either<L, Validation<E, A>>
 /// Outer Either short-circuits on left; inner Validation accumulates errors.
 
-public func applyEitherValidation<L, E: Semigroup, A, B>(
+func applyEitherValidation<L, E: Semigroup, A, B>(
     _ eitherF: Either<L, Validation<E, @Sendable (A) -> B>>,
     _ eitherA: Either<L, Validation<E, A>>
 ) -> Either<L, Validation<E, B>> {
@@ -13,14 +13,14 @@ public func applyEitherValidation<L, E: Semigroup, A, B>(
 }
 
 /// `liftA2EitherValidation`.
-public func liftA2EitherValidation<L, E: Semigroup, A, B, C>(
+func liftA2EitherValidation<L, E: Semigroup, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Either<L, Validation<E, A>>, Either<L, Validation<E, B>>) -> Either<L, Validation<E, C>> {
     Either.liftA2(Validation.liftA2(fn))
 }
 
 /// `seqRightEitherValidation`.
-public func seqRightEitherValidation<L, E: Semigroup, A, B>(
+func seqRightEitherValidation<L, E: Semigroup, A, B>(
     _ lhs: Either<L, Validation<E, A>>,
     _ rhs: Either<L, Validation<E, B>>
 ) -> Either<L, Validation<E, B>> {
@@ -28,7 +28,7 @@ public func seqRightEitherValidation<L, E: Semigroup, A, B>(
 }
 
 /// `seqLeftEitherValidation`.
-public func seqLeftEitherValidation<L, E: Semigroup, A, B>(
+func seqLeftEitherValidation<L, E: Semigroup, A, B>(
     _ lhs: Either<L, Validation<E, A>>,
     _ rhs: Either<L, Validation<E, B>>
 ) -> Either<L, Validation<E, A>> {

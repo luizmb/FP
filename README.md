@@ -35,6 +35,7 @@ The library draws from Haskell and Scala Cats conventions and is designed to be 
     - [Applicative operators](#applicative-operators-optional-requires-corefpoperators)
   - [FlatMap (Monad)](#flatmap-monad)
     - [Monad operators](#monad-operators-optional-requires-corefpoperators)
+  - [Stacking Effects (Monad Transformers)](#stacking-effects-monad-transformers)
   - [Fold (Foldable)](#fold-foldable)
   - [Traverse (Traversable)](#traverse-traversable)
   - [Alternative (Choice)](#alternative-choice)
@@ -722,6 +723,38 @@ let b: @Sendable (World) -> Env = fanout(keypaths: \.badge, \.save, into: Env.in
 
 The variadic `>>>` coexists with the single-argument overload without ambiguity, and the mirror `<<<` works
 too (`Env.init <<< fanout(\.badge, \.save)`).
+
+---
+
+### Stacking Effects (Monad Transformers)
+
+A `Reader<Config, [User]>` is a Reader, so `map` on it sees the whole array. When you want to work
+on each `User` while keeping both effects, wrap it in its transformer stack: every combination is
+its own struct named `OuterTInner` (`ReaderTArray`, `StatefulTEither`, `PublisherTOptional`, … 74
+of them), with the usual `map` / `apply` / `flatMap` and the same operators as everything else.
+
+```swift
+import FP
+
+let users: Reader<Config, [User]> = loadUsers
+
+let names = users.readerT          // ReaderTArray<Config, User> (or ReaderTArray(users))
+    .map(get(\.name))              // maps each user, inside the Reader
+names.rawValue                     // back to Reader<Config, [String]>
+
+// current: Stateful<Session, Either<AuthError, Token>>
+// refreshIfExpired: @Sendable (Token) -> StatefulTEither<Session, AuthError, Token>
+let checked = current.statefulT >>- refreshIfExpired   // StatefulTEither<Session, AuthError, Token>
+```
+
+Lift with the property named after the outer type (`readerT`, `statefulT`, `writerT`, `publisherT`,
+`asyncStreamT`, `arrayT`, `optionalT`, `resultT`, `eitherT`, `validationT`, `nonEmptyT`) or the
+initialiser, leave with `.rawValue`, and for anything the stack doesn't proxy use the Haskell-named
+escape hatch (`mapReaderT`, `mapStateT`, `mapPublisherT`, `mapMaybeT`, `mapExceptT`, `mapWriterT`, …),
+which hands you the whole nested value. Stacks with a lawful monad conform to `MonadT`; the rest
+(any `ValidationT*`, a list inside a non-commutative effect, …) conform to `TransformerStack` and
+stop at applicative. The full matrix and the reasons are in the
+[Monad Transformers](Sources/FP/FP.docc/Articles/MonadTransformers.md) article.
 
 ---
 

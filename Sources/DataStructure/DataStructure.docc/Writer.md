@@ -182,18 +182,18 @@ Writer(21, ["x"]) ->> { $0.value * 2 }   // Writer(42, ["x"])
 `Writer` is Traversable when its value is a container. These operations "flip" the nesting.
 
 ```swift
-// WriterTArray — Writer<W, [A]> → [Writer<W, A>]
+// sequence: Writer<W, [A]> → [Writer<W, A>]
 Writer(["a", "b", "c"], ["log"]).sequence()
 // [Writer("a", ["log"]), Writer("b", ["log"]), Writer("c", ["log"])]
 
 Writer([1, 2, 3], []).traverse { [$0, $0 * 10] }
 // [Writer(1,[]), Writer(10,[]), Writer(2,[]), Writer(20,[]), Writer(3,[]), Writer(30,[])]
 
-// WriterTOptional — Writer<W, A?> → Writer<W, A>?
+// sequence: Writer<W, A?> → Writer<W, A>?
 Writer(Optional(42), ["log"]).sequence()    // Optional(Writer(42, ["log"]))
 Writer(Optional<Int>.none, ["log"]).sequence()  // nil
 
-// WriterTResult — Writer<W, Result<A,E>> → Result<Writer<W,A>, E>
+// sequence: Writer<W, Result<A, E>> → Result<Writer<W, A>, E>
 Writer(Result<Int, MyError>.success(42), ["log"]).sequence()
 // .success(Writer(42, ["log"]))
 
@@ -209,83 +209,90 @@ traverse { [$0, $0 * 2] }(Writer(5, ["log"]))  // [Writer(5, ["log"]), Writer(10
 
 ## Monad Transformers
 
-Writer participates in transformer stacks either as the **outer** layer or as the **inner** layer.
+Writer participates in transformer stacks either as the **outer** layer (`WriterT{Inner}`) or as the **inner** layer (`{Outer}TWriter`, Haskell's `WriterT`). Each stack is its own struct around the nested value: lift in with the property on the outer type (`writer.writerT`, `optional.optionalT`, `array.arrayT`, …) or the stack's `init(_:)`, use `map` / `apply` / `flatMap` / the operators, and leave with `.rawValue`.
 
-### `WriterTOptional` — `Writer<W, A?>` (outer = Writer, inner = Optional)
+### `WriterTOptional` (wraps `Writer<W, A?>`, outer = Writer, inner = Optional)
 
 Log accumulates regardless of whether a value is present.
 
 ```swift
 let w: Writer<[String], Int?> = Writer(.some(5), ["found"])
-w.mapT { $0 * 2 }   // Writer(Optional(10), ["found"])
+w.writerT.map { $0 * 2 }.rawValue   // Writer(Optional(10), ["found"])
 
 let empty: Writer<[String], Int?> = Writer(.none, ["not found"])
-empty.mapT { $0 * 2 }  // Writer(nil, ["not found"])
+empty.writerT.map { $0 * 2 }.rawValue  // Writer(nil, ["not found"])
 ```
 
-### `WriterTEither` — `Writer<W, Either<L, A>>` (outer = Writer, inner = Either)
+### `WriterTEither` (wraps `Writer<W, Either<L, A>>`, outer = Writer, inner = Either)
 
 ```swift
-let w: Writer<[String], Either<String, Int>> = Writer(.right(5), ["ok"])
-w.mapT { $0 * 2 }   // Writer(.right(10), ["ok"])
+let w = WriterTEither<[String], String, Int>(Writer(.right(5), ["ok"]))
+w.map { $0 * 2 }.rawValue   // Writer(.right(10), ["ok"])
 
-let fail: Writer<[String], Either<String, Int>> = Writer(.left("err"), ["failed"])
-fail.mapT { $0 * 2 }  // Writer(.left("err"), ["failed"])
+let fail = WriterTEither<[String], String, Int>(Writer(.left("err"), ["failed"]))
+fail.map { $0 * 2 }.rawValue  // Writer(.left("err"), ["failed"])
 ```
 
-### `WriterTResult` — `Writer<W, Result<A, E>>` (outer = Writer, inner = Result)
+### `WriterTResult` (wraps `Writer<W, Result<A, E>>`, outer = Writer, inner = Result)
 
 ```swift
 let w: Writer<[String], Result<Int, MyError>> = Writer(.success(5), ["ok"])
-w.mapT { $0 * 2 }   // Writer(.success(10), ["ok"])
+w.writerT.map { $0 * 2 }.rawValue   // Writer(.success(10), ["ok"])
 ```
 
-### `WriterTStateful` — `Writer<W, Stateful<S, A>>` (outer = Writer, inner = Stateful)
+### `WriterTStateful` (wraps `Writer<W, Stateful<S, A>>`, outer = Writer, inner = Stateful)
 
-Produces a stateful computation alongside a log entry. Useful when you want to record that a state transition happened.
+Produces a stateful computation alongside a log entry. Useful when you want to record that a state transition happened. Functor and Applicative only (no lawful monad with the log outside the effect).
 
 ```swift
 let w: Writer<[String], Stateful<Int, Int>> =
     Writer(Stateful { s in s += 1; return s }, ["will increment"])
-w.mapT { $0 * 2 }  // Writer<[String], Stateful<Int, Int>> — doubles the result
+w.writerT.map { $0 * 2 }  // WriterTStateful<[String], Int, Int>, doubles the result
 ```
 
-### `WriterTReader` — `Writer<W, Reader<Env, A>>` (outer = Writer, inner = Reader)
+### `WriterTReader` (wraps `Writer<W, Reader<Env, A>>`, outer = Writer, inner = Reader)
 
 ```swift
 let w: Writer<[String], Reader<Config, Int>> =
     Writer(Reader { $0.multiplier }, ["reads multiplier"])
-w.mapT { $0 * 2 }  // Writer<[String], Reader<Config, Int>>
+w.writerT.map { $0 * 2 }  // WriterTReader<[String], Config, Int>
 ```
 
-### `OptionalTWriter` — `Writer<W, A>?` (outer = Optional, inner = Writer)
+### `OptionalTWriter` (wraps `Writer<W, A>?`, outer = Optional, inner = Writer)
 
 ```swift
 let w: Writer<[String], Int>? = .some(Writer(42, ["log"]))
-w?.fmap { $0 * 2 }   // Optional(Writer(84, ["log"]))
+w.optionalT.map { $0 * 2 }.rawValue   // Optional(Writer(84, ["log"]))
 
 // WriterT bind: the continuation may fail (nil) as well as log
-w.flatMapT { n in n > 0 ? Writer(n / 2, ["halved"]) : nil }  // Optional(Writer(21, ["log", "halved"]))
+w.optionalT.flatMap { n in OptionalTWriter(n > 0 ? Writer(n / 2, ["halved"]) : nil) }.rawValue
+// Optional(Writer(21, ["log", "halved"]))
 ```
 
-### `ArrayTWriter` — `[Writer<W, A>]` (outer = Array, inner = Writer)
+### `ArrayTWriter` (wraps `[Writer<W, A>]`, outer = Array, inner = Writer)
 
 ```swift
 let ws: [Writer<[String], Int>] = [Writer(1, ["a"]), Writer(2, ["b"])]
-ws.map { $0.fmap { $0 * 10 } }  // [Writer(10, ["a"]), Writer(20, ["b"])]
+ws.arrayT.map { $0 * 10 }.rawValue  // [Writer(10, ["a"]), Writer(20, ["b"])]
 
 // WriterT bind: each element's log prefixes the logs of its branches
-ws.flatMapT { n in [Writer(n, ["x"]), Writer(-n, ["y"])] }
+ws.arrayT.flatMap { n in ArrayTWriter([Writer(n, ["x"]), Writer(-n, ["y"])]) }.rawValue
 // [Writer(1, ["a", "x"]), Writer(-1, ["a", "y"]), Writer(2, ["b", "x"]), Writer(-2, ["b", "y"])]
 ```
+
+The escape hatch (whole nested value in, new nested value out) is `mapWriterT` (Haskell's name) on
+`ArrayTWriter`, `OptionalTWriter`, `EitherTWriter`, `ResultTWriter` and on the Writer-outer stacks,
+except Writer outside Optional / Either / Result, where it's named after the inner layer
+(`mapMaybeT`, `mapExceptT`). Reader / Stateful / stream outer layers keep their own name
+(`ReaderTWriter.mapReaderT`, `StatefulTWriter.mapStateT`, `PublisherTWriter.mapPublisherT`).
 
 ---
 
 ## Module
 
 ```swift
-import DataStructure          // Writer type + named functions
-import DataStructureOperators // Operators (<£>, <*>, >>-, ->>, <<<…)
+import DataStructure          // Writer type, named functions and the WriterT* / *TWriter stack structs
+import DataStructureOperators // Operators (<£>, <*>, >>-, ->>, <<<…), also for the stacks
 ```
 
 ---

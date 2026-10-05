@@ -8,7 +8,7 @@
 
 /// apply for NonEmptyTResult: NonEmpty<Result<(A->B),E>> -> NonEmpty<Result<A,E>> -> NonEmpty<Result<B,E>>
 /// mf <*> ma = mf >>= \f -> fmap f ma
-public func applyNonEmptyResult<A, B, E>(
+func applyNonEmptyResult<A, B, E>(
     _ fns: NonEmpty<Result<@Sendable (A) -> B, E>>,
     _ values: NonEmpty<Result<A, E>>
 ) -> NonEmpty<Result<B, E>> {
@@ -17,7 +17,7 @@ public func applyNonEmptyResult<A, B, E>(
 
 /// liftA2 for NonEmptyTResult: (A,B)->C -> NonEmpty<Result<A,E>> -> NonEmpty<Result<B,E>> -> NonEmpty<Result<C,E>>
 /// liftA2 f ma mb = ma >>= \a -> fmap (f a) mb
-public func liftA2NonEmptyResult<A, B, C, E>(
+func liftA2NonEmptyResult<A, B, C, E>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (NonEmpty<Result<A, E>>, NonEmpty<Result<B, E>>) -> NonEmpty<Result<C, E>> {
     { neA, neB in
@@ -27,7 +27,7 @@ public func liftA2NonEmptyResult<A, B, C, E>(
 
 /// seqRight for NonEmptyTResult: NonEmpty<Result<A,E>> -> NonEmpty<Result<B,E>> -> NonEmpty<Result<B,E>>
 /// ma *> mb = ma >>= \_ -> mb
-public func seqRightNonEmptyResult<A, B, E>(
+func seqRightNonEmptyResult<A, B, E>(
     _ lhs: NonEmpty<Result<A, E>>,
     _ rhs: NonEmpty<Result<B, E>>
 ) -> NonEmpty<Result<B, E>> {
@@ -36,7 +36,7 @@ public func seqRightNonEmptyResult<A, B, E>(
 
 /// seqLeft for NonEmptyTResult: NonEmpty<Result<A,E>> -> NonEmpty<Result<B,E>> -> NonEmpty<Result<A,E>>
 /// ma <* mb = ma >>= \a -> fmap (const a) mb
-public func seqLeftNonEmptyResult<A, B, E>(
+func seqLeftNonEmptyResult<A, B, E>(
     _ lhs: NonEmpty<Result<A, E>>,
     _ rhs: NonEmpty<Result<B, E>>
 ) -> NonEmpty<Result<A, E>> {

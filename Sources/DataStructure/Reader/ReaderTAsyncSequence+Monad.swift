@@ -5,7 +5,7 @@ import Foundation
 // ReaderT + AsyncSequence
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public extension Reader {
+extension Reader {
     /// Monadic flatMap for ReaderT AsyncSequence
     /// (>>=) :: Reader e (AsyncSequence a) -> (a -> Reader e (AsyncSequence b)) -> Reader e (AsyncSequence b)
     func flatMapT<A, B: AsyncSequence>(
@@ -23,7 +23,7 @@ public extension Reader {
 
 /// Bind for ReaderT AsyncSequence
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func bindReaderAsyncStream<Env, A, B: AsyncSequence>(
+func bindReaderAsyncStream<Env, A, B: AsyncSequence>(
     _ reader: Reader<Env, AsyncStream<A>>,
     _ fn: @escaping @Sendable (A) async throws -> Reader<Env, B>
 ) -> Reader<Env, AsyncThrowingFlatMapSequence<AsyncThrowingMapSequence<AsyncStream<A>, B>, B>>

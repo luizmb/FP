@@ -11,29 +11,29 @@ import Testing
             state += 1
             return Writer(v, ["outer"])
         }
-        let result = s >>- { (n: Int) in
-            Stateful<Int, Writer<[String], String>> { state in
+        let result = s.statefulT >>- { (n: Int) in
+            StatefulTWriter(Stateful<Int, Writer<[String], String>> { state in
                 state *= 10
                 return Writer("\(n)", ["inner"])
-            }
+            })
         }
-        let (w, finalState) = result.runStateful(5)
+        let (w, finalState) = result.rawValue.runStateful(5)
         #expect(w.value == "5")
         #expect(w.log == ["outer", "inner"])
         #expect(finalState == 60)
     }
 
     @Test func kleisli() {
-        let f: @Sendable (Int) -> Stateful<Int, Writer<[String], Int>> = { n in
-            Stateful<Int, Writer<[String], Int>>.pure(Writer(n + 1, ["f"]))
+        let f: @Sendable (Int) -> StatefulTWriter<Int, [String], Int> = { n in
+            StatefulTWriter(Stateful<Int, Writer<[String], Int>>.pure(Writer(n + 1, ["f"])))
         }
-        let g: @Sendable (Int) -> Stateful<Int, Writer<[String], String>> = { n in
-            Stateful { state in
+        let g: @Sendable (Int) -> StatefulTWriter<Int, [String], String> = { n in
+            StatefulTWriter(Stateful { state in
                 state += n
                 return Writer("\(n)", ["g"])
-            }
+            })
         }
-        let (w, finalState) = (f >=> g)(4).runStateful(1)
+        let (w, finalState) = (f >=> g)(4).rawValue.runStateful(1)
         #expect(w.value == "5")
         #expect(w.log == ["f", "g"])
         #expect(finalState == 6)

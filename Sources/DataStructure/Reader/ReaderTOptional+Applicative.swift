@@ -6,7 +6,7 @@ import Foundation
 
 /// Apply for ReaderT Optional
 /// (<*>) :: Reader e (a -> b) -> Reader e a -> Reader e b
-public func applyReaderOptional<Env, A, B>(
+func applyReaderOptional<Env, A, B>(
     _ readerF: Reader<Env, (@Sendable (A) -> B)?>,
     _ readerA: Reader<Env, A?>
 ) -> Reader<Env, B?> {
@@ -19,7 +19,7 @@ public func applyReaderOptional<Env, A, B>(
 }
 
 /// liftA2 for ReaderT Optional
-public func liftA2ReaderOptional<Env, A, B, C>(
+func liftA2ReaderOptional<Env, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> @Sendable (Reader<Env, A?>, Reader<Env, B?>) -> Reader<Env, C?> {
     { readerA, readerB in
@@ -33,7 +33,7 @@ public func liftA2ReaderOptional<Env, A, B, C>(
 }
 
 /// seqRight for ReaderT Optional
-public func seqRightReaderOptional<Env, A, B>(
+func seqRightReaderOptional<Env, A, B>(
     _ lhs: Reader<Env, A?>,
     _ rhs: Reader<Env, B?>
 ) -> Reader<Env, B?> {
@@ -41,7 +41,7 @@ public func seqRightReaderOptional<Env, A, B>(
 }
 
 /// seqLeft for ReaderT Optional
-public func seqLeftReaderOptional<Env, A, B>(
+func seqLeftReaderOptional<Env, A, B>(
     _ lhs: Reader<Env, A?>,
     _ rhs: Reader<Env, B?>
 ) -> Reader<Env, A?> {

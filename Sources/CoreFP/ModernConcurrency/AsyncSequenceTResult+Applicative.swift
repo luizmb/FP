@@ -13,7 +13,7 @@ import Foundation
 /// apply for AsyncStream<Result<A,E>>
 /// mf <*> ma = mf >>= \f -> fmap f ma
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func applyAsyncStreamResult<A, B, E: Error>(
+func applyAsyncStreamResult<A, B, E: Error>(
     _ fns: AsyncStream<Result<@Sendable (A) -> B, E>>,
     _ values: AsyncStream<Result<A, E>>
 ) -> AsyncStream<Result<B, E>> where A: Sendable, B: Sendable, E: Sendable {
@@ -24,7 +24,7 @@ public func applyAsyncStreamResult<A, B, E: Error>(
 /// liftA2 for AsyncStream<Result<A,E>>
 /// liftA2 f ma mb = ma >>= \a -> fmap (f a) mb
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func liftA2AsyncStreamResult<A, B, C, E: Error>(
+func liftA2AsyncStreamResult<A, B, C, E: Error>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> @Sendable (AsyncStream<Result<A, E>>, AsyncStream<Result<B, E>>) -> AsyncStream<Result<C, E>>
 where A: Sendable, B: Sendable, C: Sendable, E: Sendable {
@@ -39,7 +39,7 @@ where A: Sendable, B: Sendable, C: Sendable, E: Sendable {
 /// seqRight for AsyncStream<Result<A,E>>
 /// ma *> mb = ma >>= \_ -> mb
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func seqRightAsyncStreamResult<A, B, E: Error>(
+func seqRightAsyncStreamResult<A, B, E: Error>(
     _ lhs: AsyncStream<Result<A, E>>,
     _ rhs: AsyncStream<Result<B, E>>
 ) -> AsyncStream<Result<B, E>> where A: Sendable, B: Sendable, E: Sendable {
@@ -49,7 +49,7 @@ public func seqRightAsyncStreamResult<A, B, E: Error>(
 /// seqLeft for AsyncStream<Result<A,E>>
 /// ma <* mb = ma >>= \a -> fmap (const a) mb
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func seqLeftAsyncStreamResult<A, B, E: Error>(
+func seqLeftAsyncStreamResult<A, B, E: Error>(
     _ lhs: AsyncStream<Result<A, E>>,
     _ rhs: AsyncStream<Result<B, E>>
 ) -> AsyncStream<Result<A, E>> where A: Sendable, B: Sendable, E: Sendable {

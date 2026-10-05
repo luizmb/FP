@@ -162,9 +162,9 @@ program.eval([])   // "step 1, step 2"
 
 ## Monad Transformers
 
-Stateful participates in transformer stacks either as the **outer** layer or as the **inner** layer.
+Stateful participates in transformer stacks either as the **outer** layer (`StatefulT{Inner}`, Haskell's `StateT`) or as the **inner** layer (`{Outer}TStateful`). Each stack is its own struct around the nested value: lift in with `stateful.statefulT` (or `optional.optionalT`, `array.arrayT`, …, or the stack's `init(_:)`), use `map` / `apply` / `flatMap` / the operators, and leave with `.rawValue`. The escape hatch is `mapStateT` on the Stateful-outer stacks.
 
-### `StatefulTOptional` — `Stateful<S, A?>` (outer = Stateful, inner = Optional)
+### `StatefulTOptional` (wraps `Stateful<S, A?>`, outer = Stateful, inner = Optional)
 
 State threads through regardless of whether a value is present.
 
@@ -174,57 +174,59 @@ let maybeIncrement = Stateful<Int, Int?> { s in
 }
 // Note: state mutation happens either way
 
-maybeIncrement.mapT { $0 * 2 }   // Stateful<Int, Int?> — maps inside the Optional
+maybeIncrement.statefulT.map { $0 * 2 }   // StatefulTOptional<Int, Int>, maps inside the Optional
 ```
 
-### `StatefulTEither` — `Stateful<S, Either<L, A>>` (outer = Stateful, inner = Either)
+### `StatefulTEither` (wraps `Stateful<S, Either<L, A>>`, outer = Stateful, inner = Either)
 
 ```swift
 let safeIncrement = Stateful<Int, Either<String, Int>> { s in
     s < 100 ? (s += 1; return .right(s)) : .left("overflow")
 }
 
-safeIncrement.mapT { $0 * 2 }   // Stateful<Int, Either<String, Int>>
+safeIncrement.statefulT.map { $0 * 2 }   // StatefulTEither<Int, String, Int>
 ```
 
-### `StatefulTResult` — `Stateful<S, Result<A, E>>` (outer = Stateful, inner = Result)
+### `StatefulTResult` (wraps `Stateful<S, Result<A, E>>`, outer = Stateful, inner = Result)
 
 ```swift
 let result: Stateful<Int, Result<Int, MyError>> =
-    increment.fmap { .success($0) }
+    increment.map { .success($0) }
 
-result.mapT { $0 * 2 }   // Stateful<Int, Result<Int, MyError>>
+result.statefulT.map { $0 * 2 }   // StatefulTResult<Int, MyError, Int>
 ```
 
-### `StatefulTWriter` — `Stateful<S, Writer<W, A>>` (outer = Stateful, inner = Writer)
+### `StatefulTWriter` (wraps `Stateful<S, Writer<W, A>>`, outer = Stateful, inner = Writer)
 
 Threads state while also accumulating a log.
 
 ```swift
-let logged: Stateful<Int, Writer<[String], Int>> = increment.fmap { n in
+let logged: StatefulTWriter<Int, [String], Int> = increment.map { n in
     Writer(n, ["incremented to \(n)"])
-}
-logged.mapT { $0 * 2 }  // Stateful<Int, Writer<[String], Int>>
+}.statefulT
+logged.map { $0 * 2 }  // StatefulTWriter<Int, [String], Int>
 
 // Bind (StateT s (Writer w)): the continuation returns the whole stack, so it can
 // touch the state and emit its own log. State threads left to right, logs append.
-let doubled = logged.flatMapT { n in
-    Stateful<Int, Writer<[String], Int>> { state in
+let doubled = logged.flatMap { n in
+    StatefulTWriter(Stateful<Int, Writer<[String], Int>> { state in
         state *= 2
         return Writer(n, ["doubled state"])
-    }
+    })
 }
-doubled.runStateful(1)  // (Writer(2, ["incremented to 2", "doubled state"]), 4)
+doubled.rawValue.runStateful(1)  // (Writer(2, ["incremented to 2", "doubled state"]), 4)
 ```
 
-### `OptionalTStateful` — `Stateful<S, A>?` (outer = Optional, inner = Stateful)
+### `OptionalTStateful` (wraps `Stateful<S, A>?`, outer = Optional, inner = Stateful)
+
+Functor and Applicative only (the outer Optional is decided before the state runs).
 
 ```swift
 let s: Stateful<Int, Int>? = .some(increment)
-s?.fmap { $0 * 2 }         // Optional(Stateful)
+s.optionalT.map { $0 * 2 }.rawValue   // Optional(Stateful)
 ```
 
-### `ArrayTStateful` — `[Stateful<S, A>]` (outer = Array, inner = Stateful)
+### `ArrayTStateful` (wraps `[Stateful<S, A>]`, outer = Array, inner = Stateful)
 
 ```swift
 let steps: [Stateful<Int, Int>] = [increment, increment, increment]
@@ -238,15 +240,15 @@ combined.exec(0)  // 3
 ## Module
 
 ```swift
-import DataStructure          // Stateful type + named functions
-import DataStructureOperators // Operators (<£>, <*>, >>-, >=>…)
+import DataStructure          // Stateful type, named functions and the StatefulT* / *TStateful stack structs
+import DataStructureOperators // Operators (<£>, <*>, >>-, >=>…), also for the stacks
 ```
 
 ---
 
 ## For Haskell developers
 
-`Stateful<S, A>` is the same state-threading monad as `Control.Monad.State`'s `State s a` — a wrapper for `s -> (a, s)`, just with the return order flipped to `(inout S) -> A` to match Swift's mutation idiom. Where a Haskell codebase reaches for `StateT s m a` to combine state with another effect, this library instead exposes the transformer stacks below as named types (`StatefulTOptional`, `StatefulTEither`, …) rather than a general `StateT` — Swift's lack of higher-kinded types rules out a fully generic transformer, so each combination is written out concretely.
+`Stateful<S, A>` is the same state-threading monad as `Control.Monad.State`'s `State s a` (a wrapper for `s -> (a, s)`, just with the return order flipped to `(inout S) -> A` to match Swift's mutation idiom). Where a Haskell codebase reaches for `StateT s m a` to combine state with another effect, this library instead exposes the transformer stacks above as concrete structs (`StatefulTOptional`, `StatefulTEither`, …, each a newtype over the nested `Stateful`) rather than a general `StateT`, since Swift's lack of higher-kinded types rules out a fully generic transformer, so each combination is written out concretely.
 
 | This library | Haskell (`Control.Monad.State` / `mtl`) |
 |---|---|

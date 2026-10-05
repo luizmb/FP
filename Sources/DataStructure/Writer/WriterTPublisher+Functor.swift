@@ -4,7 +4,7 @@
     import CoreFP
     import Foundation
 
-    public extension Writer {
+    extension Writer {
         // WriterT + Publisher — Writer<W, any Publisher<A, E>>
 
         /// Declaration.

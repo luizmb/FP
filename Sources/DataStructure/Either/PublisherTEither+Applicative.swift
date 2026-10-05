@@ -14,7 +14,7 @@
     /// apply for PublisherTEither
     /// mf <*> ma = mf >>= \f -> fmap f ma
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func applyPublisherEither<L: Sendable, A: Sendable, B: Sendable, E: Error>(
+    func applyPublisherEither<L: Sendable, A: Sendable, B: Sendable, E: Error>(
         _ fns: AnyPublisher<Either<L, @Sendable (A) -> B>, E>,
         _ values: AnyPublisher<Either<L, A>, E>
     ) -> AnyPublisher<Either<L, B>, E> {
@@ -24,7 +24,7 @@
     /// liftA2 for PublisherTEither
     /// liftA2 f ma mb = ma >>= \a -> fmap (f a) mb
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func liftA2PublisherEither<L: Sendable, A: Sendable, B: Sendable, C: Sendable, E: Error>(
+    func liftA2PublisherEither<L: Sendable, A: Sendable, B: Sendable, C: Sendable, E: Error>(
         _ fn: @escaping @Sendable (A, B) -> C
     ) -> (AnyPublisher<Either<L, A>, E>, AnyPublisher<Either<L, B>, E>) -> AnyPublisher<Either<L, C>, E> {
         { pubA, pubB in
@@ -35,7 +35,7 @@
     /// seqRight for PublisherTEither
     /// ma *> mb = ma >>= \_ -> mb
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func seqRightPublisherEither<L: Sendable, A: Sendable, B: Sendable, E: Error>(
+    func seqRightPublisherEither<L: Sendable, A: Sendable, B: Sendable, E: Error>(
         _ lhs: AnyPublisher<Either<L, A>, E>,
         _ rhs: AnyPublisher<Either<L, B>, E>
     ) -> AnyPublisher<Either<L, B>, E> {
@@ -45,7 +45,7 @@
     /// seqLeft for PublisherTEither
     /// ma <* mb = ma >>= \a -> fmap (const a) mb
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func seqLeftPublisherEither<L: Sendable, A: Sendable, B: Sendable, E: Error>(
+    func seqLeftPublisherEither<L: Sendable, A: Sendable, B: Sendable, E: Error>(
         _ lhs: AnyPublisher<Either<L, A>, E>,
         _ rhs: AnyPublisher<Either<L, B>, E>
     ) -> AnyPublisher<Either<L, A>, E> {

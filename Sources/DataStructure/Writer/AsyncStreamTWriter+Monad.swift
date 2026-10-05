@@ -11,7 +11,7 @@ import Foundation
 // it came from (`w1 <> w2`).
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public extension AsyncStream {
+extension AsyncStream {
     /// flatMapT :: AsyncStream<Writer<w, a>> -> (a -> AsyncStream<Writer<w, b>>) -> AsyncStream<Writer<w, b>>
     /// for each w1, for each w2 in fn(w1.value): Writer(w2.value, w1.log <> w2.log)
     func flatMapT<W: Monoid, A, B>(_ fn: @escaping @Sendable (A) -> AsyncStream<Writer<W, B>>) -> AsyncStream<Writer<W, B>>
@@ -42,7 +42,7 @@ public extension AsyncStream {
 /// Kleisli composition for `AsyncStreamT + Writer` (left-to-right)
 /// (>=>) :: (a -> AsyncStream<Writer<w, b>>) -> (b -> AsyncStream<Writer<w, c>>) -> a -> AsyncStream<Writer<w, c>>
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func kleisliT<W: Monoid, A, B, C>(
+func kleisliT<W: Monoid, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> AsyncStream<Writer<W, B>>,
     _ fn2: @escaping @Sendable (B) -> AsyncStream<Writer<W, C>>
 ) -> @Sendable (A) -> AsyncStream<Writer<W, C>> where B: Sendable, C: Sendable {

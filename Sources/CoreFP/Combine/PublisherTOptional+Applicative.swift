@@ -14,7 +14,7 @@
     /// apply for PublisherTOptional
     /// mf <*> ma = mf >>= \f -> fmap f ma
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func applyPublisherOptional<A, B, E: Error>(
+    func applyPublisherOptional<A, B, E: Error>(
         _ fns: AnyPublisher<(@Sendable (A) -> B)?, E>,
         _ values: AnyPublisher<A?, E>
     ) -> AnyPublisher<B?, E> {
@@ -24,7 +24,7 @@
     /// liftA2 for PublisherTOptional
     /// liftA2 f ma mb = ma >>= \a -> fmap (f a) mb
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func liftA2PublisherOptional<A: Sendable, B, C, E: Error>(
+    func liftA2PublisherOptional<A: Sendable, B, C, E: Error>(
         _ fn: @escaping @Sendable (A, B) -> C
     ) -> (AnyPublisher<A?, E>, AnyPublisher<B?, E>) -> AnyPublisher<C?, E> {
         { pubA, pubB in
@@ -35,7 +35,7 @@
     /// seqRight for PublisherTOptional
     /// ma *> mb = ma >>= \_ -> mb
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func seqRightPublisherOptional<A, B, E: Error>(
+    func seqRightPublisherOptional<A, B, E: Error>(
         _ lhs: AnyPublisher<A?, E>,
         _ rhs: AnyPublisher<B?, E>
     ) -> AnyPublisher<B?, E> {
@@ -45,7 +45,7 @@
     /// seqLeft for PublisherTOptional
     /// ma <* mb = ma >>= \a -> fmap (const a) mb
     @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func seqLeftPublisherOptional<A: Sendable, B, E: Error>(
+    func seqLeftPublisherOptional<A: Sendable, B, E: Error>(
         _ lhs: AnyPublisher<A?, E>,
         _ rhs: AnyPublisher<B?, E>
     ) -> AnyPublisher<A?, E> {

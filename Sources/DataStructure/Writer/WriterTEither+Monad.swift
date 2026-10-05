@@ -2,7 +2,7 @@
 import CoreFP
 import Foundation
 
-public extension Writer {
+extension Writer {
     // WriterT + Either — Writer<W, Either<L, A>>
 
     /// flatMapT :: Writer<w, Either<l, a>> -> (a -> Writer<w, Either<l, b>>) -> Writer<w, Either<l, b>>
@@ -32,7 +32,7 @@ public extension Writer {
 
 /// Kleisli composition for `WriterT + Either` (left-to-right)
 /// (>=>) :: (a -> Writer<w, Either<l, b>>) -> (b -> Writer<w, Either<l, c>>) -> a -> Writer<w, Either<l, c>>
-public func kleisliT<W: Monoid, L, A, B, C>(
+func kleisliT<W: Monoid, L, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Writer<W, Either<L, B>>,
     _ fn2: @escaping @Sendable (B) -> Writer<W, Either<L, C>>
 ) -> @Sendable (A) -> Writer<W, Either<L, C>> {

@@ -4,7 +4,7 @@ import CoreFP
 /// ValidationTArray: outer = Validation, inner = Array
 /// Type: Validation<E, [A]>
 
-public func applyValidationArray<E: Semigroup, A, B>(
+func applyValidationArray<E: Semigroup, A, B>(
     _ vf: Validation<E, [@Sendable (A) -> B]>,
     _ va: Validation<E, [A]>
 ) -> Validation<E, [B]> {
@@ -12,14 +12,14 @@ public func applyValidationArray<E: Semigroup, A, B>(
 }
 
 /// `liftA2ValidationArray`.
-public func liftA2ValidationArray<E: Semigroup, A, B, C>(
+func liftA2ValidationArray<E: Semigroup, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Validation<E, [A]>, Validation<E, [B]>) -> Validation<E, [C]> {
     Validation.liftA2(Array.liftA2(fn))
 }
 
 /// `seqRightValidationArray`.
-public func seqRightValidationArray<E: Semigroup, A, B>(
+func seqRightValidationArray<E: Semigroup, A, B>(
     _ lhs: Validation<E, [A]>,
     _ rhs: Validation<E, [B]>
 ) -> Validation<E, [B]> {
@@ -27,7 +27,7 @@ public func seqRightValidationArray<E: Semigroup, A, B>(
 }
 
 /// `seqLeftValidationArray`.
-public func seqLeftValidationArray<E: Semigroup, A, B>(
+func seqLeftValidationArray<E: Semigroup, A, B>(
     _ lhs: Validation<E, [A]>,
     _ rhs: Validation<E, [B]>
 ) -> Validation<E, [A]> {

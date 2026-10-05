@@ -5,7 +5,7 @@ import Foundation
 // Type: Result<A,E>? = Optional<Result<A,E>>
 // Haskell: ExceptT e Maybe
 
-public extension Optional {
+extension Optional {
     /// flatMapT for Optional<Result<A,E>>
     /// (>>=) :: Result<a,e>? -> (a -> Result<b,e>?) -> Result<b,e>?
     /// nil       → nil
@@ -31,7 +31,7 @@ public extension Optional {
 
 /// Kleisli composition for `OptionalT + Result` (left-to-right)
 /// (>=>) :: (a -> Result<b,e>?) -> (b -> Result<c,e>?) -> a -> Result<c,e>?
-public func kleisliT<A, B, C, E: Error>(
+func kleisliT<A, B, C, E: Error>(
     _ fn1: @escaping @Sendable (A) -> Result<B, E>?,
     _ fn2: @escaping @Sendable (B) -> Result<C, E>?
 ) -> @Sendable (A) -> Result<C, E>? {

@@ -3,7 +3,7 @@ import CoreFP
 import DataStructure
 import Testing
 
-// Note: ReaderTPublisher's kleisliT is Combine-only; Publisher stacks get test coverage in a later branch.
+// Covers the Reader-outer stacks' `kleisli` through the struct API; ReaderTPublisher is covered in PublisherStackLawTests.
 
 @Suite struct KleisliTReaderTests {
     struct Env {
@@ -24,10 +24,10 @@ import Testing
             Reader(const(["\(value)"]))
         }
 
-        let composed = kleisliT(duplicate, describe)
+        let composed = ReaderTArray<Env, Int>.kleisli({ ReaderTArray(duplicate($0)) }, { ReaderTArray(describe($0)) })
 
         let env = Env(multiplier: 3)
-        #expect(composed(2)(env) == ["2", "6"])
+        #expect(composed(2).rawValue(env) == ["2", "6"])
     }
 
     @Test func readerTArrayEmptyShortCircuits() {
@@ -36,10 +36,10 @@ import Testing
             Reader(const(["\(value)"]))
         }
 
-        let composed = kleisliT(empty, describe)
+        let composed = ReaderTArray<Env, Int>.kleisli({ ReaderTArray(empty($0)) }, { ReaderTArray(describe($0)) })
 
         let env = Env(multiplier: 3)
-        #expect(composed(2)(env).isEmpty)
+        #expect(composed(2).rawValue(env).isEmpty)
     }
 
     // MARK: - ReaderT + Either
@@ -52,10 +52,10 @@ import Testing
             Reader(const(.right("\(value)")))
         }
 
-        let composed = kleisliT(scale, describe)
+        let composed = ReaderTEither<Env, String, Int>.kleisli({ ReaderTEither(scale($0)) }, { ReaderTEither(describe($0)) })
 
         let env = Env(multiplier: 5)
-        #expect(composed(2)(env) == .right("10"))
+        #expect(composed(2).rawValue(env) == .right("10"))
     }
 
     @Test func readerTEitherLeftShortCircuits() {
@@ -64,10 +64,10 @@ import Testing
             Reader(const(.right("\(value)")))
         }
 
-        let composed = kleisliT(fail, describe)
+        let composed = ReaderTEither<Env, String, Int>.kleisli({ ReaderTEither(fail($0)) }, { ReaderTEither(describe($0)) })
 
         let env = Env(multiplier: 5)
-        #expect(composed(2)(env) == .left("boom"))
+        #expect(composed(2).rawValue(env) == .left("boom"))
     }
 
     // MARK: - ReaderT + Optional
@@ -80,10 +80,10 @@ import Testing
             Reader(const("\(value)"))
         }
 
-        let composed = kleisliT(scale, describe)
+        let composed = ReaderTOptional<Env, Int>.kleisli({ ReaderTOptional(scale($0)) }, { ReaderTOptional(describe($0)) })
 
         let env = Env(multiplier: 4)
-        #expect(composed(2)(env) == "8")
+        #expect(composed(2).rawValue(env) == "8")
     }
 
     @Test func readerTOptionalNilShortCircuits() {
@@ -92,10 +92,10 @@ import Testing
             Reader(const("\(value)"))
         }
 
-        let composed = kleisliT(missing, describe)
+        let composed = ReaderTOptional<Env, Int>.kleisli({ ReaderTOptional(missing($0)) }, { ReaderTOptional(describe($0)) })
 
         let env = Env(multiplier: 4)
-        #expect(composed(2)(env) == nil)
+        #expect(composed(2).rawValue(env) == nil)
     }
 
     // MARK: - ReaderT + Reader (nested)
@@ -110,10 +110,10 @@ import Testing
             Reader(const(Reader { offset in "\(value + offset)" }))
         }
 
-        let composed = kleisliT(outer, inner)
+        let composed = ReaderTReader<Env, Int, Int>.kleisli({ ReaderTReader(outer($0)) }, { ReaderTReader(inner($0)) })
 
         let env = Env(multiplier: 2)
-        let result = composed(3)(env)(10)
+        let result = composed(3).rawValue(env)(10)
         #expect(result == "26")
     }
 
@@ -127,10 +127,10 @@ import Testing
             Reader(const(.success("\(value)")))
         }
 
-        let composed = kleisliT(scale, describe)
+        let composed = ReaderTResult<Env, TestFailure, Int>.kleisli({ ReaderTResult(scale($0)) }, { ReaderTResult(describe($0)) })
 
         let env = Env(multiplier: 6)
-        #expect(composed(2)(env) == .success("12"))
+        #expect(composed(2).rawValue(env) == .success("12"))
     }
 
     @Test func readerTResultFailureShortCircuits() {
@@ -139,10 +139,10 @@ import Testing
             Reader(const(.success("\(value)")))
         }
 
-        let composed = kleisliT(fail, describe)
+        let composed = ReaderTResult<Env, TestFailure, Int>.kleisli({ ReaderTResult(fail($0)) }, { ReaderTResult(describe($0)) })
 
         let env = Env(multiplier: 6)
-        #expect(composed(2)(env) == .failure(.broken))
+        #expect(composed(2).rawValue(env) == .failure(.broken))
     }
 
     // MARK: - ReaderT + Stateful
@@ -165,10 +165,10 @@ import Testing
             }
         }
 
-        let composed = kleisliT(scale, describe)
+        let composed = ReaderTStateful<Env, Int, Int>.kleisli({ ReaderTStateful(scale($0)) }, { ReaderTStateful(describe($0)) })
 
         let env = Env(multiplier: 3)
-        let (value, state) = composed(2)(env).runStateful(0)
+        let (value, state) = composed(2).rawValue(env).runStateful(0)
         #expect(value == "6")
         #expect(state == 31)
     }
@@ -183,10 +183,10 @@ import Testing
             Reader { env in Writer("\(value)", ["described by \(env.multiplier)"]) }
         }
 
-        let composed = kleisliT(scale, describe)
+        let composed = ReaderTWriter<Env, [String], Int>.kleisli({ ReaderTWriter(scale($0)) }, { ReaderTWriter(describe($0)) })
 
         let env = Env(multiplier: 7)
-        let writer = composed(2)(env)
+        let writer = composed(2).rawValue(env)
         #expect(writer.value == "14")
         #expect(writer.log == ["scaled", "described by 7"])
     }

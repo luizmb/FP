@@ -8,7 +8,7 @@ import Testing
     @Test func apply() {
         let fns: [Stateful<Int, @Sendable (Int) -> String>] = [.pure { "\($0)" }]
         let vals: [Stateful<Int, Int>] = [.pure(5)]
-        let result = fns <*> vals
+        let result = (fns.arrayT <*> vals.arrayT).rawValue
         #expect(result.count == 1)
         #expect(result[0].eval(0) == "5")
     }
@@ -16,7 +16,7 @@ import Testing
     @Test func seqRight() {
         let lhs: [Stateful<Int, Int>] = [.pure(1)]
         let rhs: [Stateful<Int, String>] = [.pure("hello")]
-        let result = lhs *> rhs
+        let result = (lhs.arrayT *> rhs.arrayT).rawValue
         #expect(result.count == 1)
         #expect(result[0].eval(0) == "hello")
     }
@@ -24,7 +24,7 @@ import Testing
     @Test func seqLeft() {
         let lhs: [Stateful<Int, Int>] = [.pure(99)]
         let rhs: [Stateful<Int, String>] = [.pure("ignored")]
-        let result = lhs <* rhs
+        let result = (lhs.arrayT <* rhs.arrayT).rawValue
         #expect(result.count == 1)
         #expect(result[0].eval(0) == 99)
     }

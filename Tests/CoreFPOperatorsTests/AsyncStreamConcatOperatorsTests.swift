@@ -40,14 +40,16 @@ import Testing
         #expect(left == ["a", "a", "b", "b"])
     }
 
-    // MARK: - AsyncSequenceTOptional
+    // MARK: - AsyncStreamTOptional
 
     @Test func optionalTransformerOperators() async {
         let fns: [(@Sendable (Int) -> String)?] = [label("f"), nil]
-        let applied = await collectAll(streamOf(fns) <*> streamOf([1, nil, 2] as [Int?]))
-        let right = await collectAll(streamOf([1, nil] as [Int?]) *> streamOf([10, 20] as [Int?]))
-        let left = await collectAll(streamOf([1, nil] as [Int?]) <* streamOf([10, 20] as [Int?]))
-        let bound = await collectAll(streamOf([1, nil] as [Int?]) >>- { (x: Int) in streamOf([x, x * 10] as [Int?]) })
+        let applied = await collectAll((streamOf(fns).asyncStreamT <*> streamOf([1, nil, 2] as [Int?]).asyncStreamT).rawValue)
+        let right = await collectAll((streamOf([1, nil] as [Int?]).asyncStreamT *> streamOf([10, 20] as [Int?]).asyncStreamT).rawValue)
+        let left = await collectAll((streamOf([1, nil] as [Int?]).asyncStreamT <* streamOf([10, 20] as [Int?]).asyncStreamT).rawValue)
+        let bound = await collectAll(
+            (streamOf([1, nil] as [Int?]).asyncStreamT >>- { (x: Int) in streamOf([x, x * 10] as [Int?]).asyncStreamT }).rawValue
+        )
         #expect(applied == ["f1", nil, "f2", nil])
         #expect(right == [10, 20, nil])
         #expect(left == [1, 1, nil])
@@ -55,25 +57,28 @@ import Testing
     }
 
     @Test func optionalTransformerKleisli() async {
-        let f: @Sendable (Int) -> AsyncStream<Int?> = { x in streamOf([x, nil]) }
-        let g: @Sendable (Int) -> AsyncStream<Int?> = { x in streamOf([x + 1, x + 2]) }
-        let observed5 = await collectAll((f >=> g)(1))
+        let f: @Sendable (Int) -> AsyncStreamTOptional<Int> = { x in streamOf([x, nil]).asyncStreamT }
+        let g: @Sendable (Int) -> AsyncStreamTOptional<Int> = { x in streamOf([x + 1, x + 2] as [Int?]).asyncStreamT }
+        let observed5 = await collectAll((f >=> g)(1).rawValue)
         #expect(observed5 == [2, 3, nil])
-        let observed6 = await collectAll((g <=< f)(1))
+        let observed6 = await collectAll((g <=< f)(1).rawValue)
         #expect(observed6 == [2, 3, nil])
     }
 
-    // MARK: - AsyncSequenceTResult
+    // MARK: - AsyncStreamTResult
 
     private enum Err: Error, Equatable { case boom }
 
     @Test func resultTransformerOperators() async {
         let fns: [Result<@Sendable (Int) -> String, Err>] = [.success(label("f")), .failure(.boom)]
         let xs: [Result<Int, Err>] = [.success(1), .success(2)]
-        let applied = await collectAll(streamOf(fns) <*> streamOf(xs))
-        let right = await collectAll(streamOf([Result<String, Err>.success("a"), .failure(.boom)]) *> streamOf(xs))
-        let left = await collectAll(streamOf([Result<String, Err>.success("a")]) <* streamOf(xs))
-        let bound = await collectAll(streamOf(xs) >>- { (x: Int) in streamOf([Result<Int, Err>.success(x), .failure(.boom)]) })
+        let applied = await collectAll((streamOf(fns).asyncStreamT <*> streamOf(xs).asyncStreamT).rawValue)
+        let lhs = AsyncStreamTResult<Err, String>(streamOf([.success("a"), .failure(.boom)]))
+        let right = await collectAll((lhs *> streamOf(xs).asyncStreamT).rawValue)
+        let left = await collectAll((streamOf([Result<String, Err>.success("a")]).asyncStreamT <* streamOf(xs).asyncStreamT).rawValue)
+        let bound = await collectAll(
+            (streamOf(xs).asyncStreamT >>- { (x: Int) in streamOf([Result<Int, Err>.success(x), .failure(.boom)]).asyncStreamT }).rawValue
+        )
         #expect(applied == [.success("f1"), .success("f2"), .failure(.boom)])
         #expect(right == [.success(1), .success(2), .failure(.boom)])
         #expect(left == [.success("a"), .success("a")])
@@ -81,11 +86,11 @@ import Testing
     }
 
     @Test func resultTransformerKleisli() async {
-        let f: @Sendable (Int) -> AsyncStream<Result<Int, Err>> = { x in streamOf([.success(x), .failure(.boom)]) }
-        let g: @Sendable (Int) -> AsyncStream<Result<Int, Err>> = { x in streamOf([.success(x * 10)]) }
-        let observed7 = await collectAll((f >=> g)(1))
+        let f: @Sendable (Int) -> AsyncStreamTResult<Err, Int> = { x in AsyncStreamTResult(streamOf([.success(x), .failure(.boom)])) }
+        let g: @Sendable (Int) -> AsyncStreamTResult<Err, Int> = { x in AsyncStreamTResult(streamOf([.success(x * 10)])) }
+        let observed7 = await collectAll((f >=> g)(1).rawValue)
         #expect(observed7 == [.success(10), .failure(.boom)])
-        let observed8 = await collectAll((g <=< f)(1))
+        let observed8 = await collectAll((g <=< f)(1).rawValue)
         #expect(observed8 == [.success(10), .failure(.boom)])
     }
 }

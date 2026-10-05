@@ -11,7 +11,7 @@ import Foundation
 
 /// apply for NonEmptyTOptional: NonEmpty<(A->B)?> -> NonEmpty<A?> -> NonEmpty<B?>
 /// mf <*> ma = mf >>= \f -> fmap f ma
-public func applyNonEmptyOptional<A: Sendable, B: Sendable>(
+func applyNonEmptyOptional<A: Sendable, B: Sendable>(
     _ fns: NonEmpty<(@Sendable (A) -> B)?>,
     _ values: NonEmpty<A?>
 ) -> NonEmpty<B?> {
@@ -20,7 +20,7 @@ public func applyNonEmptyOptional<A: Sendable, B: Sendable>(
 
 /// liftA2 for NonEmptyTOptional: (A,B)->C -> NonEmpty<A?> -> NonEmpty<B?> -> NonEmpty<C?>
 /// liftA2 f ma mb = ma >>= \a -> fmap (f a) mb
-public func liftA2NonEmptyOptional<A: Sendable, B: Sendable, C: Sendable>(
+func liftA2NonEmptyOptional<A: Sendable, B: Sendable, C: Sendable>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (NonEmpty<A?>, NonEmpty<B?>) -> NonEmpty<C?> {
     { neA, neB in
@@ -30,12 +30,12 @@ public func liftA2NonEmptyOptional<A: Sendable, B: Sendable, C: Sendable>(
 
 /// seqRight for NonEmptyTOptional: NonEmpty<A?> -> NonEmpty<B?> -> NonEmpty<B?>
 /// ma *> mb = ma >>= \_ -> mb
-public func seqRightNonEmptyOptional<A: Sendable, B: Sendable>(_ lhs: NonEmpty<A?>, _ rhs: NonEmpty<B?>) -> NonEmpty<B?> {
+func seqRightNonEmptyOptional<A: Sendable, B: Sendable>(_ lhs: NonEmpty<A?>, _ rhs: NonEmpty<B?>) -> NonEmpty<B?> {
     lhs.flatMapT { (_: A) in rhs }
 }
 
 /// seqLeft for NonEmptyTOptional: NonEmpty<A?> -> NonEmpty<B?> -> NonEmpty<A?>
 /// ma <* mb = ma >>= \a -> fmap (const a) mb
-public func seqLeftNonEmptyOptional<A: Sendable, B: Sendable>(_ lhs: NonEmpty<A?>, _ rhs: NonEmpty<B?>) -> NonEmpty<A?> {
+func seqLeftNonEmptyOptional<A: Sendable, B: Sendable>(_ lhs: NonEmpty<A?>, _ rhs: NonEmpty<B?>) -> NonEmpty<A?> {
     lhs.flatMapT { a in rhs.mapT { (_: B) in a } }
 }

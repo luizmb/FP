@@ -255,34 +255,41 @@ Optional(Result<Int, Error>.success(42)).sequence()  // .success(Optional(42))
 
 ## Monad Transformers
 
-Optional can be the **outer** layer of a transformer stack, threading another monad's effects through it. The transformer name is `OptionalT{Inner}`.
+Optional can be the **outer** layer of a transformer stack, threading another monad's effects
+through it. Each stack is its own struct named `OptionalT{Inner}`: lift with the `.optionalT`
+property (or `OptionalTArray(xs)`), use `map` / `flatMap` / the operators, and leave with `.rawValue`.
+On a bare `[Int]?`, `map` and `<£>` are Optional's (they see the whole array).
 
-### `OptionalTArray` — `[A]?`
+### `OptionalTArray` (`[A]?`)
 
 Optional wrapping an Array. `nil` propagates; `some([…])` operates on the Array.
 
 ```swift
 import FP
 
-// mapT — map inside the Array
 let xs: [Int]? = [1, 2, 3]
-xs.mapT { $0 * 2 }                  // Optional([2, 4, 6])
-(nil as [Int]?).mapT { $0 * 2 }     // nil
 
-// liftA2 — combine two [A]? values
-liftA2OptionalArray(+)(Optional([1, 2]), Optional([10, 20]))
-// Optional([11, 21, 12, 22])   — Array.liftA2 under Optional
+// map: map inside the Array
+xs.optionalT.map { $0 * 2 }.rawValue                // Optional([2, 4, 6])
+(nil as [Int]?).optionalT.map { $0 * 2 }.rawValue   // nil
 
-// flatMapT — each element produces [B]?; nil in any result collapses to nil
-xs.flatMapT { n in [n, n * 10] }    // Optional([1, 10, 2, 20, 3, 30])
-xs.flatMapT { n in n > 1 ? [n, n * 10] : nil }  // nil
+// liftA2: combine two [A]? values
+OptionalTArray<Int>.liftA2(+)(OptionalTArray([1, 2]), OptionalTArray([10, 20])).rawValue
+// Optional([11, 21, 12, 22]) (Array.liftA2 under Optional)
+
+// flatMap: each element produces [B]?; nil in any result collapses to nil
+xs.optionalT.flatMap { n in OptionalTArray([n, n * 10]) }.rawValue   // Optional([1, 10, 2, 20, 3, 30])
+xs.optionalT.flatMap { n in OptionalTArray(n > 1 ? [n, n * 10] : nil) }.rawValue  // nil
 
 // Operators
-{ $0 * 2 } <£> xs                   // Optional([2, 4, 6])
-xs >>- { n in [n, n * 10] }         // Optional([1, 10, 2, 20, 3, 30])
+{ $0 * 2 } <£> xs.optionalT                         // wraps Optional([2, 4, 6])
+xs.optionalT >>- { n in OptionalTArray([n, n * 10]) }
+
+// Escape hatch: the whole [Int]? (Compose-like stack, named by the outer layer)
+xs.optionalT.mapOptionalT { $0 ?? [] }
 ```
 
-### `OptionalTResult` — `Result<A,E>?`
+### `OptionalTResult` (`Result<A, E>?`)
 
 Optional wrapping a Result. `nil` propagates; `.some(.failure(e))` also propagates.
 
@@ -290,23 +297,23 @@ Optional wrapping a Result. `nil` propagates; `.some(.failure(e))` also propagat
 import FP
 
 let r: Result<Int, MyError>? = .success(5)
-r.mapT { $0 * 2 }              // Optional(.success(10))
+r.optionalT.map { $0 * 2 }.rawValue      // Optional(.success(10))
 
 let fail: Result<Int, MyError>? = .failure(.bad)
-fail.mapT { $0 * 2 }           // Optional(.failure(.bad))  — error preserved
+fail.optionalT.map { $0 * 2 }.rawValue   // Optional(.failure(.bad)), error preserved
 
-(nil as Result<Int, MyError>?).mapT { $0 * 2 }  // nil
+(nil as Result<Int, MyError>?).optionalT.map { $0 * 2 }.rawValue  // nil
 
-// flatMapT — nil or failure short-circuit
-r.flatMapT { n in n > 0 ? .success(n * 2) : nil }  // Optional(.success(10))
-r.flatMapT { _ in nil }                              // nil
+// flatMap: nil or failure short-circuit
+r.optionalT.flatMap { n in OptionalTResult(n > 0 ? .success(n * 2) : nil) }.rawValue  // Optional(.success(10))
+r.optionalT.flatMap { _ in OptionalTResult<MyError, Int>(nil) }.rawValue            // nil
 
 // Operators
-{ $0 * 2 } <£> r    // Optional(.success(10))
-r >>- { n in .success("\(n)") }  // Optional(.success("5"))
+{ $0 * 2 } <£> r.optionalT                       // wraps Optional(.success(10))
+r.optionalT >>- { n in .pure("\(n)") }           // wraps Optional(.success("5"))
 ```
 
-### `OptionalTEither` — `Either<L,A>?`
+### `OptionalTEither` (`Either<L, A>?`)
 
 Optional wrapping an Either. `nil` propagates; `.some(.left(l))` also propagates.
 
@@ -314,24 +321,28 @@ Optional wrapping an Either. `nil` propagates; `.some(.left(l))` also propagates
 import DataStructure
 
 let e: Either<String, Int>? = .right(5)
-e.mapT { $0 * 2 }              // Optional(.right(10))
-e.flatMapT { n in .right(n * 2) }  // Optional(.right(10))
+e.optionalT.map { $0 * 2 }.rawValue                         // Optional(.right(10))
+e.optionalT.flatMap { n in .pure(n * 2) }.rawValue          // Optional(.right(10))
 
-(nil as Either<String, Int>?).mapT { $0 * 2 }  // nil
+(nil as Either<String, Int>?).optionalT.map { $0 * 2 }.rawValue  // nil
 
 let left: Either<String, Int>? = .left("err")
-left.mapT { $0 * 2 }           // Optional(.left("err"))
+left.optionalT.map { $0 * 2 }.rawValue                      // Optional(.left("err"))
 ```
+
+The other Optional-outer stacks are `OptionalTWriter` (`Writer<W, A>?`), `OptionalTNonEmpty`
+(`NonEmpty<A>?`) and `OptionalTStateful` (`Stateful<S, A>?`, functor and applicative only), all in
+`DataStructure`.
 
 ---
 
 ## Module
 
 ```swift
-import FP        // Named functions (fmap, apply, seqRight, bind, kleisli…)
+import FP        // Named functions (fmap, apply, seqRight, bind, kleisli…) and OptionalTArray / OptionalTResult
 import CoreFPOperators  // Operators (<£>, <*>, >>-, >=>…)
 
-// For Either-inner transformers:
+// For OptionalTEither / OptionalTWriter / OptionalTNonEmpty / OptionalTStateful:
 import DataStructure
 import DataStructureOperators
 ```

@@ -39,7 +39,7 @@ struct DataStructurePerformanceRegressionTests {
 
     @Test func writerTArrayLogOrderIsPreserved() {
         let start = [Writer(1, ["a"]), Writer(2, ["b"])]
-        let result = start.flatMapT { [Writer($0 * 10, ["f\($0)"])] }
+        let result = start.arrayT.flatMap { ArrayTWriter([Writer($0 * 10, ["f\($0)"])]) }.rawValue
         #expect(result.map(\.log) == [["a", "f1"], ["b", "f2"]])
     }
 

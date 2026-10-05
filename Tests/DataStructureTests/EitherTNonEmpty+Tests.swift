@@ -3,23 +3,23 @@ import DataStructure
 import Testing
 
 @Suite struct EitherTNonEmptyTests {
-    // MARK: - Either<L, NonEmpty<A>> — mapT (functor)
+    // MARK: - Either<L, NonEmpty<A>> — map (functor)
 
-    @Test func mapT_right() {
+    @Test func map_right() {
         let either: Either<String, NonEmpty<Int>> = .right(NonEmpty(head: 1, tail: [2, 3]))
-        let result = either.mapT { $0 * 10 }
+        let result = either.eitherT.map { $0 * 10 }.rawValue
         #expect(result == .right(NonEmpty(head: 10, tail: [20, 30])))
     }
 
-    @Test func mapT_left_propagates() {
+    @Test func map_left_propagates() {
         let either: Either<String, NonEmpty<Int>> = .left("err")
-        let result = either.mapT { $0 * 10 }
+        let result = either.eitherT.map { $0 * 10 }.rawValue
         #expect(result == .left("err"))
     }
 
-    @Test func fmapT_curried() {
+    @Test func fmap_curried() {
         let either: Either<String, NonEmpty<Int>> = .right(NonEmpty(head: 5))
-        let mapped = Either<String, NonEmpty<Int>>.fmapT { $0 + 1 }(either)
+        let mapped = EitherTNonEmpty<String, Int>.fmap { $0 + 1 }(either.eitherT).rawValue
         #expect(mapped == .right(NonEmpty(head: 6)))
     }
 }

@@ -13,7 +13,7 @@ import Foundation
 /// apply for AsyncStream<Writer<W, A>>
 /// mf <*> ma = mf >>= \f -> ma >>= \a -> pure (f a)
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func applyAsyncStreamWriter<W: Monoid, A, B>(
+func applyAsyncStreamWriter<W: Monoid, A, B>(
     _ fns: AsyncStream<Writer<W, @Sendable (A) -> B>>,
     _ values: AsyncStream<Writer<W, A>>
 ) -> AsyncStream<Writer<W, B>> where A: Sendable, B: Sendable {
@@ -23,7 +23,7 @@ public func applyAsyncStreamWriter<W: Monoid, A, B>(
 /// liftA2 for AsyncStream<Writer<W, A>>
 /// liftA2 f ma mb = ma >>= \a -> mb >>= \b -> pure (f a b)
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func liftA2AsyncStreamWriter<W: Monoid, A, B, C>(
+func liftA2AsyncStreamWriter<W: Monoid, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> @Sendable (AsyncStream<Writer<W, A>>, AsyncStream<Writer<W, B>>) -> AsyncStream<Writer<W, C>>
 where A: Sendable, B: Sendable, C: Sendable {
@@ -38,7 +38,7 @@ where A: Sendable, B: Sendable, C: Sendable {
 /// seqRight for AsyncStream<Writer<W, A>>
 /// ma *> mb = ma >>= \_ -> mb
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func seqRightAsyncStreamWriter<W: Monoid, A, B>(
+func seqRightAsyncStreamWriter<W: Monoid, A, B>(
     _ lhs: AsyncStream<Writer<W, A>>,
     _ rhs: AsyncStream<Writer<W, B>>
 ) -> AsyncStream<Writer<W, B>> where A: Sendable, B: Sendable {
@@ -48,7 +48,7 @@ public func seqRightAsyncStreamWriter<W: Monoid, A, B>(
 /// seqLeft for AsyncStream<Writer<W, A>>
 /// ma <* mb = ma >>= \a -> mb >>= \_ -> pure a
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func seqLeftAsyncStreamWriter<W: Monoid, A, B>(
+func seqLeftAsyncStreamWriter<W: Monoid, A, B>(
     _ lhs: AsyncStream<Writer<W, A>>,
     _ rhs: AsyncStream<Writer<W, B>>
 ) -> AsyncStream<Writer<W, A>> where A: Sendable, B: Sendable {

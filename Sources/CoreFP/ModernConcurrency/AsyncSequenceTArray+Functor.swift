@@ -5,7 +5,7 @@ import Foundation
 // Type: AsyncStream<[A]>
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public extension AsyncStream {
+extension AsyncStream {
     /// Maps the value inside every emitted Array.
     /// mapT :: (a -> b) -> AsyncStream (array a) -> AsyncStream (array b)
     func mapT<Inner, B: Sendable>(_ fn: @escaping @Sendable (Inner) -> B) -> AsyncStream<[B]>

@@ -4,7 +4,7 @@ import CoreFP
 // ValidationTReader: outer = Validation, inner = Reader
 // Type: Validation<E, Reader<Env, A>>
 
-public extension Validation {
+extension Validation {
     /// Maps the value inside the inner Reader, leaving `.failure` untouched.
     /// mapT :: (a -> b) -> Validation e (reader a) -> Validation e (reader b)
     func mapT<Env, Inner, B>(_ fn: @escaping @Sendable (Inner) -> B) -> Validation<E, Reader<Env, B>>

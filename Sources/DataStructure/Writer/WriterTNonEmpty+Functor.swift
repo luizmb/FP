@@ -2,7 +2,7 @@
 // WriterTNonEmpty: outer = Writer, inner = NonEmpty
 // Type: Writer<W, NonEmpty<A>>
 
-public extension Writer {
+extension Writer {
     /// Declaration.
     func mapT<Inner, B>(_ fn: (Inner) -> B) -> Writer<W, NonEmpty<B>>
     where A == NonEmpty<Inner> {

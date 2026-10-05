@@ -5,7 +5,7 @@ import Foundation
 // EitherTWriter: outer = Either, inner = Writer
 // Type: Either<L, Writer<W, A>>
 
-public extension Either {
+extension Either {
     /// Declaration.
     func mapT<W: Monoid, Inner, C>(_ fn: @escaping @Sendable (Inner) -> C) -> Either<A, Writer<W, C>>
     where B == Writer<W, Inner> {

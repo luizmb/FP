@@ -33,7 +33,7 @@ import Testing
 
         let readerValue = Reader<Environment, Either<String, Int>>(const(.right(10)))
 
-        let result = readerFn <*> readerValue
+        let result = (readerFn.readerT <*> readerValue.readerT).rawValue
 
         let env = Environment(multiplier: 5)
         #expect(result(env) == .right(15))
@@ -44,7 +44,7 @@ import Testing
 
         let reader2 = Reader<Environment, Either<String, Int>>(const(.right(10)))
 
-        let result = reader1 *> reader2
+        let result = (reader1.readerT *> reader2.readerT).rawValue
 
         let env = Environment(multiplier: 1)
         #expect(result(env) == .right(10))
@@ -55,7 +55,7 @@ import Testing
 
         let reader2 = Reader<Environment, Either<String, Int>>(const(.right(10)))
 
-        let result = reader1 <* reader2
+        let result = (reader1.readerT <* reader2.readerT).rawValue
 
         let env = Environment(multiplier: 1)
         #expect(result(env) == .right(5))

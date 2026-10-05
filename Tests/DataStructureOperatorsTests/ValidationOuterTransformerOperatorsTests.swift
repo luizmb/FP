@@ -5,69 +5,106 @@ import DataStructure
 import DataStructureOperators
 import Testing
 
-/// Operator-syntax coverage for the "Validation-outer" transformer combos:
-/// `Validation<E, Inner>` where `Inner` is `Array`, `Either`, `Optional`, `Reader`, `Result`,
-/// `Stateful`, or `Writer`.
+/// Operator-syntax coverage for the "Validation-outer" transformer stacks:
+/// `ValidationTArray`, `ValidationTEither`, `ValidationTNonEmpty`, `ValidationTOptional`,
+/// `ValidationTReader`, `ValidationTResult`, `ValidationTStateful` and `ValidationTWriter`.
 ///
-/// Validation is an accumulating Applicative, not a Monad — there is no `flatMapT`/`>>-` for
-/// any of these combos and none is referenced here.
+/// Validation is an accumulating Applicative, not a Monad: these stacks are applicative-only,
+/// so there is no `>>-` here.
 @Suite struct ValidationOuterTransformerOperatorsTests {
     // MARK: - ValidationTArray
 
     @Test func validationTArrayApplyOperatorAccumulatesErrors() {
-        let vf: Validation<[String], [@Sendable (Int) -> Int]> = .failure(["e1"])
-        let va: Validation<[String], [Int]> = .failure(["e2"])
-        #expect((vf <*> va) == .failure(["e1", "e2"]))
+        let vf = ValidationTArray<[String], @Sendable (Int) -> Int>(.failure(["e1"]))
+        let va = ValidationTArray<[String], Int>(.failure(["e2"]))
+        #expect((vf <*> va).rawValue == .failure(["e1", "e2"]))
     }
 
     @Test func validationTArraySeqRightOperatorAccumulatesErrors() {
-        let lhs: Validation<[String], [Int]> = .failure(["e1"])
-        let rhs: Validation<[String], [String]> = .failure(["e2"])
-        #expect((lhs *> rhs) == .failure(["e1", "e2"]))
+        let lhs = ValidationTArray<[String], Int>(.failure(["e1"]))
+        let rhs = ValidationTArray<[String], String>(.failure(["e2"]))
+        #expect((lhs *> rhs).rawValue == .failure(["e1", "e2"]))
     }
 
     // MARK: - ValidationTEither
 
     @Test func validationTEitherApplyOperatorAccumulatesErrors() {
-        let vf: Validation<[String], Either<String, @Sendable (Int) -> Int>> = .failure(["e1"])
-        let va: Validation<[String], Either<String, Int>> = .failure(["e2"])
-        #expect((vf <*> va) == .failure(["e1", "e2"]))
+        let vf = ValidationTEither<[String], String, @Sendable (Int) -> Int>(.failure(["e1"]))
+        let va = ValidationTEither<[String], String, Int>(.failure(["e2"]))
+        #expect((vf <*> va).rawValue == .failure(["e1", "e2"]))
     }
 
     @Test func validationTEitherSeqLeftOperatorAccumulatesErrors() {
-        let lhs: Validation<[String], Either<String, Int>> = .failure(["e1"])
-        let rhs: Validation<[String], Either<String, String>> = .failure(["e2"])
-        #expect((lhs <* rhs) == .failure(["e1", "e2"]))
+        let lhs = ValidationTEither<[String], String, Int>(.failure(["e1"]))
+        let rhs = ValidationTEither<[String], String, String>(.failure(["e2"]))
+        #expect((lhs <* rhs).rawValue == .failure(["e1", "e2"]))
+    }
+
+    // MARK: - ValidationTNonEmpty
+
+    @Test func validationTNonEmptyApplyOperatorAccumulatesErrors() {
+        let vf = ValidationTNonEmpty<[String], @Sendable (Int) -> Int>(.failure(["e1"]))
+        let va = ValidationTNonEmpty<[String], Int>(.failure(["e2"]))
+        let result = (vf <*> va).rawValue
+        #expect(result.is(.failure), "Expected failure")
+        if case let .failure(e) = result { #expect(e == ["e1", "e2"]) }
+    }
+
+    @Test func validationTNonEmptyApplyOperatorSuccessSuccess() {
+        let increment: @Sendable (Int) -> Int = { $0 + 1 }
+        let vf = ValidationTNonEmpty<[String], @Sendable (Int) -> Int>(.success(NonEmpty(head: increment)))
+        let va = ValidationTNonEmpty<[String], Int>(.success(NonEmpty(head: 5, tail: [10])))
+        #expect((vf <*> va).rawValue == .success(NonEmpty(head: 6, tail: [11])))
+    }
+
+    @Test func validationTNonEmptySeqRightOperator() {
+        let lhs = ValidationTNonEmpty<[String], Int>(.success(NonEmpty(head: 1)))
+        let rhs = ValidationTNonEmpty<[String], Int>(.success(NonEmpty(head: 10)))
+        #expect((lhs *> rhs).rawValue == .success(NonEmpty(head: 10)))
+    }
+
+    @Test func validationTNonEmptySeqLeftOperator() {
+        let lhs = ValidationTNonEmpty<[String], Int>(.success(NonEmpty(head: 1)))
+        let rhs = ValidationTNonEmpty<[String], Int>(.success(NonEmpty(head: 10)))
+        #expect((lhs <* rhs).rawValue == .success(NonEmpty(head: 1)))
     }
 
     // MARK: - ValidationTOptional
 
     @Test func validationTOptionalApplyOperatorAccumulatesErrors() {
-        let vf: Validation<[String], (@Sendable (Int) -> Int)?> = .failure(["e1"])
-        let va: Validation<[String], Int?> = .failure(["e2"])
-        #expect((vf <*> va) == .failure(["e1", "e2"]))
+        let vf = ValidationTOptional<[String], @Sendable (Int) -> Int>(.failure(["e1"]))
+        let va = ValidationTOptional<[String], Int>(.failure(["e2"]))
+        #expect((vf <*> va).rawValue == .failure(["e1", "e2"]))
     }
 
     @Test func validationTOptionalSeqRightOperatorAccumulatesErrors() {
-        let lhs: Validation<[String], Int?> = .failure(["e1"])
-        let rhs: Validation<[String], String?> = .failure(["e2"])
-        #expect((lhs *> rhs) == .failure(["e1", "e2"]))
+        let lhs = ValidationTOptional<[String], Int>(.failure(["e1"]))
+        let rhs = ValidationTOptional<[String], String>(.failure(["e2"]))
+        #expect((lhs *> rhs).rawValue == .failure(["e1", "e2"]))
+    }
+
+    @Test func validationTOptionalMapOperators() {
+        let stack = ValidationTOptional<[String], Int>(.success(5))
+        #expect(({ $0 * 2 } <£> stack).rawValue == .success(10))
+        #expect((stack <&> { $0 + 1 }).rawValue == .success(6))
+        #expect((stack £> "x").rawValue == .success("x"))
+        #expect(("y" <£ stack).rawValue == .success("y"))
     }
 
     // MARK: - ValidationTReader
 
     @Test func validationTReaderApplyOperatorAccumulatesErrors() {
-        let vf: Validation<[String], Reader<String, @Sendable (Int) -> Int>> = .failure(["e1"])
-        let va: Validation<[String], Reader<String, Int>> = .failure(["e2"])
-        let result = vf <*> va
+        let vf = ValidationTReader<[String], String, @Sendable (Int) -> Int>(.failure(["e1"]))
+        let va = ValidationTReader<[String], String, Int>(.failure(["e2"]))
+        let result = (vf <*> va).rawValue
         #expect(result.is(.failure), "Expected failure")
         if case let .failure(e) = result { #expect(e == ["e1", "e2"]) }
     }
 
     @Test func validationTReaderSeqLeftOperatorAccumulatesErrors() {
-        let lhs: Validation<[String], Reader<String, Int>> = .failure(["e1"])
-        let rhs: Validation<[String], Reader<String, String>> = .failure(["e2"])
-        let result = lhs <* rhs
+        let lhs = ValidationTReader<[String], String, Int>(.failure(["e1"]))
+        let rhs = ValidationTReader<[String], String, String>(.failure(["e2"]))
+        let result = (lhs <* rhs).rawValue
         #expect(result.is(.failure), "Expected failure")
         if case let .failure(e) = result { #expect(e == ["e1", "e2"]) }
     }
@@ -75,17 +112,17 @@ import Testing
     // MARK: - ValidationTResult
 
     @Test func validationTResultApplyOperatorAccumulatesErrors() {
-        let vf: Validation<[String], Result<@Sendable (Int) -> Int, TestError>> = .failure(["e1"])
-        let va: Validation<[String], Result<Int, TestError>> = .failure(["e2"])
-        let result = vf <*> va
+        let vf = ValidationTResult<[String], TestError, @Sendable (Int) -> Int>(.failure(["e1"]))
+        let va = ValidationTResult<[String], TestError, Int>(.failure(["e2"]))
+        let result = (vf <*> va).rawValue
         #expect(result.is(.failure), "Expected failure")
         if case let .failure(e) = result { #expect(e == ["e1", "e2"]) }
     }
 
     @Test func validationTResultSeqRightOperatorAccumulatesErrors() {
-        let lhs: Validation<[String], Result<Int, TestError>> = .failure(["e1"])
-        let rhs: Validation<[String], Result<String, TestError>> = .failure(["e2"])
-        let result = lhs *> rhs
+        let lhs = ValidationTResult<[String], TestError, Int>(.failure(["e1"]))
+        let rhs = ValidationTResult<[String], TestError, String>(.failure(["e2"]))
+        let result = (lhs *> rhs).rawValue
         #expect(result.is(.failure), "Expected failure")
         if case let .failure(e) = result { #expect(e == ["e1", "e2"]) }
     }
@@ -93,17 +130,17 @@ import Testing
     // MARK: - ValidationTStateful
 
     @Test func validationTStatefulApplyOperatorAccumulatesErrors() {
-        let vf: Validation<[String], Stateful<Int, @Sendable (Int) -> Int>> = .failure(["e1"])
-        let va: Validation<[String], Stateful<Int, Int>> = .failure(["e2"])
-        let result = vf <*> va
+        let vf = ValidationTStateful<[String], Int, @Sendable (Int) -> Int>(.failure(["e1"]))
+        let va = ValidationTStateful<[String], Int, Int>(.failure(["e2"]))
+        let result = (vf <*> va).rawValue
         #expect(result.is(.failure), "Expected failure")
         if case let .failure(e) = result { #expect(e == ["e1", "e2"]) }
     }
 
     @Test func validationTStatefulSeqLeftOperatorAccumulatesErrors() {
-        let lhs: Validation<[String], Stateful<Int, Int>> = .failure(["e1"])
-        let rhs: Validation<[String], Stateful<Int, String>> = .failure(["e2"])
-        let result = lhs <* rhs
+        let lhs = ValidationTStateful<[String], Int, Int>(.failure(["e1"]))
+        let rhs = ValidationTStateful<[String], Int, String>(.failure(["e2"]))
+        let result = (lhs <* rhs).rawValue
         #expect(result.is(.failure), "Expected failure")
         if case let .failure(e) = result { #expect(e == ["e1", "e2"]) }
     }
@@ -111,15 +148,15 @@ import Testing
     // MARK: - ValidationTWriter
 
     @Test func validationTWriterApplyOperatorAccumulatesErrors() {
-        let vf: Validation<[String], Writer<[String], @Sendable (Int) -> Int>> = .failure(["e1"])
-        let va: Validation<[String], Writer<[String], Int>> = .failure(["e2"])
-        #expect((vf <*> va) == .failure(["e1", "e2"]))
+        let vf = ValidationTWriter<[String], [String], @Sendable (Int) -> Int>(.failure(["e1"]))
+        let va = ValidationTWriter<[String], [String], Int>(.failure(["e2"]))
+        #expect((vf <*> va).rawValue == .failure(["e1", "e2"]))
     }
 
     @Test func validationTWriterSeqRightOperatorAccumulatesErrors() {
-        let lhs: Validation<[String], Writer<[String], Int>> = .failure(["e1"])
-        let rhs: Validation<[String], Writer<[String], String>> = .failure(["e2"])
-        #expect((lhs *> rhs) == .failure(["e1", "e2"]))
+        let lhs = ValidationTWriter<[String], [String], Int>(.failure(["e1"]))
+        let rhs = ValidationTWriter<[String], [String], String>(.failure(["e2"]))
+        #expect((lhs *> rhs).rawValue == .failure(["e1", "e2"]))
     }
 
     // MARK: - Helpers

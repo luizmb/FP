@@ -2,7 +2,7 @@
 // StatefulTNonEmpty: outer = Stateful, inner = NonEmpty
 // Type: Stateful<S, NonEmpty<A>>
 
-public extension Stateful {
+extension Stateful {
     /// Declaration.
     func mapT<Inner, B>(_ fn: @escaping @Sendable (Inner) -> B) -> Stateful<S, NonEmpty<B>>
     where A == NonEmpty<Inner> {

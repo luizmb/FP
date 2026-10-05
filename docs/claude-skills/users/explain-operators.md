@@ -156,15 +156,17 @@ let computation = fetchUser(id) >>- { user in
 **Error**: Type mismatch!
 
 **Analysis**:
-1. `fetchUser(id)` returns `Reader<Config, User?>` — this is the `ReaderTOptional` combo (Reader wrapping an Optional)
+1. `fetchUser(id)` returns `Reader<Config, User?>`, a Reader wrapping an Optional. As a bare nested value it's just a `Reader`, so its operators are the Reader ones
 2. `>>- { user in user.profile }` treats it like a plain `Reader<Config, User>`, but the value inside is actually `User?`
-3. Should use `mapT` — the transformer-specific operation that reaches *through* the inner `Optional` — instead of the base `<£>`/`>>-`
+3. Lift it into the `ReaderTOptional` stack (`.readerT`) so `map` / `<£>` / `>>-` reach *through* the inner `Optional`, then leave with `.rawValue`
 
-**Fix** (assuming `User.profile: Profile` and `Profile.name: String`, both non-optional — `mapT` only wraps in `Optional` once, at the outermost level):
+**Fix** (assuming `User.profile: Profile` and `Profile.name: String`, both non-optional, so the stack keeps a single `Optional` layer):
 ```swift
 let computation: Reader<Config, String?> = fetchUser(id)
-    .mapT { user in user.profile }    // Reader<Config, Profile?>
-    .mapT { profile in profile.name } // Reader<Config, String?>
+    .readerT                          // ReaderTOptional<Config, User>
+    .map { user in user.profile }     // ReaderTOptional<Config, Profile>
+    .map { profile in profile.name }  // ReaderTOptional<Config, String>
+    .rawValue                         // Reader<Config, String?>
 ```
 
 ### Debugging Checklist:
@@ -185,7 +187,7 @@ When you encounter an error in operator composition:
 
 4. **Verify monad type**: Are you mixing plain and transformer monads?
    - `Optional<A>` vs `Reader<Env, Optional<A>>`
-   - Use `mapT`, `flatMapT` for the transformer combo, not the base `<£>`/`>>-`
+   - Wrap the nested value in its stack (`reader.readerT`, `ReaderTOptional(reader)`) so `<£>`/`>>-` act on the inner value; on the bare `Reader` they act on the whole `Int?`
 
 5. **Check operator direction**: `<£>` wants the function on the left; `<&>` wants the container on the left
 
@@ -209,7 +211,7 @@ reader >>- { $0 * 2 }  // ❌ >>- expects the value to be a plain Int, not Int?
 ```
 ✅ **Fix**:
 ```swift
-reader.mapT { $0 * 2 }  // ✅ Use mapT to reach through the inner Optional
+({ $0 * 2 } <£> reader.readerT).rawValue  // ✅ the ReaderTOptional stack reaches through the inner Optional
 ```
 
 ❌ **Mistake 3**: Wrong precedence assumption

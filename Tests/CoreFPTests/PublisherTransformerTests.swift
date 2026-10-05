@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 #if canImport(Combine)
     import Combine
-    @testable import CoreFP
+    import CoreFP
     import Testing
 
     @Suite struct PublisherTransformerTests {
@@ -19,57 +19,57 @@
 
         // MARK: - PublisherTOptional
 
-        @Test func publisherTOptionalMapT() {
+        @Test func publisherTOptionalMap() {
             let pub: AnyPublisher<Int?, Never> = [1, nil, 3].publisher.map { $0 as Int? }.eraseToAnyPublisher()
-            let result = pub.mapT { $0 * 2 }
-            #expect(collect(result) == [2, nil, 6])
+            let result = pub.publisherT.map { $0 * 2 }
+            #expect(collect(result.rawValue) == [2, nil, 6])
         }
 
         @Test func publisherTOptionalLiftA2() {
             let pubA: AnyPublisher<Int?, Never> = [1, nil].publisher.map { $0 as Int? }.eraseToAnyPublisher()
             let pubB: AnyPublisher<Int?, Never> = [10, 20].publisher.map { $0 as Int? }.eraseToAnyPublisher()
-            let result = liftA2PublisherOptional(+)(pubA, pubB)
+            let result = PublisherTOptional<Never, Int>.liftA2(+)(pubA.publisherT, pubB.publisherT)
             // bind-derived: each left element runs the whole right stream; `nil` short-circuits once
-            #expect(collect(result) == [11, 21, nil])
+            #expect(collect(result.rawValue) == [11, 21, nil])
         }
 
-        @Test func publisherTOptionalFlatMapT() {
+        @Test func publisherTOptionalFlatMap() {
             let pub: AnyPublisher<Int?, Never> = [1, nil].publisher.map { $0 as Int? }.eraseToAnyPublisher()
-            let result = flatMapTPublisherOptional(pub) { n in
-                Just(Optional.some(n * 2)).setFailureType(to: Never.self).eraseToAnyPublisher()
+            let result = pub.publisherT.flatMap { n in
+                PublisherTOptional(Just(Optional.some(n * 2)).setFailureType(to: Never.self).eraseToAnyPublisher())
             }
-            #expect(collect(result) == [2, nil])
+            #expect(collect(result.rawValue) == [2, nil])
         }
 
         // MARK: - PublisherTArray
 
-        @Test func publisherTArrayMapT() {
+        @Test func publisherTArrayMap() {
             let pub: AnyPublisher<[Int], Never> = [[1, 2], [3, 4]].publisher.eraseToAnyPublisher()
-            let result = pub.mapT { $0 * 2 }
-            #expect(collect(result) == [[2, 4], [6, 8]])
+            let result = pub.publisherT.map { $0 * 2 }
+            #expect(collect(result.rawValue) == [[2, 4], [6, 8]])
         }
 
         @Test func publisherTArrayLiftA2() {
             let pubA: AnyPublisher<[Int], Never> = [[1, 2]].publisher.eraseToAnyPublisher()
             let pubB: AnyPublisher<[Int], Never> = [[10, 20]].publisher.eraseToAnyPublisher()
-            let result = liftA2PublisherArray(+)(pubA, pubB)
-            #expect(collect(result) == [[11, 21, 12, 22]])
+            let result = PublisherTArray<Never, Int>.liftA2(+)(pubA.publisherT, pubB.publisherT)
+            #expect(collect(result.rawValue) == [[11, 21, 12, 22]])
         }
 
         // MARK: - PublisherTResult
 
-        @Test func publisherTResultMapTSuccess() {
+        @Test func publisherTResultMapSuccess() {
             let pub: AnyPublisher<Result<Int, Never>, Never> = [Result<Int, Never>.success(5)].publisher.eraseToAnyPublisher()
-            let result = pub.mapT { $0 * 2 }
-            #expect(collect(result) == [.success(10)])
+            let result = pub.publisherT.map { $0 * 2 }
+            #expect(collect(result.rawValue) == [.success(10)])
         }
 
-        @Test func publisherTResultFlatMapTSuccess() {
+        @Test func publisherTResultFlatMapSuccess() {
             let pub: AnyPublisher<Result<Int, Never>, Never> = [Result<Int, Never>.success(5)].publisher.eraseToAnyPublisher()
-            let result = flatMapTPublisherResult(pub) { n in
-                Just(Result<String, Never>.success("\(n)")).eraseToAnyPublisher()
+            let result = pub.publisherT.flatMap { n in
+                PublisherTResult(Just(Result<String, Never>.success("\(n)")).eraseToAnyPublisher())
             }
-            #expect(collect(result) == [.success("5")])
+            #expect(collect(result.rawValue) == [.success("5")])
         }
     }
 #endif

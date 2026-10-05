@@ -12,7 +12,7 @@ import Testing
         let vals: [Writer<[String], Int>] = [
             Writer(5, ["val"])
         ]
-        let result = applyArrayWriter(fns, vals)
+        let result = ArrayTWriter.apply(fns.arrayT, vals.arrayT).rawValue
         #expect(result.count == 1)
         #expect(result[0].value == "5")
         #expect(result[0].log == ["fn", "val"])
@@ -27,7 +27,7 @@ import Testing
             Writer(3, ["a"]),
             Writer(4, ["b"])
         ]
-        let result = applyArrayWriter(fns, vals)
+        let result = ArrayTWriter.apply(fns.arrayT, vals.arrayT).rawValue
         #expect(result.count == 4)
         #expect(result[0].value == 4)
         #expect(result[0].log == ["f1", "a"])
@@ -42,7 +42,7 @@ import Testing
     @Test func seqRight() {
         let lhs: [Writer<[String], Int>] = [Writer(1, ["a"]), Writer(2, ["b"])]
         let rhs: [Writer<[String], String>] = [Writer("x", ["c"])]
-        let result = seqRightArrayWriter(lhs, rhs)
+        let result = lhs.arrayT.seqRight(rhs.arrayT).rawValue
         #expect(result.count == 2)
         #expect(result[0].value == "x")
         #expect(result[0].log == ["a", "c"])
@@ -53,7 +53,7 @@ import Testing
     @Test func seqLeft() {
         let lhs: [Writer<[String], Int>] = [Writer(99, ["a"])]
         let rhs: [Writer<[String], String>] = [Writer("ignored", ["b"])]
-        let result = seqLeftArrayWriter(lhs, rhs)
+        let result = lhs.arrayT.seqLeft(rhs.arrayT).rawValue
         #expect(result.count == 1)
         #expect(result[0].value == 99)
         #expect(result[0].log == ["a", "b"])
@@ -62,14 +62,14 @@ import Testing
     @Test func applyEmptyFns() {
         let fns: [Writer<[String], @Sendable (Int) -> Int>] = []
         let vals: [Writer<[String], Int>] = [Writer(5, ["a"])]
-        let result = applyArrayWriter(fns, vals)
+        let result = ArrayTWriter.apply(fns.arrayT, vals.arrayT).rawValue
         #expect(result.isEmpty)
     }
 
     @Test func applyEmptyVals() {
         let fns: [Writer<[String], @Sendable (Int) -> Int>] = [Writer({ $0 }, ["f"])]
         let vals: [Writer<[String], Int>] = []
-        let result = applyArrayWriter(fns, vals)
+        let result = ArrayTWriter.apply(fns.arrayT, vals.arrayT).rawValue
         #expect(result.isEmpty)
     }
 }

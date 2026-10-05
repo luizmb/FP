@@ -7,41 +7,41 @@ import Testing
 
     @Test func mapTSuccess() {
         let s = Stateful<Int, Validation<[String], Int>>.pure(.success(5))
-        let mapped = s.mapT { $0 * 2 }
-        #expect(mapped.eval(0) == .success(10))
+        let mapped = s.statefulT.map { $0 * 2 }
+        #expect(mapped.rawValue.eval(0) == .success(10))
     }
 
     @Test func mapTFailure() {
         let s = Stateful<Int, Validation<[String], Int>>.pure(.failure(["err"]))
-        let mapped = s.mapT { $0 * 2 }
-        #expect(mapped.eval(0) == .failure(["err"]))
+        let mapped = s.statefulT.map { $0 * 2 }
+        #expect(mapped.rawValue.eval(0) == .failure(["err"]))
     }
 
     @Test func applyStatefulValidationBothSuccess() {
         let sf = Stateful<Int, Validation<[String], @Sendable (Int) -> String>>.pure(.success { "\($0)" })
         let sa = Stateful<Int, Validation<[String], Int>>.pure(.success(42))
-        let result = applyStatefulValidation(sf, sa)
+        let result = StatefulTValidation.apply(sf.statefulT, sa.statefulT).rawValue
         #expect(result.eval(0) == .success("42"))
     }
 
     @Test func applyStatefulValidationAccumulatesErrors() {
         let sf = Stateful<Int, Validation<[String], @Sendable (Int) -> String>>.pure(.failure(["e1"]))
         let sa = Stateful<Int, Validation<[String], Int>>.pure(.failure(["e2"]))
-        let result = applyStatefulValidation(sf, sa)
+        let result = StatefulTValidation.apply(sf.statefulT, sa.statefulT).rawValue
         #expect(result.eval(0) == .failure(["e1", "e2"]))
     }
 
     @Test func seqRightStatefulValidationBothSuccess() {
         let lhs = Stateful<Int, Validation<[String], Int>>.pure(.success(1))
         let rhs = Stateful<Int, Validation<[String], String>>.pure(.success("done"))
-        let result = seqRightStatefulValidation(lhs, rhs)
+        let result = lhs.statefulT.seqRight(rhs.statefulT).rawValue
         #expect(result.eval(0) == .success("done"))
     }
 
     @Test func seqLeftStatefulValidationBothSuccess() {
         let lhs = Stateful<Int, Validation<[String], Int>>.pure(.success(1))
         let rhs = Stateful<Int, Validation<[String], String>>.pure(.success("done"))
-        let result = seqLeftStatefulValidation(lhs, rhs)
+        let result = lhs.statefulT.seqLeft(rhs.statefulT).rawValue
         #expect(result.eval(0) == .success(1))
     }
 }

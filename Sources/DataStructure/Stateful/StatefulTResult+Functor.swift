@@ -2,7 +2,7 @@
 import CoreFP
 import Foundation
 
-public extension Stateful {
+extension Stateful {
     /// StatefulT + Result — Stateful<S, Result<A, E>>
 
     func mapT<Inner, B, E: Error>(_ fn: @escaping @Sendable (Inner) -> B) -> Stateful<S, Result<B, E>>

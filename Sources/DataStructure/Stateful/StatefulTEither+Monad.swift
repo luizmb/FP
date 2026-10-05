@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import Foundation
 
-public extension Stateful {
+extension Stateful {
     /// StatefulT + Either — Stateful<S, Either<L, A>>
     ///
     /// Note: Either.flatMap is @escaping, so we pattern-match directly to avoid
@@ -32,7 +32,7 @@ public extension Stateful {
 
 /// Kleisli composition for `StatefulT + Either` (left-to-right)
 /// (>=>) :: (a -> Stateful<s, Either<l, b>>) -> (b -> Stateful<s, Either<l, c>>) -> a -> Stateful<s, Either<l, c>>
-public func kleisliT<S, L, A, B, C>(
+func kleisliT<S, L, A, B, C>(
     _ fn1: @escaping @Sendable (A) -> Stateful<S, Either<L, B>>,
     _ fn2: @escaping @Sendable (B) -> Stateful<S, Either<L, C>>
 ) -> @Sendable (A) -> Stateful<S, Either<L, C>> {

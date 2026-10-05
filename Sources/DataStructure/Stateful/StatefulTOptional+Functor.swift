@@ -2,7 +2,7 @@
 import CoreFP
 import Foundation
 
-public extension Stateful {
+extension Stateful {
     /// StatefulT + Optional — Stateful<S, A?>
 
     func mapT<Inner, B>(_ fn: @escaping @Sendable (Inner) -> B) -> Stateful<S, B?> where A == Inner? {
