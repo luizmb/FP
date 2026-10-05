@@ -1,6 +1,6 @@
 # FP
 
-FP is a Swift library that brings functional programming patterns to your codebase in a composable, type-safe way. It extends Swift's built-in types (`Optional`, `Result`, `Array`, `Publisher`, async/await `Task`, `AsyncSequence`) and introduces new data structures that make common patterns — error handling, dependency injection, state threading, validation — explicit, predictable, and easy to test.
+FP is a Swift library that brings functional programming patterns to your codebase in a composable, type-safe way. It extends Swift's built-in types (`Optional`, `Result`, `Array`, `Dictionary`, `Set`, functions, Combine's `Publisher`, `AsyncSequence`/`AsyncStream`) and introduces new data structures that make common patterns — error handling, dependency injection, state threading, validation — explicit, predictable, and easy to test.
 
 [![Tests](https://github.com/luizmb/FP/actions/workflows/ci.yml/badge.svg)](https://github.com/luizmb/FP/actions)
 [![Documentation](https://img.shields.io/badge/docs-online-blue)](https://ios.lu/FP)
@@ -8,7 +8,7 @@ FP is a Swift library that brings functional programming patterns to your codeba
 
 **[→ Full API Documentation](https://ios.lu/FP)** · [Learning Resources](#learning-resources) · [Installation](#installation)
 
-The library draws from Haskell and Scala Cats conventions and is designed to be used incrementally: start with just the core extensions and adopt more as your comfort grows.
+The library follows Haskell's semantics (`base`, `transformers`, streaming libraries): when Swift ergonomics and Haskell's laws disagree, the laws win. For example, `<*>` always equals `ap` for a monad, and a transformer stack only gets a monad where Haskell's `transformers` defines one. Names borrow from Scala Cats where Haskell's would clash with Swift. It is designed to be used incrementally: start with just the core extensions and adopt more as your comfort grows.
 
 ## Contents
 
@@ -16,6 +16,7 @@ The library draws from Haskell and Scala Cats conventions and is designed to be 
 - [API Documentation](#api-documentation)
 - [Installation](#installation)
   - [Modules](#modules)
+    - [`FPMacros` — optic derivation via Swift macros](#fpmacros--optic-derivation-via-swift-macros-optional)
     - [`CoreFP` — the foundation](#corefp--the-foundation)
     - [`CoreFPOperators` — expressive operator sugar](#corefpoperators--expressive-operator-sugar-optional)
     - [`DataStructure` — additional functional data structures](#datastructure--additional-functional-data-structures-optional)
@@ -62,7 +63,7 @@ The library draws from Haskell and Scala Cats conventions and is designed to be 
   - [Types](#types)
     - [CoreFP](#corefp)
     - [DataStructure](#datastructure)
-  - [Generating Code with Macros (@Lenses, @Prisms, @Iso, @DeriveMonoid, @Mock, @Witness)](#generating-code-with-macros-lenses-prisms-iso-derivemonoid-mock-witness)
+  - [Generating Code with Macros (@Lenses, @Prisms, @ApplyOptics, @Iso, @DeriveMonoid, @Mock, @Witness)](#generating-code-with-macros-lenses-prisms-applyoptics-iso-derivemonoid-mock-witness)
   - [Property-Based Testing (Gen)](#property-based-testing-gen)
 - [Coming from Haskell](#coming-from-haskell)
 - [Contributing](#contributing)
@@ -91,10 +92,10 @@ Browse the complete API documentation with examples and tutorials for every type
 
 FP is a Swift Package Manager library and is designed to be **modular**: import only what you need. Each module builds on the previous one, so you can start small and expand.
 
-```swift
+```swift-sketch
 // Package.swift
 dependencies: [
-    .package(url: "https://github.com/luizmb/FP.git", from: "2.2.0")
+    .package(url: "https://github.com/luizmb/FP.git", from: "3.0.0")
 ]
 ```
 
@@ -102,21 +103,21 @@ dependencies: [
 
 #### `FPMacros` — optic derivation via Swift macros _(optional)_
 
-Adds `@Lenses` and `@Prisms` macros that generate `Lens` and `Prism` optics directly from type declarations. Requires Swift 6.3+.
+Adds `@Lenses`, `@Prisms`, `@ApplyOptics` (with the `@NoOptics` opt-out), `@Iso`, `@DeriveMonoid`, `@Mock` and `@Witness`. It is not re-exported by `FP`, so add the `FPMacros` product separately. Requires Swift 6.3+ and pulls in swift-syntax at build time.
 
 #### `CoreFP` — the foundation
 
-The minimum you need. Adds several functional operations to Swift's built-in types — `Optional`, `Result`, `Array`, Combine's `Publisher`, and Swift Concurrency's `AsyncSequence` and more.
+The minimum you need. Adds several functional operations to Swift's built-in types — `Optional`, `Result`, `Array`, `Dictionary`, `Set`, functions, Combine's `Publisher`, and Swift Concurrency's `AsyncSequence` and more.
 
 #### `CoreFPOperators` — expressive operator sugar _(optional)_
 
 Adds custom symbolic operators for all `CoreFP` types. Using operators is entirely optional — every operator has a named function equivalent in `CoreFP` — but they allow a more concise, expression-oriented style.
 
-> **Before adding this module**, check your codebase for existing definitions of these symbols. Some (like `<>`, `>>>`, `|>`, or `^`) are used in other libraries and could cause conflicts or ambiguity errors at the call site.
+> **Before adding this module**, check your codebase for existing definitions of these symbols. Some (like `<>`, `>>>`, `|>`, or prefix `^`) are used in other libraries and could cause conflicts or ambiguity errors at the call site.
 
 #### `DataStructure` — additional functional data structures _(optional)_
 
-Adds new types that are common in functional languages but absent from Swift's standard library, such as `Either<A, B>`, `Validation<E, A>`, `Reader<Environment, Output>`, `Stateful<S, A>`, `Writer<Log, A>`.
+Adds new types that are common in functional languages but absent from Swift's standard library, such as `Either`, `Validation`, `Loading`, `These`, `NonEmpty`, `Zipper`, `IdentifiedArray`, `Reader`, `Stateful`, `Writer`, `Newtype` and `Gen`, plus most of the 74 transformer stacks (`ReaderTEither`, `StatefulTOptional`, …).
 
 #### `DataStructureOperators` — operators for data structures _(optional)_
 
@@ -151,7 +152,7 @@ import DataStructureOperators
 
 Add the chosen products to your target in `Package.swift`:
 
-```swift
+```swift-sketch
 .target(
     name: "MyTarget",
     dependencies: [
@@ -169,6 +170,8 @@ The fastest way to get a feel for the library: parse, validate, and transform a 
 ```swift
 import FP
 
+extension String: @retroactive Error {}  // for brevity in these examples; use a real error type in production
+
 func parseAge(_ raw: String) -> Result<Int, String> {
     Int(raw).fold(onNone: .failure("not a number"), onSome: { .success($0) })
 }
@@ -177,9 +180,9 @@ func validateAdult(_ age: Int) -> Result<Int, String> {
     age >= 18 ? .success(age) : .failure("must be 18 or older")
 }
 
-let greet: (Int) -> String = { "Welcome! You are \($0)." }
+let greet: @Sendable (Int) -> String = { "Welcome! You are \($0)." }
 
-let onboard: (String) -> Result<String, String> = { raw in
+let onboard: @Sendable (String) -> Result<String, String> = { raw in
     parseAge(raw) >>- validateAdult <&> greet
 }
 
@@ -189,6 +192,26 @@ onboard("abc")  // .failure("not a number")
 ```
 
 `>>-` is monadic bind (chains a step that can fail); `<&>` is functor map (transforms the success value once the chain has committed). See below for the full tour of every type and operator in the library.
+
+The examples that follow share a handful of small types. They are declared once, here, and every `swift` block in this README compiles when the blocks are concatenated from top to bottom (illustrative fragments use `swift-sketch` fences instead):
+
+```swift
+struct Item: Identifiable, Sendable { let id: Int; var name: String; var views = 0 }
+struct User: Identifiable, Sendable { let id: Int; var name: String }
+struct Person: Sendable { var name: String; var age: Int }
+struct Address: Sendable { var city: String }
+enum Shape: Sendable { case circle(Double); case rectangle(Double, Double) }
+struct Account: Sendable { var address: Address; var name: String; var avatar: Shape = .circle(1) }
+enum App: Sendable { case loggedIn(Account); case guest }
+struct Config: Sendable { var baseURL = "https://example.com" }
+struct AppState: Sendable { var feed: [Item]; var counter = 0 }
+
+// Leaf dependencies for the Reader examples
+struct URLRequester: Sendable { var isReachable: Bool; var get: @Sendable (String) -> [Item] }
+struct JSONParser: Sendable {}
+struct DateNow: Sendable { var now: @Sendable () -> Date }
+struct DispatchQueueMain: Sendable {}
+```
 
 ## Library Overview
 
@@ -209,7 +232,7 @@ String.combine(String.combine("a", "b"), "c")  // "abc"
 String.combine("a", String.combine("b", "c"))  // "abc"
 ```
 
-This library defines a `Semigroup` protocol, implemented by `String`, `Array`, `Optional`, `Dictionary`, `Set`, `Result`, and numeric types like `Int`, `Double`, and `CGFloat`, as well as `Bool` — but more on those in a moment. You can also make your own types conform to it by implementing `combine`.
+This library defines a `Semigroup` protocol, implemented by `String`, `Array`, `Optional` (when `Wrapped: Semigroup`), `Dictionary`, `Set`, `Endo`, `EndoMut`, `Iso<A, A>`, and, in `DataStructure`, by `NonEmpty`, `Writer`, `Reader`, `Newtype` and `IdentifiedArray`. Numbers, `Bool` and `Result` have more than one sensible way to combine, so they get named wrappers instead (`Int.Monoids.Sum`, `Bool.Monoids.And`, `Result.Monoids.Optimistic`, …), more on those in a moment. You can also make your own types conform to it by implementing `combine`.
 
 Curiosity: lasagna is a semigroup, because putting one lasagna on top of another gives you lasagna.
 
@@ -359,7 +382,7 @@ mconcat([.none, .none] as [String?])     // nil — identity
 
 **Result**
 
-`Result<Success, Failure>` has no canonical `Monoid` in Haskell's `base` — `Either` faces the same problem there. This library provides four explicit newtype wrappers inside `Result.Monoids` so you name your intent rather than relying on an arbitrary default:
+`Result<Success, Failure>` has no canonical `Monoid` in Haskell's `base` — `Either` faces the same problem there. This library provides four explicit newtype wrappers inside `Result.Monoids` so you name your intent rather than relying on an arbitrary default (the examples use `String` as the failure type through the `extension String: Error` from the Quick Start):
 
 | Wrapper | Bias | When both sides match |
 |---|---|---|
@@ -413,11 +436,13 @@ Optional(5).map { $0 * 2 }                       // Optional(10)
 Result<Int, any Error>.success(5).map { $0 * 2 } // .success(10)
 ```
 
-This library also provides `fmap` as a free function, which is useful for point-free composition:
+This library also provides `fmap` as a static, curried function, which is useful for point-free composition:
 
 ```swift
-fmap({ $0 * 2 }, Optional(5))  // Optional(10)
+Optional<Int>.fmap { $0 * 2 }(Optional(5))  // Optional(10)
 ```
+
+(`[Int].fmap`, `Result.fmap`, `Reader.fmap` and friends follow the same shape.)
 
 #### Bifunctor
 
@@ -450,7 +475,7 @@ But some type parameters vary in the *opposite* direction, and those are called 
 This library makes the concept concrete via the `Reader` type (a wrapper around `(Environment) -> Output`). In a dependency injection context, `contramapEnvironment` lets a component that needs a specific sub-dependency be adapted to accept the whole root environment:
 
 ```swift
-struct Dependencies {
+struct Dependencies: Sendable {
     var urlRequester: URLRequester
     var jsonParser: JSONParser
     var dateNow: DateNow
@@ -528,18 +553,20 @@ Just(2).eraseToAnyPublisher() £> "done"             // publisher of "done"
 **Zip** combines two containers into one container of pairs. The key insight is that the containers remain independent until you combine them:
 
 ```swift
-zip([1, 2, 3], ["a", "b", "c"])       // [(1, "a"), (2, "b"), (3, "c")]
-zip(Optional(1), Optional(2))          // Optional((1, 2))
-zip(Optional(1), Optional<Int>.none)   // nil — one nil means the pair is nil
+Array.zip([1, 2, 3], ["a", "b", "c"])       // [(1, "a"), (2, "b"), (3, "c")]
+Optional.zip(Optional(1), Optional(2))      // Optional((1, 2))
+Optional.zip(Optional(1), Optional<Int>.none)   // nil — one nil means the pair is nil
 ```
 
 For `Array`, `zip` pairs elements by index (the shorter array wins). For `Optional`, both values must be present for anything to come out. For `Publisher`, it waits until both have emitted and pairs them as they arrive (`zip` is a named function there; `<*>` on `Publisher` is not zip, see below).
 
+Note: `zip` on `Array`, `Publisher` and `AsyncStream` is positional pairing (a `ZipList`-style operation), *not* the applicative of those types. Their `<*>` is cartesian (see below).
+
 `Result` doesn't have a stdlib `zip`, but this library adds it:
 
 ```swift
-zip(Result<Int, String>.success(1), Result<Int, String>.success(2))   // .success((1, 2))
-zip(Result<Int, String>.success(1), Result<Int, String>.failure("!")) // .failure("!")
+Result.zip(Result<Int, String>.success(1), Result<Int, String>.success(2))   // .success((1, 2))
+Result.zip(Result<Int, String>.success(1), Result<Int, String>.failure("!")) // .failure("!")
 ```
 
 **Apply**
@@ -547,37 +574,39 @@ zip(Result<Int, String>.success(1), Result<Int, String>.failure("!")) // .failur
 Apply is a related operation: what if the *function itself* is inside a container? `apply` unwraps both the function and the value, applies the function, and wraps the result back up:
 
 ```swift
-Optional({ $0 * 2 }).apply(Optional(3))   // Optional(6)
-Optional<(Int) -> Int>.none.apply(Optional(3))  // nil
+Optional<Int>.apply({ $0 * 2 }, Optional(3))   // Optional(6)
+Optional<Int>.apply(nil, Optional(3))          // nil
 ```
 
 For `Array`, apply gives every combination — each function applied to every value:
 
 ```swift
-[{ $0 + 1 }, { $0 * 10 }].apply([1, 2])  // [2, 3, 10, 20]
+[Int].apply([{ $0 + 1 }, { $0 * 10 }], [1, 2])  // [2, 3, 10, 20]
 ```
 
-`Publisher` behaves the same way: its `apply` / `<*>` is derived from its ordered-concat bind, so each function runs over the whole value stream, in order. Use `zip` for pairwise combination.
+`Publisher` behaves the same way: its `apply` / `<*>` is derived from its ordered-concat bind, so each function runs over the whole value stream, in order. Use `zip` for pairwise combination. `AsyncStream` is the same (`<*>`, `liftA2`, `*>` and `<*` are derived from its ordered-concat bind). Because an `AsyncStream` is single-pass, the right-hand stream is drained once into a buffer (`AsyncStream.replayable(_:)`) and replayed for each left element, so it must be finite. `[1, 2] *> [a, b]` yields `a, b, a, b`, and `[1, 2] <* [a, b]` yields `1, 1, 2, 2`. To pair positionally use `AsyncStream.zip(a, b)`.
 
-The relationship between `zip` and `apply`: `apply` is essentially `zip` followed by `map`. First zip the function-container with the value-container to get pairs, then map `{ (fn, value) in fn(value) }` over the pairs. This library implements both, and internally they delegate to the same logic.
+The relationship between `zip` and `apply`: for `Optional`, `Result`, `Either`, `Validation`, `Reader`, `Stateful`, `Writer` and `Loading`, `zip(a, b)` equals `liftA2({ ($0, $1) })(a, b)`, so `apply` is `zip` followed by `map`: first zip the function-container with the value-container to get pairs, then map `{ (fn, value) in fn(value) }` over the pairs. For `Array`, `Publisher` and `AsyncStream` it is not like that. Their `zip` is positional pairing, a separate function, while `apply` / `<*>` is the cartesian applicative derived from bind (`[f, g] <*> [1, 2] == [f(1), f(2), g(1), g(2)]`).
 
 Types that support `apply` are called **Applicatives**. Every Monad is an Applicative, but not vice versa — Applicatives can't express sequential dependencies between steps (you'll need `flatMap` for that).
 
 **Parallel execution**
 
-Because `zip` and `apply` combine *independent* effects, they can run concurrently. `flatMap`, by contrast, can only start the second step after the first provides a value — it is inherently sequential.
-
-Use `zip` when two effects don't depend on each other. Use `flatMap` when they do.
+`zip` and `apply` take *independent* effects (the second doesn't need the first's value), but in this library `apply` / `<*>` / `liftA2` / `*>` / `<*` on a type that is also a monad are derived from its bind (`<*> == ap`, as in Haskell), so they run left to right and stop at the first failure. Only the named `zip` on `Publisher` and `AsyncStream` subscribes to both sides concurrently and pairs positionally. Use `zip` for concurrency and pairing, `<*>` for the lawful applicative, and `flatMap` when step two needs the value from step one.
 
 #### Applicative operators _(optional, requires CoreFPOperators)_
 
 `<*>` applies a wrapped function to a wrapped value (function container on the left):
 
 ```swift
-Optional({ $0 + 41 }) <*> Optional(1)               // Optional(42)
-[{ $0 * 2 }, { $0 * 3 }] <*> [1, 2]                 // [2, 4, 3, 6]
-Result.success({ $0 * 2 }) <*> Result.success(21)    // .success(42)
-Just({ $0 + 1 }).eraseToAnyPublisher() <*> Just(41).eraseToAnyPublisher()
+let plus41: @Sendable (Int) -> Int = { $0 + 41 }
+let double: @Sendable (Int) -> Int = { $0 * 2 }
+let triple: @Sendable (Int) -> Int = { $0 * 3 }
+
+Optional(plus41) <*> Optional(1)                                                 // Optional(42)
+[double, triple] <*> [1, 2]                                                      // [2, 4, 3, 6]
+Result<@Sendable (Int) -> Int, String>.success(double) <*> Result<Int, String>.success(21)   // .success(42)
+Just(plus41).eraseToAnyPublisher() <*> Just(41).eraseToAnyPublisher()
 ```
 
 `*>` sequences two effects and keeps the *right* result — the left effect still runs, but its value is discarded:
@@ -585,7 +614,7 @@ Just({ $0 + 1 }).eraseToAnyPublisher() <*> Just(41).eraseToAnyPublisher()
 ```swift
 Optional(42) *> Optional("hello")   // Optional("hello") — 42 ran, but only "hello" survives
 [1, 2] *> ["a", "b"]               // ["a", "b", "a", "b"]
-Result<Int, String>.success(42) *> Result.success("hello")  // .success("hello")
+Result<Int, String>.success(42) *> Result<String, String>.success("hello")  // .success("hello")
 ```
 
 `<*` keeps the *left* result instead:
@@ -593,7 +622,7 @@ Result<Int, String>.success(42) *> Result.success("hello")  // .success("hello")
 ```swift
 Optional("hello") <* Optional(42)               // Optional("hello")
 ["a", "b"] <* [1, 2]                            // ["a", "a", "b", "b"]
-Result.success("hello") <* Result.success(42)   // .success("hello")
+Result<String, String>.success("hello") <* Result<Int, String>.success(42)   // .success("hello")
 ```
 
 ---
@@ -617,7 +646,7 @@ This "apply a container-returning function, then flatten" is exactly what a **Mo
 
 The shape of `flatMap` is always the same:
 
-```swift
+```swift-sketch
 func flatMap<B>(_ transform: (A) -> Container<B>) -> Container<B>
 ```
 
@@ -628,9 +657,9 @@ But what it *does* depends entirely on the container — the same structure solv
 Each step can fail, and the chain stops at the first `nil`:
 
 ```swift
-func findUser(id: Int) -> User? { ... }
-func findAddress(user: User) -> Address? { ... }
-func city(from address: Address) -> String? { ... }
+func findUser(id: Int) -> User? { id == 42 ? User(id: 42, name: "Ada") : nil }
+func findAddress(user: User) -> Address? { Address(city: "London") }
+func city(from address: Address) -> String? { address.city }
 
 let result = findUser(id: 42)
     .flatMap(findAddress)
@@ -653,12 +682,14 @@ Think of it as "for each input element, generate zero or more output elements, t
 The second effect can't start until the first finishes and provides its value:
 
 ```swift
-fetchUser(id: 42)
-    .flatMap { user in fetchPermissions(for: user) }
-    .flatMap { perms in loadDashboard(permissions: perms) }
+func fetchUser(id: Int) -> AnyPublisher<User, Never> { Just(User(id: id, name: "Ada")).eraseToAnyPublisher() }
+func fetchPermissions(for user: User) -> AnyPublisher<[String], Never> { Just(["read"]).eraseToAnyPublisher() }
+func loadDashboard(permissions: [String]) -> AnyPublisher<String, Never> { Just("dashboard").eraseToAnyPublisher() }
+
+fetchUser(id: 42) >>- fetchPermissions >>- loadDashboard
 ```
 
-Unlike `zip` (which runs effects in parallel), `flatMap` is always serial. Step two *depends on* the result of step one — that's exactly when you reach for `flatMap`.
+Unlike `zip`, the library's bind is serial: each inner publisher runs to completion, in upstream order, before the next starts. Step two *depends on* the result of step one, and that's exactly when you reach for bind.
 
 This library's `Publisher` bind (`bind`, `>>-`, `>=>`) is **ordered concat**, like Haskell streaming libraries: each inner publisher runs to completion, in upstream order, and no upstream value is dropped. Combine's own `flatMap` merges inner publishers concurrently; reach for it (or `switchToLatest`) when that's what you want.
 
@@ -669,7 +700,7 @@ This library's `Publisher` bind (`bind`, `>>-`, `>=>`) is **ordered concat**, li
 ```swift
 Optional("42") >>- { Int($0) }                          // Optional(42)
 [1, 2] >>- { [$0, $0 * 10] }                            // [1, 10, 2, 20]
-Result.success("2") >>- { Result.success(Int($0) ?? 0) } // .success(2)
+Result<String, String>.success("2") >>- { Result<Int, String>.success(Int($0) ?? 0) } // .success(2)
 Just(42).eraseToAnyPublisher() >>- { Just($0 * 2).eraseToAnyPublisher() }
 ```
 
@@ -682,8 +713,8 @@ Just(42).eraseToAnyPublisher() >>- { Just($0 * 2).eraseToAnyPublisher() }
 `>=>` composes two "Kleisli arrows" — functions that return containers — into one:
 
 ```swift
-let parseInt: (String) -> Int? = { Int($0) }
-let doubleIt: (Int) -> Int? = { .some($0 * 2) }
+func parseInt(_ raw: String) -> Int? { Int(raw) }
+func doubleIt(_ n: Int) -> Int? { .some(n * 2) }
 
 let parseAndDouble = parseInt >=> doubleIt
 parseAndDouble("21")   // Optional(42)
@@ -695,7 +726,7 @@ This is function composition for container-returning functions. `<<<` and `>>>` 
 `<=<` is the right-to-left version:
 
 ```swift
-let parseAndDouble = doubleIt <=< parseInt
+let parseAndDouble2 = doubleIt <=< parseInt
 ```
 
 **`fanout` — apply one input to many functions.** `fanout` runs several functions that share an input type
@@ -703,8 +734,8 @@ and collects the results into a tuple (n-ary, via parameter packs). Key path lit
 they convert to `@Sendable` getters:
 
 ```swift
-let bounds: @Sendable ([Int]) -> (Int?, Int?) = fanout(\.min, \.max)
-bounds([9, 3, 5, 1, 16])   // (1, 16)
+let bounds: @Sendable ([Int]) -> (Int?, Int?) = fanout(\.first, \.last)
+bounds([9, 3, 5, 1, 16])   // (9, 16)
 ```
 
 A frequent use is narrowing a big value into a smaller one whose `init` takes the parts as separate
@@ -712,7 +743,8 @@ arguments — e.g. a feature's `Environment` from a `World`. Because Swift (SE-0
 and a multi-argument parameter list as distinct types, there are two point-free spellings:
 
 ```swift
-struct Env: Sendable { init(badge: Int, save: Int) { … } }
+struct World: Sendable { var badge: Int; var save: Int }
+struct Env: Sendable { let badge: Int; let save: Int }
 
 // A variadic `>>>` overload bridges the fanout tuple to the multi-argument init:
 let a: @Sendable (World) -> Env = fanout(\.badge, \.save) >>> Env.init
@@ -736,14 +768,20 @@ of them), with the usual `map` / `apply` / `flatMap` and the same operators as e
 ```swift
 import FP
 
-let users: Reader<Config, [User]> = loadUsers
+let loadUsers: Reader<Config, [Person]> = Reader { _ in [Person(name: "Ada", age: 36)] }
 
-let names = users.readerT          // ReaderTArray<Config, User> (or ReaderTArray(users))
-    .map(get(\.name))              // maps each user, inside the Reader
+let names = loadUsers.readerT      // ReaderTArray<Config, Person> (or ReaderTArray(loadUsers))
+    .map(get(\Person.name))        // maps each person, inside the Reader
 names.rawValue                     // back to Reader<Config, [String]>
 
-// current: Stateful<Session, Either<AuthError, Token>>
-// refreshIfExpired: @Sendable (Token) -> StatefulTEither<Session, AuthError, Token>
+struct Session: Sendable {}
+struct AuthError: Error, Sendable {}
+struct Token: Sendable { var value: String }
+
+let current = Stateful<Session, Either<AuthError, Token>> { _ in .right(Token(value: "t")) }
+let refreshIfExpired: @Sendable (Token) -> StatefulTEither<Session, AuthError, Token> = { token in
+    Stateful<Session, Either<AuthError, Token>> { _ in .right(token) }.statefulT
+}
 let checked = current.statefulT >>- refreshIfExpired   // StatefulTEither<Session, AuthError, Token>
 ```
 
@@ -751,10 +789,21 @@ Lift with the property named after the outer type (`readerT`, `statefulT`, `writ
 `asyncStreamT`, `arrayT`, `optionalT`, `resultT`, `eitherT`, `validationT`, `nonEmptyT`) or the
 initialiser, leave with `.rawValue`, and for anything the stack doesn't proxy use the Haskell-named
 escape hatch (`mapReaderT`, `mapStateT`, `mapPublisherT`, `mapMaybeT`, `mapExceptT`, `mapWriterT`, …),
-which hands you the whole nested value. Stacks with a lawful monad conform to `MonadT`; the rest
-(any `ValidationT*`, a list inside a non-commutative effect, …) conform to `TransformerStack` and
-stop at applicative. The full matrix and the reasons are in the
+which hands you the whole nested value (for example `stack.mapPublisherT { $0.receive(on: queue).eraseToAnyPublisher() }`).
+Every stack conforms to `TransformerStack` (`rawValue`, `init(rawValue:)`, `init(_:)`; it mirrors
+`RawRepresentable` without refining it), and the stacks with a lawful monad also conform to `MonadT`,
+where `I` is the inner layer. The rest conform only to `TransformerStack` and stop at applicative:
+every stack with `Validation` on either layer (`ValidationT*`, `EitherTValidation`, `ReaderTValidation`,
+`StatefulTValidation`, `WriterTValidation`), a list inside a non-commutative effect (`EitherTArray`,
+`EitherTNonEmpty`, `StatefulTArray`, `StatefulTNonEmpty`, `WriterTArray`, `WriterTNonEmpty`,
+`PublisherTArray`, `AsyncStreamTArray`), `Writer` outside another monad (`WriterTReader`,
+`WriterTStateful`, `WriterTPublisher`, `WriterTAsyncStream`), a monad outside `Stateful`
+(`ArrayTStateful`, `OptionalTStateful`, `ResultTStateful`, `EitherTStateful`, `PublisherTStateful`),
+and `Stateful` outside `Reader` or streams (`StatefulTReader`, `StatefulTPublisher`,
+`StatefulTAsyncStream`). `AsyncStreamTStateful` is functor-only. The full matrix and the reasons are in the
 [Monad Transformers](Sources/FP/FP.docc/Articles/MonadTransformers.md) article.
+
+**Upgrading from 2.x:** operator overloads on nested shapes were removed, and a nested value is now just its outer type. Some old call sites still compile with a different meaning: `*>` on a `Stateful<S, Either<L, A>>` is now `Stateful`'s `*>` (it no longer skips the right side on `.left`), and `<£>` / `>>-` / `£>` on a `Reader<E, [A]>` act on the whole array. Search for `<£>`, `<&>`, `£>`, `<£`, `<*>`, `*>`, `<*`, `>>-`, `-<<`, `>=>`, `<=<` applied to nested values and wrap them in their stack (`.readerT`, `.statefulT`, …). See the CHANGELOG migration table.
 
 ---
 
@@ -772,13 +821,13 @@ Optional(5).fold(onNone: 0, onSome: { $0 * 2 })   // 10
 (nil as Int?).fold(onNone: 0, onSome: { $0 * 2 }) // 0
 
 // Static variant for point-free composition
-let safeParse: (String) -> Int = { Int($0) }.map >>> Optional.fold(onNone: -1, onSome: id)
+let safeParse: @Sendable (String) -> Int = { Int($0) } >>> Optional<Int>.fold(onNone: -1, onSome: id)
 
 // foldMap — map each element to a Monoid, then combine them
 Optional(3).foldMap { Int.Monoids.Sum($0) }        // Sum(3)
 (nil as Int?).foldMap { Int.Monoids.Sum($0) }      // Sum(0)  — identity
 
-[1, 2, 3].foldMap { Int.Monoids.Sum($0) }          // Sum(6)
+[Int].foldMap { Int.Monoids.Sum($0) }([1, 2, 3])   // Sum(6)
 
 // foldLeft / foldRight on Array (curried)
 Array.foldLeft(0, +)([1, 2, 3, 4])    // 10  — (((0+1)+2)+3)+4
@@ -800,6 +849,8 @@ The two key operations are:
 - `sequence` — flip without mapping (the common case)
 
 ```swift
+enum MyError: Error, Sendable { case err }
+
 // Array<Optional> → Optional<Array>
 // All must be present; one nil collapses the whole result
 [Optional(1), Optional(2), Optional(3)].sequence()   // Optional([1, 2, 3])
@@ -837,17 +888,55 @@ Optional(1)   <|> Optional(3)   // Optional(1) — first wins if present
 []     <|> [3, 4]   // [3, 4]
 
 // Result — first success wins
-Result<Int, Error>.failure(err) <|> .success(3)   // .success(3)
-Result<Int, Error>.success(1)   <|> .success(3)   // .success(1)
+Result<Int, MyError>.failure(.err) <|> .success(3)   // .success(3)
+Result<Int, MyError>.success(1)     <|> .success(3)   // .success(1)
+
+// Either: first right wins
+Either<String, Int>.left("no") <|> .right(3)   // .right(3)
+
+// Validation is `Alt` (there is no `empty`): when both fail, the failures accumulate with `<>`
+Validation<[String], Int>.failure(["a"]) <|> .failure(["b"])   // .failure(["a", "b"])
+Validation<[String], Int>.failure(["a"]) <|> .success(3)       // .success(3)
+```
+
+---
+
+### Accumulating Errors (Validation)
+
+`Validation<E, A>` is an applicative that does *not* short-circuit: when several checks fail, the errors are combined with the `Semigroup` of `E`. It deliberately has no monad (a monad would have to stop at the first failure). `<|>` is its `Alt`: when both sides fail, both failures accumulate with `<>`.
+
+```swift
+let name: Validation<[String], String> = .failure(["name is empty"])
+let age: Validation<[String], Int> = .failure(["age is negative"])
+
+Validation<[String], Person>.liftA2({ Person(name: $0, age: $1) })(name, age)
+// .failure(["name is empty", "age is negative"])
+
+Validation(Either<[String], Int>.right(1))   // .success(1), converts from Either
+```
+
+---
+
+### Loading State (Loading)
+
+`Loading<Success, Failure>` models `idle` / `loading` / `loaded` / `failed`, where `loading` and `failed` can carry the previous value. `Failure` can be any `Sendable` type (a `String`, a view struct), not only an `Error`. `loadedOrPrevious` keeps a view showing the last good value, `catch` receives `(Failure, Success?)`, and `pessimisticCombine` is the "failed beats loading beats idle" combination for UI (the applicative `<*>` / `zip` is the lawful left-biased one).
+
+```swift
+let state: Loading<[Item], String> = .failed(error: "offline", previous: [Item(id: 1, name: "A")])
+
+state.loadedOrPrevious                                      // Optional([Item(id: 1, name: "A", views: 0)])
+state.catch { _, previous in Loading<[Item], String>.loading(previous: previous) }  // retry, keep stale data
+Loading<(Int, Int), String>.pessimisticCombine(Loading<Int, String>.loading(previous: nil), Loading<Int, String>.failed(error: "x", previous: nil))
+// .failed(error: "x", previous: nil)
 ```
 
 ---
 
 ### Comonad (Extend)
 
-A **Comonad** is the dual of a Monad. While a Monad lets you inject values (`pure`) and extract context-dependent results (`flatMap`), a Comonad lets you *extract* the current value (`extract`) and *extend* a function over the whole context (`extend` / `coflatMap`).
+A **Comonad** is the dual of a Monad. A Monad lets you put a value in a context (`pure`) and chain context-producing steps (`flatMap`); a Comonad lets you *extract* the value in focus (`extract`, dual of `pure`) and *extend* a context-consuming function over the whole structure (`extend` / `coflatMap`, dual of `flatMap`; `duplicate` is the dual of `join`).
 
-The `Writer` type in this library is a Comonad:
+`Writer`, `NonEmpty`, `Zipper` and `Reader` (when `Environment: Monoid`, Haskell's `Traced`) are Comonads. `Writer` is shown here:
 
 ```swift
 // extract — pull out the value (dual of pure)
@@ -881,7 +970,7 @@ Writer(21, ["x"]) ->> { $0.value * 2 }   // Writer(42, ["x"])
 
 Swift value types are immutable-by-default, which is great until you need to update a field several levels deep. The naïve approach requires unpacking the whole hierarchy:
 
-```swift
+```swift-sketch
 var config = appState.config
 var theme = config.theme
 theme.colors.primary = .red
@@ -892,22 +981,20 @@ appState = AppState(config: config, ...)  // tedious and error-prone
 A **Lens** solves this by pairing a getter and setter into a single composable value. It *focuses* on a specific field and lets you get, set, or transform it cleanly.
 
 ```swift
-struct User { var name: String; var age: Int }
+let nameLens: Lens<Person, String> = lens(\.name)
 
-let nameLens = lens(\.name)   // Lens<User, String>
-
-let user = User(name: "Alice", age: 30)
-nameLens.get(user)                         // "Alice"
-nameLens.set(user, "Bob")                  // User(name: "Bob", age: 30)
-nameLens.over { $0.uppercased() }(user)    // User(name: "ALICE", age: 30)
+let person = Person(name: "Alice", age: 30)
+nameLens.get(person)                         // "Alice"
+nameLens.set(person, "Bob")                  // Person(name: "Bob", age: 30)
+nameLens.over { $0.uppercased() }(person)    // Person(name: "ALICE", age: 30)
 ```
 
 For `let` properties (where `WritableKeyPath` isn't available), supply the setter manually:
 
 ```swift
-struct Person { let name: String; let age: Int }
+struct FrozenPerson { let name: String; let age: Int }
 
-let nameLens = lens(\.name) { Person(name: $1, age: $0.age) }
+let nameLens: Lens<FrozenPerson, String> = lens(\.name) { FrozenPerson(name: $1, age: $0.age) }
 ```
 
 **Composing Lenses**
@@ -915,17 +1002,14 @@ let nameLens = lens(\.name) { Person(name: $1, age: $0.age) }
 The real power is composition. `>>>` chains two lenses into one that dives deeper into the structure:
 
 ```swift
-struct Address { var city: String }
-struct User { var address: Address; var name: String }
+let addressLens: Lens<Account, Address> = lens(\.address)
+let cityLens: Lens<Address, String>     = lens(\.city)
 
-let addressLens = lens(\.address)   // Lens<User, Address>
-let cityLens    = lens(\.city)      // Lens<Address, String>
+let userCityLens = addressLens >>> cityLens  // Lens<Account, String>
 
-let userCityLens = addressLens >>> cityLens  // Lens<User, String>
-
-let user = User(address: Address(city: "New York"), name: "Alice")
+let user = Account(address: Address(city: "New York"), name: "Alice")
 userCityLens.get(user)              // "New York"
-userCityLens.set(user, "London")    // User(address: Address(city: "London"), name: "Alice")
+userCityLens.set(user, "London")    // Account(address: Address(city: "London"), name: "Alice")
 ```
 
 Lenses also compose with Prisms — see [Assembling Optics (AffineTraversal)](#assembling-optics-affinetraversal) for the full story.
@@ -935,10 +1019,10 @@ Lenses also compose with Prisms — see [Assembling Optics (AffineTraversal)](#a
 If you import only `CoreFP` and not `CoreFPOperators`, use the `compose` method instead of `>>>`:
 
 ```swift
-let userCityLens = addressLens.compose(cityLens)  // Lens<User, String>
+let userCityLens = lens(\Account.address).compose(lens(\Address.city))  // Lens<Account, String>
 ```
 
-All nine `>>>` / `<<<` overloads in `CoreFPOperators` delegate to `compose`, so the two forms are identical at runtime.
+Every optic `>>>` / `<<<` overload (Lens, Prism, AffineTraversal, Iso, Traversal) delegates to `compose`, so the two forms are identical at runtime.
 
 **`lift` — in-place mutation with `EndoMut`**
 
@@ -972,37 +1056,37 @@ It serves as the neutral element for lens composition: `anyLens >>> Lens<A, A>.i
 `^` lifts a `WritableKeyPath` into a `Lens` directly:
 
 ```swift
-let ageLens: Lens<User, Int>    = ^\User.age
-let nameLens: Lens<User, String> = ^\User.name
+let ageLens: Lens<Person, Int>     = ^\Person.age
+let nameLens: Lens<Person, String> = ^\Person.name
 ```
 
 Composition works the same way with the lifted lenses:
 
 ```swift
-let userCityLens = ^\User.address >>> ^\Address.city  // Lens<User, String>
+let userCityLens = ^\Account.address >>> ^\Address.city  // Lens<Account, String>
 ```
 
 For `let` properties, `^` returns a partial builder waiting for the setter:
 
 ```swift
-let nameLens: Lens<Person, String> = (^\Person.name) { Person(name: $1, age: $0.age) }
+let nameLens: Lens<FrozenPerson, String> = (^\FrozenPerson.name) { FrozenPerson(name: $1, age: $0.age) }
 ```
 
 `<<<` is the right-to-left version of `>>>`:
 
 ```swift
 // These are equivalent:
-let cityFirst = ^\User.address >>> ^\Address.city
-let cityFirst2 = ^\Address.city <<< ^\User.address
+let cityFirst = ^\Account.address >>> ^\Address.city
+let cityFirst2 = ^\Address.city <<< ^\Account.address
 ```
 
 **Bridging to SwiftUI `Binding`** _(Apple platforms, requires CoreFP)_
 
 A `Binding<Root>` combined with a `Lens<Root, Focus>` produces a `Binding<Focus>`:
 
-```swift
-@State var user = User(name: "Alice", age: 30)
-let nameLens: Lens<User, String> = lens(\.name)
+```swift-sketch
+@State var user = Person(name: "Alice", age: 30)
+let nameLens: Lens<Person, String> = lens(\.name)
 
 TextField("Name", text: $user[optic: nameLens])
 ```
@@ -1021,11 +1105,6 @@ It has three operations:
 - `over` — applies a transform to the focused value; leaves the structure unchanged if the case is inactive
 
 ```swift
-enum Shape {
-    case circle(Double)
-    case rectangle(Double, Double)
-}
-
 let circlePrism = prism(
     preview: { if case .circle(let r) = $0 { return r } else { return nil } },
     review:  Shape.circle
@@ -1056,6 +1135,8 @@ let circlePrism: Prism<Shape, Double> = prism(\.circleRadius, review: Shape.circ
 `set` replaces the focused associated value if the prism matches the current case; it is a no-op otherwise:
 
 ```swift
+let circlePrism: Prism<Shape, Double> = prism(\.circleRadius, review: Shape.circle)
+
 circlePrism.set(.circle(3.14), 5.0)       // Shape.circle(5.0)
 circlePrism.set(.rectangle(1, 2), 5.0)    // Shape.rectangle(1, 2) — unchanged
 ```
@@ -1074,6 +1155,7 @@ Prism<Int, Int>.id.review(42)    // 42
 Like `Lens.lift`, `Prism.lift` converts an `EndoMut<A>` into an `EndoMut<S>`. When the prism doesn't match the current case, the resulting `EndoMut` is a no-op and `S` is left unchanged:
 
 ```swift
+let circlePrism: Prism<Shape, Double> = prism(\.circleRadius, review: Shape.circle)
 let doubleRadius = EndoMut<Double> { $0 *= 2 }
 let shapeReducer: EndoMut<Shape> = circlePrism.lift(doubleRadius)
 
@@ -1093,18 +1175,22 @@ Prisms compose with other prisms and with lenses — see [Assembling Optics (Aff
 `>>>` and `<<<` work for Prism composition the same way as for Lens:
 
 ```swift
-// Prism >>> Prism → Prism
-let deepCasePrism = outerPrism >>> innerPrism
+let loggedInPrism: Prism<App, Account> = prism(
+    preview: { if case .loggedIn(let u) = $0 { return u } else { return nil } },
+    review:  App.loggedIn
+)
 
 // Prism >>> Lens → AffineTraversal
-let cityInLoggedInUser = loggedInPrism >>> ^\User.address >>> ^\Address.city
+let cityInLoggedInUser = loggedInPrism >>> ^\Account.address >>> ^\Address.city
 ```
+
+(Prism `>>>` Prism gives a `Prism` the same way.)
 
 **Bridging to SwiftUI `Binding`** _(Apple platforms, requires CoreFP)_
 
 `Binding[optic: prism]` returns `Binding<A>?` — `nil` when the focused case is inactive:
 
-```swift
+```swift-sketch
 @State var sheet: Sheet = .settings(Settings())
 
 if let settingsBinding = $sheet[optic: settingsPrism] {
@@ -1130,7 +1216,6 @@ It has three operations:
 Start with a struct and drill down to a field that is itself an enum case:
 
 ```swift
-enum Shape { case circle(Double); case rectangle(Double, Double) }
 struct Canvas { var shape: Shape }
 
 let shapeLens: Lens<Canvas, Shape>    = lens(\.shape)
@@ -1157,23 +1242,20 @@ circleRadiusTraversal.set(rectCanvas, 10.0)               // Canvas(shape: .rect
 Go the other direction: start with an enum case and drill further into the associated value:
 
 ```swift
-enum App { case loggedIn(User); case guest }
-struct User { var address: Address }
-struct Address { var city: String }
-
-let loggedInPrism: Prism<App, User> = prism(
+let loggedInPrism: Prism<App, Account> = prism(
     preview: { if case .loggedIn(let u) = $0 { return u } else { return nil } },
     review:  App.loggedIn
 )
-let cityLens: Lens<User, String> = lens(\.address) >>> lens(\.city)
+let cityLens: Lens<Account, String> = lens(\Account.address) >>> lens(\Address.city)
 
 // Prism >>> Lens = AffineTraversal<App, String>
 let cityInLoggedInUser = loggedInPrism >>> cityLens
 
-cityInLoggedInUser.preview(.loggedIn(User(address: Address(city: "Paris"))))  // Optional("Paris")
-cityInLoggedInUser.preview(.guest)                                             // nil
-cityInLoggedInUser.set(.loggedIn(User(address: Address(city: "Paris"))), "London")
-// .loggedIn(User(address: Address(city: "London")))
+let paris = Account(address: Address(city: "Paris"), name: "Ann")
+cityInLoggedInUser.preview(.loggedIn(paris))   // Optional("Paris")
+cityInLoggedInUser.preview(.guest)             // nil
+cityInLoggedInUser.set(.loggedIn(paris), "London")
+// .loggedIn(Account(address: Address(city: "London"), name: "Ann"))
 ```
 
 **Building a longer pipeline**
@@ -1181,24 +1263,36 @@ cityInLoggedInUser.set(.loggedIn(User(address: Address(city: "Paris"))), "London
 Because all three optic types compose via `>>>`, you can chain freely:
 
 ```swift
-let radiusTraversal = loggedInPrism >>> lens(\.avatar) >>> circlePrism
+let loggedInPrism: Prism<App, Account> = prism(
+    preview: { if case .loggedIn(let u) = $0 { return u } else { return nil } },
+    review:  App.loggedIn
+)
+let circlePrism: Prism<Shape, Double> = prism(\.circleRadius, review: Shape.circle)
+
+let radiusTraversal = loggedInPrism >>> lens(\Account.avatar) >>> circlePrism
 // AffineTraversal<App, Double>
 ```
 
 `<<<` is the right-to-left version:
 
 ```swift
-let radiusTraversal2 = circlePrism <<< lens(\.avatar) <<< loggedInPrism
+let loggedInPrism: Prism<App, Account> = prism(
+    preview: { if case .loggedIn(let u) = $0 { return u } else { return nil } },
+    review:  App.loggedIn
+)
+let circlePrism: Prism<Shape, Double> = prism(\.circleRadius, review: Shape.circle)
+
+let radiusTraversal2 = circlePrism <<< lens(\Account.avatar) <<< loggedInPrism
 ```
 
 **Bridging to SwiftUI `Binding`** _(Apple platforms, requires CoreFP)_
 
 `Binding[optic: affineTraversal]` returns `Binding<A>?` — `nil` when the focus is absent:
 
-```swift
-@State var app: App = .loggedIn(User(...))
+```swift-sketch
+@State var app: App = .loggedIn(Account(address: Address(city: "Paris"), name: "Ann"))
 
-if let cityBinding = $app[optic: loggedInPrism >>> ^\User.address >>> ^\Address.city] {
+if let cityBinding = $app[optic: loggedInPrism >>> ^\Account.address >>> ^\Address.city] {
     TextField("City", text: cityBinding)
 }
 ```
@@ -1215,8 +1309,11 @@ struct Profile { var nickname: String? }
 let nicknameFocus = affineTraversal(\Profile.nickname)  // AffineTraversal<Profile, String>
 nicknameFocus.preview(Profile(nickname: "ace"))          // Optional("ace")
 nicknameFocus.preview(Profile(nickname: nil))            // nil
-nicknameFocus.set(Profile(nickname: nil), "ace")         // Profile(nickname: Optional("ace"))
+nicknameFocus.set(Profile(nickname: nil), "ace")         // Profile(nickname: nil) (no-op, the focus is absent)
+nicknameFocus.set(Profile(nickname: "x"), "ace")         // Profile(nickname: Optional("ace"))
 ```
+
+If you want "set even when nil", use `lens(\Profile.nickname)` instead (a `Lens<Profile, String?>`).
 
 For concrete collection types this is the subscript form of `ix`:
 
@@ -1229,6 +1326,7 @@ affineTraversal(\[Int][safe: 2])   // identical to [Int].ix(2)
 `AffineTraversal.lift` works the same way as `Lens.lift` and `Prism.lift`. When the focus is absent the resulting `EndoMut` is a no-op:
 
 ```swift
+let circleRadiusTraversal = lens(\Canvas.shape) >>> prism(\.circleRadius, review: Shape.circle)
 let scaleRadius = EndoMut<Double> { $0 *= 2 }
 let canvasReducer: EndoMut<Canvas> = circleRadiusTraversal.lift(scaleRadius)
 
@@ -1285,7 +1383,6 @@ ys[safe: 1] = nil    // no-op — nil is ignored
 Collections of `Identifiable` elements gain an `[id:]` subscript that returns the first element whose `id` matches, or `nil`. For `RangeReplaceableCollection` (`Array`, `ArraySlice`, `ContiguousArray`) the setter is available with `Dictionary`-style add/remove semantics:
 
 ```swift
-struct User: Identifiable { let id: Int; let name: String }
 let users = [User(id: 1, name: "Alice"), User(id: 2, name: "Bob")]
 users[id: 2]   // Optional(User(id: 2, name: "Bob"))
 users[id: 9]   // nil
@@ -1328,7 +1425,6 @@ The setter requires `RangeReplaceableCollection` because the add/remove cases mu
 **By `Identifiable` ID** — `MutableCollection where Element: Identifiable`:
 
 ```swift
-struct Item: Identifiable { let id: Int; var name: String }
 let items = [Item(id: 1, name: "A"), Item(id: 2, name: "B")]
 
 [Item].ix(id: 2).preview(items)?.name                              // "B"
@@ -1353,8 +1449,10 @@ Because `ix` returns an `AffineTraversal` it slots into any `>>>` pipeline:
 ```swift
 struct Team { var members: [Item] }
 
+let items = [Item(id: 1, name: "A"), Item(id: 2, name: "B")]
+
 // AffineTraversal<Team, String>
-let memberNameFocus = lens(\.members) >>> [Item].ix(id: 2) >>> lens(\.name)
+let memberNameFocus = lens(\Team.members) >>> [Item].ix(id: 2) >>> lens(\Item.name)
 
 let team = Team(members: items)
 memberNameFocus.preview(team)           // Optional("B")
@@ -1367,9 +1465,10 @@ memberNameFocus.set(team, "Updated")    // updates the member whose id == 2
 
 ```swift
 // Array: inout subscript — zero copies of the collection buffer
+var team = Team(members: [Item(id: 1, name: "a"), Item(id: 2, name: "b")])
 let itemReducer = EndoMut<Item> { $0.name = $0.name.uppercased() }
 let teamReducer: EndoMut<Team> =
-    lens(\.members)
+    lens(\Team.members)
         .compose([Item].ix(id: 2))
         .lift(itemReducer)
 
@@ -1386,11 +1485,9 @@ For concrete collection types, `[Int].ix(2)` is equivalent to `affineTraversal(\
 
 ### IdentifiedArray — ordered collection with O(1) by-id access
 
-The `[id:]` subscript above is O(n): every lookup re-scans the array. `IdentifiedArray<ID, Element>` is a `Sendable`, value-type (copy-on-write) ordered collection that keeps a **user-defined order exactly like `Array`** while giving **O(1)** lookup and in-place update by a stable identifier. The order lives in the element buffer; a side index (a custom open-addressing hash table of `UInt32` offsets) maps id → position and never dictates order, so unsorted `UUID`s never reshuffle your data.
+The `[id:]` subscript above is O(n): every lookup re-scans the array. `IdentifiedArray<ID: Hashable & Sendable, Element: Sendable>` is a `Sendable`, value-type (copy-on-write) ordered collection that keeps a **user-defined order exactly like `Array`** while giving **O(1)** lookup and in-place update by a stable identifier. The order lives in the element buffer; a side index (a custom open-addressing hash table of `UInt32` offsets) maps id → position and never dictates order, so unsorted `UUID`s never reshuffle your data.
 
 ```swift
-struct User: Identifiable { let id: Int; var name: String }
-
 var users: IdentifiedArrayOf<User> = IdentifiedArray([
     User(id: 1, name: "Alice"),
     User(id: 2, name: "Bob"),
@@ -1407,6 +1504,7 @@ Elements need not be `Identifiable` — supply the id via a closure or key path 
 
 ```swift
 struct Project { let slug: String; var title: String }
+let loaded = [Project(slug: "auth", title: "Auth")]
 var projects = IdentifiedArray(loaded, id: \.slug)   // keyed by \.slug
 projects[id: "auth"]?.title
 ```
@@ -1426,7 +1524,7 @@ Identifiers are unique: inserting an element whose id already exists replaces it
 
 ```swift
 IdentifiedArrayOf<User>.ix(id: 2)            // O(1) AffineTraversal, zero-copy in-place mutation
-IdentifiedArrayOf<User>.ix(id: 2) >>> ^\.name
+IdentifiedArrayOf<User>.ix(id: 2) >>> ^\User.name
 IdentifiedArrayOf<User>.traversed            // Traversal over every element
 IdentifiedArrayOf<User>.arrayIso             // lawful Iso  <-> [Element]
 IdentifiedArrayOf<User>.dedupPrism           // Prism [Element] -> IdentifiedArray (succeeds iff ids unique)
@@ -1454,6 +1552,8 @@ metersToFeet.reverse           // Iso<Double, Double> with get/reverseGet swappe
 `over` applies a transform through the round-trip:
 
 ```swift
+let metersToFeet = iso(get: { $0 * 3.28084 }, reverseGet: { $0 / 3.28084 })  // Iso<Double, Double>
+
 metersToFeet.over { $0 + 10 }(1.0)  // convert to feet, add 10, convert back
 ```
 
@@ -1462,10 +1562,18 @@ Every `Iso` is also a valid `Lens`, `Prism`, and `AffineTraversal` — use `.asL
 **Iso as Monoid** — endomorphism isos (`Iso<A, A>`) form a `Monoid` under composition. Use `mconcat` to chain a sequence of lossless transforms into one:
 
 ```swift
+func rotatePoint(_ p: Point) -> Point { Point(x: p.y, y: p.x) }
+func rotatePointBack(_ p: Point) -> Point { Point(x: p.y, y: p.x) }
+func scalePoint(_ p: Point) -> Point { Point(x: p.x * 2, y: p.y * 2) }
+func scalePointBack(_ p: Point) -> Point { Point(x: p.x / 2, y: p.y / 2) }
+func translatePoint(_ p: Point) -> Point { Point(x: p.x + 1, y: p.y + 1) }
+func translatePointBack(_ p: Point) -> Point { Point(x: p.x - 1, y: p.y - 1) }
+
 let rotate    = iso(get: rotatePoint,    reverseGet: rotatePointBack)
 let scale     = iso(get: scalePoint,     reverseGet: scalePointBack)
 let translate = iso(get: translatePoint, reverseGet: translatePointBack)
 
+let point = Point(x: 1, y: 2)
 let transform: Iso<Point, Point> = mconcat([rotate, scale, translate])
 transform.get(point)        // all three applied in order
 transform.reverse.get(point) // all three reversed, in reverse order
@@ -1495,7 +1603,7 @@ combined.reverseGet(12)  // 12/2 - 1 = 5
 
 `Binding[optic: iso]` always returns a `Binding<A>` (never optional — Iso is total):
 
-```swift
+```swift-sketch
 @State var meters: Double = 1.0
 
 // Editing in feet while storing in meters:
@@ -1518,25 +1626,25 @@ typealias OrderID = Newtype<OrderTag, Int>
 
 func fetch(_ id: UserID) { /* ... */ }
 fetch(UserID(42))    // ✓ compiles
-fetch(OrderID(42))   // ✗ compile error — different type, even though both wrap Int
+// fetch(OrderID(42))   // ✗ compile error — different type, even though both wrap Int
 ```
 
 A common convention is to use the owning type itself as the tag, avoiding a separate empty enum:
 
 ```swift
-struct User { let id: Newtype<User, Int> }
+struct Member { let id: Newtype<Member, Int> }
 ```
 
 `Newtype` is also a `@propertyWrapper`, so a branded field still exposes its raw value through ordinary property access, with the wrapper itself reachable via `$`:
 
 ```swift
-struct User {
+struct Visitor {
     @Newtype<UserTag, Int> var id: Int = 42
 }
 
-let user = User()
-user.id    // Int                   — the unwrapped raw value
-user.$id   // Newtype<UserTag, Int> — the branded wrapper
+let visitor = Visitor()
+visitor.id    // Int                   — the unwrapped raw value
+visitor.$id   // Newtype<UserTag, Int> — the branded wrapper
 ```
 
 `Newtype` inherits `Equatable`, `Hashable`, `Comparable`, `Codable`, `Sendable`, `Identifiable`, the full numeric stack, every `ExpressibleBy*Literal` protocol, and `Semigroup`/`Monoid` from `RawValue` through conditional conformances — so it behaves like its `RawValue` everywhere except at the type-checker boundary that keeps different tags from being confused.
@@ -1567,6 +1675,10 @@ normalize("  HELLO  ")           // "hello!" — callAsFunction works too
 `Endo.combine(f, g)` applies `f` first, then `g` — the same left-to-right order as `>>>`. The `<>` operator and `mconcat` follow from the `Semigroup`/`Monoid` conformances:
 
 ```swift
+let trim    = Endo<String> { $0.trimmingCharacters(in: .whitespaces) }
+let lower   = Endo<String> { $0.lowercased() }
+let exclaim = Endo<String> { $0 + "!" }
+
 let pipeline = trim <> lower <> exclaim   // same as mconcat([trim, lower, exclaim])
 pipeline("  HELLO  ")   // "hello!"
 ```
@@ -1595,7 +1707,7 @@ Swift's CoW types — `Array`, `Dictionary`, `Set`, `String` — store their con
 
 When you call a pure `(A) -> A` function:
 
-```swift
+```swift-sketch
 let newState = reducer(action)(state)
 //                             ^^^^^
 // At this point `state` in the caller still holds a reference to every
@@ -1609,7 +1721,7 @@ This means that for every reducer call on a state containing a 100 000-element a
 
 `EndoMut` passes the value by exclusive reference:
 
-```swift
+```swift-sketch
 reducer(action)(&state)
 //              ^^^^^^
 // Swift's Law of Exclusivity (SE-0176) statically guarantees no other
@@ -1635,6 +1747,10 @@ normalise(&items)              // callAsFunction also works
 `EndoMut.combine(f, g)` applies `f` first, then `g` — `g` sees every mutation `f` made. The `<>` operator and `mconcat` follow from the `Semigroup`/`Monoid` conformances:
 
 ```swift
+let clamp = EndoMut<[Int]> { xs in for i in xs.indices { xs[i] = min(xs[i], 100) } }
+let sort  = EndoMut<[Int]> { $0.sort() }
+var items = Array(0..<10_000)
+
 (clamp <> sort)(&items)                    // same as mconcat([clamp, sort])
 ```
 
@@ -1672,6 +1788,8 @@ Every optic (`Lens`, `Prism`, `AffineTraversal`) has a `lift` method that zooms 
 ```swift
 // A reducer over a sub-state
 let itemReducer = EndoMut<Item> { item in item.views += 1 }
+let selectedId = 2
+var appState = AppState(feed: [Item(id: 2, name: "b")])
 
 // Lift it to the full AppState using a composed optic chain
 let appReducer: EndoMut<AppState> =
@@ -1705,6 +1823,9 @@ The outer `S` is **always** kept as `inout` throughout the chain — only the fo
 If you import only `CoreFP` (no `CoreFPOperators`), use `compose` in place of `>>>`:
 
 ```swift
+let itemReducer = EndoMut<Item> { item in item.views += 1 }
+let selectedId = 2
+
 let appReducer: EndoMut<AppState> =
     lens(\AppState.feed)
         .compose([Item].ix(id: selectedId))
@@ -1733,6 +1854,7 @@ let pop = Stateful<[Item], Item?> { items in
 }
 
 // Zoom into the feed array inside AppState
+let appState = AppState(feed: [Item(id: 1, name: "a")])
 let appPop: Stateful<AppState, Item?> = lens(\AppState.feed).zoom(pop)
 let (removedItem, newState) = appPop.runStateful(appState)
 ```
@@ -1764,7 +1886,9 @@ Result<Int, String>.failure("oops").isB   // true (failure maps to the right/B c
 let r = Result<Int, String>.from(Either<Int, String>.left(42))  // .success(42)
 ```
 
-The protocol defines three requirements — `left(_:)`, `right(_:)`, `match(caseLeft:caseRight:)`, and `from(_:)` — and provides `.a`, `.b`, `.isA`, `.isB` as extensions. Use `SumType2` in your own generic functions to work over `Either`, `Result`, and any custom two-case type simultaneously.
+The protocol has three requirements, `left(_:)`, `right(_:)` and `match(caseLeft:caseRight:)`; `from(_:)`, `.a`, `.b`, `.isA` and `.isB` come for free as extensions. Use `SumType2` in your own generic functions to work over `Either`, `Result`, and any custom two-case type simultaneously.
+
+Note that the mapping is positional: `Result`'s `A` is `Success`, while `Either`'s success-by-convention side is `.right` (`B`), so `Result.from(Either.right(x))` is `.failure(x)`.
 
 ---
 
@@ -1787,7 +1911,7 @@ Either kind of capture breaks **referential transparency** — the property that
 
 The library can't enforce capture-freeness at the type level — Swift has no `@Pure` attribute — so it does the next-best thing and requires `@Sendable`, which at least blocks non-Sendable captures. The intent is for you to go further:
 
-```swift
+```swift-sketch
 // ❌ Co-effect: reads `formatter` from the enclosing scope
 let formatter = DateFormatter()  // (Sendable struct, would compile)
 let render = { (date: Date) -> String in formatter.string(from: date) }
@@ -1815,7 +1939,8 @@ Closures that capture nothing can't surprise you. That's the bar; `@Sendable` is
 
 | Layer | Sendable status |
 |---|---|
-| All algebraic types (`Either`, `Validation`, `Reader`, `Stateful`, `Writer`, `Loading`, `NonEmpty`, `Newtype`, `Endo`, `EndoMut`, `Iso`, `Lens`, `Prism`, `AffineTraversal`, …) | **Conditionally** `Sendable` when their type parameters are Sendable |
+| All algebraic types (`Either`, `Validation`, `Reader`, `Stateful`, `Writer`, `Loading`, `Newtype`, `Endo`, `EndoMut`, `Iso`, `Lens`, `Prism`, `AffineTraversal`, transformer stacks such as `ReaderTArray`, …) | **Conditionally** `Sendable` when their type parameters are Sendable |
+| `NonEmpty`, `IdentifiedArray` | Always `Sendable`; their element (and id) types are *required* to be `Sendable` |
 | `Semigroup`, `Monoid`, `SumType2`, `FunctionWrapper`, `CaseMatchable`, `HasCases`, `HasMax`, `HasMin`, `SIMDMonoidScalar` | Refine `Sendable` (conformers must be Sendable) |
 | `apply` / `<*>` / `flatMap` / `>>-` / `>=>` / `liftA2` / `fmap` / `<£>` / `>>>` / composition helpers (`compose`, `curry`, `flip`, `withArg`, …) | Take and return `@Sendable` closures |
 | `KeyPath` / `WritableKeyPath` | Retroactively `@unchecked Sendable` (immutable metadata, safe to share) |
@@ -1828,20 +1953,20 @@ Swift's implicit `KeyPath → (Root) -> Value` conversion produces a closure tha
 import CoreFP            // `get(_:)` — unambiguous free function
 import CoreFPOperators   // prefix `^` — terse form
 
-let predicate = compose(get(\User.name), equals("Alice"))      // 1. Unambiguous
-let predicate = compose(^\User.name, equals("Alice"))          // 2. Operator
-let predicate = compose({ $0.name }, equals("Alice"))          // 3. Explicit closure
+let predicate1 = compose(get(\User.name), equals("Alice"))      // 1. Unambiguous
+let predicate2 = compose(^\User.name, equals("Alice"))          // 2. Operator
+let predicate3 = compose({ (user: User) in user.name }, equals("Alice"))   // 3. Explicit closure
 ```
 
 The `^` prefix operator is overloaded:
 - `^\Person.age` on a `WritableKeyPath` returns a `Lens<Person, Int>`.
-- `^\Person.name` on a `KeyPath` (`let` property) returns either a curried Lens builder or a `@Sendable (Person) -> String`, picked by call-site context. When the context is ambiguous, fall back to `get(_:)`.
+- `^\Person.name` on a `KeyPath` (`let` property) returns either a curried Lens builder or a `@Sendable (Person) -> String` getter, picked by call-site context. When the context is ambiguous, fall back to `get(_:)`.
 
 #### Side effects at the boundary
 
-A `@Sendable` closure can capture `self` only if `self` is itself Sendable. View controllers, view models, and most reference types aren't — and shouldn't be smuggled into composition. The library uses three boundary patterns:
+A `@Sendable` closure can capture `self` only if `self` is itself Sendable. View controllers, view models, and most reference types aren't — and shouldn't be smuggled into composition. The library uses two boundary patterns:
 
-```swift
+```swift-sketch
 // 1. Combine — `sink` is non-@Sendable, accepts non-Sendable self
 publisher
     .map(parseUser)             // pure composition, @Sendable closures
@@ -1855,7 +1980,7 @@ reader.runReader(env)            // returns a value; act on `self` next to it
 
 `Stateful<S, A>` stores `@Sendable (inout S) -> A` and threads state through `flatMap`. The `@Sendable` requirement forbids capturing an `inout` from an enclosing scope into the closure body, so applicative / monad combinators evaluate each sub-`Stateful` *before* wrapping the next `@Sendable` block:
 
-```swift
+```swift-sketch
 Stateful<S, B> { s in
     let f = sf.run(&s)           // run sf first  (state advances)
     let a = sa.run(&s)           // run sa second (state advances again)
@@ -1878,9 +2003,9 @@ Because the algebra layer is intended for value types you compose and pass aroun
 `>>>` chains functions left-to-right; `<<<` chains right-to-left. Both produce a single function from the chain:
 
 ```swift
-let trim:       (String) -> String = { $0.trimmingCharacters(in: .whitespaces) }
-let uppercased: (String) -> String = { $0.uppercased() }
-let exclaim:    (String) -> String = { $0 + "!" }
+func trim(_ s: String) -> String { s.trimmingCharacters(in: .whitespaces) }
+func uppercased(_ s: String) -> String { s.uppercased() }
+func exclaim(_ s: String) -> String { s + "!" }
 
 let shout  = trim >>> uppercased >>> exclaim   // left-to-right
 let shout2 = exclaim <<< uppercased <<< trim   // right-to-left — equivalent
@@ -1889,14 +2014,14 @@ shout("  hello  ")    // "HELLO!"
 shout2("  hello  ")   // "HELLO!"
 ```
 
-Key paths are also composable — useful when building point-free transformations over nested types:
+Key paths lifted with `get(_:)` (or prefix `^`) are `@Sendable` functions, so they compose too, which is useful when building point-free transformations over nested types:
 
 ```swift
 struct Company { var ceo: Person }
-struct Person  { var name: String }
 
-let ceoName: (Company) -> String = \.ceo >>> \.name
-companies.map(ceoName)   // [String]
+let ceoName: @Sendable (Company) -> String = get(\Company.ceo) >>> get(\Person.name)
+let companies = [Company(ceo: Person(name: "Ada", age: 36))]
+companies.map(ceoName)   // ["Ada"]
 ```
 
 ---
@@ -1932,10 +2057,10 @@ id("hello")   // "hello"
 ["a", "b", "c"].map(id)                          // ["a", "b", "c"] — no-op map
 
 // Use as a default closure parameter:
-func process(_ transform: (String) -> String = id) -> String { ... }
+func process(_ transform: (String) -> String = id) -> String { transform("x") }
 
 // Use in Optional.fold to pass values through the some branch unchanged:
-optional.fold(onNone: "", onSome: id)
+Optional("x").fold(onNone: "", onSome: id)
 ```
 
 ---
@@ -1954,7 +2079,7 @@ let alwaysZero: (Int, String, Bool) -> Int = const(0)
 alwaysZero(99, "ignored", true)              // 0
 
 // Combine with map to replace contents:
-results.map(const(.success(())))             // all successes, structure preserved
+[1, 2].map(const(Result<Void, MyError>.success(())))   // all successes, structure preserved
 ```
 
 ---
@@ -1963,8 +2088,8 @@ results.map(const(.success(())))             // all successes, structure preserv
 
 ```swift
 // flip — swap the two arguments of a binary function
-flip(-)( 3, 10)           // 7    — equivalent to 10 - 3
-[1, 2, 3].reduce(0, flip(+))  // sum, argument order doesn't matter for +
+flip(-)(3)(10)           // 7    — equivalent to 10 - 3
+[1, 2, 3].reduce(0, flipU(+))  // sum, argument order doesn't matter for +
 
 // curry — (A, B) -> C  into  A -> B -> C
 let add = curry { (a: Int, b: Int) in a + b }
@@ -2004,12 +2129,13 @@ doubleFirst(21, "ignored")    // 42
 
 ```swift
 // All functions receive the same value; results are collected into a tuple:
-let describe = fanout(\.count, \.first, uppercased)
+let describe: @Sendable (String) -> (Int, Character?, String) = fanout(\.count, \.first, uppercased)
 let (count, first, upper) = describe("hello")
 // (5, Optional("h"), "HELLO")
 
 // Useful for building a summary from a single pass:
-users.map(fanout(\.name, \.age, \.isAdmin))
+let summarize: @Sendable (Employee) -> (String, Int, Bool) = fanout(\.name, \.age, \.isAdmin)
+[Employee(name: "Alice", age: 30, isAdmin: true)].map(summarize)
 // [(String, Int, Bool)]
 ```
 
@@ -2023,12 +2149,12 @@ users.map(fanout(\.name, \.age, \.isAdmin))
 // join — one layer in, same container out
 join([[1, 2], [3, 4]])                                    // [1, 2, 3, 4]
 join(Optional(Optional(42)))                              // Optional(42)
-join(Result<Result<Int, E>, E>.success(.success(42)))     // .success(42)
+join(Result<Result<Int, MyError>, MyError>.success(.success(42)))     // .success(42)
 
 // void — like map(ignore); keeps structure, discards values
 void([1, 2, 3])          // [(), (), ()]
 void(Optional(42))       // Optional(())
-void(Result<Int,E>.success(99))   // .success(())
+void(Result<Int, MyError>.success(99))   // .success(())
 ```
 
 `void` differs from `ignore`: `ignore` is `(A) -> Void` (discards a single value entirely), while `void` is `Container<A> -> Container<Void>` (maps every element to `()`). Use `ignore` when you want to drop a value; use `void` when you want to strip the values from a container but keep its structure.
@@ -2041,7 +2167,7 @@ void(Result<Int,E>.success(99))   // .success(())
 mapTuple2(uppercased)("hello", "world")    // ("HELLO", "WORLD")
 mapTuple3({ $0 * 2 })(1, 2, 3)           // (2, 4, 6)
 tuple(1, "hello")                          // (1, "hello")
-untuple { a, b in a + b }((3, 4))        // 7 — (A, B) argument → two separate arguments
+untuple { (pair: (Int, Int)) in pair.0 + pair.1 }(3, 4)   // 7 (one tuple argument becomes two separate arguments)
 ```
 
 ---
@@ -2057,6 +2183,7 @@ castOptionally(Int.self)("hello")  // nil
 castOptionally(Int.self)(42)       // Optional(42)
 
 // In a pipeline:
+let items: [Any] = [URL(string: "https://ios.lu") as Any, 42, "text"]
 items.compactMap(castOptionally(URL.self))   // [URL] — only URLs survive
 ```
 
@@ -2065,9 +2192,27 @@ items.compactMap(castOptionally(URL.self))   // [URL] — only URLs survive
 **`lazy` / `unlazy`** — defer and force evaluation
 
 ```swift
-let later: () -> Int = lazy(expensiveComputation())   // not evaluated yet
+func expensiveComputation() -> Int { 42 }
+let later: @Sendable () -> Int = lazy(expensiveComputation())   // not evaluated yet
 unlazy(later)                                          // forces it
 ```
+
+---
+
+**Conversions**: `to…()` and `init(_:)`
+
+Related types convert with `to…()` going out and `init(_:)` coming in, so there is no guessing which direction a bridge goes:
+
+```swift
+let e: Either<String, Int> = .right(1)
+
+e.toResult()                 // Result<Int, String>.success(1)  (the left side must be an `Error`)
+e.toValidation()             // Validation<String, Int>.success(1)
+Validation(e).toEither()     // Either<String, Int>.right(1)
+Loading<Int, String>(Result<Int, String>.success(1))   // .loaded(1)
+```
+
+`These(either)` and `Zipper(nonEmpty)` follow the same convention.
 
 ---
 
@@ -2076,7 +2221,8 @@ unlazy(later)                                          // forces it
 `equals`, `notEquals`, `not`, `and`, `or` are overloaded for both `Bool` values and `(A) -> Bool` predicates, so they compose directly with key paths, `<<<`/`>>>`, and `flip` to build predicates without any closure syntax:
 
 ```swift
-struct User { let name: String; let age: Int; let isAdmin: Bool }
+struct Employee { let name: String; let age: Int; let isAdmin: Bool }
+let users = [Employee(name: "Alice", age: 30, isAdmin: true), Employee(name: "Bob", age: 17, isAdmin: false)]
 
 // equals / notEquals — match on a value
 users.filter(equals("Alice") <<< \.name)       // only "Alice"
@@ -2104,10 +2250,10 @@ users.filter(and(not(\.isAdmin), flip(>=)(18) <<< \.age))
 **`Mutable`** — builder-pattern copy for value types
 
 ```swift
-struct Config: Mutable { var host: String; var port: Int }
+struct Endpoint: Mutable { var host: String; var port: Int }
 
-let base = Config(host: "localhost", port: 8080)
-let dev  = base.mutate { $0.port = 3000 }     // Config(host: "localhost", port: 3000)
+let base = Endpoint(host: "localhost", port: 8080)
+let dev  = base.mutate { $0.port = 3000 }     // Endpoint(host: "localhost", port: 3000)
 let prod = base.mutate { $0.host = "prod.example.com" }
 ```
 
@@ -2157,7 +2303,7 @@ Overloads exist for 2-, 3-, and 4-arity inputs. Functionally equivalent to apply
 ```swift
 // ignore — discard a value and return ()
 [1, 2, 3].map(ignore)         // [(), (), ()]
-tasks.forEach(ignore)          // run side effects, discard results
+[1, 2, 3].forEach(ignore)     // explicitly discard values
 
 // absurd — exhaustively eliminate the Never type in impossible branches
 func handle<A>(_ result: Either<Never, A>) -> A {
@@ -2173,20 +2319,22 @@ All operators require `CoreFPOperators` (for built-in types) or `DataStructureOp
 
 | Operator | Flipped | Description | Types |
 |----------|---------|-------------|-------|
-| `<£>` | `<&>` | Functor map — fn left / container left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `Either`, `Loading`, `Reader`, `Stateful`, `Validation`, `Writer` |
-| `£>` | `<£` | Replace contents with a constant — container left / value left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `Either`, `Loading`, `Reader`, `Stateful`, `Validation`, `Writer` |
-| `<*>` | — | Applicative apply — wrapped function on left, wrapped value on right | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` |
-| `*>` | `<*` | Sequence two effects — keep right / keep left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `Either`, `Reader`, `Stateful`, `Validation`, `Writer` |
-| `>>-` | `-<<` | Monadic bind — container left / fn left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, `Either`, `Loading`, `Reader`, `Stateful`, `Writer` |
-| `->>` | `<<-` | Comonad extend — container left / fn left | `Writer` |
-| `>=>` | `<=<` | Kleisli composition — left-to-right / right-to-left | `Optional`, `Array`, `Result`, `Either`, `Loading`, `Reader`, `Stateful`, `Writer` |
-| `>>>` | `<<<` | Function / optics composition — left-to-right / right-to-left | Functions, `Iso`, `Lens`, `Prism`, `AffineTraversal` |
+| `<£>` | `<&>` | Functor map — fn left / container left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, functions, `Either`, `Validation`, `Loading`, `Reader`, `Stateful`, `Writer`, `NonEmpty`, `These`, `Zipper`, every transformer stack |
+| `£>` | `<£` | Replace contents with a constant — container left / value left | same as `<£>` |
+| `<*>` | — | Applicative apply — wrapped function on left, wrapped value on right | same as `<£>`, minus `Zipper` |
+| `*>` | `<*` | Sequence two effects — keep right / keep left | same as `<*>` |
+| `>>-` | `-<<` | Monadic bind — container left / fn left | `Optional`, `Array`, `Result`, `Publisher`, `AsyncSequence`, functions, `Either`, `Loading`, `Reader`, `Stateful`, `Writer`, `NonEmpty`, `These`, and the `MonadT` stacks (not `Validation`, not `TransformerStack`-only stacks) |
+| `->>` | `<<-` | Comonad extend — container left / fn left | `Writer`, `NonEmpty`, `Zipper`, `Reader` (when `Environment: Monoid`) |
+| `>=>` | `<=<` | Kleisli composition — left-to-right / right-to-left | same as `>>-` |
+| `>>>` | `<<<` | Function / optics composition — left-to-right / right-to-left | Functions, `Iso`, `Lens`, `Prism`, `AffineTraversal`, `Traversal` |
 | `<\|` | `\|>` | Function application — fn left / value left | Any function |
-| `<\|>` | — | Alternative / choice | `Optional`, `Array`, `Result`, `Publisher` |
-| `<>` | — | Semigroup append | `String`, `Array`, `Optional`, `Dictionary`, `Set`, `Result`, `Int.Monoids.*`, `Bool.Monoids.*`, `SIMD4<Int>.Monoids.*`, … |
-| `^` _(prefix)_ | — | Lift `WritableKeyPath` → `Lens`; `KeyPath` → partial `Lens` builder | `WritableKeyPath`, `KeyPath` |
+| `<\|>` | — | Alternative / choice | `Optional`, `Array`, `Result`, `Either`, `Publisher`, `Validation` (accumulates both failures with `<>`) |
+| `<>` | — | Semigroup append | `String`, `Array`, `Optional`, `Dictionary`, `Set`, `Endo`, `EndoMut`, `Iso<A, A>`, `Reader`, `Writer`, `NonEmpty`, `Newtype`, `IdentifiedArray`, `Result.Monoids.*`, `Int.Monoids.*`, `Bool.Monoids.*`, `SIMDn<T>.Monoids.*`, Min/Max/First/Last/Dual, … |
+| `^` _(prefix)_ | — | Lift `WritableKeyPath` → `Lens`; `KeyPath` → partial `Lens` builder or `@Sendable (Root) -> Value` getter, chosen by context | `WritableKeyPath`, `KeyPath` |
 | `±` / `+/-` | — | Symmetric range — `center ± delta` → `ClosedRange` | `Strideable` (`Int`, `Double`, `Float`, `Date`, …) |
 | `≅` | — | Flipped range match — `value ≅ range` (equivalent to `range ~= value`) | `Comparable` |
+
+Transformer stacks (`ReaderTArray`, …): `<£>`, `<&>`, `£>`, `<£`, `<*>`, `*>`, `<*` on all of them; `>>-`, `-<<`, `>=>`, `<=<` only on the stacks that conform to `MonadT`.
 
 #### Operator Precedence
 
@@ -2194,20 +2342,21 @@ Every custom operator lives in one of the precedence groups defined in `Sources/
 
 | Level | Operators | Associativity | Precedence group |
 |---|---|---|---|
-| 9 | `>>>`, `<<<` | right | `FunctionCompositionForward` / `FunctionCompositionBackwards` |
+| 9.1 | `>>>` | right | `FunctionCompositionForward` |
+| 9 | `<<<` | right | `FunctionCompositionBackwards` |
 | 8.5 | `>>` _(stdlib)_ | left | `BitwiseShiftPrecedence` |
 | 7 | `*`, `/` _(stdlib)_ | left | `MultiplicationPrecedence` |
-| 6 | `<>` | right | `ConcatPrecedence` |
+| 6.5 | `<>` | right | `ConcatPrecedence` (strictly between multiplication and addition) |
 | 6 | `+`, `-` _(stdlib)_ | left | `AdditionPrecedence` |
 | 4.8 | `...`, `..<` _(stdlib)_, `±` / `+/-` | none | `RangeFormationPrecedence` |
 | 4.5 | `as?` _(stdlib)_ | none | `CastingPrecedence` |
 | 4.2 | `??` _(stdlib)_ | right | `NilCoalescingPrecedence` |
-| 4 | `<£>`, `£>`, `<£`, `<*>`, `*>`, `<*` | left | `FunctorOps` |
 | 4 | `==`, `<=` _(stdlib)_, `≅` | none | `ComparisonPrecedence` |
+| below `??`, above `<\|>` | `<£>`, `£>`, `<£`, `<*>`, `*>`, `<*` | left | `FunctorOps` (no declared relation to the comparison operators: parenthesise when mixing with `==`) |
 | 3 | `<\|>` | left | `AlternativePrecedence` |
 | 3 | `&&` _(stdlib)_ | left | `LogicalConjunctionPrecedence` |
 | 2 | `\|\|` _(stdlib)_ | left | `LogicalDisjunctionPrecedence` |
-| 1 | `>=>`, `<=<`, `-<<`, `<<-` | right | `KleisliCompositionRight` |
+| 1.1 | `>=>`, `<=<`, `-<<`, `<<-` | right | `KleisliCompositionRight` |
 | 1 | `>>-`, `<&>`, `->>` | left | `MonadBindLeft` |
 | 0.5 | `?:` _(stdlib)_ | right | `TernaryPrecedence` |
 | 0 | `<\|` | right | `LowPrecedenceFunctionCallRight` |
@@ -2217,7 +2366,7 @@ Every custom operator lives in one of the precedence groups defined in `Sources/
 Practical takeaways:
 - `>>>` / `<<<` bind tighter than everything else, so composed functions and optics never need parentheses next to arithmetic or comparisons.
 - `<|` / `|>` sit near the very bottom (just above assignment), which is what lets them wrap an entire expression without parentheses — `f <| a + b * c` parses as `f <| (a + b * c)`.
-- `>=>` / `<=<` / `-<<` / `<<-` (right-associative) and `>>-` / `<&>` / `->>` (left-associative) share precedence level 1 but different associativity groups — matching Haskell's `infixr 1` for Kleisli composition and `infixl 1` for bind.
+- `>=>` / `<=<` / `-<<` / `<<-` (`KleisliCompositionRight`, right-associative) bind slightly tighter than `>>-` / `<&>` / `->>` (`MonadBindLeft`, left-associative). Haskell puts both at level 1 (`infixr 1` / `infixl 1`), where mixing them without parentheses is an error; Swift needs two ordered groups, so `x >>- f >=> g` means `x >>- (f >=> g)`.
 
 ---
 
@@ -2243,21 +2392,22 @@ Links below point at the DocC article source in this repository — each type's 
 | Type | Description |
 |------|-------------|
 | [Either](Sources/DataStructure/DataStructure.docc/Either.md) | Unconstrained sum type — both sides are equal citizens, no `Error` requirement |
-| [Loading](Sources/DataStructure/DataStructure.docc/Loading.md) | Four-state async lifecycle — `idle` / `loading` / `loaded` / `failed`; `loadedOrPrevious` keeps a view showing the last good value through a refresh or an error instead of blanking out |
-| [Validation](Sources/DataStructure/DataStructure.docc/Validation.md) | Accumulating applicative — errors collect instead of short-circuiting |
+| [Loading](Sources/DataStructure/DataStructure.docc/Loading.md) | Four-state async lifecycle — `idle` / `loading` / `loaded` / `failed`; `loadedOrPrevious` keeps a view showing the last good value through a refresh or an error instead of blanking out. `Failure` can be any `Sendable` type (a `String`, a view struct), not only `Error`; `<*>` / `zip` are the lawful left-biased applicative, and the old "failed beats idle beats loading" combination is `pessimisticCombine` |
+| [Validation](Sources/DataStructure/DataStructure.docc/Validation.md) | Accumulating applicative — errors collect instead of short-circuiting. `<\|>` accumulates both failures with `<>`; convert with `Validation(either)` / `validation.toEither()` |
 | [Reader](Sources/DataStructure/DataStructure.docc/Reader.md) | Dependency injection monad — wraps `(Environment) -> Output` |
 | [Stateful](Sources/DataStructure/DataStructure.docc/Stateful.md) | State threading monad — wraps `(inout S) -> A` |
 | [Writer](Sources/DataStructure/DataStructure.docc/Writer.md) | Append-as-you-go monad — produces a value alongside an accumulated log |
-| [NonEmpty](Sources/DataStructure/DataStructure.docc/NonEmpty.md) | Statically guaranteed non-empty sequence — Semigroup (no Monoid), full FAM + Foldable + Traversable |
+| [NonEmpty](Sources/DataStructure/DataStructure.docc/NonEmpty.md) | Statically guaranteed non-empty sequence — Semigroup (no Monoid), full FAM + Foldable + Traversable; requires `Sendable` elements |
 | [IdentifiedArray](Sources/DataStructure/DataStructure.docc/IdentifiedArray.md) | Ordered, `Sendable` collection with O(1) by-id access via a custom open-addressing index — Semigroup, first-class optics (no Functor/Monad by design) |
+| [These](Sources/DataStructure/DataStructure.docc/These.md) | Inclusive-or: this, that, or both — Applicative/Monad when the left side is a Semigroup |
+| [Zipper](Sources/DataStructure/DataStructure.docc/Zipper.md) | Focused list with O(1) moves — a lawful Comonad |
+| [Gen](Sources/DataStructure/DataStructure.docc/Gen.md) | Property-based random generator over an injected RNG (`Stateful<R, Value>`) |
 
 ---
 
----
+### Generating Code with Macros (`@Lenses`, `@Prisms`, `@ApplyOptics`, `@Iso`, `@DeriveMonoid`, `@Mock`, `@Witness`)
 
-### Generating Code with Macros (`@Lenses`, `@Prisms`, `@Iso`, `@DeriveMonoid`, `@Mock`, `@Witness`)
-
-Import `FPMacros` to generate boilerplate directly from type and protocol declarations: `@Lenses` and `@Prisms` derive optics from structs and enums; `@Iso` derives a lossless struct ↔ tuple conversion; `@DeriveMonoid` derives a fieldwise `Monoid`; `@Mock` and `@Witness` derive protocol testing/DI scaffolding. All six are attached macros — they add code directly into (or alongside) the declaration body — so they work at any nesting level, including types nested inside other types.
+Import `FPMacros` to generate boilerplate directly from type and protocol declarations: `@Lenses` and `@Prisms` derive optics from structs and enums, and `@ApplyOptics` derives them recursively over a whole nested tree; `@Iso` derives a lossless struct ↔ tuple conversion; `@DeriveMonoid` derives a fieldwise `Monoid`; `@Mock` and `@Witness` derive protocol testing/DI scaffolding. All seven attach members (and, for some, an extension), so they work on types nested inside other types, but not on types local to a function body (Swift forbids extension macros there).
 
 ```swift
 import FPMacros
@@ -2282,7 +2432,7 @@ import FPMacros
 
 ```swift
 @Lenses(init: .public)
-public struct Config {
+public struct AppConfig {
     public let host: String
     public let version = 3       // constant — no lens, excluded from init
     public var port: Int
@@ -2292,8 +2442,8 @@ public struct Config {
 
 **Expanded code (simplified):**
 
-```swift
-public struct Config {
+```swift-sketch
+public struct AppConfig {
     public let host: String
     public let version = 3
     public var port: Int
@@ -2304,43 +2454,43 @@ public struct Config {
     }
 
     public struct Lenses: Sendable {
-        public let host:    Lens<Config, String> = CoreFP.lens(\Config.host) { s, a in s.with(host: a) }
-        public let port:    Lens<Config, Int>    = CoreFP.lens(\Config.port)
-        public let timeout: Lens<Config, Int>    = CoreFP.lens(\Config.timeout)
+        public let host:    Lens<AppConfig, String> = CoreFP.lens(\AppConfig.host) { s, a in s.with(host: a) }
+        public let port:    Lens<AppConfig, Int>    = CoreFP.lens(\AppConfig.port)
+        public let timeout: Lens<AppConfig, Int>    = CoreFP.lens(\AppConfig.timeout)
     }
     public static var lens: Lenses { Lenses() }
 
-    public func with(host: String? = nil, port: Int? = nil, timeout: Int? = nil) -> Config {
-        Config(
+    public func with(host: String? = nil, port: Int? = nil, timeout: Int? = nil) -> AppConfig {
+        AppConfig(
             host: host ?? self.host,
             port: port ?? self.port,
             timeout: timeout ?? self.timeout
         )
     }
 }
-extension Config: Sendable {}
+extension AppConfig: Sendable {}
 ```
 
-The `Lens<Config, String>` for `host` (a `let` property) calls `s.with(host: a)` rather than inlining all field references — the `with(...)` helper is the single source of truth for reconstruction, keeping the codegen O(N) in the number of properties instead of O(N²).
+The `Lens<AppConfig, String>` for `host` (a `let` property) calls `s.with(host: a)` rather than inlining all field references — the `with(...)` helper is the single source of truth for reconstruction, keeping the codegen O(N) in the number of properties instead of O(N²).
 
 `lens` is always computed: Swift forbids `static let` in any generic context, which includes generic hosts (`Container<T>`) and structs nested in a generic type (which the macro can't see). Building `Lenses()` is cheap. A generic host gets `extension Container: Sendable where T: Sendable {}` for the generic parameters its stored properties use.
 
 **Usage:**
 
 ```swift
-let config = Config(host: "localhost", port: 8080)
+let config = AppConfig(host: "localhost", port: 8080)
 
-Config.lens.host.set(config, "example.com")
-// Config(host: "example.com", port: 8080, timeout: 30, version: 3)
+AppConfig.lens.host.set(config, "example.com")
+// AppConfig(host: "example.com", port: 8080, timeout: 30, version: 3)
 
-Config.lens.port.over({ $0 + 1 })(config)
-// Config(host: "localhost", port: 8081, timeout: 30, version: 3)
+AppConfig.lens.port.over({ $0 + 1 })(config)
+// AppConfig(host: "localhost", port: 8081, timeout: 30, version: 3)
 
 config.with(host: "example.com", port: 9090)
 // same effect, without needing lenses
 
 // Lenses compose as normal:
-let teamConfigHost = lens(\.teamConfig) >>> Config.lens.host
+//   lens(\Team.config) >>> AppConfig.lens.host
 ```
 
 **Optional properties and `with(...)`**
@@ -2368,9 +2518,12 @@ The trick: the parameter type is `Int?? = .some(nil)`. The default `.some(nil)` 
 Use `LensesEmit` to opt out of pieces you don't need:
 
 ```swift
-@Lenses(.all)         // default — init + lens + with
-@Lenses(.initOnly)    // only the memberwise init
-@Lenses(.lensesOnly)  // lens + with, no init at all (use when you have a custom init)
+@Lenses(.all) struct Full { var x = 0 }                 // default: init + lens + with
+@Lenses(.initOnly) struct InitOnly { var x = 0 }        // only the memberwise init
+@Lenses(.lensesOnly) struct LensesOnly {                // lens + with, no init at all
+    var x: Int
+    init(x: Int) { self.x = x }                         // (use when you have a custom init)
+}
 ```
 
 If the struct already declares an `init` whose parameter labels match what the macro would generate, the macro skips its own init silently — the user's init wins.
@@ -2389,7 +2542,7 @@ Properties whose declared visibility is *lower* than the struct's are excluded f
 
 ```swift
 @Prisms
-public enum Shape {
+public enum Figure {
     case circle(Double)
     case rectangle(Double, Double)
     case empty
@@ -2398,24 +2551,24 @@ public enum Shape {
 
 **Expanded code (simplified):**
 
-```swift
-public enum Shape {
+```swift-sketch
+public enum Figure {
     case circle(Double)
     case rectangle(Double, Double)
     case empty
 
     public struct Prisms: Sendable {
-        public let circle: Prism<Shape, Double> = CoreFP.prism(
+        public let circle: Prism<Figure, Double> = CoreFP.prism(
             preview: { s in guard case .circle(let a) = s else { return nil }; return a },
-            review: Shape.circle
+            review: Figure.circle
         )
-        public let rectangle: Prism<Shape, (Double, Double)> = CoreFP.prism(
+        public let rectangle: Prism<Figure, (Double, Double)> = CoreFP.prism(
             preview: { s in guard case .rectangle(let v0, let v1) = s else { return nil }; return (v0, v1) },
-            review: { (t: (Double, Double)) in Shape.rectangle(t.0, t.1) }
+            review: { (t: (Double, Double)) in Figure.rectangle(t.0, t.1) }
         )
-        public let empty: Prism<Shape, Void> = CoreFP.prism(
+        public let empty: Prism<Figure, Void> = CoreFP.prism(
             preview: { s in guard case .empty = s else { return nil }; return () },
-            review: { (_: Void) in Shape.empty }
+            review: { (_: Void) in Figure.empty }
         )
     }
     public static var prism: Prisms { Prisms() }
@@ -2426,9 +2579,9 @@ public enum Shape {
     public var empty: Void? { Self.prism.empty.preview(self) }
 
     public enum Cases: CoreFP.CaseMatchable {
-        public typealias Subject = Shape
+        public typealias Subject = Figure
         case circle, rectangle, empty
-        public func matches(_ value: Shape) -> Bool { /* switch */ }
+        public func matches(_ value: Figure) -> Bool { /* switch */ }
     }
     public func `is`(_ c: Cases) -> Bool { c.matches(self) }
 }
@@ -2441,18 +2594,18 @@ Multi-payload cases (like `.rectangle`) get an **unlabeled** tuple type — acce
 **Usage:**
 
 ```swift
-let s = Shape.circle(3.14)
+let s = Figure.circle(3.14)
 
 s.circle                                    // Optional(3.14) — plain per-case property
 s.rectangle                                 // nil
-Shape.prism.circle.preview(s)               // Optional(3.14) — the same thing, via the explicit prism
-Shape.prism.circle.set(s, 5.0)             // Shape.circle(5.0)
-Shape.prism.circle.over({ $0 * 2 })(s)    // Shape.circle(6.28)
+Figure.prism.circle.preview(s)               // Optional(3.14) — the same thing, via the explicit prism
+Figure.prism.circle.set(s, 5.0)             // Figure.circle(5.0)
+Figure.prism.circle.over({ $0 * 2 })(s)    // Figure.circle(6.28)
 
 // Case-name queries — no need to construct dummy payloads:
 s.is(.circle)                               // true
 s.is(.rectangle)                            // false
-Shape.Cases.allCases                        // [.circle, .rectangle, .empty]
+Figure.Cases.allCases                        // [.circle, .rectangle, .empty]
 ```
 
 **Slicing the output**
@@ -2460,8 +2613,8 @@ Shape.Cases.allCases                        // [.circle, .rectangle, .empty]
 Use `PrismsOptions` to opt out of pieces you don't need:
 
 ```swift
-@Prisms(.cases)    // only the `Cases` enum + is(_:)
-@Prisms(.prisms)   // only the `Prisms` struct + `static prism` + per-case properties + Prismatic
+@Prisms(.cases) enum OnlyCases { case a }         // only the `Cases` enum + is(_:)
+@Prisms(.prisms) enum OnlyPrisms { case a(Int) }  // only the `Prisms` struct + `static prism` + per-case properties + Prismatic
 ```
 
 **Polymorphic `HasCases`**
@@ -2469,18 +2622,36 @@ Use `PrismsOptions` to opt out of pieces you don't need:
 The `CoreFP.HasCases` protocol lets generic code write `value.is(.someCase)` against any type whose nested `Cases` enum is a `CaseMatchable`. `@Prisms` doesn't automatically add the conformance (Swift's extension-macro role can't reach into nested types), but you can opt in for any file-level or non-private-nested type:
 
 ```swift
-extension MyEnum: HasCases {}  // typealias inferred from the nested `Cases` enum
+extension Figure: HasCases {}  // typealias inferred from the nested `Cases` enum
 
 func currentIsFirstCase<T: HasCases>(_ value: T) -> Bool {
-    value.is(T.Cases.allCases.first!)
+    T.Cases.allCases.first.map { value.is($0) } ?? false
 }
 ```
 
 The built-in types `Loading`, `Either`, `Validation`, `Optional`, and `Result` all conform out of the box.
 
+#### `@ApplyOptics`: optics for a whole nested tree
+
+`@ApplyOptics` is a kind-dispatched drop-in for `@Lenses` (on structs) and `@Prisms` (on enums). With `recursively: true` it applies to every nested struct and enum at any depth, so an entire state tree gains composable optics from a single annotation. Put `@Lenses` / `@Prisms` on a nested type to customise just that node, another `@ApplyOptics(...)` to re-root a subtree, and `@NoOptics` to cut a node (and everything below it) out.
+
+```swift
+@ApplyOptics(recursively: true)
+struct Game {
+    var title = ""
+    struct Player { var score = 0 }
+    enum Phase { case lobby; case playing(Int) }
+    @NoOptics struct Cache { var hits = 0 }   // no optics here, nor below
+}
+
+Game.lens.title             // Lens<Game, String>
+Game.Player.lens.score      // Lens<Game.Player, Int>
+Game.Phase.prism.playing    // Prism<Game.Phase, Int>
+```
+
 #### Nesting — the primary motivation
 
-Both macros use `@attached(member)` so they compose naturally with nested types — which is the typical pattern in unidirectional architectures where a `Reducer` owns its `State` and `Action`:
+Both macros attach members (plus an extension: `Sendable` for `@Lenses`, `Prismatic` for `@Prisms`), so they work on types nested inside other types, which is the typical pattern in unidirectional architectures where a `Reducer` owns its `State` and `Action`. They can't be applied to a type declared inside a function body (Swift forbids extension macros there):
 
 ```swift
 struct Reducer {
@@ -2521,7 +2692,7 @@ Reducer.Action.prism.updateName.preview(action)      // Optional("Bob")
 
 Properties with literal defaults (`0`, `3.14`, `"hello"`, `true`) have their types inferred automatically. For any other default, add an explicit type annotation:
 
-```swift
+```swift-sketch
 var timeout: Duration = .seconds(30)    // explicit annotation required
 var retryPolicy: RetryPolicy = .exponential  // explicit annotation required
 ```
@@ -2618,7 +2789,7 @@ protocol Service {
 
 expands (behind `#if DEBUG`) to:
 
-```swift
+```swift-sketch
 struct ServiceMock: Service {
     var wrappedFetch: (String) -> AnyPublisher<[Item], any Error>
     var wrappedIsReady: () -> Bool
@@ -2657,7 +2828,7 @@ public protocol Repository<Item> {
 
 expands to:
 
-```swift
+```swift-sketch
 public struct RepositoryWitness<Item, Failure: Error>: Sendable {
     public var fetch: @Sendable (String) async -> Result<Item, Failure>
     public var all: @Sendable () -> [Item]
@@ -2671,6 +2842,14 @@ public extension Repository where Self: Sendable {
 ```
 
 ```swift
+struct RepoError: Error, Sendable {}
+struct MemoryRepo: Repository, Sendable {
+    var store: [String: Int]
+    func fetch(id: String) async -> Result<Int, RepoError> { store[id].map { .success($0) } ?? .failure(RepoError()) }
+    func all() -> [Int] { Array(store.values) }
+    var count: Int { store.count }
+}
+
 let w = MemoryRepo(store: ["a": 1]).witness   // RepositoryWitness<Int, RepoError>
 ```
 
@@ -2680,47 +2859,55 @@ let w = MemoryRepo(store: ["a": 1]).witness   // RepositoryWitness<Int, RepoErro
 
 ### Property-Based Testing (Gen)
 
-`Gen<Value>` is a composable, seedable random-value generator — this library's counterpart to QuickCheck's `Gen a` (Haskell) and ScalaCheck's `Gen[A]`. It's defined as a `Stateful` computation threading a random-number generator:
+`Gen<R, Value>` is a composable random-value generator, this library's counterpart to QuickCheck's `Gen a` (Haskell) and ScalaCheck's `Gen[A]`. It's defined as a `Stateful` computation threading a random-number generator:
 
-```swift
-public typealias Gen<Value> = Stateful<AnyRandomNumberGenerator, Value>
+```swift-sketch
+public typealias Gen<R: RandomNumberGenerator & Sendable, Value> = Stateful<R, Value>
 ```
 
-Because it's just `Stateful` under the hood, `Gen` inherits every Functor/Applicative/Monad operation — and every `Stateful` transformer combination — for free.
+A generator is only a description, `(inout R) -> Value`. There is deliberately no runner that creates the RNG for you: you inject it. Because it's just `Stateful` under the hood, `Gen` inherits every Functor/Applicative/Monad operation (and every `Stateful` transformer combination) for free. Use `AnyRandomNumberGenerator` to erase the RNG type.
 
 **Primitives:**
 
 ```swift
-let die:     Gen<Int>  = .int(in: 1...6)
-let coin:    Gen<Bool> = .bool()
-let userId:  Gen<UUID> = .uuid()
+typealias G<V> = Gen<SplitMix64, V>
+
+let die: G<Int>     = .int(in: 1...6)
+let coin: G<Bool>   = .bool()
+let userId: G<UUID> = .uuid()
 ```
 
 **Composing generators** with `map` / `flatMap` / `zip`, exactly like any other monad in this library:
 
 ```swift
-let sumOfTwoDice = Gen.zip(die, die).map { $0 + $1 }   // 2...12
+let die: G<Int> = .int(in: 1...6)
+let sumOfTwoDice = G.zip(die, die).map { $0 + $1 }   // 2...12
 
-struct User: Sendable { let id: UUID; let name: String; let age: Int }
+struct Customer: Sendable { let id: UUID; let name: String; let age: Int }
 
-let userGen: Gen<User> = Gen.zip(
+let customerGen: G<Customer> = G.zip(
     .uuid(),
     .string(of: .letter(), count: .int(in: 3...8)),
     .int(in: 0...120)
-).map { User(id: $0.0, name: $0.1, age: $0.2) }
+).map { (t: (UUID, String, Int)) in Customer(id: t.0, name: t.1, age: t.2) }
 ```
 
-Other combinators include `.array(ofCount:)`, `.optional()`, `.one(of:)` (uniform choice over a `NonEmpty` list of generators), and `.frequency(_:)` (weighted choice) — see `Sources/DataStructure/Gen/` for the full set.
+Other combinators include `.array(ofCount:)`, `.optional()`, `.one(of:)` (uniform choice over a `NonEmpty` list of generators), and `.frequency(_:)` (weighted choice). See `Sources/DataStructure/Gen/` for the full set.
 
-**Running a generator:**
+**Running a generator** with an RNG you provide:
 
 ```swift
-let value = die.generate(seed: 42)             // deterministic — same seed, same value
-let many  = die.samples(seed: 42, count: 100)  // deterministic sequence, replayable in a failing test
-let live  = die.generate()                     // system randomness, not reproducible
+let die: G<Int> = .int(in: 1...6)
+var rng = SplitMix64(seed: 42)
+let value = die.run(&rng)                      // deterministic: same seed, same value
+let many  = die.array(ofCount: 100).run(&rng)  // deterministic sequence, replayable in a failing test
+
+var system = SystemRandomNumberGenerator()
+let liveDie: Gen<SystemRandomNumberGenerator, Int> = .int(in: 1...6)
+let live = liveDie.run(&system)                // entropy, at the edge of the program
 ```
 
-`generate(seed:)` and `samples(seed:count:)` thread a small seedable `SplitMix64` PRNG, so a failing property-test case can be replayed exactly by rerunning with the same seed.
+`SplitMix64` is a small seedable PRNG, so a failing property-test case can be replayed exactly by rerunning with the same seed.
 
 ---
 
@@ -2735,17 +2922,28 @@ A quick-reference for readers coming from Haskell's `base` and common libraries.
 | `[a]` | `[A]` / `Array<A>` | Swift's built-in array — nondeterminism via `flatMap` — see [FlatMap (Monad)](#flatmap-monad) |
 | `IO a` | _not modelled_ | This library doesn't wrap side effects in a type; effects are pushed to the boundary instead — see [Concurrency: Sendable-First](#concurrency-sendable-first) |
 | `Reader r a` | `Reader<Env, A>` | Dependency injection monad — see [Covariance, contravariance, and contramap](#covariance-contravariance-and-contramap) |
-| `Writer w a` | `Writer<Log, A>` | Append-as-you-go monad, also a Comonad here — see [Comonad (Extend)](#comonad-extend) |
-| `State s a` | `Stateful<S, A>` | Named `Stateful` (not `State`) to avoid clashing with SwiftUI — see [Cost-Free Mutations (EndoMut)](#cost-free-mutations-endomut) |
+| `Writer w a` | `Writer<Log, A>` | Append-as-you-go monad, also a Comonad (the `Env` comonad `(a, w)`) — see [Comonad (Extend)](#comonad-extend) |
+| `State s a` | `Stateful<S, A>` | Named `Stateful` (not `State`) to avoid clashing with SwiftUI — see [Types](#types) |
 | `Semigroup` | `Semigroup` | Same name, same law — see [Joining things together (Semigroup)](#joining-things-together-semigroup) |
 | `Monoid` | `Monoid` | Same name, same law — see [Neutral element when joining (Monoid)](#neutral-element-when-joining-monoid) |
 | `newtype` | `Newtype<Tag, RawValue>` | Phantom-tagged wrapper instead of a language keyword — see [Newtype — Branded Values](#newtype--branded-values) |
-| `Gen a` (QuickCheck) | `Gen<A>` (`Stateful<AnyRandomNumberGenerator, A>`) | Seedable, composable random generator — see [Property-Based Testing (Gen)](#property-based-testing-gen) |
-| `<$>` | `<£>` | Functor map, function on the left |
+| `Gen a` (QuickCheck) | `Gen<R, A>` (`Stateful<R, A>`, `R: RandomNumberGenerator & Sendable`) | Composable random generator, run with an explicitly injected RNG: `gen.run(&rng)` — see [Property-Based Testing (Gen)](#property-based-testing-gen) |
+| `ReaderT r m a` / `ExceptT e m a` / `MaybeT m a` / `WriterT w m a` / `StateT s m a` | `ReaderTArray`, `PublisherTEither`, `StatefulTOptional`, … | The generated structs (see [Stacking Effects](#stacking-effects-monad-transformers)): lift with `.readerT` / `.publisherT` / …, unwrap with `.rawValue`; escape hatches `mapReaderT` / `mapExceptT` / `mapMaybeT` / `mapWriterT` / `mapStateT` |
+| `Validation e a` (validation package) | `Validation<E, A>` | Accumulating applicative, no monad |
+| `These a b` | `These<A, B>` | Inclusive-or |
+| `NonEmpty a` | `NonEmpty<A>` | Non-empty sequence |
+| `RemoteData` (PureScript) | `Loading<Success, Failure>` | Async lifecycle with stale values |
+| `fmap` / `<$>` | `<£>` | Functor map, function on the left (`<&>` is `Data.Functor.<&>`, container on the left) |
+| `<$` / `$>` | `<£` / `£>` | Replace with a constant |
 | `<*>` | `<*>` | Applicative apply — same symbol |
 | `>>=` | `>>-` | Monadic bind (renamed — Swift reserves `>>=` for bit-shift-assign) |
+| `=<<` | `-<<` | Monadic bind, function on the left |
 | `>=>` | `>=>` | Kleisli composition — same symbol |
-| `.` | `>>>` / `<<<` | Function composition — Swift has no bare `.` operator available |
+| `<\|>` | `<\|>` | Alternative / choice — same symbol |
+| `<>` | `<>` | Semigroup append — same symbol |
+| `$` | `<\|` | Function application, function on the left |
+| `&` | `\|>` | Function application, value on the left |
+| `.` | `<<<` | Composition, right to left (`>>>` is Haskell's `Control.Arrow` `>>>`, left to right) |
 
 See the [Operator Reference](#operator-reference) for the complete operator list and [Types](#types) for per-type reference pages.
 
@@ -2757,7 +2955,9 @@ Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for the ful
 
 - Every operator must delegate to a named function in the core module — never implement logic directly inside an operator definition
 - Every directional operator has a flipped counterpart (e.g., `<£>` ↔ `<&>`); both must be added in the same commit
-- Operator modules (`CoreFPOperators`, `DataStructureOperators`) are separate SPM targets and may not use custom operators internally
+- Core modules (`CoreFP`, `DataStructure`) never use custom operators; operators live only in the operator modules and delegate to a named core function. `CoreFPTests` / `DataStructureTests` use named functions only, `CoreFPOperatorsTests` / `DataStructureOperatorsTests` test the operator symbols, and every operation needs both
+- Haskell is the source of truth for semantics: `<*>` equals `ap` wherever there is a monad, and a stack only gets `flatMap` / `>>-` where Haskell's `transformers` defines a lawful monad
+- Transformer stacks under `Sources/*/Transformer/Generated/` are generated by `Scripts/GenerateTransformers.swift`: edit the table or templates and regenerate, never the generated files (see CONTRIBUTING.md)
 
 To contribute:
 
@@ -2799,7 +2999,7 @@ swift test --filter "CoreFP"
 | Windows  | Swift 6.3+ toolchain |
 | Android  | Swift 6.3+ toolchain |
 
-Combine-based features (`Publisher` extensions) and SwiftUI `Binding` bridging are Apple-only and require macOS 13.0+ / iOS 16.0+. All other modules are supported on Linux, Windows, and Android — each built and tested in CI.
+Combine-based features (`Publisher` extensions, `PublisherT*` stacks) and the SwiftUI `Binding` bridge are Apple-only (`#if canImport(Combine)` / `canImport(SwiftUI)`) and available from the package minimums above. The `ReaderTPublisher`, `StatefulTPublisher` and `WriterTPublisher` stacks require macOS 13 / iOS 16 / tvOS 16 / watchOS 9. Everything else builds and is tested on Linux, Windows, and Android.
 
 ## License
 

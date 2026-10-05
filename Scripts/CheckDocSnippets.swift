@@ -6,19 +6,17 @@
 //
 // Run from the package root, after `swift build`:
 //
-//     swift Scripts/CheckDocSnippets.swift [output.md]      # default: docs/audit/snippets.md
+//     swift Scripts/CheckDocSnippets.swift [output.md] [--only FILE] [--verbose] [--dump PATH]   # default: docs/audit/snippets.md
 //
 // Nothing is added to the package: blocks are written to a scratch directory under $TMPDIR and checked
 // with `swiftc -typecheck` against `.build/debug/Modules` (plus the FPMacrosPlugin executable).
 //
-// Two passes per block:
-//   isolated   the block alone (syntax errors are detected here)
-//   cumulative every non-skipped block of the same file, in order, in one scope (this is how the articles read)
-// Top-level declaration chunks (type/func/extension/import/...) are hoisted to file scope; statement chunks are
-// placed, in order, inside one `async throws` function. `#sourceLocation` maps compiler errors back to the doc.
+// Convention: every block fenced ```swift must compile when the blocks of one file are concatenated top to bottom.
+// Illustrative fragments use the fence ```swift-sketch and are skipped (and counted).
 //
-// A block is skipped when its fence is tagged `swift-pseudo` / `swift-skip`, or when its first line is a
-// `// pseudo` comment.
+// Top-level declaration chunks (type/func/extension/import/...) are hoisted to file scope, so a name can be declared
+// only once per file; statement chunks run in order inside one `async throws` function, each block in its own `do`
+// scope. `#sourceLocation` maps compiler errors back to the doc.
 
 import Foundation
 
@@ -33,7 +31,13 @@ struct Block {
 
 let fm = FileManager.default
 let root = fm.currentDirectoryPath
-let outPath = CommandLine.arguments.dropFirst().first ?? "docs/audit/snippets.md"
+let args = Array(CommandLine.arguments.dropFirst())
+// `--only README.md` limits the run to one file; `--verbose` prints every compiler error of the cumulative pass.
+let only = args.firstIndex(of: "--only").flatMap { args.indices.contains($0 + 1) ? args[$0 + 1] : nil }
+let verbose = args.contains("--verbose")
+// `--dump PATH` writes the concatenated source of the (last) cumulative check, for debugging.
+let dumpPath = args.firstIndex(of: "--dump").flatMap { args.indices.contains($0 + 1) ? args[$0 + 1] : nil }
+let outPath = args.first(where: { !$0.hasPrefix("--") && $0 != only && $0 != dumpPath }) ?? "docs/audit/snippets.md"
 
 // MARK: - Discovery
 
@@ -42,11 +46,11 @@ func markdownFiles() -> [String] {
     for base in ["Sources", "docs/claude-skills"] {
         guard let e = fm.enumerator(atPath: base) else { continue }
         for case let p as String in e where p.hasSuffix(".md") {
-            if base == "Sources" && !p.contains(".docc/") { continue }
+            if base == "Sources", !p.contains(".docc/") { continue }
             result.append("\(base)/\(p)")
         }
     }
-    return result.sorted()
+    return result.sorted().filter { only == nil || $0 == only }
 }
 
 func extractBlocks(file: String) -> [Block] {
@@ -70,12 +74,7 @@ func extractBlocks(file: String) -> [Block] {
                 l.prefix(indent).allSatisfy { $0 == " " } ? String(l.dropFirst(indent)) : l
             }
             var block = Block(file: file, line: i + 2, lines: body, skipReason: nil)
-            if tag != "swift" {
-                block.skipReason = "fence tagged `\(tag)`"
-            } else if body.first(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty })?
-                .trimmingCharacters(in: .whitespaces).lowercased().hasPrefix("// pseudo") == true {
-                block.skipReason = "leading `// pseudo` comment"
-            }
+            if tag != "swift" { block.skipReason = tag == "swift-sketch" ? "sketch" : "fence tagged `\(tag)`" }
             blocks.append(block)
             i = j + 1
         } else {
@@ -128,7 +127,8 @@ func chunks(of block: Block) -> [Chunk] {
         // A lone attribute line (`@Lenses`) belongs to the declaration on the next line.
         let lastTrimmed = current.last(where: { !$0.trimmingCharacters(in: .whitespaces).isEmpty })?
             .trimmingCharacters(in: .whitespaces) ?? ""
-        let pendingAttribute = lastTrimmed.hasPrefix("@") && !lastTrimmed.contains(" ") && depth <= 0
+        let pendingAttribute = depth <= 0
+            && lastTrimmed.range(of: #"^(@[A-Za-z_][A-Za-z0-9_.<>, ]*(\(.*\))?\s*)+$"#, options: .regularExpression) != nil
         if startsNew, !current.isEmpty, !pendingAttribute { flush() }
         if current.isEmpty { currentLine = block.line + offset }
         current.append(raw)
@@ -167,11 +167,13 @@ func render(_ blocks: [Block]) -> String {
     var top = ""
     var body = ""
     for block in blocks {
+        var scoped = ""
         for chunk in chunks(of: block) {
             let text = "#sourceLocation(file: \"\(block.file)\", line: \(chunk.line))\n"
                 + chunk.lines.joined(separator: "\n") + "\n#sourceLocation()\n"
-            if chunk.isDecl { top += text } else { body += text }
+            if chunk.isDecl { top += text } else { scoped += text }
         }
+        if !scoped.isEmpty { body += "do {\n" + scoped + "}\n" }
     }
     return preamble + "\n" + top + "\nfunc _docSnippets() async throws {\n" + body + "}\n"
 }
@@ -195,7 +197,7 @@ func swiftc(_ source: String, name: String, parseOnly: Bool, scratch: String) ->
     try? source.write(toFile: path, atomically: true, encoding: .utf8)
     let p = Process()
     p.executableURL = URL(fileURLWithPath: "/usr/bin/env")
-    var args = ["swiftc", parseOnly ? "-parse" : "-typecheck", "-swift-version", "6"]
+    var args = ["swiftc", parseOnly ? "-parse" : "-typecheck", "-swift-version", "6", "-D", "DEBUG"]
     if !sdk.isEmpty { args += ["-sdk", sdk] }
     args += [
         "-I", "\(root)/.build/debug/Modules", "-I", "\(root)/.build/debug",
@@ -219,74 +221,6 @@ func parseError(_ s: String) -> (String, Int, String)? {
     return (parts[0 ..< parts.count - 2].joined(separator: ":"), line, String(s[r.upperBound...]))
 }
 
-// MARK: - Cause guesses
-
-let librarySource: String = {
-    guard let e = fm.enumerator(atPath: "Sources") else { return "" }
-    var all = ""
-    for case let p as String in e where p.hasSuffix(".swift") {
-        all += (try? String(contentsOfFile: "Sources/\(p)", encoding: .utf8)) ?? ""
-        all += "\n"
-    }
-    return all
-}()
-
-func libraryDeclares(_ name: String) -> Bool {
-    guard let re = try? NSRegularExpression(
-        pattern: "(func|struct|enum|class|actor|protocol|typealias|case|var|let|macro|init)\\s+`?\(NSRegularExpression.escapedPattern(for: name))\\b"
-    ) else { return false }
-    return re.firstMatch(in: librarySource, range: NSRange(librarySource.startIndex..., in: librarySource)) != nil
-}
-
-func quotedName(_ m: String) -> String? {
-    guard let a = m.firstIndex(of: "'"), let b = m[m.index(after: a)...].firstIndex(of: "'") else { return nil }
-    return String(m[m.index(after: a) ..< b])
-}
-
-/// Returns (text, isLikelyRealOutdatedAPI). `message` is "docLine: compiler message".
-func guess(_ full: String, block: Block) -> (String, Bool) {
-    let m = full.drop(while: { $0.isNumber }).dropFirst(2).description
-    let text = block.lines.joined(separator: "\n")
-    if m.contains("invalid redeclaration") || m.contains("already declared") || m.contains("ambiguous for type lookup") {
-        return ("harness: name redeclared across blocks of one file", false)
-    }
-    if m.hasPrefix("cannot find '") || m.hasPrefix("cannot find type '") {
-        if let n = quotedName(m) {
-            if libraryDeclares(n) {
-                return ("`\(n)` exists in Sources but is not in scope here (missing qualifier/import, or signature moved)", true)
-            }
-            return ("`\(n)` not declared in Sources: user-defined in prose (missing context) or removed/renamed API", false)
-        }
-        return ("missing context", false)
-    }
-    if m.contains("unary operator cannot be separated") || m.contains("expected declaration") && text.contains("...") {
-        return ("harness: `{ ... }` elision / ellipsis in snippet", false)
-    }
-    if text.contains("{ ... }") || text.contains("/* ... */") { return ("harness: `...` elision in snippet", false) }
-    if m.contains("non-Sendable function value") {
-        return ("Swift 6 mode: closure/function not @Sendable; doc style or real (library is Sendable-first)", true)
-    }
-    if m.contains("property wrappers are not yet supported in top-level code") {
-        return ("harness: property wrapper in statement scope", false)
-    }
-    if m.contains("adjacent operators are in unordered precedence groups") {
-        return ("operator precedence mismatch (possibly outdated operator choice; check manually)", true)
-    }
-    if m.contains("has no member") { return ("renamed/removed member (likely outdated API)", true) }
-    if m.contains("extra argument") || m.contains("missing argument") || m.contains("incorrect argument label") ||
-        m.contains("cannot convert value of type") || m.contains("generic parameter") ||
-        m.contains("is not a member type") || m.contains("requires that") || m.contains("cannot call value") ||
-        m.contains("does not conform") {
-        return ("signature/type mismatch (possibly outdated API, or missing context types; check manually)", true)
-    }
-    if m.contains("expected") || m.contains("consecutive") || m.contains("unexpected") || m.contains("cannot parse") {
-        return ("syntax error: pseudo-code, ellipsis or fragment", false)
-    }
-    if m.contains("no such module") { return ("harness: module unavailable", false) }
-    if m.contains("expressions are not allowed") { return ("harness: top-level statement placement", false) }
-    return ("unclassified (inspect manually)", false)
-}
-
 // MARK: - Main
 
 let scratch = NSTemporaryDirectory() + "docsnippets-\(getpid())"
@@ -302,115 +236,93 @@ for f in markdownFiles() {
     let b = extractBlocks(file: f)
     if !b.isEmpty { perFile.append((f, b)) }
 }
+
 let flat: [Block] = perFile.flatMap { $0.1 }
 
-struct Key: Hashable {
-    let file: String
-    let line: Int
-}
-
+// Syntax errors are found per block (so one broken block cannot hide the rest), then every other non-skipped block of a
+// file is type-checked together, in order.
 final class Results: @unchecked Sendable { // every access goes through `lock`
     let lock = NSLock()
-    var syntax: [Key: String] = [:]
-    var isolated: [Key: String] = [:]
-    var cumulative: [Key: String] = [:]
+    var failures: [String: [(line: Int, message: String)]] = [:]
 }
+
 let results = Results()
 
-// Pass 1: isolated, in parallel.
+func record(_ file: String, _ line: Int, _ message: String) {
+    results.lock.lock()
+    results.failures[file, default: []].append((line, message))
+    results.lock.unlock()
+}
+
+var syntaxBroken = Set<String>() // "file:line"
 let runnable = flat.filter { $0.skipReason == nil }
 DispatchQueue.concurrentPerform(iterations: runnable.count) { idx in
     let block = runnable[idx]
-    let src = render([block])
-    let key = Key(file: block.file, line: block.line)
-    let syn = swiftc(src, name: "iso\(idx)p", parseOnly: true, scratch: scratch)
-    if let e = syn.compactMap(parseError).first(where: { $0.0 == block.file }) {
-        results.lock.lock()
-        results.syntax[key] = "\(e.1): \(e.2)"
-        results.isolated[key] = "\(e.1): \(e.2)"
-        results.lock.unlock()
-        return
-    }
-    let errs = swiftc(src, name: "iso\(idx)", parseOnly: false, scratch: scratch)
+    let errs = swiftc(render([block]), name: "syn\(idx)", parseOnly: true, scratch: scratch)
     if let e = errs.compactMap(parseError).first(where: { $0.0 == block.file }) {
+        record(block.file, block.line, "\(e.1): \(e.2)")
         results.lock.lock()
-        results.isolated[key] = "\(e.1): \(e.2)"
+        syntaxBroken.insert("\(block.file):\(block.line)")
         results.lock.unlock()
     }
 }
 
-// Pass 2: cumulative per file (syntax-broken blocks excluded so they cannot hide other errors).
 DispatchQueue.concurrentPerform(iterations: perFile.count) { idx in
     let (file, blocks) = perFile[idx]
     results.lock.lock()
-    let syntaxKeys = Set(results.syntax.keys)
+    let broken = syntaxBroken
     results.lock.unlock()
-    let ok = blocks.filter { $0.skipReason == nil && !syntaxKeys.contains(Key(file: file, line: $0.line)) }
+    let ok = blocks.filter { $0.skipReason == nil && !broken.contains("\($0.file):\($0.line)") }
     guard !ok.isEmpty else { return }
-    let errs = swiftc(render(ok), name: "cum\(idx)", parseOnly: false, scratch: scratch)
-    let starts = ok.map(\.line)
-    results.lock.lock()
+    let source = render(ok)
+    if let dumpPath { try? source.write(toFile: dumpPath, atomically: true, encoding: .utf8) }
+    let errs = swiftc(source, name: "cum\(idx)", parseOnly: false, scratch: scratch)
+    var seen = Set<Int>()
+    if verbose { errs.forEach { print($0) } }
     for e in errs.compactMap(parseError) where e.0 == file {
-        guard let start = starts.last(where: { $0 <= e.1 }) else { continue }
-        let k = Key(file: file, line: start)
-        if results.cumulative[k] == nil { results.cumulative[k] = "\(e.1): \(e.2)" }
+        guard let start = ok.map(\.line).last(where: { $0 <= e.1 }), seen.insert(start).inserted else { continue }
+        record(file, start, "\(e.1): \(e.2)")
     }
-    results.lock.unlock()
 }
+
 try? fm.removeItem(atPath: scratch)
 
 // MARK: - Report
 
 var out = "# Doc snippet compile check\n\n"
 out += "Generated by `Scripts/CheckDocSnippets.swift` (Swift 6 mode, `swiftc -typecheck` against `.build/debug`).\n\n"
-out += "A block is **failing** if it has a syntax error in isolation, or a compiler error when all non-skipped blocks of\n"
-out += "its file are type-checked in order in one scope (cumulative). The `iso` column says whether it also fails alone.\n"
-out += "Causes are heuristic guesses from the first error message; `API?` = likely real outdated API, otherwise a harness\n"
-out += "limitation or missing context (verify before fixing).\n\n"
-
+out += "Convention: a ```swift block must compile when all ```swift blocks of its file are concatenated top to bottom;\n"
+out += "```swift-sketch blocks are illustrative and skipped.\n\n"
 var totalBlocks = 0
 var totalFailing = 0
-var totalSkipped = 0
-var totalRealAPI = 0
-var skipReasons: [String: Int] = [:]
+var totalSketch = 0
 var rows: [(String, Int, Int, Int)] = []
 var detail = ""
 for (file, blocks) in perFile {
-    var failing: [(Block, String, Bool, Bool)] = [] // block, message, alsoFailsIsolated, syntax
-    var skipped = 0
-    for b in blocks {
-        if let r = b.skipReason {
-            skipped += 1
-            skipReasons[r, default: 0] += 1
-            continue
-        }
-        let k = Key(file: file, line: b.line)
-        if let s = results.syntax[k] {
-            failing.append((b, s, true, true))
-        } else if let c = results.cumulative[k] {
-            failing.append((b, c, results.isolated[k] != nil, false))
-        }
-    }
-    totalBlocks += blocks.count
-    totalFailing += failing.count
-    totalSkipped += skipped
-    rows.append((file, blocks.count, failing.count, skipped))
-    guard !failing.isEmpty else { continue }
-    detail += "## \(file)\n\n| Block line | iso | First error (doc line: message) | Likely cause |\n|---|---|---|---|\n"
-    for (b, msg, iso, _) in failing {
-        let (cause, real) = guess(msg, block: b)
-        if real { totalRealAPI += 1 }
-        let clean = msg.replacingOccurrences(of: "|", with: "\\|")
-        detail += "| \(b.line) | \(iso ? "fail" : "pass") | `\(clean)` | \(real ? "API? " : "")\(cause) |\n"
+    let sketches = blocks.filter { $0.skipReason != nil }.count
+    let fails = (results.failures[file] ?? []).sorted { $0.line < $1.line }
+    totalBlocks += blocks.count - sketches
+    totalFailing += fails.count
+    totalSketch += sketches
+    rows.append((file, blocks.count - sketches, fails.count, sketches))
+    guard !fails.isEmpty else { continue }
+    detail += "## \(file)\n\n| Block line | First error (doc line: message) |\n|---|---|\n"
+    for f in fails {
+        detail += "| \(f.line) | `\(f.message.replacingOccurrences(of: "|", with: "\\|"))` |\n"
     }
     detail += "\n"
 }
 
-out += "## Totals\n\n- Files with Swift blocks: \(perFile.count)\n- Blocks: \(totalBlocks)\n- Failing: \(totalFailing)\n"
-out += "- Skipped: \(totalSkipped)\n- Failing and flagged as likely real outdated API: \(totalRealAPI)\n"
-for (r, n) in skipReasons.sorted(by: { $0.key < $1.key }) { out += "  - skipped (\(r)): \(n)\n" }
-out += "\n## Per file\n\n| File | Blocks | Failing | Skipped |\n|---|---|---|---|\n"
-for r in rows.sorted(by: { $0.2 > $1.2 }) { out += "| \(r.0) | \(r.1) | \(r.2) | \(r.3) |\n" }
+out += "## Totals\n\n- Files with Swift blocks: \(perFile.count)\n- Checked blocks: \(totalBlocks)\n- Failing: \(totalFailing)\n"
+out += "- Sketch (skipped): \(totalSketch)\n"
+out += "\n## Per file\n\n| File | Checked | Failing | Sketch |\n|---|---|---|---|\n"
+for r in rows.sorted(by: { $0.2 > $1.2 }) {
+    out += "| \(r.0) | \(r.1) | \(r.2) | \(r.3) |\n"
+}
+
 out += "\n# Failures\n\n" + detail
 try? out.write(toFile: outPath, atomically: true, encoding: .utf8)
-print("blocks=\(totalBlocks) failing=\(totalFailing) skipped=\(totalSkipped) -> \(outPath)")
+print("checked=\(totalBlocks) failing=\(totalFailing) sketch=\(totalSketch) -> \(outPath)")
+for r in rows where r.0 == "README.md" {
+    print("README.md: checked=\(r.1) failing=\(r.2) sketch=\(r.3)")
+}
