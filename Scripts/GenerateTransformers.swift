@@ -608,7 +608,12 @@ func applicativeExtension(_ stack: Stack) -> String {
     let inputStack = stack.applied("Input")
     let lhsType = stack.applied("A1")
     let rhsType = stack.applied("A2")
-    let pure = stack.customPure ?? stack.outer.outerPure(
+    // A Reader is re-runnable but an AsyncStream is single-pass: build the stream inside each run,
+    // or every run after the first would see an exhausted stream.
+    let readerStreamPure = stack.outer == .reader && stack.inner == .asyncStream
+        ? "Reader { (_: Env) in AsyncStream.just(value) }" // `const(…)` would build one stream eagerly
+        : nil
+    let pure = stack.customPure ?? readerStreamPure ?? stack.outer.outerPure(
         stack.outer == .publisher || stack.outer == .asyncStream
             ? (stack.inner == .asyncStream ? "AsyncStream.just(value)" : "I.pure(value)")
             : (stack.inner == .asyncStream ? "AsyncStream.just(value)" : ".pure(value)")

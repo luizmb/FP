@@ -190,9 +190,8 @@ private func runAt1(_ stateful: Stateful<Int, Int>) -> [Int] {
             #expect(observe(escaped) == [[20, 2]])
             #expect(observe(make().map(CoreFP.id)) == observe(make()))
             #expect(observe(make().map(inc).map(dbl)) == observe(make().map { dbl(inc($0)) }))
-            // `apply` zips while `pure` is a single `Just`, so identity only holds for single-element streams.
-            let single = Stack([tick].publisher.eraseToAnyPublisher())
-            #expect(observe(Stack.apply(pureFn { $0 }, single)) == observe(single))
+            // `apply` is Publisher's `ap` (ordered concat) composed with Stateful's, so identity holds for any stream.
+            #expect(observe(Stack.apply(pureFn { $0 }, make())) == observe(make()))
             #expect(observe(Stack.apply(pureFn(inc), Stack.pure(4))) == observe(Stack.pure(5)))
         }
     }

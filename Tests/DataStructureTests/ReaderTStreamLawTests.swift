@@ -34,6 +34,15 @@ private func expectSameStream<A: Equatable & Sendable>(
     let f: @Sendable (Int) -> LawRStream<Int> = { a in LawRStream<Int>(Reader { env in streamOf([a, a * env]) }) }
     let g: @Sendable (Int) -> LawRStream<String> = { b in LawRStream<String>(Reader { env in streamOf(["\(b + env)"]) }) }
 
+    @Test func pureCanBeRunRepeatedly() async {
+        // A Reader is re-runnable; `pure` must build a fresh single-pass stream on every run.
+        let stack = LawRStream<Int>.pure(5)
+        let first = await collectAll(stack.rawValue(1))
+        let second = await collectAll(stack.rawValue(2))
+        #expect(first == [5])
+        #expect(second == [5])
+    }
+
     @Test func functorIdentity() async {
         for m in ms {
             await expectSameStream({ m().map(id) }, m)

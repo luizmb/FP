@@ -62,4 +62,3 @@ public func <=< <W: Monoid, O0: Sendable, A: Sendable, B: Sendable>(
     _ fn2: @escaping @Sendable (A) -> Writer<W, B>,
     _ fn1: @escaping @Sendable (O0) -> Writer<W, A>
 ) -> @Sendable (O0) -> Writer<W, B> { fn1 >=> fn2 }
-

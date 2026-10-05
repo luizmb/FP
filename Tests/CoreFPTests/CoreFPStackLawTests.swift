@@ -256,13 +256,9 @@ private let identity: @Sendable (Int) -> Int = id
     }
 
     @Test func applicativeIdentityAndHomomorphism() async {
-        // `apply` zips emissions while `pure` emits once, so identity only holds for single-emission stacks.
-        let single = await collectAll(AsyncStreamTArray.apply(AsyncStreamTArray.pure(identity), streamOf([[1, 2]]).asyncStreamT).rawValue)
-        #expect(single == [[1, 2]])
-        await withKnownIssue("zip-based apply with a single-emission pure breaks identity on longer streams") {
-            let applied = await collectAll(AsyncStreamTArray.apply(AsyncStreamTArray.pure(identity), m()).rawValue)
-            #expect(applied == values)
-        }
+        // `apply` is AsyncStream's `ap` composed with Array's, so identity holds for any stream.
+        let applied = await collectAll(AsyncStreamTArray.apply(AsyncStreamTArray.pure(identity), m()).rawValue)
+        #expect(applied == values)
         let homomorphism = await collectAll(AsyncStreamTArray.apply(AsyncStreamTArray.pure(inc), AsyncStreamTArray.pure(4)).rawValue)
         let pureResult = await collectAll(AsyncStreamTArray.pure(inc(4)).rawValue)
         #expect(pureResult == homomorphism)
@@ -384,13 +380,9 @@ private let identity: @Sendable (Int) -> Int = id
         }
 
         @Test func applicativeIdentityAndHomomorphism() {
-            // `apply` zips emissions while `pure` emits once, so identity only holds for single-emission stacks.
+            // `apply` is Publisher's `ap` (ordered concat) composed with Array's, so identity holds for any stream.
             let pureIdentity = PublisherTArray<Never, @Sendable (Int) -> Int>.pure(identity)
-            let single = PublisherTArray<Never, Int>(Just([1, 2]).eraseToAnyPublisher())
-            #expect(collect(PublisherTArray.apply(pureIdentity, single).rawValue) == [[1, 2]])
-            withKnownIssue("zip-based apply with a single-emission pure breaks identity on longer streams") {
-                #expect(collect(PublisherTArray.apply(pureIdentity, m()).rawValue) == values)
-            }
+            #expect(collect(PublisherTArray.apply(pureIdentity, m()).rawValue) == values)
             let pureInc = PublisherTArray<Never, @Sendable (Int) -> Int>.pure(inc)
             let homomorphism = PublisherTArray.apply(pureInc, PublisherTArray<Never, Int>.pure(4))
             #expect(collect(homomorphism.rawValue) == collect(PublisherTArray<Never, Int>.pure(inc(4)).rawValue))

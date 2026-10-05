@@ -12,9 +12,9 @@
         _ fn: @escaping @Sendable (A, B) -> C
     ) -> (AnyPublisher<Stateful<S, A>, E>, AnyPublisher<Stateful<S, B>, E>) -> AnyPublisher<Stateful<S, C>, E> {
         { pubA, pubB in
-            pubA.zip(pubB)
-                .map { sa, sb in Stateful<S, C> { s in fn(sa.run(&s), sb.run(&s)) } }
-                .eraseToAnyPublisher()
+            pubA.concatMap { sa in
+                pubB.map { sb in Stateful<S, C> { s in fn(sa.run(&s), sb.run(&s)) } }
+            }
         }
     }
 
@@ -24,9 +24,9 @@
         _ lhs: AnyPublisher<Stateful<S, A>, E>,
         _ rhs: AnyPublisher<Stateful<S, B>, E>
     ) -> AnyPublisher<Stateful<S, B>, E> {
-        lhs.zip(rhs)
-            .map { sa, sb in sa.seqRight(sb) }
-            .eraseToAnyPublisher()
+        lhs.concatMap { sa in
+            rhs.map { sb in sa.seqRight(sb) }
+        }
     }
 
     /// seqLeft for PublisherTStateful
@@ -35,9 +35,9 @@
         _ lhs: AnyPublisher<Stateful<S, A>, E>,
         _ rhs: AnyPublisher<Stateful<S, B>, E>
     ) -> AnyPublisher<Stateful<S, A>, E> {
-        lhs.zip(rhs)
-            .map { sa, sb in sa.seqLeft(sb) }
-            .eraseToAnyPublisher()
+        lhs.concatMap { sa in
+            rhs.map { sb in sa.seqLeft(sb) }
+        }
     }
 
 #endif

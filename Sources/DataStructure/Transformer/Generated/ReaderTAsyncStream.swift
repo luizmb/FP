@@ -78,7 +78,7 @@ public extension ReaderTAsyncStream where Env: Sendable, A: Sendable {
     /// - Parameter value: The value to lift.
     /// - Returns: The minimal stack holding `value`.
     static func pure(_ value: A) -> ReaderTAsyncStream<Env, A> {
-        ReaderTAsyncStream<Env, A>(.pure(AsyncStream.just(value)))
+        ReaderTAsyncStream<Env, A>(Reader { (_: Env) in AsyncStream.just(value) })
     }
 
     /// Applies the functions inside a stack to the values inside another.

@@ -3,6 +3,9 @@ import Foundation
 
 // AsyncSequenceTArray: outer = AsyncStream, inner = Array
 // Type: AsyncStream<[A]>
+//
+// The applicative is the composition of AsyncStream's applicative (`ap`: ordered concat, the
+// argument stream buffered once and replayed) with Array's (cartesian). It is not zip.
 
 /// `liftA2AsyncStreamArray`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
@@ -10,21 +13,7 @@ func liftA2AsyncStreamArray<A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> @Sendable (AsyncStream<[A]>, AsyncStream<[B]>) -> AsyncStream<[C]>
 where A: Sendable, B: Sendable, C: Sendable {
-    { @Sendable streamA, streamB in
-        AsyncStream<[C]> { continuation in
-            let task = Task { @Sendable in
-                var iterA = streamA.makeAsyncIterator()
-                var iterB = streamB.makeAsyncIterator()
-                while let a = await iterA.next(), let b = await iterB.next() {
-                    continuation.yield(Array.liftA2(fn)(a, b))
-                }
-                continuation.finish()
-            }
-            // swiftlint:disable:next closure_ignoring_args
-            // swiftlint:disable:next closure_ignoring_args
-            continuation.onTermination = { _ in task.cancel() }
-        }
-    }
+    AsyncStream<[C]>.liftA2 { @Sendable (a: [A], b: [B]) in Array.liftA2(fn)(a, b) }
 }
 
 /// `seqRightAsyncStreamArray`.
@@ -33,18 +22,7 @@ func seqRightAsyncStreamArray<A, B>(
     _ lhs: AsyncStream<[A]>,
     _ rhs: AsyncStream<[B]>
 ) -> AsyncStream<[B]> where A: Sendable, B: Sendable {
-    AsyncStream<[B]> { continuation in
-        let task = Task { @Sendable in
-            var lhsIter = lhs.makeAsyncIterator()
-            var rhsIter = rhs.makeAsyncIterator()
-            while let a = await lhsIter.next(), let b = await rhsIter.next() {
-                continuation.yield(a.seqRight(b))
-            }
-            continuation.finish()
-        }
-        // swiftlint:disable:next closure_ignoring_args
-        continuation.onTermination = { _ in task.cancel() }
-    }
+    AsyncStream<[B]>.liftA2 { @Sendable (a: [A], b: [B]) in a.seqRight(b) }(lhs, rhs)
 }
 
 /// `seqLeftAsyncStreamArray`.
@@ -53,16 +31,5 @@ func seqLeftAsyncStreamArray<A, B>(
     _ lhs: AsyncStream<[A]>,
     _ rhs: AsyncStream<[B]>
 ) -> AsyncStream<[A]> where A: Sendable, B: Sendable {
-    AsyncStream<[A]> { continuation in
-        let task = Task { @Sendable in
-            var lhsIter = lhs.makeAsyncIterator()
-            var rhsIter = rhs.makeAsyncIterator()
-            while let a = await lhsIter.next(), let b = await rhsIter.next() {
-                continuation.yield(a.seqLeft(b))
-            }
-            continuation.finish()
-        }
-        // swiftlint:disable:next closure_ignoring_args
-        continuation.onTermination = { _ in task.cancel() }
-    }
+    AsyncStream<[A]>.liftA2 { @Sendable (a: [A], b: [B]) in a.seqLeft(b) }(lhs, rhs)
 }

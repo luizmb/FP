@@ -12,9 +12,9 @@
         _ fn: @escaping @Sendable (A, B) -> C
     ) -> (AnyPublisher<[A], E>, AnyPublisher<[B], E>) -> AnyPublisher<[C], E> {
         { pubA, pubB in
-            pubA.zip(pubB)
-                .map { a, b in Array.liftA2(fn)(a, b) }
-                .eraseToAnyPublisher()
+            pubA.concatMap { a in
+                pubB.map { b in Array.liftA2(fn)(a, b) }
+            }
         }
     }
 
@@ -24,9 +24,9 @@
         _ lhs: AnyPublisher<[A], E>,
         _ rhs: AnyPublisher<[B], E>
     ) -> AnyPublisher<[B], E> {
-        lhs.zip(rhs)
-            .map { a, b in a.seqRight(b) }
-            .eraseToAnyPublisher()
+        lhs.concatMap { a in
+            rhs.map { b in a.seqRight(b) }
+        }
     }
 
     /// `seqLeftPublisherArray`.
@@ -35,9 +35,9 @@
         _ lhs: AnyPublisher<[A], E>,
         _ rhs: AnyPublisher<[B], E>
     ) -> AnyPublisher<[A], E> {
-        lhs.zip(rhs)
-            .map { a, b in a.seqLeft(b) }
-            .eraseToAnyPublisher()
+        lhs.concatMap { a in
+            rhs.map { b in a.seqLeft(b) }
+        }
     }
 
 #endif
