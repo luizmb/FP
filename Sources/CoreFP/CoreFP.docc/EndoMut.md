@@ -2,9 +2,7 @@
 
 `EndoMut<A>` is the in-place counterpart to ``Endo`` — instead of wrapping `(A) -> A`, it wraps `(inout A) -> Void`, purpose-built to avoid Copy-on-Write copy costs on large Swift value types.
 
-```swift
-import CoreFP
-
+```swift-sketch
 public struct EndoMut<A>: Sendable {
     public let runEndoMut: @Sendable (inout A) -> Void
     public init(_ fn: @escaping @Sendable (inout A) -> Void) { runEndoMut = fn }
@@ -40,7 +38,7 @@ normalise(&items)              // callAsFunction also works
 
 ``Endo`` and `EndoMut` are isomorphic as monoids. Converting `Endo → EndoMut` is free — no allocation beyond wrapping the closure. Converting `EndoMut → Endo` always makes exactly one copy, which is precisely the copy pure-function semantics require.
 
-```swift
+```swift-sketch
 public extension Endo {
     func toEndoMut() -> EndoMut<A> { EndoMut { a in a = runEndo(a) } }
 }

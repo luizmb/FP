@@ -11,14 +11,14 @@ Array as a monad models **non-determinism** — a computation that can return mu
 Apply a function to every element. `<£>` puts the function on the left; `<&>` puts the array on the left.
 
 ```swift
-{ $0 * 2 } <£> [1, 2, 3]          // [2, 4, 6]
-{ "\($0)" } <£> [1, 2, 3]         // ["1", "2", "3"]
+let m1 = ({ $0 * 2 } <£> [1, 2, 3])          // [2, 4, 6]
+let m2 = ({ "\($0)" } <£> [1, 2, 3])         // ["1", "2", "3"]
 
-[1, 2, 3] <&> { $0 * 2 }          // [2, 4, 6]
+let m3 = [1, 2, 3] <&> { $0 * 2 }            // [2, 4, 6]
 
 // Named function
-Array.fmap { $0 * 2 }([1, 2, 3])  // [2, 4, 6]
-[1, 2, 3].map { $0 * 2 }          // [2, 4, 6]
+let m4 = Array.fmap { $0 * 2 }([1, 2, 3])    // [2, 4, 6]
+let m5 = [1, 2, 3].map { $0 * 2 }            // [2, 4, 6]
 ```
 
 ---
@@ -28,11 +28,11 @@ Array.fmap { $0 * 2 }([1, 2, 3])  // [2, 4, 6]
 Replace every element with a constant.
 
 ```swift
-[1, 2, 3] £> "x"   // ["x", "x", "x"]
-"x" <£ [1, 2, 3]   // ["x", "x", "x"]
+let c1 = [1, 2, 3] £> "x"   // ["x", "x", "x"]
+let c2 = "x" <£ [1, 2, 3]   // ["x", "x", "x"]
 
 // Named function
-Array.fmap(const("x"))([1, 2, 3])  // ["x", "x", "x"]
+let c3 = Array.fmap(const("x"))([1, 2, 3])  // ["x", "x", "x"]
 ```
 
 ---
@@ -42,14 +42,17 @@ Array.fmap(const("x"))([1, 2, 3])  // ["x", "x", "x"]
 Apply each function to each value — cartesian product of functions × values.
 
 ```swift
-[{ $0 + 1 }, { $0 * 10 }] <*> [1, 2, 3]   // [2, 3, 4, 10, 20, 30]
-[{ $0 + 1 }] <*> []                          // []
+let addOne: @Sendable (Int) -> Int = { $0 + 1 }
+let timesTen: @Sendable (Int) -> Int = { $0 * 10 }
+
+let a1 = [addOne, timesTen] <*> [1, 2, 3]   // [2, 3, 4, 10, 20, 30]
+let a2 = [addOne] <*> ([] as [Int])         // []
 
 // Named function
-Array.apply([{ $0 + 1 }, { $0 * 10 }], [1, 2, 3])  // [2, 3, 4, 10, 20, 30]
+let a3 = Array.apply([addOne, timesTen], [1, 2, 3])  // [2, 3, 4, 10, 20, 30]
 
-// liftA2 — lift a binary function to work on all pairs
-Array.liftA2(+)([1, 2], [10, 20])  // [11, 21, 12, 22]
+// liftA2: lift a binary function to work on all pairs
+let a4 = Array.liftA2(+)([1, 2], [10, 20])  // [11, 21, 12, 22]
 ```
 
 ---
@@ -59,13 +62,13 @@ Array.liftA2(+)([1, 2], [10, 20])  // [11, 21, 12, 22]
 Cartesian product, discarding one side's values.
 
 ```swift
-[1, 2] *> ["a", "b"]   // ["a", "b", "a", "b"]  (2 × 2, keeping right)
-[1, 2] <* ["a", "b"]   // [1, 1, 2, 2]           (2 × 2, keeping left)
-[]     *> ["a", "b"]   // []
+let s1 = [1, 2] *> ["a", "b"]            // ["a", "b", "a", "b"]  (2 × 2, keeping right)
+let s2 = [1, 2] <* ["a", "b"]            // [1, 1, 2, 2]           (2 × 2, keeping left)
+let s3 = ([] as [Int]) *> ["a", "b"]     // []
 
 // Named functions
-[1, 2].seqRight(["a", "b"])  // ["a", "b", "a", "b"]
-[1, 2].seqLeft(["a", "b"])   // [1, 1, 2, 2]
+let s4 = [1, 2].seqRight(["a", "b"])  // ["a", "b", "a", "b"]
+let s5 = [1, 2].seqLeft(["a", "b"])   // [1, 1, 2, 2]
 ```
 
 ---
@@ -75,14 +78,17 @@ Cartesian product, discarding one side's values.
 Apply a function to each element and flatten the results. `>>-` puts the array on the left; `-<<` puts the function on the left.
 
 ```swift
-[1, 2, 3] >>- { [$0, $0 * 10] }             // [1, 10, 2, 20, 3, 30]
-[1, 2, 3] >>- { $0 % 2 == 0 ? [$0] : [] }   // [2]  (filter-like)
+let withTens: @Sendable (Int) -> [Int] = { [$0, $0 * 10] }
+let onlyEven: @Sendable (Int) -> [Int] = { $0 % 2 == 0 ? [$0] : [] }
 
-{ [$0, $0 * 10] } -<< [1, 2, 3]             // [1, 10, 2, 20, 3, 30]
+let b1 = [1, 2, 3] >>- withTens       // [1, 10, 2, 20, 3, 30]
+let b2 = [1, 2, 3] >>- onlyEven       // [2]  (filter-like)
+
+let b3 = withTens -<< [1, 2, 3]       // [1, 10, 2, 20, 3, 30]
 
 // Named function
-Array.bind { [$0, $0 * 10] }([1, 2, 3])  // [1, 10, 2, 20, 3, 30]
-[1, 2, 3].flatMap { [$0, $0 * 10] }      // [1, 10, 2, 20, 3, 30]
+let b4 = Array.bind(withTens)([1, 2, 3])  // [1, 10, 2, 20, 3, 30]
+let b5 = [1, 2, 3].flatMap { [$0, $0 * 10] }  // [1, 10, 2, 20, 3, 30]
 ```
 
 ---
@@ -92,14 +98,14 @@ Array.bind { [$0, $0 * 10] }([1, 2, 3])  // [1, 10, 2, 20, 3, 30]
 Compose two functions that each return an array.
 
 ```swift
-let expand:  (Int) -> [Int] = { [$0, $0 + 1] }
-let doubled: (Int) -> [Int] = { [$0 * 2] }
+let expand: @Sendable (Int) -> [Int] = { [$0, $0 + 1] }
+let doubled: @Sendable (Int) -> [Int] = { [$0 * 2] }
 
-let pipeline = expand >=> doubled
-pipeline(3)   // [6, 8]  — expand gives [3,4], doubled gives [6] and [8]
+let kleisliPipeline = expand >=> doubled
+let k1 = kleisliPipeline(3)   // [6, 8]  — expand gives [3,4], doubled gives [6] and [8]
 
 // Named function
-Array.kleisli(expand, doubled)(3)  // [6, 8]
+let k2 = Array.kleisli(expand, doubled)(3)  // [6, 8]
 ```
 
 ---
@@ -109,8 +115,8 @@ Array.kleisli(expand, doubled)(3)  // [6, 8]
 Concatenate two arrays.
 
 ```swift
-[1, 2] <|> [3, 4]   // [1, 2, 3, 4]
-[]     <|> [1, 2]   // [1, 2]
+let alt1 = [1, 2] <|> [3, 4]            // [1, 2, 3, 4]
+let alt2 = ([] as [Int]) <|> [1, 2]     // [1, 2]
 ```
 
 ---
@@ -120,15 +126,15 @@ Concatenate two arrays.
 A curried version of `filter` for point-free composition:
 
 ```swift
-Array.filterM { $0 > 2 }([1, 2, 3, 4])   // [3, 4]
+let f1 = Array.filterM { (n: Int) in n > 2 }([1, 2, 3, 4])   // [3, 4]
 
 // Useful in pipelines
-let keepPositives = Array.filterM { $0 > 0 }
-keepPositives([1, -2, 3, -4])   // [1, 3]
+let keepPositives = Array.filterM { (n: Int) in n > 0 }
+let f2 = keepPositives([1, -2, 3, -4])   // [1, 3]
 
-// Compose with other curried functions
-let pipeline = Array.fmap { $0 * 2 } >>> Array.filterM { $0 > 4 }
-pipeline([1, 2, 3, 4])   // [6, 8]
+// The function filterM returns is not @Sendable, so it can't feed `>>>`; apply it instead
+let keepBig = Array.filterM { (n: Int) in n > 4 }
+let f3 = keepBig(Array.fmap { (n: Int) in n * 2 }([1, 2, 3, 4]))   // [6, 8]
 ```
 
 ---
@@ -188,19 +194,23 @@ Useful for **inverting nested structures** — turning an array of optionals or 
 ```swift
 // sequence :: [a?] -> [a]?   — Array<Optional> into Optional<Array>
 // All elements must be non-nil; one nil collapses the whole result
-[Optional(1), Optional(2), Optional(3)].sequence()  // Optional([1, 2, 3])
-[Optional(1), nil, Optional(3)].sequence()          // nil
+let q3 = [Optional(1), Optional(2), Optional(3)].sequence()  // Optional([1, 2, 3])
+let q4 = [Optional(1), nil, Optional(3)].sequence()          // nil
 
 // traverse :: (a -> b?) -> [a] -> [b]?
-["1", "2", "3"].traverse { Int($0) }   // Optional([1, 2, 3])
-["1", "??", "3"].traverse { Int($0) }  // nil
+let q5 = ["1", "2", "3"].traverse { Int($0) }   // Optional([1, 2, 3])
+let q6 = ["1", "??", "3"].traverse { Int($0) }  // nil
 
 // sequence :: [Result<a,e>] -> Result<[a],e>   — Array<Result> into Result<Array>
-[Result<Int, MyError>.success(1), .success(2)].sequence()           // .success([1, 2])
-[Result<Int, MyError>.success(1), .failure(.err), .success(3)].sequence()  // .failure(.err)
+enum MyError: Error { case err, bad }
+
+let okResults: [Result<Int, MyError>] = [.success(1), .success(2)]
+let badResults: [Result<Int, MyError>] = [.success(1), .failure(.err), .success(3)]
+let q1: Result<[Int], MyError> = okResults.sequence()    // .success([1, 2])
+let q2: Result<[Int], MyError> = badResults.sequence()   // .failure(.err)
 
 // sequence :: [[a]] -> [[a]]   — cartesian product (Array<Array> into Array<Array>)
-[[1, 2], [3, 4]].sequence()   // [[1, 3], [1, 4], [2, 3], [2, 4]]
+let q7 = [[1, 2], [3, 4]].sequence()   // [[1, 3], [1, 4], [2, 3], [2, 4]]
 ```
 
 ---
@@ -235,11 +245,11 @@ xs.arrayT.flatMap { n in ArrayTOptional([n, n + 1]) }.rawValue
 // [Optional(1), Optional(2), nil, Optional(3), Optional(4)]
 
 // Operators
-({ $0 * 2 } <£> xs.arrayT).rawValue  // [Optional(2), nil, Optional(6)]
-xs.arrayT >>- { n in ArrayTOptional([n, nil]) }
+let opMapped = ({ $0 * 2 } <£> xs.arrayT).rawValue  // [Optional(2), nil, Optional(6)]
+let opBound = xs.arrayT >>- { n in ArrayTOptional([n, nil]) }
 
 // Escape hatch (Haskell's mapMaybeT): the whole [Int?]
-xs.arrayT.mapMaybeT { Array($0.reversed()) }
+let reversedAll = xs.arrayT.mapMaybeT { Array($0.reversed()) }
 ```
 
 ### `ArrayTResult` (`[Result<A, E>]`)
@@ -257,8 +267,8 @@ rs.arrayT.flatMap { n in ArrayTResult([.success(n), .success(n * 10)]) }.rawValu
 // [.success(1), .success(10), .failure(.bad), .success(3), .success(30)]
 
 // Operators
-{ $0 * 2 } <£> rs.arrayT            // ArrayTResult wrapping [.success(2), .failure(.bad), .success(6)]
-rs.arrayT >>- { n in .pure(n * 2) }
+let rsMapped = { $0 * 2 } <£> rs.arrayT            // ArrayTResult wrapping [.success(2), .failure(.bad), .success(6)]
+let rsBound = rs.arrayT >>- { n in .pure(n * 2) }
 ```
 
 ### `ArrayTEither` (`[Either<L, A>]`)
@@ -277,8 +287,8 @@ es.arrayT.flatMap { n in ArrayTEither([.right(n), .right(n * 10)]) }.rawValue
 // [.right(1), .right(10), .left("err"), .right(3), .right(30)]
 
 // Operators
-{ $0 * 2 } <£> es.arrayT            // ArrayTEither wrapping [.right(2), .left("err"), .right(6)]
-es.arrayT >>- { n in .pure(n * 2) }
+let esMapped = { $0 * 2 } <£> es.arrayT            // ArrayTEither wrapping [.right(2), .left("err"), .right(6)]
+let esBound = es.arrayT >>- { n in .pure(n * 2) }
 ```
 
 The other Array-outer stacks are `ArrayTWriter` (`[Writer<W, A>]`, a lawful `WriterT` over the list)

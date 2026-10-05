@@ -1,367 +1,407 @@
 # Monad Transformers
 
-A monad transformer stacks two effects into one type, so you can work with both at once, for
-example a computation that can fail (`Either`) *and* produce multiple results (`Array`), or one
-that needs an environment (`Reader`) *and* might be absent (`Optional`).
+Stack two effects into one type (a `Reader` that can fail, a `Publisher` of optionals, a `Stateful`
+that logs) and work on the value inside both layers with one `map`, one `flatMap` and the usual
+operators.
 
-This library gives every stack its own struct, named `OuterTInner`. `WriterTEither<W, L, A>` wraps
-`Writer<W, Either<L, A>>` (the outer type wraps the inner type, and the capital `T` reads as
-"transformed with" or, if you like your Haskell, as the `T` suffix in `ReaderT`/`WriterT`/`StateT`).
-`EitherTResult<L, E, A>` wraps `Either<L, Result<A, E>>`: outer `Either`, inner `Result`.
+## Overview
 
-```swift
-import DataStructure
+A monad transformer stack is a nested value treated as a single effect. `Reader<Config, Either<AppError, Int>>`
+is a computation that needs a `Config` and can fail with an `AppError`, and most of the time you
+want to work on the `Int` and let the two layers take care of themselves (pass the environment
+along, stop at the first failure).
 
-// A plain nested value is just a Writer (its map / >>- are the Writer ones)
-let nested: Writer<[String], Either<String, Int>> = Writer(.right(5), ["ok"])
+In this library every stack is its own struct, named after its layers outermost first:
+`ReaderTEither<Config, AppError, Int>` wraps `Reader<Config, Either<AppError, Int>>`. There are 74
+of them, all generated from one table, so they all have the same members in the same shape and
+once you know one you know them all.
 
-// Wrapped, it's the WriterTEither stack: map / flatMap / operators reach the Int
-let stack: WriterTEither<[String], String, Int> = nested.writerT   // or WriterTEither(nested)
-let doubled = stack.map { $0 * 2 }
-doubled.rawValue  // Writer(.right(10), ["ok"])
-```
-
----
-
-## The shape of a stack
-
-Every stack struct has the same surface:
-
-- `rawValue` (the whole nested value), `init(rawValue:)` and the unlabelled `init(_:)`.
-- Functor: `map`, static `fmap`; operators `<£>`, `<&>`, `£>`, `<£`.
-- Applicative: static `pure`, static `apply`, static `liftA2`, `seqRight`, `seqLeft`; operators
-  `<*>`, `*>`, `<*`.
-- Monad (only stacks with a lawful monad, which conform to `MonadT`): `flatMap`, static `bind`,
-  static `kleisli` / `kleisliBack`; operators `>>-`, `-<<`, `>=>`, `<=<`.
-- An escape hatch `(O) -> O2` that hands you the whole nested value, so the full API of the
-  underlying types (Combine's `receive(on:)`, `Stateful.modify`, …) is reachable without the stack
-  proxying it. Names follow Haskell: `mapReaderT`, `mapStateT`, `mapPublisherT`,
-  `mapAsyncStreamT` (named by the outer layer), `mapMaybeT`, `mapExceptT`, `mapWriterT` (named by
-  the inner layer), and for Compose-like stacks the outer name again (`mapArrayT`, `mapOptionalT`,
-  `mapEitherT`, `mapResultT`, `mapValidationT`). `stack.mapReaderT { $0.local(f) }` is Haskell's
-  `mapReaderT`, and `mapXT` with an inner `map` covers "transform the inner layer".
-
-Getting in and out:
+The examples below build on each other, the `swift` blocks compile when read top to bottom. They
+use this setup:
 
 ```swift
-let reader: Reader<Config, [User]> = loadUsers
-
-reader.readerT                 // ReaderTArray<Config, User>, via the lifting property
-ReaderTArray(reader)           // same thing
-reader.readerT.rawValue        // back to Reader<Config, [User]>
-```
-
-The lifting property is named after the outer type (`readerT`, `statefulT`, `writerT`,
-`publisherT`, `asyncStreamT`, `arrayT`, `optionalT`, `resultT`, `eitherT`, `validationT`,
-`nonEmptyT`) and picks the stack from the inner type. Swift has no parameterized extensions, so the
-inner type is matched through one-conformer "inner-shape" protocols (`ArrayLike`,
-`OptionalLike`, `ResultLike`, `AsyncStreamLike`, `EitherLike`, `NonEmptyLike`, `WriterLike`,
-`ValidationLike`, `ReaderLike`, `StatefulLike`) whose requirements are all the identity, so lifting
-never copies anything. Being properties, they work as key paths (`users.map(\.readerT)`).
-
-The protocols `TransformerStack` (`O` is the nested value, `I` its inner layer) and `MonadT`
-let you write code generic over stacks. `TransformerStack` mirrors `RawRepresentable` but doesn't
-refine it (with Swift 6.3, a generic `RawRepresentable` struct whose `RawValue` is an `Optional`
-breaks type inference of every generic method returning it).
-
----
-
-## Why every combination is its own type
-
-In Haskell, a monad transformer is generic: `ReaderT r m a` works for *any* inner monad `m`,
-because `ReaderT` is parameterised over a type constructor (`m :: * -> *`) and Haskell's
-higher-kinded types let `Monad m => Monad (ReaderT r m)` be derived once, for every `m`.
-
-Swift has no higher-kinded types, you cannot write `protocol MonadTransformer { associatedtype Inner<A> }`
-and have it mean anything. A generic parameter in Swift is always a concrete type, never "a generic
-type applied to something else." So there is no way to express "`Writer<W, Inner<A>>` is a `Monad`
-whenever `Inner` is a `Monad`" as a single piece of code, and every outer/inner pairing needs its
-own concrete type with its own `map` / `apply` / `flatMap`. This is the same limitation that rules
-out a shared `Functor`/`Monad` protocol for the base types (see the library's "Swift Limitations"
-notes), it just shows up again, multiplied, at the transformer level: instead of one `Monad`
-instance per type, you need one per *pair* of types.
-
-Wrapping each stack in a struct (Haskell's `newtype`) instead of using the nested type directly is
-what keeps the operators honest: `Reader<Env, [A]>` is a `Reader`, so `<£>` on it maps the whole
-array, while `ReaderTArray<Env, A>` maps each element. No `T`-suffixed names, no extra operators, and
-no overload ranking deciding which meaning you get.
-
-The 74 stacks are generated from a table by a dev-time script (`Scripts/GenerateTransformers.swift`),
-so all of them expose the same members in the same shape; once you know the convention,
-`ReaderTValidation`, `StatefulTWriter`, `EitherTNonEmpty`, … are all discoverable by name.
-
----
-
-## Module placement
-
-- If **either side** of the stack is a `DataStructure` type (`Either`, `Validation`, `Reader`,
-  `Stateful`, `Writer` or `NonEmpty`) the struct lives in `DataStructure` and its operators in
-  `DataStructureOperators`.
-- If **both sides** are Swift built-ins or plain `CoreFP` types (`Array`, `Optional`, `Result`,
-  `AsyncStream`, `Publisher`) the struct lives in `CoreFP` and its operators in `CoreFPOperators`.
-
-The generated sources live in `Sources/<Module>/Transformer/Generated/`, one file per stack
-(`ReaderTArray.swift`, `ReaderTArray+Operators.swift`).
-
----
-
-## Transformer coverage matrix
-
-**F** = Functor (`map`), **A** = Applicative (`pure` / `apply` / `liftA2`), **M** = Monad
-(`flatMap`, conforms to `MonadT`). Stream stacks wrap `AnyPublisher` (`PublisherT*`) or
-`AsyncStream` (`AsyncStreamT*`).
-
-### CoreFP combinations (both sides built-in / CoreFP)
-
-| Stack | Wraps | F | A | M |
-|---|---|---|---|---|
-| `OptionalTArray` | `[A]?` | Yes | Yes | Yes |
-| `OptionalTResult` | `Result<A, E>?` | Yes | Yes | Yes |
-| `ArrayTOptional` | `[A?]` | Yes | Yes | Yes |
-| `ArrayTResult` | `[Result<A, E>]` | Yes | Yes | Yes |
-| `AsyncStreamTOptional` | `AsyncStream<A?>` | Yes | Yes | Yes |
-| `AsyncStreamTArray` | `AsyncStream<[A]>` | Yes | Yes | No |
-| `AsyncStreamTResult` | `AsyncStream<Result<A, E>>` | Yes | Yes | Yes |
-| `PublisherTOptional` | `AnyPublisher<A?, Failure>` | Yes | Yes | Yes |
-| `PublisherTArray` | `AnyPublisher<[A], Failure>` | Yes | Yes | No |
-| `PublisherTResult` | `AnyPublisher<Result<A, E>, Failure>` | Yes | Yes | Yes |
-
-`ArrayTArray`, `OptionalTOptional`, `ResultTArray` and `ResultTOptional` are not stacks: those
-nestings only get `Traversable` (`sequence` / `traverse`), flattening nested containers.
-
-### `Either` combinations
-
-| Stack | F | A | M |
-|---|---|---|---|
-| `EitherTArray` | Yes | Yes | No |
-| `EitherTOptional` | Yes | Yes | Yes |
-| `EitherTResult` | Yes | Yes | Yes |
-| `EitherTValidation` | Yes | Yes | No |
-| `EitherTStateful` | Yes | Yes | No |
-| `EitherTWriter` | Yes | Yes | Yes |
-| `EitherTNonEmpty` | Yes | Yes | No |
-| `ArrayTEither` | Yes | Yes | Yes |
-| `OptionalTEither` | Yes | Yes | Yes |
-| `AsyncStreamTEither` | Yes | Yes | Yes |
-| `PublisherTEither` | Yes | Yes | Yes |
-| `NonEmptyTEither` | Yes | Yes | Yes |
-
-`Result<Either<…>, E>` only gets `Traversable`. `EitherTValidation` has no Monad, see below.
-
-### `Validation` combinations
-
-Validation is an accumulating Applicative and, by design, **never** a Monad (see "Why some
-combos lack a Monad" below). Every `Validation` combination therefore stops at F/A:
-
-| Stack | F | A |
-|---|---|---|
-| `ValidationTArray` | Yes | Yes |
-| `ValidationTOptional` | Yes | Yes |
-| `ValidationTResult` | Yes | Yes |
-| `ValidationTEither` | Yes | Yes |
-| `ValidationTReader` | Yes | Yes |
-| `ValidationTStateful` | Yes | Yes |
-| `ValidationTWriter` | Yes | Yes |
-| `ValidationTNonEmpty` | Yes | Yes |
-
-`Result<Validation<…>, E>` only gets `Traversable`.
-
-### `Reader` combinations
-
-| Stack | F | A | M |
-|---|---|---|---|
-| `ReaderTArray` | Yes | Yes | Yes |
-| `ReaderTOptional` | Yes | Yes | Yes |
-| `ReaderTResult` | Yes | Yes | Yes |
-| `ReaderTEither` | Yes | Yes | Yes |
-| `ReaderTValidation` | Yes | Yes | No |
-| `ReaderTReader` | Yes | Yes | Yes |
-| `ReaderTStateful` | Yes | Yes | Yes |
-| `ReaderTWriter` | Yes | Yes | Yes |
-| `ReaderTAsyncStream` | Yes | Yes | Yes |
-| `ReaderTPublisher` | Yes | Yes | Yes |
-| `ReaderTNonEmpty` | Yes | Yes | Yes |
-
-### `Stateful` combinations
-
-| Stack | F | A | M |
-|---|---|---|---|
-| `StatefulTArray` | Yes | Yes | No |
-| `StatefulTOptional` | Yes | Yes | Yes |
-| `StatefulTResult` | Yes | Yes | Yes |
-| `StatefulTEither` | Yes | Yes | Yes |
-| `StatefulTValidation` | Yes | Yes | No |
-| `StatefulTReader` | Yes | Yes | No |
-| `StatefulTWriter` | Yes | Yes | Yes |
-| `StatefulTNonEmpty` | Yes | Yes | No |
-| `StatefulTPublisher` | Yes | Yes | No |
-| `StatefulTAsyncStream` | Yes | Yes | No |
-| `ArrayTStateful` | Yes | Yes | No |
-| `OptionalTStateful` | Yes | Yes | No |
-| `ResultTStateful` | Yes | Yes | No |
-| `PublisherTStateful` | Yes | Yes | No |
-| `AsyncStreamTStateful` | Yes | No | No |
-
-### `Writer` combinations
-
-| Stack | F | A | M |
-|---|---|---|---|
-| `WriterTArray` | Yes | Yes | No |
-| `WriterTOptional` | Yes | Yes | Yes |
-| `WriterTResult` | Yes | Yes | Yes |
-| `WriterTEither` | Yes | Yes | Yes |
-| `WriterTValidation` | Yes | Yes | No |
-| `WriterTReader` | Yes | Yes | No |
-| `WriterTStateful` | Yes | Yes | No |
-| `WriterTNonEmpty` | Yes | Yes | No |
-| `WriterTPublisher` | Yes | Yes | No |
-| `WriterTAsyncStream` | Yes | Yes | No |
-| `ArrayTWriter` | Yes | Yes | Yes |
-| `OptionalTWriter` | Yes | Yes | Yes |
-| `ResultTWriter` | Yes | Yes | Yes |
-| `PublisherTWriter` | Yes | Yes | Yes |
-| `AsyncStreamTWriter` | Yes | Yes | Yes |
-
-### `NonEmpty` combinations
-
-| Stack | F | A | M |
-|---|---|---|---|
-| `NonEmptyTEither` | Yes | Yes | Yes |
-| `NonEmptyTOptional` | Yes | Yes | Yes |
-| `NonEmptyTResult` | Yes | Yes | Yes |
-| `OptionalTNonEmpty` | Yes | Yes | Yes |
-
-(The remaining `NonEmpty` combinations, `EitherTNonEmpty`, `ValidationTNonEmpty`, `ReaderTNonEmpty`,
-`StatefulTNonEmpty` and `WriterTNonEmpty`, are listed under their outer type above.)
-
-**Streams follow Haskell stream semantics** (`pipes`/`conduit`/`fs2`): bind is ordered concat
-(each inner stream runs to completion, in upstream order, nothing dropped), and every applicative
-over a stream (`AsyncStream` itself, `AsyncStreamTOptional`/`Result`/`Either`/`Array`/`Writer`,
-`PublisherT*`, `ReaderTAsyncStream`, `StatefulTAsyncStream`, `StatefulTPublisher`,
-`WriterTAsyncStream`, `WriterTPublisher`) is `ap`: each left element runs over the whole right
-stream, like the list applicative. It is not zip (`AsyncStream.zip` / Combine's `zip` pair
-positionally). The right stream is single-pass, so `ap` drains it once into a buffer and replays it
-(`AsyncStream.replayable(_:)`), which means it must be finite. `pure` on `ReaderTAsyncStream` and
-`StatefulTAsyncStream` builds a fresh stream on every run, so running the stack twice works.
-
----
-
-## Why some combos lack a Monad
-
-**`Validation`: no Monad, anywhere, by design.** `Validation<E, A>` doesn't have a `flatMap` at
-all, on the base type or on any stack. Its `Applicative` instance combines errors from *both*
-sides via `Semigroup` when it can, the whole point of the type is to collect every validation
-failure in one pass. A `flatMap` would have to pick a single branch to continue with in the failure
-case, throwing away every error but the first. So `Validation` and every `ValidationT*` stack stop
-at Functor + Applicative.
-
-**A list inside a non-commutative outer layer: no Monad (Haskell's `ListT` done wrong).**
-`EitherTArray`, `EitherTNonEmpty`, `StatefulTArray`, `StatefulTNonEmpty`, `WriterTArray`,
-`WriterTNonEmpty`, `PublisherTArray` and `AsyncStreamTArray` (`M<[A]>` / `M<NonEmpty<A>>`) stop
-at Functor + Applicative. Binding element by element runs the outer effect once per element, so
-associativity only holds when that effect commutes. With a `Writer` log, `(m >>= f) >>= g` logs
-`["m", "f1", "f2", "g10", "g20"]` while `m >>= (f >=> g)` logs `["m", "f1", "g10", "f2", "g20"]`.
-Haskell's `transformers` deprecated (and later removed) `ListT` for exactly this reason.
-
-**`Writer` outside another monad: no Monad (no distributive law).** `WriterTReader`,
-`WriterTStateful`, `WriterTPublisher` and `WriterTAsyncStream` (`Writer<W, M<A>>`) stop at
-Functor + Applicative. The log sits outside the effect, so a bind would have to know the
-continuation's log before running `M`, which it can't (dropping that log instead breaks left
-identity). Haskell's `WriterT` is `M<Writer<W, A>>` (the log inside), which this library ships as
-`ArrayTWriter`, `OptionalTWriter`, `ResultTWriter`, `EitherTWriter`, `ReaderTWriter`,
-`PublisherTWriter`, `StatefulTWriter`, … Their `flatMap` is WriterT's: the continuation returns
-the whole stack (`(A) -> ArrayTWriter<W, B>`, `(A) -> OptionalTWriter<W, B>`, …), so it can fail
-or branch as well as log.
-
-**A monad outside `Stateful`: no Monad.** `ArrayTStateful`, `OptionalTStateful`,
-`ResultTStateful`, `EitherTStateful`, `PublisherTStateful` and `AsyncStreamTStateful`
-(`M<Stateful<S, A>>`) stop at Functor + Applicative (`AsyncStreamTStateful` at Functor). The
-outer layer is decided before the state runs, so a continuation can never reach it (the best a
-"bind" can do is `fmap(Stateful.flatMap)`). Haskell has no transformer of this shape; use
-`StatefulTOptional` / `StatefulTEither` / `StatefulTResult` / `StatefulTWriter`
-(`MaybeT`/`ExceptT`/`WriterT` over `State`) instead.
-
-**`Stateful` outside `Reader`/`Publisher`/`AsyncStream`: no Monad.** `StatefulTReader`,
-`StatefulTPublisher` and `StatefulTAsyncStream` (`Stateful<S, M<A>>`) stop at Functor +
-Applicative. `Stateful` runs with `inout S`, which can't be captured by the escaping `Reader`,
-Combine or async closures a bind would need. Thread the state around the stream instead, or use
-`StatefulTResult` / `StatefulTEither` where sequencing is needed.
-
----
-
-## A worked example: `EitherTResult`
-
-`Either<L, Result<A, E>>` models two independent error channels, for example a routing/left-right
-outcome (`Either`) wrapping a Swift-idiomatic fallible operation (`Result`). Wrap it once and
-compose across both layers with the struct's methods or operators:
-
-```swift
+import CoreFP
+import CoreFPOperators
 import DataStructure
 import DataStructureOperators
 
-enum MyError: Error { case negative }
-
-let ok = EitherTResult<String, MyError, Int>(.right(.success(21)))
-
-// map: transform the innermost value, leaving both outer layers alone
-ok.map { $0 * 2 }.rawValue  // .right(.success(42))
-
-// flatMap: chain a step that returns the whole stack
-let nonNegative: @Sendable (Int) -> EitherTResult<String, MyError, Int> = { n in
-    EitherTResult(n >= 0 ? .right(.success(n)) : .right(.failure(.negative)))
+struct Config: Sendable {
+    let token: String?
+    let retries: Int
 }
-ok.flatMap(nonNegative).rawValue  // .right(.success(21))
-(ok >>- nonNegative).rawValue     // same, via the operator
 
-// kleisli: compose two steps that each return the stack
-let parse: @Sendable (String) -> EitherTResult<String, MyError, Int> = { s in
-    EitherTResult(Int(s).map { .right(.success($0)) } ?? .left("not a number"))
+enum AppError: Error, Equatable {
+    case missingToken
+    case tooManyRetries(Int)
 }
-let double: @Sendable (Int) -> EitherTResult<String, MyError, Int> = { n in .pure(n * 2) }
 
-let pipeline = parse >=> double
-pipeline("21").rawValue    // .right(.success(42))
-pipeline("nope").rawValue  // .left("not a number")
-
-// escape hatch: the whole Either<String, Result<Int, MyError>> (inner-named, Haskell's mapExceptT)
-let shouted: EitherTResult<String, MyError, Int> = ok.mapExceptT { $0.mapLeft { $0.uppercased() } }
+let config = Config(token: "abc", retries: 3)
 ```
 
-A `.left` short-circuits immediately (the outer `Either` layer), a `.right(.failure(_))`
-short-circuits the inner `Result` while staying `.right`, and only `.right(.success(_))` continues
-the chain, the semantics you'd expect from stacking two short-circuiting monads.
+## Why each stack is its own type
 
----
-
-## For Haskell developers
-
-The concept maps directly onto `mtl`/`transformers`: `ReaderTReader`, `ReaderTResult`,
-`WriterTEither`, `StatefulTEither`, and friends are this library's answer to `ReaderT`, `WriterT`,
-`StateT` and `ExceptT`. Each struct is a `newtype` over the nested value (`rawValue` is the
-`runReaderT`-style field), `map` is `fmap` through the stack, `flatMap` is `>>=`, `kleisli` is
-`>=>`, and `mapReaderT` / `mapStateT` / `mapMaybeT` / `mapExceptT` / `mapWriterT` keep their
-Haskell names.
-
-The difference is mechanical, not conceptual: in Haskell, `ReaderT r m a` is `r -> m a` for *any*
-monad `m`, and `Monad m => Monad (ReaderT r m)` is one instance declaration that covers every
-possible `m` because `m` is a higher-kinded type parameter. Here, `ReaderTResult`, `ReaderTEither`,
-`ReaderTWriter`, etc. are separate concrete structs (generated, so they all look alike), because
-Swift generics cannot abstract over "a type that itself takes a type parameter." The coverage
-matrix above is the price of that gap. There is no `lift` either: you lift a whole nested value
-with the property (`reader.readerT`) or `pure` a plain one.
-
-For the Haskell side of this mapping, see:
-- [`transformers` on Hackage](https://hackage.haskell.org/package/transformers): `ReaderT`, `WriterT`, `StateT`, `ExceptT`.
-- [`mtl` on Hackage](https://hackage.haskell.org/package/mtl): the typeclass layer (`MonadReader`, `MonadWriter`, `MonadState`, `MonadError`) that lets transformer stacks be used without manual `lift`s.
-- [Martin Grabmüller, *Monad Transformers Step by Step*](https://page.mi.fu-berlin.de/scravy/realworldhaskell/materialien/monad-transformers-step-by-step.pdf): the classic worked-example tutorial building up a transformer stack piece by piece.
-
----
-
-## Module
+Look at the plain nested value first:
 
 ```swift
-import CoreFP                 // TransformerStack, MonadT, inner-shape protocols, CoreFP-only stacks (OptionalTArray, PublisherTOptional, …)
-import CoreFPOperators        // Operators for the CoreFP-only stacks
-import DataStructure          // Stacks with a DataStructure layer (ReaderTEither, StatefulTWriter, …)
-import DataStructureOperators // Operators for those stacks (<£>, <*>, >>-, >=>, …)
+let retries: Reader<Config, Either<AppError, Int>> = Reader { .right($0.retries) }
+
+// Reader's own map: the function gets the whole Either
+let described = retries.map { either in either.map { "\($0) retries" } }
 ```
+
+`retries` is a `Reader`, so `map` (and `<£>`, `>>-`, `<*>`) are the `Reader` ones and the function
+receives the whole `Either`. That's correct, a `Reader` of something is still a `Reader`. Before
+this design the library also had transformer overloads on the same nested types, so `<£>` on a
+`Reader<Env, [A]>` could mean "map the array" or "map each element" depending on which overload
+Swift ranked higher, and the transformer versions needed their own names (`mapT`, `flatMapT`,
+`^`-suffixed operators) to be reachable at all.
+
+Haskell never has this problem because `ReaderT r m a` is a `newtype`, a different type from
+`r -> m a` with its own instances. Wrapping the nested value in a struct is the same trick:
+
+```swift
+// The stack's map: the function gets the Int
+let doubled = retries.readerT.map { $0 * 2 }
+```
+
+The obvious next question is why there are 74 structs instead of one generic `ReaderT<Env, M, A>`.
+Swift has no higher-kinded types, so a generic parameter can't be "a type constructor like
+`Either<AppError, _>` or `Array<_>`", which means there is no way to write `ReaderT` once for every
+inner monad `M` (the usual emulations need `as!`, which this library doesn't ship). Each
+outer/inner pair is a concrete struct with its own `map` / `apply` / `flatMap`, generated so nobody
+has to write them by hand.
+
+### TransformerStack, MonadT, O and I
+
+Every stack conforms to `TransformerStack`, and the ones with a lawful monad conform to its
+refinement `MonadT`. Both protocols have two associated types:
+
+- `O` is the whole nested value (`Reader<Config, Either<AppError, Int>>` for
+  `ReaderTEither<Config, AppError, Int>`).
+- `I` is the inner layer only (`Either<AppError, Int>`).
+
+The only stored property is `rawValue: O`, and there are two initialisers, `init(rawValue:)` and
+the unlabelled `init(_:)` (handy point-free). `TransformerStack` looks like `RawRepresentable` but
+doesn't refine it, because with Swift 6.3 a generic `RawRepresentable` struct whose `RawValue` is an
+`Optional` (every `OptionalT*` stack) breaks type inference of generic methods returning it.
+
+The protocols are there for code that is generic over stacks:
+
+```swift
+func unwrapped<Stack: TransformerStack>(_ stack: Stack) -> Stack.O { stack.rawValue }
+```
+
+## Getting in and getting out
+
+You get in with a lifting property named after the outer layer (`readerT`, `statefulT`,
+`writerT`, `publisherT`, `asyncStreamT`, `arrayT`, `optionalT`, `resultT`, `eitherT`,
+`validationT`, `nonEmptyT`), or with the initialiser. You get out with `rawValue`.
+
+```swift
+let stack: ReaderTEither<Config, AppError, Int> = retries.readerT
+let sameStack = ReaderTEither(retries)
+let nestedAgain: Reader<Config, Either<AppError, Int>> = stack.rawValue
+let ran = stack.rawValue(config) // .right(3)
+
+// Properties work as key paths
+let stacks = [retries, retries].map(\.readerT)
+```
+
+The property picks the stack from the inner type (`reader.readerT` is a `ReaderTEither` when the
+`Reader` holds an `Either`, a `ReaderTArray` when it holds an array, and so on). Swift has no
+parameterised extensions, so the inner type is matched through small "inner-shape" protocols
+(`ArrayLike`, `OptionalLike`, `EitherLike`, `ResultLike`, `WriterLike`, …) with a single conformer
+each and identity requirements only, so lifting never copies or rebuilds anything.
+
+There is no `lift` like Haskell's. To bring in only one layer, build the nested value with the
+other layer trivial and lift that:
+
+```swift
+// Only the inner layer (Haskell's lift): an Either that ignores the environment
+let failure: Either<AppError, Int> = .left(.missingToken)
+let liftedInner = Reader<Config, Either<AppError, Int>> { _ in failure }.readerT
+
+// Only the outer layer: a Reader whose result can't fail
+let liftedOuter = Reader<Config, Either<AppError, Int>> { .right($0.retries) }.readerT
+
+// A plain value: pure
+let liftedValue = ReaderTEither<Config, AppError, Int>.pure(42)
+```
+
+## Functor, applicative and monad
+
+Every operation exists as a named function on the struct and as an operator that delegates to it.
+Use whichever reads better, they are the same thing.
+
+| Operation | Named | Operator |
+|---|---|---|
+| map | `fa.map(f)`, `Stack.fmap(f)` | `f <£> fa`, `fa <&> f` |
+| replace the value | `fa.map { _ in b }` | `fa £> b`, `b <£ fa` |
+| pure | `Stack.pure(a)` | |
+| apply | `Stack.apply(ff, fa)` | `ff <*> fa` |
+| lift a binary function | `Stack.liftA2(f)(fa, fb)` | `f2 <£> fa <*> fb` (with `f2` curried) |
+| sequence | `fa.seqRight(fb)`, `fa.seqLeft(fb)` | `fa *> fb`, `fa <* fb` |
+| bind | `fa.flatMap(f)`, `Stack.bind(f)` | `fa >>- f`, `f -<< fa` |
+| Kleisli | `Stack.kleisli(f, g)`, `Stack.kleisliBack(g, f)` | `f >=> g`, `g <=< f` |
+
+`apply`, `liftA2`, `kleisli` and `pure` are static, on the stack type whose value is the result
+(`apply`, `liftA2`, `pure`) or the middle value (`kleisli`).
+
+Functor:
+
+```swift
+let plusOne = stack.map { $0 + 1 }
+let plusOneOp = { $0 + 1 } <£> stack
+let plusOneFlipped = stack <&> { $0 + 1 }
+let done = stack £> "done"
+```
+
+Applicative:
+
+```swift
+let attempts = ReaderTEither<Config, AppError, Int>.pure(1)
+
+let sum = ReaderTEither<Config, AppError, Int>.liftA2 { (lhs: Int, rhs: Int) in lhs + rhs }(stack, attempts)
+
+let add: @Sendable (Int) -> @Sendable (Int) -> Int = { lhs in { rhs in lhs + rhs } }
+let sumApply = ReaderTEither<Config, AppError, Int>.apply(stack.map(add), attempts)
+let sumOp = add <£> stack <*> attempts
+
+let keepRight = stack.seqRight(attempts)
+let keepRightOp = stack *> attempts
+```
+
+Monad:
+
+```swift
+let checkRetries: @Sendable (Int) -> ReaderTEither<Config, AppError, Int> = { count in
+    ReaderTEither(Reader { _ in count > 5 ? .left(.tooManyRetries(count)) : .right(count) })
+}
+let readToken: @Sendable (Int) -> ReaderTEither<Config, AppError, String> = { _ in
+    ReaderTEither(Reader { config in config.token.map { .right($0) } ?? .left(.missingToken) })
+}
+
+let checked = stack.flatMap(checkRetries)
+let checkedOp = stack >>- checkRetries
+
+let pipeline = ReaderTEither<Config, AppError, Int>.kleisli(checkRetries, readToken)
+let pipelineOp = checkRetries >=> readToken
+
+let token = pipelineOp(3).rawValue(config) // .right("abc")
+let tooMany = pipelineOp(9).rawValue(config) // .left(.tooManyRetries(9))
+```
+
+A `.left` anywhere stops the chain and the environment is passed to every step, which is what
+you'd get from `ExceptT AppError (Reader Config)` in Haskell.
+
+## Monad, applicative only, functor only
+
+Not every pair of effects has a lawful monad. When a combination has one, the stack conforms to
+`MonadT` and gets the whole table above. When it doesn't, it conforms only to `TransformerStack`
+and stops at functor + applicative (like Haskell's `Compose`), and there is one stack
+(`AsyncStreamTStateful`) that is a functor only. The missing members are missing on purpose, a
+`flatMap` that compiles but breaks the monad laws is worse than no `flatMap`.
+
+The combinations without a monad, and why:
+
+- **`Validation` anywhere.** `Validation` is an accumulating applicative and never a monad (a
+  bind would have to stop at the first failure and throw the other errors away, which is the whole
+  thing `Validation` exists to avoid). Every `ValidationT*` stack and every stack with `Validation`
+  inside (`ReaderTValidation`, `EitherTValidation`, `StatefulTValidation`, `WriterTValidation`)
+  stops at applicative.
+- **A list inside an outer effect that doesn't commute.** `EitherTArray`, `EitherTNonEmpty`,
+  `StatefulTArray`, `StatefulTNonEmpty`, `WriterTArray`, `WriterTNonEmpty`, `PublisherTArray` and
+  `AsyncStreamTArray`. Binding element by element runs the outer effect once per element, so
+  associativity only holds when that effect commutes (with a `Writer` log, the two sides of the
+  associativity law log in different orders). This is Haskell's old `ListT`, deprecated and later
+  removed from `transformers` for this exact reason.
+- **`Writer` outside another monad.** `WriterTReader`, `WriterTStateful`, `WriterTPublisher`,
+  `WriterTAsyncStream` (and the `Array` / `NonEmpty` / `Validation` ones above). The log sits
+  outside the effect, so a bind would need the continuation's log before running the effect, and
+  there is no way to have it. Haskell's `WriterT w m` is `m (a, w)` with the log inside, which here
+  is `ArrayTWriter`, `OptionalTWriter`, `ResultTWriter`, `EitherTWriter`, `ReaderTWriter`,
+  `StatefulTWriter`, `PublisherTWriter`, `AsyncStreamTWriter`, all monads.
+- **A monad outside `Stateful`.** `ArrayTStateful`, `OptionalTStateful`, `ResultTStateful`,
+  `EitherTStateful`, `PublisherTStateful` and `AsyncStreamTStateful`. The outer layer is decided
+  before the state runs, so the continuation can never reach it. Use `StatefulTOptional`,
+  `StatefulTEither`, `StatefulTResult` or `StatefulTWriter` instead (state outside, failure or
+  log inside).
+- **`Stateful` outside `Reader`, `Publisher` or `AsyncStream`.** `StatefulTReader`,
+  `StatefulTPublisher`, `StatefulTAsyncStream`. `Stateful` has to produce the next state before the
+  inner effect runs, but the continuation needs the value that only exists after it runs (it needs
+  the environment, or the stream to emit). For environment plus state use `ReaderTStateful`
+  (`ReaderT r (State s)`).
+
+An applicative-only stack still combines independent computations, and for `Validation` that's
+exactly what you want (both errors come back):
+
+```swift
+struct Settings: Sendable {
+    let token: String
+    let retries: Int
+}
+
+let tokenCheck = ReaderTValidation<Config, [String], String>(Reader { config in
+    config.token.map { .success($0) } ?? .failure(["token is missing"])
+})
+let retriesCheck = ReaderTValidation<Config, [String], Int>(Reader { config in
+    config.retries <= 5 ? .success(config.retries) : .failure(["too many retries"])
+})
+
+let settings = ReaderTValidation<Config, [String], Settings>.liftA2 { (token: String, retries: Int) in
+    Settings(token: token, retries: retries)
+}(tokenCheck, retriesCheck)
+
+let makeSettings: @Sendable (String) -> @Sendable (Int) -> Settings = { token in
+    { retries in Settings(token: token, retries: retries) }
+}
+let settingsOp = makeSettings <£> tokenCheck <*> retriesCheck
+
+let invalid = settingsOp.rawValue(Config(token: nil, retries: 9))
+// .failure(["token is missing", "too many retries"])
+```
+
+`tokenCheck >>- …` doesn't compile, there is no `flatMap` on `ReaderTValidation`.
+
+A functor-only stack has `map`, `fmap`, `<£>`, `<&>`, `£>`, `<£` and the escape hatch, nothing
+else:
+
+```swift
+let ticks = AsyncStream<Stateful<Int, String>> { continuation in
+    continuation.yield(Stateful { count in "tick \(count)" })
+    continuation.finish()
+}.asyncStreamT
+
+let loud = ticks.map { $0.uppercased() }
+let loudOp = { $0.uppercased() } <£> ticks
+```
+
+## Escape hatches
+
+A stack only exposes the algebra (functor, applicative, monad). Everything else the underlying
+types can do (`Reader.local`, Combine's `receive(on:)`, `Either.mapLeft`, `Writer.censor`, …) is
+reached through one escape hatch per stack, a function `(O) -> O2` that gets the whole nested value
+and returns a new one, rewrapped as the same kind of stack (the type parameters can change):
+
+```swift
+// Reader.local: run the stack with a modified environment
+let doubleRetries = stack.mapReaderT { reader in
+    reader.local { Config(token: $0.token, retries: $0.retries * 2) }
+}
+
+// Transform the inner layer: map over the Reader, then over the Either's left side
+let stringErrors = stack.mapReaderT { reader in
+    reader.map { either in either.mapLeft { "\($0)" } }
+}
+```
+
+The names come from Haskell, picked in this order:
+
+1. By the outer layer when it is `Reader`, `Stateful`, `Publisher` or `AsyncStream`:
+   `mapReaderT`, `mapStateT`, `mapPublisherT`, `mapAsyncStreamT`.
+2. Otherwise by the inner layer when it is `Optional`, `Either`/`Result` or `Writer`: `mapMaybeT`,
+   `mapExceptT`, `mapWriterT` (so `WriterTEither` uses `mapExceptT`, and `EitherTWriter` uses
+   `mapWriterT`).
+3. Otherwise by the outer layer again: `mapArrayT`, `mapOptionalT`, `mapEitherT`, `mapResultT`,
+   `mapValidationT`, `mapWriterT` (`WriterTArray`, `WriterTReader`, …).
+
+`mapExceptT`, `mapMaybeT` and `mapWriterT` behave like their Haskell namesakes (in Haskell those
+newtypes are the whole `m (…)` too). `mapReaderT` and `mapStateT` are a bit more powerful than
+Haskell's, because they get the whole `Reader` / `Stateful` and can change the environment or the
+state handling as well (Haskell needs `withReaderT` / `local` for the `doubleRetries` example above).
+
+The streaming stacks are where this matters most, because Combine and `AsyncStream` have a huge
+API that no stack should proxy:
+
+```swift
+import Combine
+import Foundation
+
+let page: PublisherTArray<Never, Int> = [1, 2, 3, 4].publisher.collect().publisherT
+
+let onMain = page.mapPublisherT { publisher in
+    publisher.receive(on: DispatchQueue.main).eraseToAnyPublisher()
+}
+
+let evens = page.mapPublisherT { publisher in
+    publisher.map { numbers in numbers.filter { $0.isMultiple(of: 2) } }.eraseToAnyPublisher()
+}
+```
+
+(`PublisherT*` stacks store an `AnyPublisher`, so the closure ends with `eraseToAnyPublisher()`.)
+
+## The stacks
+
+The name is `<Outer>T<Inner>`, and the Haskell transformer it corresponds to depends on the shape
+of the nesting, not on the first word of the name:
+
+| Shape | Haskell | Examples |
+|---|---|---|
+| `Reader<Env, M<A>>` | `ReaderT env m` | `ReaderTEither`, `ReaderTArray`, `ReaderTPublisher` |
+| `M<A?>` | `MaybeT m` | `ReaderTOptional`, `StatefulTOptional`, `PublisherTOptional` |
+| `M<Either<L, A>>`, `M<Result<A, E>>` | `ExceptT l m` | `WriterTEither`, `StatefulTResult`, `OptionalTResult` |
+| `M<Writer<W, A>>` | `WriterT w m` | `ArrayTWriter`, `ResultTWriter`, `StatefulTWriter` |
+| `F<G<A>>` without a lawful monad | `Compose f g` | `ValidationTArray`, `WriterTReader`, `ArrayTStateful` |
+
+So `StatefulTEither` is `ExceptT l (State s)` (the state survives a failure), and there is no
+`StateT s m` over an arbitrary `m`.
+
+All 74 stacks, by outer layer (**M** = monad, **A** = applicative only, **F** = functor only):
+
+| Outer | Inner layers |
+|---|---|
+| `Reader` | M: `Array`, `AsyncStream`, `Either`, `NonEmpty`, `Optional`, `Publisher`, `Reader`, `Result`, `Stateful`, `Writer`. A: `Validation` |
+| `Stateful` | M: `Either`, `Optional`, `Result`, `Writer`. A: `Array`, `AsyncStream`, `NonEmpty`, `Publisher`, `Reader`, `Validation` |
+| `Writer` | M: `Either`, `Optional`, `Result`. A: `Array`, `AsyncStream`, `NonEmpty`, `Publisher`, `Reader`, `Stateful`, `Validation` |
+| `Either` | M: `Optional`, `Result`, `Writer`. A: `Array`, `NonEmpty`, `Stateful`, `Validation` |
+| `Validation` | A: `Array`, `Either`, `NonEmpty`, `Optional`, `Reader`, `Result`, `Stateful`, `Writer` |
+| `Optional` | M: `Array`, `Either`, `NonEmpty`, `Result`, `Writer`. A: `Stateful` |
+| `Array` | M: `Either`, `Optional`, `Result`, `Writer`. A: `Stateful` |
+| `NonEmpty` | M: `Either`, `Optional`, `Result` |
+| `Result` | M: `Writer`. A: `Stateful` |
+| `Publisher` | M: `Either`, `Optional`, `Result`, `Writer`. A: `Array`, `Stateful` |
+| `AsyncStream` | M: `Either`, `Optional`, `Result`, `Writer`. A: `Array`. F: `Stateful` |
+
+Nestings that are missing (`[[A]]`, `Result<[A], E>`, `Result<Either<L, A>, E>`, …) aren't stacks,
+those only get `sequence` / `traverse` on the nested type.
+
+Stacks whose layers are all `CoreFP` types (`Array`, `Optional`, `Result`, `Publisher`,
+`AsyncStream`) live in `CoreFP` with operators in `CoreFPOperators`, everything else lives in
+`DataStructure` with operators in `DataStructureOperators`. The sources are under
+`Sources/<Module>/Transformer/Generated/`, one file per stack plus one for its operators.
+
+`PublisherT*` stacks wrap an `AnyPublisher`, `AsyncStreamT*` stacks wrap an `AsyncStream`, and
+`ReaderTPublisher` wraps `Reader<Env, any Publisher<A, E>>`. Streams follow Haskell's stream
+semantics (`pipes`, `conduit`, `fs2`): bind is ordered concat (each inner stream runs to the end,
+in upstream order, nothing dropped), and the applicative is `ap`, where each left element runs over
+the whole right stream like the list applicative (zip is a different thing, use `zip` for that).
+The right stream is single-pass, so `ap` buffers it once and replays it, which means it has to be
+finite.
+
+## Adding a stack
+
+Never edit the generated files by hand, the generator wipes and rewrites the `Generated`
+directories on every run. To add a stack:
+
+1. Add one line to `inventory` in `Scripts/GenerateTransformers.swift`, e.g.
+   `Stack(.reader, .either, .monad)`. The kind is `.monad` (lawful monad, `MonadT`),
+   `.applicative` (`TransformerStack` with functor + applicative) or `.functor`. Only pick
+   `.monad` if you can show the laws hold (see the reasons above for the usual ways they don't).
+2. The generated members delegate to the internal nested-type functions by name (`mapT`,
+   `apply<Outer><Inner>`, `liftA2<Outer><Inner>`, `seqRight…`, `seqLeft…`, `flatMapT`), so those
+   have to exist. When a stack's functions don't follow that pattern, add an `Override`
+   (`.applyViaLiftA2`, `.freeFlatMap`, or a custom `.map` / `.liftA2` / `.flatMap` / `.pure` body).
+3. Run `swift Scripts/GenerateTransformers.swift` from the package root, then
+   `mint run swiftformat --lint .` (the output is already formatted, this must stay clean), and
+   commit the regenerated sources together with the script change.
+
+A new layer type (something that isn't in `Layer` yet) needs a `Layer` case with its type,
+parameters, `pure` and lifting extension and, if it can be an inner layer, an inner-shape protocol.
+`CONTRIBUTING.md` ("Transformer stacks") has the full checklist.
+
+## Further reading
+
+- [`transformers` on Hackage](https://hackage.haskell.org/package/transformers): `ReaderT`,
+  `WriterT`, `StateT`, `ExceptT`, `MaybeT`.
+- [Martin Grabmüller, *Monad Transformers Step by Step*](https://page.mi.fu-berlin.de/scravy/realworldhaskell/materialien/monad-transformers-step-by-step.pdf),
+  the classic tutorial that builds a stack one layer at a time.

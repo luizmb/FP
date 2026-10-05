@@ -50,9 +50,9 @@ Every transformer stack is its own concrete struct named `OuterTInner`, wrapping
 ### Key Types
 
 - **`Either<L, R>`** — unconstrained sum type (unlike `Result`, both sides are unrestricted); conforms to `SumType2`
-- **`Validation<E, A>`** — accumulating applicative (errors collect rather than short-circuit); minimal `Monad` instance
+- **`Validation<E, A>`** — accumulating applicative (errors collect rather than short-circuit); deliberately no `Monad`; `<|>` accumulates failures with `<>`
 - **`Reader<Env, Out>`** — dependency injection monad; wraps `(Env) -> Out`
-- **`Stateful<S, A>`** — state threading monad; named `Stateful` (not `State`) to avoid SwiftUI conflicts; wraps `(S) -> (S, A)`
+- **`Stateful<S, A>`** — state threading monad; named `Stateful` (not `State`) to avoid SwiftUI conflicts; wraps `(inout S) -> A`
 - **`Writer<Log, A>`** — append-as-you-go monad; wraps `(A, Log)`
 
 ### SumType Protocol
@@ -77,7 +77,7 @@ Every operator that has a directional sense has a **flipped counterpart**. When 
 | `<\|>` | — | `<\|>` | Alternative / choice (symmetric, no flip) |
 | `<>` | — | `<>` | Semigroup/Monoid append (symmetric, no flip) |
 | `^` (prefix) | — | — | Lift — `WritableKeyPath` → `Lens`; `KeyPath` → partial `Lens` builder |
-| `≅` | — | — | Isomorphism / approximate equality check |
+| `≅` | — | — | Flipped range match: `value ≅ range` (equivalent to `range ~= value`) |
 | `±` / `+/-` | — | — | Numeric range construction — `value ± delta` |
 
 **Notes:**

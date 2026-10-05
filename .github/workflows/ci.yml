@@ -49,6 +49,9 @@ jobs:
       - name: Build
         run: swift build 2>&1
 
+      - name: Check doc snippets
+        run: swift Scripts/CheckDocSnippets.swift
+
       - name: Test
         run: swift test 2>&1
 

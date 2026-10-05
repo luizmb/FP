@@ -29,17 +29,18 @@ users.count             // 2
 
 ```swift
 // Identifiable — id derived from Element.id
-let a = IdentifiedArray([User(id: 1, name: "Alice")])
+let fromUsers = IdentifiedArray([User(id: 1, name: "Alice")])
 
 // Non-Identifiable — supply the id via key path…
-struct Project { let slug: String; var title: String }
-let b = IdentifiedArray(loadedProjects, id: \.slug)
+struct Project: Sendable { let slug: String; var title: String }
+let loadedProjects = [Project(slug: "fp", title: "FP"), Project(slug: "swiftrex", title: "SwiftRex")]
+let bySlug = IdentifiedArray(loadedProjects, id: \Project.slug)
 
 // …or a closure
-let c = IdentifiedArray(loadedProjects, id: { $0.slug })
+let bySlugClosure = IdentifiedArray(loadedProjects, id: { (project: Project) in project.slug })
 
 // Empty (Identifiable)
-var d = IdentifiedArrayOf<User>()
+var empty = IdentifiedArrayOf<User>()
 ```
 
 Duplicate ids in the source are resolved last-wins: the first occurrence fixes the position, the last supplies the value.
@@ -49,25 +50,25 @@ Duplicate ids in the source are resolved last-wins: the first occurrence fixes t
 ## Lookup & mutation
 
 ```swift
-var users = IdentifiedArray([User(id: 1, name: "Alice"), User(id: 2, name: "Bob")])
+var team = IdentifiedArray([User(id: 1, name: "Alice"), User(id: 2, name: "Bob")])
 
 // Lookup — O(1)
-users[id: 2]                 // Optional(User(id: 2, name: "Bob"))
-users.contains(id: 2)        // true
-users.position(id: 2)        // Optional(1)
+team[id: 2]                 // Optional(User(id: 2, name: "Bob"))
+team.contains(id: 2)        // true
+team.position(id: 2)        // Optional(1)
 
 // Update in place — O(1), keeps position
-users[id: 2] = User(id: 2, name: "Robert")
+team[id: 2] = User(id: 2, name: "Robert")
 
 // Append at the tail — O(1) amortised (or replace in place if id exists)
-users.append(User(id: 3, name: "Carol"))
+team.append(User(id: 3, name: "Carol"))
 
 // Insert at a position — O(n) (order preserved → tail reindex)
-users.insert(User(id: 0, name: "Zed"), at: 0)
+team.insert(User(id: 0, name: "Zed"), at: 0)
 
 // Remove — O(n)
-users.remove(id: 1)
-users.remove(at: 0)
+team.remove(id: 1)
+team.remove(at: 0)
 ```
 
 The `[id:]` setter mirrors the collection `[id:]` subscript, including the id-mismatch no-op guard:
@@ -87,12 +88,14 @@ The `[id:]` setter mirrors the collection `[id:]` subscript, including the id-mi
 `IdentifiedArray` is a `RandomAccessCollection` over its elements (integer-indexed, like `Array`):
 
 ```swift
-let users = IdentifiedArray([User(id: 1, name: "Alice"), User(id: 2, name: "Bob")])
+let roster = IdentifiedArray([User(id: 1, name: "Alice"), User(id: 2, name: "Bob")])
 
-users[0]                 // User(id: 1, name: "Alice") — positional
-users.first?.name        // "Alice"
-users.map(\.id)          // [1, 2]
-for user in users { … }  // iterates in order
+roster[0]                 // User(id: 1, name: "Alice") — positional
+roster.first?.name        // "Alice"
+roster.map(\.id)          // [1, 2]
+for user in roster {      // iterates in order
+    print(user.name)
+}
 ```
 
 It is also `Equatable` / `Hashable` (by element sequence) and `CustomStringConvertible`.
@@ -157,10 +160,10 @@ For non-`Identifiable` elements, `arrayIso(id:)`, `dedupPrism(id:)`, and `ordere
 `IdentifiedArray` is a **`Semigroup`**: `<>` appends the right-hand elements into the left-hand one with last-wins on duplicate ids, keeping left-hand positions. This is associative.
 
 ```swift
-let a = IdentifiedArray([User(id: 1, name: "Alice"), User(id: 2, name: "Bob")])
-let b = IdentifiedArray([User(id: 2, name: "Bobby"), User(id: 3, name: "Carol")])
-(a <> b).ids                 // [1, 2, 3]
-(a <> b)[id: 2]?.name        // "Bobby"  — right value wins, left position kept
+let left = IdentifiedArray([User(id: 1, name: "Alice"), User(id: 2, name: "Bob")])
+let right = IdentifiedArray([User(id: 2, name: "Bobby"), User(id: 3, name: "Carol")])
+(left <> right).ids                 // [1, 2, 3]
+(left <> right)[id: 2]?.name        // "Bobby"  — right value wins, left position kept
 ```
 
 It deliberately has **no `Functor` / `Applicative` / `Monad` / `Monoid`**:

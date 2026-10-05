@@ -10,6 +10,12 @@ The library's own algebraic and effect types: sum types, monad-transformer stack
 import DataStructure
 
 let parsed: Either<String, Int> = Int("42").map(Either.right) ?? .left("not a number")
+
+struct Config: Sendable { var port: Int }
+
+let reader = Reader<Config, Int?> { $0.port > 0 ? $0.port : nil }
+let doubled = reader.readerT.map { $0 * 2 }   // ReaderTOptional<Config, Int>
+let backToReader = doubled.rawValue           // Reader<Config, Int?>
 ```
 
 Import [DataStructureOperators](../datastructureoperators) alongside this module for the operator syntax (`<£>`, `<*>`, `>>-`, `>=>`, …); the full precedence table is in [OperatorVocabulary](../fp/operatorvocabulary). Every monad-transformer stack with a `DataStructure` layer is its own struct here, named `OuterTInner` (`ReaderTEither<Env, L, A>` wraps `Reader<Env, Either<L, A>>`): lift a nested value in with the property on the outer type (`reader.readerT`) or `ReaderTEither(reader)`, use `map` / `apply` / `flatMap` or the operators, and leave with `.rawValue`. The model is explained in [MonadTransformers](../fp/monadtransformers); the protocols (`TransformerStack`, `MonadT`) and the stacks made only of `CoreFP` types live in [CoreFP](../corefp).
@@ -34,6 +40,7 @@ Import [DataStructureOperators](../datastructureoperators) alongside this module
 - ``NonEmpty``
 - ``Zipper``
 - ``IdentifiedArray``
+- ``IdentifiedArrayOf``
 
 ### Effects & State
 - ``Reader``
@@ -44,6 +51,8 @@ Import [DataStructureOperators](../datastructureoperators) alongside this module
 ### Foundations
 - ``Newtype``
 - ``Gen``
+- ``SplitMix64``
+- ``AnyRandomNumberGenerator``
 
 ### Transformer Stack Inner Shapes
 - ``EitherLike``

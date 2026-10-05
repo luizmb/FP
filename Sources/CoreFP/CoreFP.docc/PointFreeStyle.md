@@ -11,6 +11,10 @@ A "point" here is a function's argument — the `x` in `{ x in f(g(x)) }`. Point
 Every named intermediate (`x`, `result`, `value`) is a small decision: what to call it, whether it shadows an outer name, whether it's still in scope three lines later. Point-free composition removes the decision by removing the variable:
 
 ```swift
+func trim(_ s: String) -> String { s.trimmingCharacters(in: .whitespaces) }
+func uppercased(_ s: String) -> String { s.uppercased() }
+func exclaim(_ s: String) -> String { s + "!" }
+
 // Pointful — "value" exists only to be threaded from one call to the next
 let shout: (String) -> String = { value in
     let trimmed = value.trimmingCharacters(in: .whitespaces)
@@ -24,7 +28,7 @@ let shout2 = trim >>> uppercased >>> exclaim
 
 The tacit version reads as a *pipeline*, not a sequence of assignments — which is also why it composes: `trim >>> uppercased` is itself a function, reusable anywhere a `(String) -> String` is expected, without unwrapping it back into a closure first. Named functions compose; closures merely nest.
 
-This is the same motivation behind the project's own house style (see the root `CLAUDE.md`): opening a closure just to immediately call a single named function through it is redundant work once the composition operators are in scope. `{ $0.uppercased() }` and `uppercased` (a top-level named function, or `String.uppercased` via method-to-function reference) carry identical meaning; only one of them composes with `>>>` without an intermediate step.
+This is the same motivation behind the project's own house style (see the root `CLAUDE.md`): opening a closure just to immediately call a single named function through it is redundant work once the composition operators are in scope. `{ $0.uppercased() }` and a top-level `func uppercased(_ s: String) -> String` carry identical meaning; only the named function composes with `>>>` without an intermediate step. The unapplied method `String.uppercased` is curried as `(String) -> () -> String`, so it does not compose directly.
 
 ---
 
@@ -33,7 +37,7 @@ This is the same motivation behind the project's own house style (see the root `
 Start with a typical closure-heavy function — given a list of people, return the uppercased names of adults:
 
 ```swift
-struct Person { let name: String; let age: Int }
+struct Person: Sendable { let name: String; let age: Int }
 
 func adultNames(_ people: [Person]) -> [String] {
     people
@@ -44,50 +48,51 @@ func adultNames(_ people: [Person]) -> [String] {
 
 Every closure here exists to extract a property and immediately hand it to something else. Refactor one closure at a time.
 
-**Step 1 — replace field access with key paths.** A key path *is* a function (`\Person.age : (Person) -> Int`), so the projection needs no closure:
+**Step 1 — replace field access with key paths.** A key path can be lifted to a `@Sendable` function with `get(\.name)` (CoreFP) or the prefix `^\.name` (CoreFPOperators), so the projection needs no closure. Swift's own implicit key-path-to-function conversion is not `@Sendable`, and every `>>>` overload takes `@Sendable` functions, which is why the explicit lift is needed:
 
 ```swift
-func adultNames(_ people: [Person]) -> [String] {
+func adultNamesStep1(_ people: [Person]) -> [String] {
     people
         .filter { $0.age >= 18 }
-        .map { \.name >>> uppercased $0 }   // not yet valid — see step 2
+        .map(get(\.name) >>> uppercased)
 }
 ```
 
 **Step 2 — replace the comparison with `flip`.** `$0.age >= 18` is really "is `age` at least 18" — a fixed predicate with one still-free argument. `>=` is `(Int, Int) -> Bool`; `flip` swaps which side gets applied first, so fixing `18` produces a reusable predicate:
 
 ```swift
-let isAdult: (Int) -> Bool = flip(>=)(18)   // (Int) -> Bool — "is at least 18"
+let isAdult: @Sendable (Int) -> Bool = flip(>=)(18)   // (Int) -> Bool — "is at least 18"
 ```
 
 **Step 3 — compose the predicate with the key path, and the transform with `>>>`.** Both `filter` and `map` still need a `(Person) -> _` function; composition builds one from the parts:
 
 ```swift
-let adultNames: ([Person]) -> [String] = {
-    $0.filter(\.age >>> isAdult)
-      .map(\.name >>> uppercased)
+let adultNamesPointFree: @Sendable ([Person]) -> [String] = {
+    $0.filter(get(\.age) >>> isAdult)
+      .map(get(\.name) >>> uppercased)
 }
 ```
 
-The predicate and the transform are now fully point-free — built from `flip`, `>>>`, and key paths, with no closure body anywhere inside them. The single `{ $0. … }` wrapper at the top remains only because `filter`/`map` are *methods*, not free functions this library provides a point-free entry point for — `<|`/`|>` compose free functions, not method calls. That outer wrapper is exactly the boundary discussed below.
+The predicate and the transform are now fully point-free — built from `flip`, `>>>`, and key paths, with no closure body anywhere inside them. The single `{ $0. … }` wrapper at the top remains only because `filter`/`map` are *methods*, not free functions this library provides a point-free entry point for — `<|`/`|>` apply functions, they do not compose them, and they don't turn method calls into free functions. That outer wrapper is exactly the boundary discussed below.
 
 **Using `<|` / `|>` for the call itself:**
 
 ```swift
 let people = [Person(name: "Ada", age: 16), Person(name: "Alan", age: 25)]
 
-adultNames <| people       // fn-left application
-people |> adultNames       // value-left, pipeline-friendly
+let a1 = adultNamesPointFree <| people       // fn-left application
+let a2 = people |> adultNamesPointFree       // value-left, pipeline-friendly
 ```
 
 ---
 
 ## Reference
 
-Every function below is a **named function** in `CoreFP`; each has a corresponding entry (or delegates directly to it) in the operator vocabulary described in `README.md`.
+Every function below is a **named function** in `CoreFP`; each has a corresponding entry (or delegates directly to it) in the operator vocabulary described in <doc:OperatorVocabulary>.
 
 | Function | Signature (essence) | Example |
 |---|---|---|
+| `get` | `(KeyPath<Root, Value>) -> @Sendable (Root) -> Value` | `get(\.name)` (lifts a key path to a `@Sendable` function) |
 | `id` | `(A) -> A` | `id("hello") // "hello"` — replaces `{ $0 }` |
 | `const` | `(Return) -> (A) -> Return` (0…4+ ignored args) | `[1, 2, 3].map(const(0)) // [0, 0, 0]` |
 | `ignore` | `(A) -> Void` (0…4+ args) | `tasks.forEach(ignore)` — discard results |
@@ -105,7 +110,9 @@ Every function below is a **named function** in `CoreFP`; each has a correspondi
 | `compose` | `((A)->B, (B)->C) -> (A)->C` | `compose(trim, uppercased)("  hi ") // "HI"` |
 | `compose3` / `compose4` | 3-/4-step chains | `compose3(trim, uppercased, exclaim)(" hi ")` |
 | `call` | `((A)->B, A) -> B` | `call(uppercased, "hi") // "HI"` |
-| `fanout` | `(repeat (Input)->Output) -> (Input) -> (repeat Output)` | `fanout(\.min, \.max)([3,1,4]) // (1, 4)` (n-ary, via parameter packs) |
+| `fanout` | `(repeat (Input)->Output) -> (Input) -> (repeat Output)` | `fanout(get(\.first), get(\.last))([3, 1, 4]) // (Optional(3), Optional(4))` (n-ary, via parameter packs) |
+| `compose` (variadic) | `((Root) -> (repeat T), (repeat T) -> Out) -> (Root) -> Out` | `compose(fanout(get(\.badge), get(\.save)), Env.init)` (the named function behind the variadic `>>>`) |
+| `lazy` | `(A) -> () -> A` | `lazy(3)() // 3` |
 | `fanout(keypaths:into:)` | `(repeat KeyPath<Root, T>, (repeat T)->Out) -> (Root)->Out` | `fanout(keypaths: \.badge, \.save, into: Env.init)` (fan-out straight into a multi-arg `init`) |
 | `mapTuple2` / `mapTuple3` | `((A)->B) -> (A,A)->(B,B)` (or 3-ary) | `mapTuple2(uppercased)("a", "b") // ("A", "B")` |
 
@@ -120,18 +127,19 @@ multi-argument `init` consumes the arguments. Because Swift (since SE-0110) trea
 are two point-free spellings, pick by taste:
 
 ```swift
-struct Env: Sendable { init(badge: Int, save: Int) { … } }
+struct World: Sendable { let badge: Int; let save: Int; let other: String }
+struct Env: Sendable { let badge: Int; let save: Int }
 
-// With the operator — a variadic `>>>` overload bridges the tuple to the multi-arg init:
-let a: @Sendable (World) -> Env = fanout(\.badge, \.save) >>> Env.init
+// With the operator, a variadic `>>>` overload bridges the tuple to the multi-arg init:
+let narrowA: @Sendable (World) -> Env = fanout(get(\.badge), get(\.save)) >>> Env.init
 
-// Symbol-free — `fanout(keypaths:into:)` closes the loop in one call:
-let b: @Sendable (World) -> Env = fanout(keypaths: \.badge, \.save, into: Env.init)
+// Symbol-free, `fanout(keypaths:into:)` closes the loop in one call:
+let narrowB: @Sendable (World) -> Env = fanout(keypaths: \.badge, \.save, into: Env.init)
 ```
 
 The variadic `>>>` coexists with the single-argument overload without ambiguity: a single-output function
 composes through the plain overload, a tuple-output `fanout` through the variadic one. The mirror `<<<`
-works too (`Env.init <<< fanout(\.badge, \.save)`).
+works too (`Env.init <<< fanout(get(\.badge), get(\.save))`).
 
 ---
 
@@ -139,7 +147,7 @@ works too (`Env.init <<< fanout(\.badge, \.save)`).
 
 Point-free is a tool for *removing noise*, not a mandate to eliminate every named value. Two symptoms mean it has gone too far:
 
-- **Composition chains that no longer name a concept.** `\.age >>> flip(>=)(18)` reads fine inline once — as `isAdult` it reads as a concept everywhere it's reused. If a composed pipeline has a name in the domain, give it one; point-free composes the *implementation* of `isAdult`, it doesn't forbid the binding.
+- **Composition chains that no longer name a concept.** `get(\.age) >>> flip(>=)(18)` reads fine inline once — as `isAdult` it reads as a concept everywhere it's reused. If a composed pipeline has a name in the domain, give it one; point-free composes the *implementation* of `isAdult`, it doesn't forbid the binding.
 - **Operator soup.** Nesting `<|`/`|>`/`>>>`/`<<<` three or four deep to avoid a two-line closure usually reads worse than the closure it replaced. This library's own convention (see `CLAUDE.md`) is: prefer the point-free form when a named function or operator is *already* in scope and directly applicable — don't manufacture composition just to avoid `{ $0 }`.
 
 The rule of thumb used throughout this library: point-free where it removes an unnecessary intermediate name; a short closure (or a named `let`) where the intermediate name *is* the documentation.

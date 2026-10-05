@@ -95,6 +95,10 @@ method); when a stack's functions don't follow that pattern, add an `Override`
 A new layer type needs a `Layer` case (its type, parameters, `pure`, lifting extension) and, if it
 can be an inner layer, an inner-shape protocol.
 
+## Documentation snippets
+
+Every block fenced ```` ```swift ```` in README.md (and the DocC articles) must compile when the blocks of one file are concatenated from top to bottom. Declarations are file-scoped (declare each name once per file), statements run in order, each block in its own scope. Illustrative fragments that can't sensibly compile use the fence ```` ```swift-sketch ```` and are skipped. Check with `swift build && swift Scripts/CheckDocSnippets.swift [--only README.md]`.
+
 ## Pull Request Process
 
 1. Open a PR against `main`

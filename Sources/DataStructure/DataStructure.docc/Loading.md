@@ -2,7 +2,7 @@
 
 `Loading<Success, Failure>` is a four-state lifecycle enum for async operations: `.idle`, `.loading(previous:)`, `.loaded(Success)`, and `.failed(Failure, previous:)`. The `previous` payload on `.loading` and `.failed` carries the last successful value so UIs can keep displaying stale data while a refresh is in flight or after an error.
 
-```swift
+```swift-sketch
 import DataStructure
 
 public enum Loading<Success: Sendable, Failure: Sendable>: Sendable {
@@ -13,7 +13,24 @@ public enum Loading<Success: Sendable, Failure: Sendable>: Sendable {
 }
 ```
 
-`Loading` is a `Functor` (`map`), a binary applicative via `zip`, a `Monad` (`flatMap`), and supports error recovery via `catch`. Operator forms — `<£>`, `<&>`, `£>`, `<£`, `>>-`, `-<<`, `>=>`, `<=<` — live in `DataStructureOperators`.
+`Loading` is a Functor (`map`), an Applicative (`pure`, `apply`, `liftA2`, `zip`, all derived from bind), a Monad (`flatMap`), with error recovery via `catch`, plus `pessimisticCombine` for the UI "any failure wins" rule. Operators: `<£>`, `<&>`, `£>`, `<£`, `<*>`, `*>`, `<*`, `>>-`, `-<<`, `>=>`, `<=<` (they live in `DataStructureOperators`).
+
+The examples in this article share a few context types:
+
+```swift
+import DataStructure
+import DataStructureOperators
+
+enum NetworkError: Error, Sendable { case timeout, network }
+enum AuthError: Error, Sendable { case denied }
+enum E: Error, Sendable { case x }
+struct Movie: Sendable, Equatable { let title: String }
+struct Session: Sendable { let token: Int }
+struct Profile: Sendable { let name: String }
+
+let movie1 = Movie(title: "Alien")
+let movie2 = Movie(title: "Heat")
+```
 
 ---
 
@@ -24,16 +41,16 @@ The state machine is driven by `Result`. The three transition helpers preserve `
 ```swift
 var state: Loading<[Movie], NetworkError> = .idle
 
-// Kick off a fetch — carries `loadedOrPrevious` into `.loading`.
+// Kick off a fetch, carrying `loadedOrPrevious` into `.loading`.
 state = state.startLoading()
 // .loading(previous: nil)
 
-// Resolve to a Result — `.loaded` on success, `.failed(_, previous:)` on failure.
+// Resolve to a Result: `.loaded` on success, `.failed(_, previous:)` on failure.
 state = state.applying(.success([movie1, movie2]))
 // .loaded([movie1, movie2])
 
 state = state.startLoading()
-// .loading(previous: [movie1, movie2])  — stale data preserved during refresh
+// .loading(previous: [movie1, movie2]), stale data preserved during refresh
 
 state = state.applying(.failure(.timeout))
 // .failed(error: .timeout, previous: [movie1, movie2])
@@ -49,11 +66,11 @@ Returns the loaded value, or the most recent `previous`. `nil` only for `.idle` 
 `.loading`/`.failed` states that never had a successful fetch to fall back on.
 
 ```swift
-Loading<Int, MyError>.idle.loadedOrPrevious                                // nil
-Loading<Int, MyError>.loading(previous: nil).loadedOrPrevious              // nil
-Loading<Int, MyError>.loading(previous: 42).loadedOrPrevious               // 42
-Loading<Int, MyError>.loaded(7).loadedOrPrevious                           // 7
-Loading<Int, MyError>.failed(error: .network, previous: 3).loadedOrPrevious       // 3
+let kept1 = Loading<Int, NetworkError>.idle.loadedOrPrevious                                      // nil
+let kept2 = Loading<Int, NetworkError>.loading(previous: nil).loadedOrPrevious                    // nil
+let kept3 = Loading<Int, NetworkError>.loading(previous: 42).loadedOrPrevious                     // 42
+let kept4 = Loading<Int, NetworkError>.loaded(7).loadedOrPrevious                                 // 7
+let kept5 = Loading<Int, NetworkError>.failed(error: .network, previous: 3).loadedOrPrevious      // 3
 ```
 
 This is the property to reach for in a view: it collapses three of the four cases
@@ -62,7 +79,7 @@ currently have to show," so a screen never has to blank itself out just because 
 is in flight or the last attempt failed. Compare the two approaches to rendering the same
 list:
 
-```swift
+```swift-sketch
 // Without loadedOrPrevious — switches to an empty/spinner state on every refresh,
 // even when there's perfectly good data still on screen from the last successful fetch.
 switch state {
@@ -91,7 +108,7 @@ if let movies = state.loadedOrPrevious {
 
 The second version is the pattern this type exists for: pull-to-refresh and background
 poll/retry loops feel broken when the whole screen flashes to a spinner or an error page
-every time they run — `loadedOrPrevious` is what lets a view keep the last-known-good
+every time they run, and `loadedOrPrevious` is what lets a view keep the last-known-good
 content on screen and layer a lighter-weight signal (a small inline spinner, a toast, a
 banner) on top instead, using `state.is(.loading)` / `state.failed != nil` alongside it to
 decide whether to show that lighter-weight signal at all.
@@ -103,16 +120,16 @@ decide whether to show that lighter-weight signal at all.
 Transform the `Success` channel. `previous` values in `.loading` and `.failed` are mapped too, so stale data stays consistent. `.idle` and the `Failure` channel pass through unchanged.
 
 ```swift
-{ $0 * 2 } <£> Loading<Int, E>.loaded(5)                  // .loaded(10)
-{ $0 * 2 } <£> Loading<Int, E>.loading(previous: 3)       // .loading(previous: 6)
-{ $0 * 2 } <£> Loading<Int, E>.failed(error: .x, previous: 4)    // .failed(error: .x, previous: 8)
-{ $0 * 2 } <£> Loading<Int, E>.idle                       // .idle
+let map1 = { $0 * 2 } <£> Loading<Int, E>.loaded(5)                       // .loaded(10)
+let map2 = { $0 * 2 } <£> Loading<Int, E>.loading(previous: 3)            // .loading(previous: 6)
+let map3 = { $0 * 2 } <£> Loading<Int, E>.failed(error: .x, previous: 4)  // .failed(error: .x, previous: 8)
+let map4 = { $0 * 2 } <£> Loading<Int, E>.idle                            // .idle
 
-Loading.loaded(5) <&> { $0 * 2 }                          // .loaded(10)
+let map5 = Loading<Int, E>.loaded(5) <&> { $0 * 2 }                       // .loaded(10)
 
 // Named functions
-Loading<Int, E>.fmap { $0 * 2 }(.loaded(5))   // .loaded(10)
-Loading.loaded(5).map { $0 * 2 }              // .loaded(10)
+let map6 = Loading<Int, E>.fmap { $0 * 2 }(.loaded(5))   // .loaded(10)
+let map7 = Loading<Int, E>.loaded(5).map { $0 * 2 }      // .loaded(10)
 ```
 
 ---
@@ -122,16 +139,39 @@ Loading.loaded(5).map { $0 * 2 }              // .loaded(10)
 Replace the loaded value with a constant.
 
 ```swift
-Loading<Int, E>.loaded(42) £> "done"                      // .loaded("done")
-Loading<Int, E>.failed(error: .x, previous: 7) £> "done"         // .failed(error: .x, previous: "done")
-"done" <£ Loading<Int, E>.loaded(42)                      // .loaded("done")
+let replace1 = Loading<Int, E>.loaded(42) £> "done"                       // .loaded("done")
+let replace2 = Loading<Int, E>.failed(error: .x, previous: 7) £> "done"  // .failed(error: .x, previous: "done")
+let replace3 = "done" <£ Loading<Int, E>.loaded(42)                      // .loaded("done")
 ```
 
 ---
 
-## `zip` — Combine two Loadings
+## `zip` and the applicative
 
-Combine two `Loading` values that share a `Failure` type into a `Loading` of the pair. Precedence — first match wins:
+`pure` is `.loaded`, and `apply` / `<*>`, `liftA2`, `*>`, `<*` are `ap` derived from `flatMap` (`<*> == ap`), so `zip(a, b) == a.flatMap { l in b.map { (l, $0) } }`. It is left-biased like PureScript's `RemoteData`: the right side only matters when the left is `.loaded`. So `zip(.idle, .failed(e))` is `.idle` and `zip(.loading(previous: nil), .failed(e))` is `.loading(previous: nil)` (`pessimisticCombine` gives `.failed` for both), and `zip(.loaded(1), x)` is `x.map { (1, $0) }`.
+
+```swift
+typealias L<A: Sendable> = Loading<A, NetworkError>
+
+let zip1 = L<(Int, String)>.zip(.loaded(1), .loaded("a"))
+// .loaded((1, "a"))
+
+let zip2 = L<(Int, String)>.zip(.idle, .loaded("a"))
+// .idle
+
+let zip3 = L<(Int, String)>.zip(.loading(previous: 1), .loaded("a"))
+// .loading(previous: nil), the left side decides and the pair has no previous
+
+let zip4 = L<(Int, String)>.zip(.loaded(1), .failed(error: .network, previous: "a"))
+// .failed(error: .network, previous: Optional("a")) mapped through the pair, left is loaded so the right decides
+
+let zip5 = L<(Int, String)>.zip(.idle, .failed(error: .network, previous: "a"))
+// .idle, the failure on the right is never looked at
+```
+
+## `pessimisticCombine` — UI rule (not the applicative)
+
+When a screen waits on two requests and should show a failure as soon as either one failed, use `pessimisticCombine(_:_:)` (there are also 3-ary and 4-ary versions). Precedence, first match wins:
 
 1. Either side `.failed` → `.failed` (first error, pair of `loadedOrPrevious` when both have one).
 2. Either side `.idle` → `.idle`.
@@ -139,22 +179,21 @@ Combine two `Loading` values that share a `Failure` type into a `Loading` of the
 4. Both `.loaded` → `.loaded(pair)`.
 
 ```swift
-typealias L<A: Sendable> = Loading<A, NetworkError>
-
-L<(Int, String)>.zip(.loaded(1), .loaded("a"))
+let combine1 = L<(Int, String)>.pessimisticCombine(.loaded(1), .loaded("a"))
 // .loaded((1, "a"))
 
-L<(Int, String)>.zip(.idle, .loaded("a"))
+let combine2 = L<(Int, String)>.pessimisticCombine(.idle, .loaded("a"))
 // .idle
 
-L<(Int, String)>.zip(.loading(previous: 1), .loaded("a"))
+let combine3 = L<(Int, String)>.pessimisticCombine(.loading(previous: 1), .loaded("a"))
 // .loading(previous: Optional((1, "a")))
 
-L<(Int, String)>.zip(.failed(error: .network, previous: 1), .loaded("a"))
+let combine4 = L<(Int, String)>.pessimisticCombine(.failed(error: .network, previous: 1), .loaded("a"))
 // .failed(error: .network, previous: Optional((1, "a")))
-```
 
-> `Loading` doesn't expose `<*>` / `pure` because there is no canonical way to wrap a single value as `.idle` / `.loading` / `.failed`. Use `zip` when you need applicative-style combination.
+let combine5 = L<(Int, String)>.pessimisticCombine(.idle, .failed(error: .network, previous: nil))
+// .failed(error: .network, previous: nil), where zip would have given .idle
+```
 
 ---
 
@@ -163,39 +202,40 @@ L<(Int, String)>.zip(.failed(error: .network, previous: 1), .loaded("a"))
 Chain operations that each return a `Loading`. `.loaded` is the only state that actually invokes the continuation; the others pass through, with `previous` mapped through the function so stale-data invariants survive the chain.
 
 ```swift
-func authorize(_ id: Int) -> Loading<Session, AuthError> { ... }
-func fetchProfile(_ session: Session) -> Loading<Profile, AuthError> { ... }
+@Sendable func authorize(_ id: Int) -> Loading<Session, AuthError> { .loaded(Session(token: id)) }
+@Sendable func fetchProfile(_ session: Session) -> Loading<Profile, AuthError> { .loaded(Profile(name: "user\(session.token)")) }
 
-let result = Loading<Int, AuthError>.loaded(42)
+let bound = Loading<Int, AuthError>.loaded(42)
     >>- authorize
     >>- fetchProfile
 
 // Function on the left
-let result2 = fetchProfile -<< authorize -<< .loaded(42)
+let bound2 = fetchProfile -<< (authorize -<< Loading<Int, AuthError>.loaded(42))
 
 // Kleisli composition (build the pipeline once, run later)
 let pipeline = authorize >=> fetchProfile
-pipeline(42)                       // Loading<Profile, AuthError>
+let piped = pipeline(42)                       // Loading<Profile, AuthError>
 
 let pipelineBack = fetchProfile <=< authorize
-pipelineBack(42)                   // Loading<Profile, AuthError>
+let pipedBack = pipelineBack(42)               // Loading<Profile, AuthError>
 
 // Named functions
-Loading.loaded(42).flatMap(authorize)
-Loading<Int, AuthError>.kleisli(authorize, fetchProfile)(42)
+let flatMapped = Loading<Int, AuthError>.loaded(42).flatMap(authorize)
+let kleisli = Loading<Session, AuthError>.kleisli(authorize, fetchProfile)(42)
 ```
 
 ---
 
 ## `Failure` is any `Sendable` type
 
-`Loading` doesn't require `Failure: Error`. In the UI the failure is usually a `String` or a struct with a title and subtitle, and a non-`Error` failure keeps `Loading` easy to make `Equatable`. Only the `Result` bridges (`applying(_:)`, `from(_:)`) need `Failure: Error`. Map a technical error into a view message the same way you map a DTO into a view state:
+`Loading` doesn't require `Failure: Error`. In the UI the failure is usually a `String` or a struct with a title and subtitle, and a non-`Error` failure keeps `Loading` easy to make `Equatable`. Only the `Result` bridges (`applying(_:)` and `init(_:)`) need `Failure: Error`. Map a technical error into a view message the same way you map a DTO into a view state:
 
 ```swift
 struct Banner: Equatable, Sendable { let title: String; let subtitle: String }
 
+let request: Loading<Profile, NetworkError> = .failed(error: .timeout, previous: nil)
 let screen: Loading<Profile, Banner> = request
-    .mapError { error in Banner(title: "Couldn't load your profile", subtitle: error.localizedDescription) }
+    .mapError { error in Banner(title: "Couldn't load your profile", subtitle: "\(error)") }
 ```
 
 `bimap(_:_:)` maps both channels at once.
@@ -211,34 +251,34 @@ let recovered: Loading<Int, NetworkError> = Loading<Int, NetworkError>
 // .loaded(0)
 
 // Retry, keeping the stale data on screen
-Loading<Int, NetworkError>
+let retried = Loading<Int, NetworkError>
     .failed(error: .timeout, previous: 7)
     .catch { _, previous in Loading<Int, NetworkError>.loading(previous: previous) }
 // .loading(previous: 7)
 
 // Non-failed cases pass through
-Loading<Int, NetworkError>.idle.catch { _, _ in Loading<Int, NetworkError>.loaded(0) }   // .idle
+let untouched = Loading<Int, NetworkError>.idle.catch { _, _ in Loading<Int, NetworkError>.loaded(0) }   // .idle
 ```
 
 ---
 
 ## Prisms, `cases`, and `is(_:)`
 
-`Loading` ships hand-written equivalents of what FP's `@Prisms` macro generates. Because `Loading` is generic, Swift forbids `static let` in its scope, so `prism` is a computed `static var` returning a fresh `Prisms()` per access — matching what the macro emits for any generic host.
+`Loading` ships hand-written equivalents of what FP's `@Prisms` macro generates. Because `Loading` is generic, Swift forbids `static let` in its scope, so `prism` is a computed `static var` returning a fresh `Prisms()` per access, matching what the macro emits for any generic host.
 
 ### `Loading.prism.<case>` — `CoreFP.Prism`
 
 ```swift
-Loading<Int, E>.prism.idle    // Prism<Loading<Int, E>, Void>
-Loading<Int, E>.prism.loading // Prism<Loading<Int, E>, Int?>
-Loading<Int, E>.prism.loaded  // Prism<Loading<Int, E>, Int>
-Loading<Int, E>.prism.failed  // Prism<Loading<Int, E>, (E, Int?)>
+let idlePrism: Prism<Loading<Int, E>, Void> = Loading<Int, E>.prism.idle
+let loadingPrism: Prism<Loading<Int, E>, Int?> = Loading<Int, E>.prism.loading
+let loadedPrism: Prism<Loading<Int, E>, Int> = Loading<Int, E>.prism.loaded
+let failedPrism: Prism<Loading<Int, E>, (E, Int?)> = Loading<Int, E>.prism.failed
 
-Loading.prism.loaded.preview(.loaded(7))                    // 7
-Loading.prism.loaded.preview(.idle)                          // nil
-Loading.prism.loaded.review(42)                              // .loaded(42)
-Loading.prism.loaded.set(.loaded(1), 99)                     // .loaded(99)
-Loading.prism.loaded.over({ $0 * 2 })(.loaded(5))            // .loaded(10)
+let previewed1 = Loading<Int, E>.prism.loaded.preview(.loaded(7))                    // 7
+let previewed2 = Loading<Int, E>.prism.loaded.preview(.idle)                         // nil
+let reviewed = Loading<Int, E>.prism.loaded.review(42)                               // .loaded(42)
+let setted = Loading<Int, E>.prism.loaded.set(.loaded(1), 99)                        // .loaded(99)
+let overed = Loading<Int, E>.prism.loaded.over({ $0 * 2 })(.loaded(5))               // .loaded(10)
 ```
 
 ### Per-case properties
@@ -246,19 +286,19 @@ Loading.prism.loaded.over({ $0 * 2 })(.loaded(5))            // .loaded(10)
 Each case also has a plain property on the instance — no `@dynamicMemberLookup` involved, just one named property per case, each delegating to the `Prism` above. `if let` reads directly against a `Loading` value without going through `.prism.loaded.preview(...)`. Note that `.loading` is a double optional because its own focus type is already `Success?`.
 
 ```swift
-let state: Loading<Int, E> = .loaded(42)
-state.loaded                    // Optional(42)
-state.idle                       // nil
-state.loading                    // nil
-state.failed                     // nil
+let current: Loading<Int, E> = .loaded(42)
+let p1 = current.loaded                    // Optional(42)
+let p2 = current.idle                      // nil
+let p3 = current.loading                   // nil
+let p4 = current.failed                    // nil
 
-if let value = state.loaded {
-    render(value)
+if let value = current.loaded {
+    print(value)
 }
 
 let inFlight: Loading<Int, E> = .loading(previous: 7)
-inFlight.loading                 // Optional(Optional(7))  — double optional
-inFlight.loading ?? nil          // Optional(7)
+let double1 = inFlight.loading             // Optional(Optional(7)), double optional
+let double2 = inFlight.loading ?? nil      // Optional(7)
 ```
 
 ### `Cases` enum, `is(_:)`, and `HasCases`
@@ -266,20 +306,20 @@ inFlight.loading ?? nil          // Optional(7)
 A nested `Cases: CoreFP.CaseMatchable` enum lets you list every case once and check membership without unpacking payloads. `Loading` conforms to `CoreFP.HasCases`, so `is(_:)` is available both as a direct method and via the polymorphic protocol extension.
 
 ```swift
-Loading<Int, E>.Cases.allCases   // [.idle, .loading, .loaded, .failed]
+let allCases = Loading<Int, E>.Cases.allCases   // [.idle, .loading, .loaded, .failed]
 
-let state: Loading<Int, E> = .loading(previous: 5)
-state.is(.loading)               // true
-state.is(.loaded)                // false
+let pending: Loading<Int, E> = .loading(previous: 5)
+let is1 = pending.is(.loading)               // true
+let is2 = pending.is(.loaded)                // false
 
-Loading<Int, E>.loaded(0).is(.loaded)   // true
-Loading<Int, E>.failed(error: .x, previous: nil).is(.failed)  // true
+let is3 = Loading<Int, E>.loaded(0).is(.loaded)   // true
+let is4 = Loading<Int, E>.failed(error: .x, previous: nil).is(.failed)  // true
 
 // Polymorphic use via HasCases:
 func currentIsFirstCase<T: HasCases>(_ v: T) -> Bool {
-    v.is(T.Cases.allCases.first!)
+    T.Cases.allCases.first.map(v.is) ?? false
 }
-currentIsFirstCase(state)        // true if state matches `cases.allCases[0]` (i.e. .idle)
+let isFirst = currentIsFirstCase(pending)    // true if pending matches `Cases.allCases[0]` (i.e. .idle)
 ```
 
 ---
@@ -289,8 +329,8 @@ currentIsFirstCase(state)        // true if state matches `cases.allCases[0]` (i
 `Loading` conforms to `Equatable` and `Hashable` conditionally, when both `Success` and `Failure` do. Note Swift does **not** synthesize `Equatable` for tuple payloads, so `Loading<(Int, String), E>` is not `Equatable` — use case-pattern matching there.
 
 ```swift
-Loading<Int, E>.loaded(7) == .loaded(7)                       // true
-Loading<Int, E>.loading(previous: 1) != .loading(previous: 2) // true
+let eq1 = Loading<Int, E>.loaded(7) == .loaded(7)                       // true
+let eq2 = Loading<Int, E>.loading(previous: 1) != .loading(previous: 2) // true
 
 var hasher = Hasher()
 Loading<Int, E>.failed(error: .x, previous: 5).hash(into: &hasher)
@@ -300,7 +340,7 @@ Loading<Int, E>.failed(error: .x, previous: 5).hash(into: &hasher)
 
 ## Functor / Monad laws
 
-All standard laws hold; the test suite covers identity, composition, left identity, right identity, and associativity for representative case combinations.
+All standard laws hold; the test suite covers identity, composition, left identity, right identity, and associativity for representative case combinations. The Applicative laws hold as well, and `<*> == ap` is tested.
 
 ---
 
@@ -314,7 +354,7 @@ All standard laws hold; the test suite covers identity, composition, left identi
 | `.idle` / `.loading` / `.loaded` / `.failed` | `RemoteData`'s `NotAsked` / `Loading` / `Success` / `Failure` |
 | `map` / `<£>` | `fmap` (mapped over the `Success` channel, same as `RemoteData`'s `Functor`) |
 | `flatMap` / `>>-` | `>>=` (only `.loaded`/`Success` invokes the continuation) |
-| `catch` | error-recovery combinator, analogous to `RemoteData`'s `mapError`/withDefault-style helpers |
+| `catch` | Haskell's `catchE` (the handler receives `(Failure, Success?)` and may change the failure type) |
 
 The reason to reach past Haskell entirely here: `RemoteData` (originally from Elm, ported to PureScript as `purescript-remotedata`) is the exact same idea — a `NotAsked | Loading | Failure e | Success a` sum type purpose-built for representing a remote/async resource's lifecycle in a UI — and it is real, well-known, and directly citable, whereas forcing a `base`-package Haskell type onto this shape would be misleading; nothing in `base` or common Haskell web frameworks models this pattern as a shared, named type.
 

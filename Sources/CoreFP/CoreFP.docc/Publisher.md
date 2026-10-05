@@ -17,14 +17,16 @@ When you want Combine's other flattening strategies, call them directly: `flatMa
 Apply a function to every emitted value. `<£>` puts the function on the left; `<&>` puts the publisher on the left.
 
 ```swift
+import Combine
+
 let numbers: AnyPublisher<Int, Never> = [1, 2, 3].publisher.eraseToAnyPublisher()
 
-{ $0 * 2 } <£> numbers   // emits 2, 4, 6
-numbers <&> { $0 * 2 }   // emits 2, 4, 6
+_ = { $0 * 2 } <£> numbers   // emits 2, 4, 6
+_ = numbers <&> { $0 * 2 }   // emits 2, 4, 6
 
 // Named function
-AnyPublisher.fmap { $0 * 2 }(numbers)
-numbers.map { $0 * 2 }.eraseToAnyPublisher()
+_ = AnyPublisher<Int, Never>.fmap { $0 * 2 }(numbers)
+_ = numbers.map { $0 * 2 }.eraseToAnyPublisher()
 ```
 
 ---
@@ -34,11 +36,11 @@ numbers.map { $0 * 2 }.eraseToAnyPublisher()
 Replace every emitted value with a constant.
 
 ```swift
-numbers £> "tick"    // emits "tick", "tick", "tick"
-"tick" <£ numbers    // same
+_ = numbers £> "tick"    // emits "tick", "tick", "tick"
+_ = "tick" <£ numbers    // same
 
 // Named function
-numbers.replaceOutput("tick")
+_ = numbers.replaceOutput("tick")
 ```
 
 ---
@@ -48,14 +50,14 @@ numbers.replaceOutput("tick")
 `ap` derived from the ordered-concat bind: for each function, in order, map it over the whole value stream. The value publisher is subscribed once per function.
 
 ```swift
-let fns: AnyPublisher<@Sendable (Int) -> Int, Never> = [{ $0 + 1 }, { $0 * 10 }]
-    .publisher.eraseToAnyPublisher()
+let adders: [@Sendable (Int) -> Int] = [{ $0 + 1 }, { $0 * 10 }]
+let fns: AnyPublisher<@Sendable (Int) -> Int, Never> = adders.publisher.eraseToAnyPublisher()
 
-fns <*> numbers   // emits 2, 3, 4, 10, 20, 30
+_ = fns <*> numbers   // emits 2, 3, 4, 10, 20, 30
 
 // Named functions
-AnyPublisher.apply(fns, numbers)
-AnyPublisher<Int, Never>.liftA2 { (a: Int, b: Int) in a + b }(numbers, numbers)
+_ = AnyPublisher<Int, Never>.apply(fns, numbers)
+_ = AnyPublisher<Int, Never>.liftA2 { (a: Int, b: Int) in a + b }(numbers, numbers)
 ```
 
 ---
@@ -67,12 +69,12 @@ Derived from bind too: the right publisher runs once for every value of the left
 ```swift
 let letters: AnyPublisher<String, Never> = ["a", "b"].publisher.eraseToAnyPublisher()
 
-numbers *> letters   // emits "a", "b", "a", "b", "a", "b"
-numbers <* letters   // emits 1, 1, 2, 2, 3, 3
+_ = numbers *> letters   // emits "a", "b", "a", "b", "a", "b"
+_ = numbers <* letters   // emits 1, 1, 2, 2, 3, 3
 
 // Named functions
-AnyPublisher.seqRight(numbers, letters)
-AnyPublisher.seqLeft(numbers, letters)
+_ = AnyPublisher<String, Never>.seqRight(numbers, letters)
+_ = AnyPublisher<Int, Never>.seqLeft(numbers, letters)
 ```
 
 ---
@@ -82,7 +84,7 @@ AnyPublisher.seqLeft(numbers, letters)
 `zip` pairs values by position, like Haskell's `zip` for lists. It is a named function, not the applicative.
 
 ```swift
-AnyPublisher<(Int, String), Never>.zip(numbers, letters)   // emits (1, "a"), (2, "b")
+_ = AnyPublisher<(Int, String), Never>.zip(numbers, letters)   // emits (1, "a"), (2, "b")
 ```
 
 ---
@@ -92,14 +94,27 @@ AnyPublisher<(Int, String), Never>.zip(numbers, letters)   // emits (1, "a"), (2
 Chain publishers where each emitted value produces a new publisher. `>>-` puts the publisher on the left; `-<<` puts the function on the left. Inner publishers run one at a time, in upstream order, and every value of each one is emitted before the next starts. Upstream values are never dropped, even from sources that ignore demand such as `PassthroughSubject`.
 
 ```swift
+struct User: Codable, Sendable {
+    var id: Int
+    var name: String
+}
+
+struct Profile: Sendable {
+    var bio: String
+}
+
+@Sendable func fetchUser(_ id: Int) -> AnyPublisher<User, Never> {
+    Just(User(id: id, name: "user \(id)")).eraseToAnyPublisher()
+}
+
 let ids: AnyPublisher<Int, Never> = [1, 2, 3].publisher.eraseToAnyPublisher()
 
-ids >>- { id in fetchUser(id) }   // the user for 1, then for 2, then for 3
-fetchUser -<< ids                 // same
+_ = ids >>- { id in fetchUser(id) }   // the user for 1, then for 2, then for 3
+_ = fetchUser -<< ids                 // same
 
 // Named functions
-AnyPublisher<Int, Never>.bind(fetchUser)(ids)
-ids.concatMap(fetchUser)
+_ = AnyPublisher<Int, Never>.bind(fetchUser)(ids)
+_ = ids.concatMap(fetchUser)
 ```
 
 Use Combine's `flatMap` when you want the inner publishers merged concurrently, or `map(fetchUser).switchToLatest()` to keep only the latest one.
@@ -111,14 +126,15 @@ Use Combine's `flatMap` when you want the inner publishers merged concurrently, 
 Compose two functions that each return a `Publisher`.
 
 ```swift
-let fetchUser:    (Int)  -> AnyPublisher<User, Error>   = { ... }
-let fetchProfile: (User) -> AnyPublisher<Profile, Error> = { ... }
+@Sendable func fetchProfile(_ user: User) -> AnyPublisher<Profile, Never> {
+    Just(Profile(bio: "bio of \(user.name)")).eraseToAnyPublisher()
+}
 
 let fetchUserProfile = fetchUser >=> fetchProfile
-fetchUserProfile(42)  // Publisher<Profile, Error> — fetches user then profile (ordered concat)
+_ = fetchUserProfile(42)  // Publisher<Profile, Never>, fetches the user then the profile (ordered concat)
 
 // Named function
-AnyPublisher.kleisli(fetchUser, fetchProfile)(42)
+_ = AnyPublisher<User, Never>.kleisli(fetchUser, fetchProfile)(42)
 ```
 
 ---
@@ -131,9 +147,28 @@ Combine `Reader` and `Publisher` to describe environment-dependent reactive comp
 import DataStructure
 import DataStructureOperators
 
-protocol HTTPClient {
+protocol HTTPClient: Sendable {
     func get(_ path: String) -> AnyPublisher<Data, Error>
 }
+
+struct LiveHTTPClient: HTTPClient {
+    func get(_ path: String) -> AnyPublisher<Data, Error> {
+        URLSession.shared.dataTaskPublisher(for: URL(string: "https://example.com" + path)!)
+            .map(\.data)
+            .mapError { $0 as Error }
+            .eraseToAnyPublisher()
+    }
+}
+
+struct StubHTTPClient: HTTPClient {
+    var response: Data
+
+    func get(_ path: String) -> AnyPublisher<Data, Error> {
+        Just(response).setFailureType(to: Error.self).eraseToAnyPublisher()
+    }
+}
+
+let testData = Data("[]".utf8)
 
 // Describe the computation — no concrete session, no global state
 let fetchUsers = Reader<any HTTPClient, AnyPublisher<[User], Error>> { client in
@@ -147,7 +182,7 @@ let userNames = fetchUsers.readerT.map { users in users.map { $0.name } }
 // ReaderTPublisher<any HTTPClient, Error, [String]>
 
 // The operators work through both layers too
-{ users in users.map { $0.name } } <£> fetchUsers.readerT
+_ = { users in users.map { $0.name } } <£> fetchUsers.readerT
 
 // Provide the real dependency at the edge (rawValue is the Reader)
 let publisher = userNames.rawValue(LiveHTTPClient())
@@ -174,29 +209,29 @@ Publisher emitting optional values. Inner `nil` elements stay `nil`.
 ```swift
 import FP
 
-let pub: PublisherTOptional<Never, Int> = ([1, nil, 3] as [Int?]).publisher.publisherT
+let optPub: PublisherTOptional<Never, Int> = ([1, nil, 3] as [Int?]).publisher.publisherT
 
 // map: transform the inner Optional without affecting the Publisher layer
-let doubled = pub.map { $0 * 2 }
+let optDoubled = optPub.map { $0 * 2 }
 // emits Optional(2), nil, Optional(6)
 
-// liftA2 (MaybeT ap): for each element of pubA, the whole of pubB runs
-let pubA: PublisherTOptional<Never, Int> = ([1, nil] as [Int?]).publisher.publisherT
-let pubB: PublisherTOptional<Never, Int> = ([10, 20] as [Int?]).publisher.publisherT
-PublisherTOptional<Never, Int>.liftA2(+)(pubA, pubB)
+// liftA2 (MaybeT ap): for each element of optA, the whole of optB runs
+let optA: PublisherTOptional<Never, Int> = ([1, nil] as [Int?]).publisher.publisherT
+let optB: PublisherTOptional<Never, Int> = ([10, 20] as [Int?]).publisher.publisherT
+_ = PublisherTOptional<Never, Int>.liftA2(+)(optA, optB)
 // emits Optional(11), Optional(21), nil  (a nil short-circuits that element once)
 
 // flatMap: each Optional element produces a new stack
-pub.flatMap { n in Just(Optional(n * 2)).publisherT }
+_ = optPub.flatMap { n in Just(Optional(n * 2)).publisherT }
 // emits Optional(2), nil, Optional(6)
 
 // Operators
-pub >>- { n in Just(Optional(n + 1)).publisherT }   // ordered concat, like the base bind
+_ = optPub >>- { n in Just(Optional(n + 1)).publisherT }   // ordered concat, like the base bind
 
 // Escape hatch: any Combine operator on the whole AnyPublisher<Int?, Never>
-pub.mapPublisherT { $0.receive(on: DispatchQueue.main).eraseToAnyPublisher() }
+_ = optPub.mapPublisherT { $0.receive(on: DispatchQueue.main).eraseToAnyPublisher() }
 
-doubled.rawValue   // AnyPublisher<Int?, Never>
+optDoubled.rawValue   // AnyPublisher<Int?, Never>
 ```
 
 `PublisherTOptional`, `PublisherTResult` and `PublisherTEither` are lawful `MaybeT` / `ExceptT`
@@ -212,17 +247,17 @@ Publisher emitting arrays. Inner elements are transformed as a group. Functor an
 ```swift
 import FP
 
-let pub: PublisherTArray<Never, Int> = [[1, 2], [3, 4]].publisher.publisherT
+let arrPub: PublisherTArray<Never, Int> = [[1, 2], [3, 4]].publisher.publisherT
 
-pub.map { $0 * 2 }   // emits [2, 4], [6, 8]
+_ = arrPub.map { $0 * 2 }   // emits [2, 4], [6, 8]
 
-// liftA2: each array of pubA against every array of pubB (ap, not zip), combined with Array.liftA2
-let pubA: PublisherTArray<Never, Int> = Just([1, 2]).publisherT
-let pubB: PublisherTArray<Never, Int> = Just([10, 20]).publisherT
-PublisherTArray<Never, Int>.liftA2(+)(pubA, pubB)   // emits [11, 21, 12, 22]
+// liftA2: each array of arrA against every array of arrB (ap, not zip), combined with Array.liftA2
+let arrA: PublisherTArray<Never, Int> = Just([1, 2]).publisherT
+let arrB: PublisherTArray<Never, Int> = Just([10, 20]).publisherT
+_ = PublisherTArray<Never, Int>.liftA2(+)(arrA, arrB)   // emits [11, 21, 12, 22]
 
 // Operators
-{ $0 * 2 } <£> pub   // emits [2, 4], [6, 8]
+_ = { $0 * 2 } <£> arrPub   // emits [2, 4], [6, 8]
 ```
 
 ### `PublisherTResult` (`AnyPublisher<Result<A, E>, Failure>`)
@@ -232,11 +267,15 @@ Publisher emitting Results. `.failure` elements propagate the inner error.
 ```swift
 import FP
 
-let pub: PublisherTResult<Never, MyError, Int> =
+enum MyError: Error {
+    case bad
+}
+
+let resPub: PublisherTResult<Never, MyError, Int> =
     [Result<Int, MyError>.success(5), .failure(.bad)].publisher.publisherT
 
-pub.map { $0 * 2 }  // emits .success(10), .failure(.bad)
-pub.flatMap { n in Just(Result<String, MyError>.success("\(n)")).publisherT }
+_ = resPub.map { $0 * 2 }  // emits .success(10), .failure(.bad)
+_ = resPub.flatMap { n in Just(Result<String, MyError>.success("\(n)")).publisherT }
 // emits .success("5"), .failure(.bad)
 ```
 
@@ -247,11 +286,11 @@ Publisher emitting Either values.
 ```swift
 import DataStructure
 
-let pub: PublisherTEither<Never, String, Int> =
+let eitherPub: PublisherTEither<Never, String, Int> =
     [Either.right(1), .left("err"), .right(3)].publisher.publisherT
 
-pub.map { $0 * 2 }  // emits .right(2), .left("err"), .right(6)
-pub.flatMap { n in Just(Either<String, Int>.right(n * 2)).publisherT }
+_ = eitherPub.map { $0 * 2 }  // emits .right(2), .left("err"), .right(6)
+_ = eitherPub.flatMap { n in Just(Either<String, Int>.right(n * 2)).publisherT }
 // emits .right(2), .left("err"), .right(6)
 ```
 
@@ -263,9 +302,9 @@ inner streams in order and combines every log as `outer <> inner`.
 ```swift
 import DataStructure
 
-let pub: PublisherTWriter<Never, [String], Int> = Just(Writer(2, ["start"])).publisherT
+let writerPub: PublisherTWriter<Never, [String], Int> = Just(Writer(2, ["start"])).publisherT
 
-pub.flatMap { n in [Writer(n, ["a"]), Writer(n * 10, ["b"])].publisher.publisherT }
+_ = writerPub.flatMap { n in [Writer(n, ["a"]), Writer(n * 10, ["b"])].publisher.publisherT }
 // emits Writer(2, ["start", "a"]), Writer(20, ["start", "b"])
 
 // Operators (DataStructureOperators): >>-, -<<, >=>, <=<, <*>, *>, <*

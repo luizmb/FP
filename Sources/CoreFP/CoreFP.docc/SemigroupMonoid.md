@@ -127,9 +127,9 @@ element-wise — integer scalars use wrapping arithmetic (`&+`, `&*`), floats us
 arithmetic:
 
 ```swift
-let a = SIMD4<Int>.Monoids.Sum(SIMD4(1, 2, 3, 4))
-let b = SIMD4<Int>.Monoids.Sum(SIMD4(10, 20, 30, 40))
-SIMD4<Int>.Monoids.Sum.combine(a, b).rawValue   // SIMD4(11, 22, 33, 44)
+let v1 = SIMD4<Int>.Monoids.Sum(SIMD4(1, 2, 3, 4))
+let v2 = SIMD4<Int>.Monoids.Sum(SIMD4(10, 20, 30, 40))
+let v3 = SIMD4<Int>.Monoids.Sum.combine(v1, v2).rawValue   // SIMD4(11, 22, 33, 44)
 ```
 
 ---
@@ -183,7 +183,8 @@ let compare: (Person, Person) -> Ordering = { l, r in
     mconcat([byLastName(l, r), byFirstName(l, r), byAge(l, r)])
 }
 
-people.sorted { compare($0, $1).rawValue == .orderedAscending }
+let people = [Person(lastName: "Lovelace", firstName: "Ada", age: 36), Person(lastName: "Turing", firstName: "Alan", age: 41)]
+let sortedPeople = people.sorted { compare($0, $1).rawValue == .orderedAscending }
 ```
 
 `Ordering`'s identity is `.orderedSame` — an empty `mconcat` (or a chain where every comparator
@@ -207,7 +208,7 @@ let roster = [
 
 // Sort by team, then by score descending, then by name — three composed comparators:
 let byTeam  = comparing { (p: Player) in p.team }
-let byScore = comparing { (p: Player) in Int.Monoids.Max($0.score).rawValue }
+let byScore = comparing { (p: Player) in Int.Monoids.Max(p.score).rawValue }
 let byName  = comparing { (p: Player) in p.name }
 
 let sorted = roster.sorted { l, r in

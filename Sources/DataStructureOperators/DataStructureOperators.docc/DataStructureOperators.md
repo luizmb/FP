@@ -68,6 +68,44 @@ The transformer stack structs in `DataStructure` (`ReaderTArray`, `StatefulTEith
 - ``<£>(_:_:)->Zipper<B>``
 - ``<&>(_:_:)->Zipper<B>``
 
+### Functor Replace — `£>` / `<£` (replace with a constant, container-left / value-left)
+
+**Either**
+- ``<£(_:_:)->Either<A,B1>``
+- ``£>(_:_:)->Either<A,B1>``
+
+**Validation**
+- ``<£(_:_:)->Validation<E,B>``
+- ``£>(_:_:)->Validation<E,B>``
+
+**These**
+- ``<£(_:_:)->These<A,B1>``
+- ``£>(_:_:)->These<A,B1>``
+
+**Reader**
+- ``<£(_:_:)->Reader<Env,B>``
+- ``£>(_:_:)->Reader<Env,B>``
+
+**Writer**
+- ``<£(_:_:)->Writer<W,B>``
+- ``£>(_:_:)->Writer<W,B>``
+
+**Stateful**
+- ``<£(_:_:)->Stateful<S,B>``
+- ``£>(_:_:)->Stateful<S,B>``
+
+**Loading**
+- ``<£(_:_:)->Loading<B,F>``
+- ``£>(_:_:)->Loading<B,F>``
+
+**NonEmpty**
+- ``<£(_:_:)->NonEmpty<B>``
+- ``£>(_:_:)->NonEmpty<B>``
+
+**Zipper**
+- ``<£(_:_:)->Zipper<B>``
+- ``£>(_:_:)->Zipper<B>``
+
 ### Applicative — `<*>` (apply), `*>` / `<*` (sequence)
 
 **Either**
@@ -109,6 +147,7 @@ The transformer stack structs in `DataStructure` (`ReaderTArray`, `StatefulTEith
 - ``<*>(_:_:)->NonEmpty<B>``
 - ``*>(_:_:)->NonEmpty<B>``
 - ``<*(_:_:)->NonEmpty<A>``
+
 ### Monad — `>>-` / `-<<` (bind, container-left / fn-left)
 
 **Either**
@@ -138,6 +177,7 @@ The transformer stack structs in `DataStructure` (`ReaderTArray`, `StatefulTEith
 **NonEmpty**
 - ``>>-(_:_:)->NonEmpty<B>``
 - ``-<<(_:_:)->NonEmpty<B>``
+
 ### Kleisli Composition — `>=>` / `<=<`
 
 **Either**
@@ -167,6 +207,7 @@ The transformer stack structs in `DataStructure` (`ReaderTArray`, `StatefulTEith
 **NonEmpty**
 - ``>=>(_:_:)-7dx5t``
 - ``<=<(_:_:)-3nwpt``
+
 ### Alternative — `<|>` (choice)
 
 **Either**
@@ -174,6 +215,8 @@ The transformer stack structs in `DataStructure` (`ReaderTArray`, `StatefulTEith
 
 **Validation**
 - ``<|>(_:_:)->Validation<E,A>``
+
+`Validation`'s `<|>` accumulates both failures (`e1 <> e2`) when both sides fail (changed in 3.0), unlike `Either`'s, which does not accumulate.
 
 ### Comonad — `->>` / `<<-` (extend, container-left / fn-left)
 
@@ -185,42 +228,3 @@ The transformer stack structs in `DataStructure` (`ReaderTArray`, `StatefulTEith
 - ``<<-(_:_:)->Zipper<B>``
 - ``<<-(_:_:)->Reader<Env,B>``
 - ``<<-(_:_:)->Writer<W,B>``
-
-### Function Application — `<£` / `£>` (constant replace)
-
-**Either**
-- ``<£(_:_:)->Either<A,B1>``
-- ``£>(_:_:)->Either<A,B1>``
-
-**Validation**
-- ``<£(_:_:)->Validation<E,B>``
-- ``£>(_:_:)->Validation<E,B>``
-
-**These**
-- ``<£(_:_:)->These<A,B1>``
-- ``£>(_:_:)->These<A,B1>``
-
-**Reader**
-- ``<£(_:_:)->Reader<Env,B>``
-- ``£>(_:_:)->Reader<Env,B>``
-
-**Writer**
-- ``<£(_:_:)->Writer<W,B>``
-- ``£>(_:_:)->Writer<W,B>``
-
-**Stateful**
-- ``<£(_:_:)->Stateful<S,B>``
-- ``£>(_:_:)->Stateful<S,B>``
-
-**Loading**
-- ``<£(_:_:)->Loading<B,F>``
-- ``£>(_:_:)->Loading<B,F>``
-
-**NonEmpty**
-- ``<£(_:_:)->NonEmpty<B>``
-- ``£>(_:_:)->NonEmpty<B>``
-
-**Zipper**
-- ``<£(_:_:)->Zipper<B>``
-- ``£>(_:_:)->Zipper<B>``
-

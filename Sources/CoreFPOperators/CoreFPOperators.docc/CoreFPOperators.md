@@ -120,9 +120,9 @@ The transformer stack structs in `CoreFP` (`OptionalTArray`, `ArrayTResult`, `Pu
 - ``>>>(_:_:)-8mchz``
 - ``<<<(_:_:)-88ssq``
 
-`>>>`/`<<<` are also heavily overloaded for optics (`Lens`, `Prism`, `Iso`, `AffineTraversal`, `Traversal`, `IndexedTraversal` — 26 combinations each direction) — see [Optics](../corefp/optics) for the full composition matrix rather than a flat list here.
+`>>>`/`<<<` are also heavily overloaded for optics (`Lens`, `Prism`, `Iso`, `AffineTraversal`, `Traversal`, `IndexedTraversal` — 30 combinations each direction) — see [Optics](../corefp/optics) for the full composition matrix rather than a flat list here.
 
-A **variadic** overload of each direction composes a tuple-producing function (a `fanout`) with a
+The variadic overloads delegate to the variadic named function `compose(_:_:)` (new in 3.0), like every other operator here delegates to its named function. A **variadic** overload of each direction composes a tuple-producing function (a `fanout`) with a
 multi-argument function, bridging the SE-0110 gap between a tuple argument and a multi-argument parameter
 list: `fanout(\.badge, \.save) >>> Env.init`. It coexists with the single-argument overload without
 ambiguity — see [Point-Free Style](../corefp/pointfreestyle) for the worked example.
@@ -136,9 +136,15 @@ ambiguity — see [Point-Free Style](../corefp/pointfreestyle) for the worked ex
 
 - ``<>(_:_:)``
 
-### Numeric Ranges & Isomorphism — `^`, `+/-` / `±`, `≅`
+### Key Paths — prefix `^`
 
-- ``^(_:_:)``
+Prefix `^` lifts a key path: a `WritableKeyPath` becomes a `Lens`, and a `KeyPath` becomes either a `@Sendable` getter function or a partial lens builder. Swift's own implicit conversion from a key path to a function is not `@Sendable`, so `^\.name` (or `get(\.name)` in `CoreFP`) is how you feed a key path to `>>>`.
+
+### Numeric Ranges & Range Membership — `±` / `+/-`, `≅`
+
+`≅` is range membership (`value ≅ range`) for the five range types below, it is not an isomorphism operator.
+
+- ``±(_:_:)``
 - ``+/-(_:_:)``
 - ``≅(_:_:)-(_,ClosedRange<T>)``
 - ``≅(_:_:)-(_,PartialRangeFrom<T>)``

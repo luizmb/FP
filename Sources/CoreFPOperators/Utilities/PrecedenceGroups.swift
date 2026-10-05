@@ -20,9 +20,9 @@
 //  4.5 CastingPrecedence            (as? — stdlib)
 //  4.2 NilCoalescingPrecedence      (?? — stdlib)
 //  4   ComparisonPrecedence         (== <= — stdlib) / FunctorOps (<£> £> <£ <*> *> <*)
-//  3   AlternativePrecedence        (<|>)
 //  3   LogicalConjunctionPrecedence (&& — stdlib)
 //  2   LogicalDisjunctionPrecedence (|| — stdlib)
+//  1.5 AlternativePrecedence        (<|>)
 //  1   KleisliCompositionRight      (>=> <=< -<< <<-, right-assoc)
 //  1   MonadBindLeft                (>>- <&> ->>, left-assoc)
 //  0.5 TernaryPrecedence            (?:)
@@ -32,6 +32,14 @@
 
 // 9: Function composition >>> <<<
 // Note: In Haskell, both . and >>> are right-associative (infixr)
+// Swift does not order two groups through relations declared in another module (the stdlib), so
+// every custom group below is also chained to the next custom group with a same-module `higherThan`.
+// That makes the library's groups one total order:
+// >>> / <<<  >  <>  >  <£> <*> …  >  <|>  >  >=>  >  >>-  >  <|  >  |>
+// Following Haskell's fixities, the stdlib operators that matter in practice (* + ?? == && ||) bind tighter than
+// <|>, >=>, >>-, <| and |>, so each of those groups is also declared `lowerThan` each of those stdlib groups
+// (the stdlib's own transitive order is not visible from here). The functor family sits below * + ?? but stays
+// unordered against == (Haskell rejects that mix).
 precedencegroup FunctionCompositionForward {
     associativity: right
     higherThan: FunctionCompositionBackwards
@@ -39,7 +47,7 @@ precedencegroup FunctionCompositionForward {
 
 precedencegroup FunctionCompositionBackwards {
     associativity: right
-    higherThan: BitwiseShiftPrecedence
+    higherThan: BitwiseShiftPrecedence, ConcatPrecedence
 }
 
 // 8.5: BitwiseShiftPrecedence >>
@@ -50,7 +58,7 @@ precedencegroup FunctionCompositionBackwards {
 precedencegroup ConcatPrecedence {
     associativity: right
     lowerThan: MultiplicationPrecedence
-    higherThan: AdditionPrecedence
+    higherThan: AdditionPrecedence, FunctorOps
 }
 
 // 6: AdditionPrecedence + -
@@ -63,19 +71,23 @@ precedencegroup ConcatPrecedence {
 
 // 4: ComparisonPrecedence == <=
 
-// 4: Functor/Applicative Ops <£> £> <£ <*> *> <*
+// 4: Functor/Applicative Ops <£> £> <£ <*> *> <*  (above && and ||, unordered against ==)
 // Note: <&> is at precedence 1 (MonadBindLeft), not here
 
+/// Deliberately NOT ordered against ComparisonPrecedence (== <=): Haskell puts <$> <*> and == at the same level
+/// (infix 4) and rejects the mix, so we do too.
 precedencegroup FunctorOps {
     associativity: left
-    lowerThan: NilCoalescingPrecedence
-    higherThan: AlternativePrecedence
+    lowerThan: MultiplicationPrecedence, AdditionPrecedence, NilCoalescingPrecedence
+    higherThan: LogicalConjunctionPrecedence, LogicalDisjunctionPrecedence, AlternativePrecedence
 }
 
-// 3: Alternative
+// 1.5: Alternative
 precedencegroup AlternativePrecedence {
     associativity: left
-    higherThan: LogicalConjunctionPrecedence
+    lowerThan: MultiplicationPrecedence, AdditionPrecedence, NilCoalescingPrecedence, ComparisonPrecedence,
+        LogicalConjunctionPrecedence, LogicalDisjunctionPrecedence
+    higherThan: KleisliCompositionRight
 }
 
 // 3: LogicalConjunctionPrecedence &&
@@ -88,13 +100,16 @@ precedencegroup AlternativePrecedence {
 
 precedencegroup KleisliCompositionRight {
     associativity: right
-    lowerThan: LogicalDisjunctionPrecedence
+    lowerThan: MultiplicationPrecedence, AdditionPrecedence, NilCoalescingPrecedence, ComparisonPrecedence,
+        LogicalConjunctionPrecedence, LogicalDisjunctionPrecedence
     higherThan: MonadBindLeft
 }
 
 precedencegroup MonadBindLeft {
     associativity: left
-    higherThan: TernaryPrecedence
+    lowerThan: MultiplicationPrecedence, AdditionPrecedence, NilCoalescingPrecedence, ComparisonPrecedence,
+        LogicalConjunctionPrecedence, LogicalDisjunctionPrecedence
+    higherThan: TernaryPrecedence, LowPrecedenceFunctionCallRight
 }
 
 // 0.5: TernaryPrecedence ?:
@@ -103,13 +118,16 @@ precedencegroup MonadBindLeft {
 
 precedencegroup LowPrecedenceFunctionCallRight {
     associativity: right
-    lowerThan: TernaryPrecedence
+    lowerThan: TernaryPrecedence, MultiplicationPrecedence, AdditionPrecedence, NilCoalescingPrecedence, ComparisonPrecedence,
+        LogicalConjunctionPrecedence, LogicalDisjunctionPrecedence
     higherThan: LowPrecedenceFunctionCallLeft
 }
 
 // 0: Function application |>
 precedencegroup LowPrecedenceFunctionCallLeft {
     associativity: left
+    lowerThan: MultiplicationPrecedence, AdditionPrecedence, NilCoalescingPrecedence, ComparisonPrecedence,
+        LogicalConjunctionPrecedence, LogicalDisjunctionPrecedence
     higherThan: AssignmentPrecedence
 }
 

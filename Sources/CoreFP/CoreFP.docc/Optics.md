@@ -11,14 +11,14 @@ functions, and they carry no dependency on Swift's key-path machinery beyond con
 ```swift
 import CoreFP
 
-struct Address { var city: String }
-struct User { var name: String; var address: Address }
+struct Address: Sendable { var city: String }
+struct User: Sendable { var name: String; var address: Address }
 
-let cityLens: Lens<User, String> = lens(\.address) >>> lens(\.city)
+let cityLens: Lens<User, String> = lens(\User.address) >>> lens(\Address.city)
 
 let user = User(name: "Alice", address: Address(city: "Berlin"))
-cityLens.get(user)                 // "Berlin"
-cityLens.set(user, "Munich")       // User(name: "Alice", address: Address(city: "Munich"))
+_ = cityLens.get(user)                 // "Berlin"
+_ = cityLens.set(user, "Munich")       // User(name: "Alice", address: Address(city: "Munich"))
 ```
 
 ---
@@ -54,16 +54,16 @@ let metersToFeet = iso(
     reverseGet: { (feet: Double) in feet / 3.28084 }
 )
 
-metersToFeet.get(1.0)             // 3.28084
-metersToFeet.reverseGet(3.28084)  // 1.0
-metersToFeet.reverse.get(3.28084) // 1.0 — reverse swaps get/reverseGet
+_ = metersToFeet.get(1.0)             // 3.28084
+_ = metersToFeet.reverseGet(3.28084)  // 1.0
+_ = metersToFeet.reverse.get(3.28084) // 1.0, reverse swaps get/reverseGet
 ```
 
 `over` applies a transform through the round trip, and every `Iso` can be viewed as a `Lens`,
 `Prism`, or `AffineTraversal` via `.asLens` / `.asPrism` / `.asAffineTraversal`:
 
 ```swift
-metersToFeet.over { $0 + 10 }(1.0)   // convert to feet, add 10, convert back to meters
+_ = metersToFeet.over { $0 + 10 }(1.0)   // convert to feet, add 10, convert back to meters
 
 let asLens: Lens<Double, Double> = metersToFeet.asLens
 ```
@@ -72,9 +72,16 @@ When `S == A` (an endomorphism iso), `Iso<A, A>` forms a `Monoid` under composit
 of lossless transforms can be built with `mconcat`:
 
 ```swift
+struct Point: Sendable { var x: Double; var y: Double }
+
+let rotate: Iso<Point, Point> = iso(get: { Point(x: $0.y, y: $0.x) }, reverseGet: { Point(x: $0.y, y: $0.x) })
+let scale: Iso<Point, Point> = iso(get: { Point(x: $0.x * 2, y: $0.y * 2) }, reverseGet: { Point(x: $0.x / 2, y: $0.y / 2) })
+let translate: Iso<Point, Point> = iso(get: { Point(x: $0.x + 1, y: $0.y) }, reverseGet: { Point(x: $0.x - 1, y: $0.y) })
+
 let transform: Iso<Point, Point> = mconcat([rotate, scale, translate])
-transform.get(point)          // all three applied in order
-transform.reverse.get(point)  // all three reversed, in reverse order
+let point = Point(x: 1, y: 2)
+_ = transform.get(point)          // all three applied in order
+_ = transform.reverse.get(point)  // all three reversed, in reverse order
 ```
 
 ---
@@ -85,22 +92,24 @@ A `Lens<S, A>` focuses on exactly one field of a struct. The preferred construct
 `WritableKeyPath`:
 
 ```swift
-struct Person { var name: String; var age: Int }
+struct Person: Sendable { var name: String; var age: Int }
 
-let ageLens: Lens<Person, Int> = lens(\.age)
+let ageLens: Lens<Person, Int> = lens(\Person.age)
 
 let person = Person(name: "Alice", age: 30)
-ageLens.get(person)                      // 30
-ageLens.set(person, 31)                  // Person(name: "Alice", age: 31)
-ageLens.over { $0 + 1 }(person)          // Person(name: "Alice", age: 31)
+_ = ageLens.get(person)                      // 30
+_ = ageLens.set(person, 31)                  // Person(name: "Alice", age: 31)
+_ = ageLens.over { $0 + 1 }(person)          // Person(name: "Alice", age: 31)
 ```
 
 For `let` properties (no `WritableKeyPath` exists), supply the setter explicitly:
 
 ```swift
-struct ImmutablePerson { let name: String; let age: Int }
+struct ImmutablePerson: Sendable { let name: String; let age: Int }
 
-let nameLens = lens(\.name) { p, n in ImmutablePerson(name: n, age: p.age) }
+let nameLens: Lens<ImmutablePerson, String> = lens(\ImmutablePerson.name) { p, n in
+    ImmutablePerson(name: n, age: p.age)
+}
 ```
 
 `Lens<A, A>.id` is the identity lens — the neutral element for composition.
@@ -113,18 +122,18 @@ A `Prism<S, A>` focuses on one case of an enum. Where a lens's focus always exis
 focus is optional — the enum might currently be a different case.
 
 ```swift
-enum Shape { case circle(Double); case rectangle(Double, Double) }
+enum Shape: Sendable { case circle(Double); case rectangle(Double, Double) }
 
-let circlePrism = prism(
+let circlePrism: Prism<Shape, Double> = prism(
     preview: { if case .circle(let r) = $0 { return r } else { return nil } },
     review: Shape.circle
 )
 
-circlePrism.preview(.circle(5.0))               // Optional(5.0)
-circlePrism.preview(.rectangle(3, 4))           // nil
-circlePrism.review(7.0)                         // Shape.circle(7.0)
-circlePrism.over { $0 * 2 }(.circle(5))         // Shape.circle(10.0)
-circlePrism.over { $0 * 2 }(.rectangle(3, 4))   // Shape.rectangle(3, 4) — unchanged
+_ = circlePrism.preview(.circle(5.0))               // Optional(5.0)
+_ = circlePrism.preview(.rectangle(3, 4))           // nil
+_ = circlePrism.review(7.0)                         // Shape.circle(7.0)
+_ = circlePrism.over { $0 * 2 }(.circle(5))         // Shape.circle(10.0)
+_ = circlePrism.over { $0 * 2 }(.rectangle(3, 4))   // Shape.rectangle(3, 4), unchanged
 ```
 
 If the enum has an optional-returning computed property, the `KeyPath` shorthand is more concise:
@@ -137,7 +146,7 @@ extension Shape {
     }
 }
 
-let circlePrism: Prism<Shape, Double> = prism(\.circleRadius, review: Shape.circle)
+let circleRadiusPrism: Prism<Shape, Double> = prism(\.circleRadius, review: Shape.circle)
 ```
 
 `Prism<A, A>.id` is the identity prism — preview always succeeds, review is the identity.
@@ -151,44 +160,42 @@ order): the whole `S` is always present (the Lens property), but the focused `A`
 (the Prism property).
 
 ```swift
-enum Shape { case circle(Double); case rectangle(Double, Double) }
-struct Canvas { var shape: Shape }
+struct Canvas: Sendable { var shape: Shape }
 
-let shapeLens: Lens<Canvas, Shape> = lens(\.shape)
-let circlePrism: Prism<Shape, Double> = prism(
-    preview: { if case .circle(let r) = $0 { return r } else { return nil } },
-    review: Shape.circle
-)
+let shapeLens: Lens<Canvas, Shape> = lens(\Canvas.shape)
 
 let circleRadiusTraversal = shapeLens >>> circlePrism   // AffineTraversal<Canvas, Double>
 
 let canvas = Canvas(shape: .circle(5.0))
-circleRadiusTraversal.preview(canvas)               // Optional(5.0)
-circleRadiusTraversal.set(canvas, 10.0)             // Canvas(shape: .circle(10.0))
+_ = circleRadiusTraversal.preview(canvas)               // Optional(5.0)
+_ = circleRadiusTraversal.set(canvas, 10.0)             // Canvas(shape: .circle(10.0))
 
 let rectCanvas = Canvas(shape: .rectangle(3, 4))
-circleRadiusTraversal.preview(rectCanvas)           // nil
-circleRadiusTraversal.set(rectCanvas, 10.0)         // Canvas(shape: .rectangle(3, 4)) — unchanged
+_ = circleRadiusTraversal.preview(rectCanvas)           // nil
+_ = circleRadiusTraversal.set(rectCanvas, 10.0)         // Canvas(shape: .rectangle(3, 4)), unchanged
 ```
 
 Collection subscripts also produce affine traversals — `ix` focuses on "the element at this
 position or key, if it exists":
 
 ```swift
-[Int].ix(2)                        // AffineTraversal<[Int], Int>
-[Item].ix(id: someId)              // AffineTraversal<[Item], Item>
-[String: Int].ix(key: "count")     // AffineTraversal<[String: Int], Int>
+struct Item: Identifiable, Sendable { var id: Int }
+let someId = 42
+
+_ = [Int].ix(2)                        // AffineTraversal<[Int], Int>
+_ = [Item].ix(id: someId)              // AffineTraversal<[Item], Item>
+_ = [String: Int].ix(key: "count")     // AffineTraversal<[String: Int], Int>
 ```
 
 A `WritableKeyPath` to an already-optional property lifts directly, without composing a
 separate Lens and Prism:
 
 ```swift
-struct Profile { var nickname: String? }
+struct Profile: Sendable { var nickname: String? }
 
 let nicknameFocus = affineTraversal(\Profile.nickname)   // AffineTraversal<Profile, String>
-nicknameFocus.preview(Profile(nickname: "ace"))          // Optional("ace")
-nicknameFocus.set(Profile(nickname: nil), "ace")         // Profile(nickname: Optional("ace"))
+_ = nicknameFocus.preview(Profile(nickname: "ace"))          // Optional("ace")
+_ = nicknameFocus.set(Profile(nickname: nil), "ace")         // Profile(nickname: Optional("ace"))
 ```
 
 ---
@@ -201,10 +208,13 @@ canonical source is a collection's `.each`:
 
 ```swift
 let allScores: Traversal<[Int], Int> = [Int].each
-allScores.getAll([10, 20, 30])            // [10, 20, 30]
-allScores.over { $0 + 1 }([10, 20, 30])   // [11, 21, 31]
+_ = allScores.getAll([10, 20, 30])            // [10, 20, 30]
+_ = allScores.over { $0 + 1 }([10, 20, 30])   // [11, 21, 31]
 
 // Composed with an outer Lens:
+struct Employee: Sendable { var city: String }
+struct Company: Sendable { var employees: [Employee] }
+
 let allCityNames: Traversal<Company, String> =
     ^\Company.employees >>> [Employee].each >>> ^\Employee.city
 ```
@@ -213,11 +223,14 @@ let allCityNames: Traversal<Company, String> =
 consumers can tell foci apart (array position, dictionary key, element id):
 
 ```swift
+struct Player: Sendable { var name: String }
+let roster = [Player(name: "p0"), Player(name: "p1")]
+
 let players: IndexedTraversal<[Player], Int, Player> = [Player].eachIndexed
-players.getAll(roster)          // [(0, p0), (1, p1), …]
+_ = players.getAll(roster)          // [(0, p0), (1, p1)]
 
 // Drop the index to recover a plain Traversal:
-players.traversal.getAll(roster)   // [p0, p1, …]
+_ = players.traversal.getAll(roster)   // [p0, p1]
 ```
 
 ---
@@ -228,8 +241,8 @@ All five optic types compose left-to-right with `>>>` (or right-to-left with `<<
 `CoreFPOperators`). Without `CoreFPOperators`, the equivalent named method is `.compose(_:)`:
 
 ```swift
-let userCityLens = lens(\User.address).compose(lens(\Address.city))   // no operators needed
-let userCityLens2 = ^\User.address >>> ^\Address.city                 // same, with operators
+let userCityLens: Lens<User, String> = lens(\User.address).compose(lens(\Address.city))   // no operators needed
+let userCityLens2: Lens<User, String> = ^\User.address >>> ^\Address.city                 // same, with operators
 ```
 
 The result type follows the strength of the weaker operand:
@@ -246,20 +259,17 @@ The result type follows the strength of the weaker operand:
 read as a sequence of focus steps:
 
 ```swift
-enum App { case loggedIn(User); case guest }
-struct User { var address: Address }
-struct Address { var city: String }
+enum App: Sendable { case loggedIn(User); case guest }
 
 let loggedInPrism: Prism<App, User> = prism(
     preview: { if case .loggedIn(let u) = $0 { return u } else { return nil } },
     review: App.loggedIn
 )
 
-let cityInLoggedInUser = loggedInPrism >>> ^\User.address >>> ^\Address.city
-// AffineTraversal<App, String>
+let cityInLoggedInUser: AffineTraversal<App, String> = loggedInPrism >>> ^\User.address >>> ^\Address.city
 
-cityInLoggedInUser.preview(.loggedIn(User(address: Address(city: "Paris"))))  // Optional("Paris")
-cityInLoggedInUser.preview(.guest)                                            // nil
+_ = cityInLoggedInUser.preview(.loggedIn(User(name: "Bob", address: Address(city: "Paris"))))  // Optional("Paris")
+_ = cityInLoggedInUser.preview(.guest)                                                         // nil
 ```
 
 ### Mixed key paths — `\.a.b.c` across structs and enums
@@ -269,12 +279,14 @@ write a single dotted key path that threads through both struct fields and enum 
 recover it as a concrete optic:
 
 ```swift
-@Prisms enum Role { case admin(Permissions); case guest }
-struct User { var role: Role }
-struct App { var user: User }
+struct Permissions: Sendable { var canDelete: Bool }
 
-// \.user.role.admin : AffineKeyPath<App, Permissions>
-let perms: AffineTraversal<App, Permissions> = AffineTraversal(\.user.role.admin)
+@Prisms enum Role: Sendable { case admin(Permissions); case guest }
+struct Member: Sendable { var role: Role }
+struct Workspace: Sendable { var member: Member }
+
+// \.member.role.admin : AffineKeyPath<Workspace, Permissions>
+let perms: AffineTraversal<Workspace, Permissions> = AffineTraversal(\.member.role.admin)
 ```
 
 `Prism(\.someCase)` performs the enum-only equivalent when every step is a case (via
@@ -297,8 +309,8 @@ through instead of reconstructing `S`:
 let incrementAge = EndoMut<Int> { $0 += 1 }
 let personReducer: EndoMut<Person> = lens(\Person.age).lift(incrementAge)
 
-var person = Person(name: "Alice", age: 30)
-personReducer(&person)   // mutates person.age in place — zero copies of Person
+var mutablePerson = Person(name: "Alice", age: 30)
+personReducer(&mutablePerson)   // mutates mutablePerson.age in place, zero copies of Person
 ```
 
 When every `Lens` in the chain is `WritableKeyPath`-backed, the whole chain is zero-copy end to
@@ -320,7 +332,7 @@ generate them at compile time from the type declaration itself.
 import FPMacros
 
 @Lenses(init: .public)
-public struct Config {
+public struct Config: Sendable {
     public let host: String
     public var port: Int
     public var timeout = 30
@@ -333,31 +345,33 @@ property, a `Config.lens` static accessor, and a `with(...)` copy-with-overrides
 ```swift
 let config = Config(host: "localhost", port: 8080)
 
-Config.lens.host.set(config, "example.com")     // Config(host: "example.com", port: 8080, timeout: 30)
-Config.lens.port.over({ $0 + 1 })(config)       // Config(host: "localhost", port: 8081, timeout: 30)
-config.with(port: 9090)                          // same effect, no lens needed
+_ = Config.lens.host.set(config, "example.com")     // Config(host: "example.com", port: 8080, timeout: 30)
+_ = Config.lens.port.over({ $0 + 1 })(config)       // Config(host: "localhost", port: 8081, timeout: 30)
+_ = config.with(port: 9090)                          // same effect, no lens needed
 
 // Generated lenses compose exactly like hand-written ones:
-let teamConfigHost = lens(\.teamConfig) >>> Config.lens.host
+struct Team: Sendable { var teamConfig: Config }
+
+let teamConfigHost = lens(\Team.teamConfig) >>> Config.lens.host
 ```
 
-`@Prisms` does the enum equivalent — one `Prism` per case, a `Shape.prism` accessor, a plain
+`@Prisms` does the enum equivalent — one `Prism` per case, a `Figure.prism` accessor, a plain
 per-case property delegating to it, `Prismatic` conformance (unlocking `\.case` mixed key
 paths), and a `Shape.Cases` mirror enum for payload-free case queries:
 
 ```swift
 @Prisms
-public enum Shape {
+public enum Figure: Sendable {
     case circle(Double)
     case rectangle(Double, Double)
     case empty
 }
 
-let s = Shape.circle(3.14)
-s.circle                                // Optional(3.14) — plain per-case property
-Shape.prism.circle.set(s, 5.0)           // Shape.circle(5.0)
-s.is(.circle)                            // true — case-name query, no dummy payload needed
-Shape.Cases.allCases                     // [.circle, .rectangle, .empty]
+let s = Figure.circle(3.14)
+_ = s.circle                                // Optional(3.14), plain per-case property
+_ = Figure.prism.circle.set(s, 5.0)          // Figure.circle(5.0)
+_ = s.is(.circle)                            // true, case-name query, no dummy payload needed
+_ = Figure.Cases.allCases                    // [.circle, .rectangle, .empty]
 ```
 
 Both macros use `@attached(member)`, so they work at any nesting depth — the common pattern in
@@ -366,14 +380,17 @@ unidirectional architectures where a reducer owns nested `State` and `Action` ty
 ```swift
 struct Reducer {
     @Lenses(init: .internal)
-    struct State { let userName: String; var score: Int }
+    struct State: Sendable { let userName: String; var score: Int }
 
     @Prisms
-    enum Action { case updateName(String); case incrementScore(Int) }
+    enum Action: Sendable { case updateName(String); case incrementScore(Int) }
 }
 
-Reducer.State.lens.score.over({ $0 + 10 })(state)
-Reducer.Action.prism.updateName.preview(action)   // Optional("Bob")
+let state = Reducer.State(userName: "Alice", score: 1)
+let action = Reducer.Action.updateName("Bob")
+
+_ = Reducer.State.lens.score.over({ $0 + 10 })(state)
+_ = Reducer.Action.prism.updateName.preview(action)   // Optional("Bob")
 ```
 
 `@Lenses` and `@Prisms` both reject `private` declarations at compile time (use `fileprivate`
@@ -388,12 +405,19 @@ hand-written `@Prisms`-equivalent surface out of the box.
 On Apple platforms, `Binding[optic:]` projects a `Binding<S>` through any optic:
 
 ```swift
-@State var user = User(name: "Alice", age: 30)
+import SwiftUI
 
-TextField("Name", text: $user[optic: lens(\.name)])                 // Lens → Binding<A> (always valid)
+struct NameEditor: View {
+    @State var user = User(name: "Alice", address: Address(city: "Berlin"))
+    @State var app: App = .guest
 
-if let cityBinding = $app[optic: loggedInPrism >>> ^\User.address >>> ^\Address.city] {
-    TextField("City", text: cityBinding)                             // Prism/AffineTraversal → Binding<A>?
+    var body: some View {
+        TextField("Name", text: $user[optic: lens(\User.name)])             // Lens → Binding<A> (always valid)
+
+        if let cityBinding = $app[optic: loggedInPrism >>> ^\User.address >>> ^\Address.city] {
+            TextField("City", text: cityBinding)                             // Prism/AffineTraversal → Binding<A>?
+        }
+    }
 }
 ```
 
@@ -404,9 +428,15 @@ any SwiftUI/UIKit/AppKit dependency, so the same optic-projection pattern works 
 and Android:
 
 ```swift
+final class Box<A: Sendable>: @unchecked Sendable { // example storage, access is single-threaded here
+    var value: A
+    init(_ value: A) { self.value = value }
+}
+
+let box = Box(User(name: "Alice", address: Address(city: "Berlin")))
 let focus = WritableFocus(get: { box.value }, set: { box.value = $0 })
 focus.name.wrappedValue = "Bob"              // struct-field navigation, live write
-focus[optic: cityLens].wrappedValue          // optic projection
+_ = focus[optic: cityLens].wrappedValue      // optic projection
 ```
 
 ---

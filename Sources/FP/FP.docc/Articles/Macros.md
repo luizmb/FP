@@ -2,15 +2,16 @@
 
 Swift macros are compile-time code generators: the compiler parses your source into a syntax tree, hands the annotated declaration to the macro's implementation (a separate `SwiftSyntax`-based plugin), and splices the returned declarations back in before type-checking. Nothing happens at runtime — `swift build` fails if a macro can't produce valid code, and `⌘-click` / "Expand Macro" in Xcode shows you exactly what was generated.
 
-`FPMacros` ships six macros, each restricted to one **attachment kind** that determines where the generated code can go:
+`FPMacros` ships eight macros (six plus `@ApplyOptics` and `@NoOptics`, which are described after `@Prisms`), each restricted to one **attachment kind** that determines where the generated code can go:
 
-- **`@attached(member)`** — adds new declarations *inside* the annotated type's body (as if you'd typed them yourself between the braces). Used by `@Lenses` and `@Iso`.
+- **`@attached(member)`** — adds new declarations *inside* the annotated type's body (as if you'd typed them yourself between the braces). Used by `@Lenses`, `@Prisms`, `@ApplyOptics` and `@Iso`.
 - **`@attached(peer)`** — adds a new declaration *alongside* the annotated one, at the same scope, rather than inside it. Used by `@Mock` and `@Witness` (both attach to a `protocol`, and a protocol can't have members injected into a conforming type it doesn't own — the mock/witness has to be a sibling struct).
-- **`@attached(extension)`** — adds a new `extension` of the annotated type, optionally declaring a protocol conformance. Used by `@Lenses` (conformance to `Sendable`), `@Prisms` (conformance to `Prismatic`), `@DeriveMonoid` (conformance to `Monoid`), and `@Witness` (the `.witness` conversion property).
+- **`@attached(memberAttribute)`** — adds an attribute to every member of the annotated type. Used by `@ApplyOptics`, to stamp itself onto the nested structs and enums.
+- **`@attached(extension)`** — adds a new `extension` of the annotated type, optionally declaring a protocol conformance. Used by `@Lenses` (conformance to `Sendable`), `@Prisms` (conformance to `Prismatic`), `@ApplyOptics` (`Prismatic` and `Sendable`), `@DeriveMonoid` (conformance to `Monoid`), and `@Witness` (the `.witness` conversion property).
 
 Some macros combine two attachments — `@Lenses` is both `@attached(member)` (init, `Lenses` struct, `with(...)`) and `@attached(extension)` (the `Sendable` conformance); `@Prisms` is both `@attached(member)` (the `Prisms` struct, `Cases` enum) and `@attached(extension)` (the `Prismatic` conformance); `@Witness` is both `@attached(peer)` (the sibling `XWitness` struct) and `@attached(extension)` (the `.witness` computed property).
 
-All six only ever *add* declarations — they never rewrite or delete your code, and misuse (wrong attachment target, unsupported access level, an unsound generic) is caught as a compile-time diagnostic, not a runtime crash.
+All eight only ever *add* declarations — they never rewrite or delete your code, and misuse (wrong attachment target, unsupported access level, an unsound generic) is caught as a compile-time diagnostic, not a runtime crash.
 
 ```swift
 import FPMacros
@@ -42,7 +43,7 @@ public struct Config {
 
 **After (expanded, simplified for readability):**
 
-```swift
+```swift-sketch
 public struct Config {
     public let host: String
     public let version = 3
@@ -103,7 +104,7 @@ public enum Shape {
 
 **After (expanded, per `PrismsMacro`, simplified for readability):**
 
-```swift
+```swift-sketch
 public enum Shape {
     case circle(Double)
     case rectangle(Double, Double)
@@ -162,6 +163,35 @@ Shape.Cases.allCases                   // [.circle, .rectangle, .empty]
 
 ---
 
+## `@ApplyOptics` and `@NoOptics` — optics for a whole type tree
+
+`@attached(member, names: arbitrary)` + `@attached(extension, conformances: Prismatic, Sendable)` + `@attached(memberAttribute)`
+
+`@ApplyOptics` applies `@Lenses` to structs and `@Prisms` to enums, so you annotate one type and it picks the right one. With `recursively: true` it applies to every nested struct and enum at any depth, which means a whole state tree gets optics from a single annotation. The parameters are `_ emit: LensesEmit = .all`, `init: LensesAccess = .internal`, `prisms: PrismsOptions = .all` and `recursively: Bool = false`.
+
+```swift
+@ApplyOptics(recursively: true)
+struct AppState {
+    struct Profile { var name = "" }
+    enum Route { case home; case detail(Int) }
+    var profile = Profile()
+    var route = Route.home
+}
+
+let name = AppState.Profile.lens.name
+let detail = AppState.Route.prism.detail
+```
+
+Every level gets its optics in that type's own body, exactly as if you had written `@Lenses` or `@Prisms` by hand, so memberwise inits and `let` properties behave as usual. A caseless namespace enum gets no prisms (there is no value to build), but it is still recursed into.
+
+- **Override one node:** put `@Lenses` or `@Prisms` on the nested type, for example `@Lenses(init: .public)`. The recursion still flows past it.
+- **Re-root a subtree:** put another `@ApplyOptics(...)` on a nested type, and its options govern it and everything below.
+- **Cut a subtree:** put `@NoOptics` on a node, and it and everything below get no optics.
+
+**When to reach for it:** a Redux/SwiftRex state tree where annotating every nested type by hand gets tedious.
+
+---
+
 ## `@Iso` — total isomorphism to a field tuple (or another type)
 
 `@attached(member, names: named(iso))`
@@ -178,7 +208,7 @@ Applied to a struct, `@Iso` generates `static var iso: Iso<Self, Representation>
 
 **After (expanded, per `IsoMacro` and `Tests/FPMacrosTests/ProductMacroTests.swift`):**
 
-```swift
+```swift-sketch
 struct Point {
     var x: Int; var y: Int
     static var iso: CoreFP.Iso<Point, (Int, Int)> {
@@ -224,7 +254,7 @@ struct Stats {
 
 **After (expanded, per `DeriveMonoidMacro` and `ProductMacroTests.swift`):**
 
-```swift
+```swift-sketch
 struct Stats {
     var clicks: Int.Monoids.Sum
     var ok: Bool.Monoids.And
@@ -270,7 +300,7 @@ protocol Service {
 
 **After (expanded, per `MockMacro` and `MockTests.swift`):**
 
-```swift
+```swift-sketch
 #if DEBUG
 struct ServiceMock: Service {
     var wrappedFetch: (String) -> [Int]
@@ -291,8 +321,10 @@ struct ServiceMock: Service {
 ```
 
 ```swift
+#if DEBUG
 let mock = ServiceMock(isReady: { false })   // fetch/save default to fail(...), never called
 mock.isReady   // false
+#endif
 ```
 
 Overloaded method names are disambiguated only on collision: by argument label (`find(id:)` / `find(name:)` → `findWithId` / `findWithName`), then by label and type (`find(id: Int)` / `find(id: String)` → `findWithIdInt` / `findWithIdString`). `{ get set }` properties get a getter *and* a `wrapped<Name>Set` closure; `{ get async throws }` getters keep their effects. Typed `throws(E)` is preserved; a `rethrows` requirement gets a `throws` closure. `inout` parameters are forwarded with `&`, variadic ones reach the closure as an array, `@autoclosure` ones reach it unevaluated, and unnamed `_:` parameters are given internal names. Associated types become generic parameters of the mock struct. A generic parameter (or a top-level `some P`) is erased to its existential constraint when it is the whole type of exactly one parameter; other generics, `mutating`/`static`/`init`/`subscript` requirements, `private` protocols, and protocol inheritance (beyond `Sendable`/`AnyObject`) are all rejected with a compile-time diagnostic (a syntactic macro can't see an inherited protocol's requirements to synthesize them).
@@ -322,7 +354,7 @@ public protocol Repository<Item> {
 
 **After (expanded, per `WitnessMacro`):**
 
-```swift
+```swift-sketch
 public struct RepositoryWitness<Item, Failure: Error>: Sendable {
     public var fetch: @Sendable (String) async -> Result<Item, Failure>
     public var all: @Sendable () -> [Item]
@@ -347,9 +379,20 @@ public extension Repository where Self: Sendable {
 ```
 
 ```swift
+enum RepoError: Error { case notFound }
+
+struct MemoryRepo: Repository, Sendable {
+    let store: [String: Int]
+    func fetch(id: String) async -> Result<Int, RepoError> {
+        store[id].map(Result.success) ?? .failure(.notFound)
+    }
+    func all() -> [Int] { Array(store.values) }
+    var count: Int { store.count }
+}
+
 let repo = MemoryRepo(store: ["a": 1]).witness   // RepositoryWitness<Int, RepoError>
-await repo.fetch("a")   // .success(1)
-repo.count()            // 1
+let found = await repo.fetch("a")                // .success(1)
+let total = repo.count()                         // 1
 ```
 
 `{ get set }` requirements add a `set<Name>: @Sendable (T) -> Void` field; because the protocol's setter is `mutating`, the from-instance `init` and `.witness` are then gated to `where Self: AnyObject` (a value-type conformer can only build the witness via the memberwise init). Protocol inheritance composes by name — `PetWitness` gains an `animal: AnimalWitness` field when `Pet: Animal`, and both protocols must be `@Witness`-annotated. Marker and stdlib parents (`Sendable & AnyObject`, `Equatable`, `Hashable`, `Codable`, …) aren't composed; generic parents and stdlib protocols with associated types are diagnosed; a parent with `{ get set }` requirements needs a class-bound child (`protocol Child: AnyObject, Parent`). Typed `throws(E)` and `{ get async throws }` getters are preserved. Same overload/generic-erasure rules as `@Mock` apply; requirements mentioning `Self`, `rethrows` requirements, variadic parameters and `private` protocols are rejected.
@@ -364,11 +407,12 @@ repo.count()            // 1
 |---|---|---|---|---|
 | `@Lenses` | `struct` | `member` + `extension` | memberwise init, `Lenses` struct + `static lens`, `with(...)`, `Sendable` conformance | hand-written `Lens` per property + copy-with-overrides method |
 | `@Prisms` | `enum` | `member` + `extension` | `Prisms` struct + `static prism`, per-case properties, `Prismatic` conformance, `Cases` enum, `is(_:)` | hand-written `Prism` per case + case-name predicate boilerplate |
+| `@ApplyOptics` | `struct` or `enum` | `member` + `extension` + `memberAttribute` | `@Lenses`/`@Prisms` output, recursively | annotating every type of a state tree by hand |
 | `@Iso` | `struct` | `member` | `static var iso: Iso<Self, Representation>` | hand-written `get`/`reverseGet` pair for a field tuple or DTO bridge |
 | `@DeriveMonoid` | `struct` (all fields `Monoid`) | `extension` | `Monoid` conformance (`combine`, `identity`) | hand-written field-wise `combine`/`identity` |
-| `@Mock` | `protocol` | `peer` | `#if DEBUG` sibling `<Protocol>Mock` struct | hand-written test-double struct per protocol |
+| `@Mock` | `protocol` | `peer` | `#if DEBUG` sibling `<Protocol>Mock` (struct, or `final class` for `AnyObject` protocols) | hand-written test-double struct per protocol |
 | `@Witness` | `protocol` | `peer` + `extension` | sibling `<Protocol>Witness` struct + `.witness` conversion | hand-written closure-struct + `any Protocol`-to-value bridging |
 
 ## A note for Haskell developers
 
-This article intentionally has no "for Haskell developers" translation table — macros are a Swift-specific, compile-time-metaprogramming mechanism with no direct equivalent in Haskell's runtime semantics. The closest analog is **Template Haskell** (`$(deriveLenses ''Config)`-style quasi-quotation, or `GHC.Generics`-based deriving), which also generates code from a syntax representation before compilation. But Haskell developers reaching for `@Lenses`/`@Prisms` should think less "what's the Haskell equivalent" and more "this is what `lens`'s `makeLenses` Template Haskell splice, or `DeriveGeneric` + a generic-lens library, would do for you automatically" — the goal (avoid hand-written boilerplate for structurally-derivable code) is the same; the mechanism (Swift's `SwiftSyntax`-based macro expansion vs. GHC's AST-splicing) is different.
+The direct analogue is Template Haskell: `makeLenses ''Config` and `makePrisms ''Shape` (`Control.Lens.TH`) generate optics at compile time, the same way `@Lenses` and `@Prisms` do. `@DeriveMonoid` corresponds to `deriving (Semigroup, Monoid) via Generically Stats` (GHC 9.4 or later), `@Iso` to `Generic`'s `from` and `to`, and `@Witness` to the records-of-functions (handle) pattern. The mechanism differs, since Swift macros are expanded from a `SwiftSyntax` tree by a separate plugin and GHC splices its own AST, but the goal is the same: no hand-written boilerplate for code that follows from the shape of a type.

@@ -23,14 +23,16 @@ struct Config { let multiplier: Int }
 
 let base = Reader<Config, Int> { $0.multiplier * 10 }
 
-{ $0 + 1 } <£> base   // Reader that produces (multiplier * 10) + 1
-base <&> { $0 + 1 }   // same
+let plusOne: @Sendable (Int) -> Int = { $0 + 1 }
 
-let result = ({ $0 + 1 } <£> base)(Config(multiplier: 3))  // 31
+plusOne <£> base   // Reader that produces (multiplier * 10) + 1
+base <&> plusOne   // same
+
+let mapped = (plusOne <£> base)(Config(multiplier: 3))  // 31
 
 // Named function
-base.mapReader { $0 + 1 }
-base.fmap { $0 + 1 }
+base.map(plusOne)
+base.mapReader(plusOne)
 ```
 
 ---
@@ -43,7 +45,7 @@ Replace the output with a constant.
 base £> "done"   // Reader that always produces "done", regardless of output
 "done" <£ base   // same
 
-let result = (base £> "done")(Config(multiplier: 3))  // "done"
+let replaced = (base £> "done")(Config(multiplier: 3))  // "done"
 ```
 
 ---
@@ -53,13 +55,13 @@ let result = (base £> "done")(Config(multiplier: 3))  // "done"
 Combine two readers that share the same environment: one producing a function, one producing a value.
 
 ```swift
-let addOffset = Reader<Config, (Int) -> Int> { env in { $0 + env.multiplier } }
-let value     = Reader<Config, Int> { env in env.multiplier * 10 }
+let addOffset = Reader<Config, @Sendable (Int) -> Int> { env in { $0 + env.multiplier } }
+let value = Reader<Config, Int> { env in env.multiplier * 10 }
 
-let result = (addOffset <*> value)(Config(multiplier: 3))  // 3 + (3 * 10) = 33
+let applied = (addOffset <*> value)(Config(multiplier: 3))  // 3 + (3 * 10) = 33
 
 // Named function
-Reader.apply(addOffset, value)(Config(multiplier: 3))  // 33
+Reader<Config, Int>.apply(addOffset, value)(Config(multiplier: 3))  // 33
 ```
 
 ---
@@ -70,7 +72,7 @@ Run two readers against the same environment, keeping only one result.
 
 ```swift
 let logStep = Reader<Config, String> { _ in "logged" }
-let compute = Reader<Config, Int>    { $0.multiplier * 2 }
+let compute = Reader<Config, Int> { $0.multiplier * 2 }
 
 (logStep *> compute)(Config(multiplier: 5))  // 10  (log runs but result is discarded)
 (compute <* logStep)(Config(multiplier: 5))  // 10  (compute result kept)
@@ -88,15 +90,15 @@ Chain readers where the next reader depends on the output of the previous one. B
 
 ```swift
 let multiplier = Reader<Config, Int> { $0.multiplier }
-let scaled     = multiplier >>- { n in Reader<Config, Int> { env in n * env.multiplier } }
+let scaled = multiplier >>- { n in Reader<Config, Int> { env in n * env.multiplier } }
 
 scaled(Config(multiplier: 3))  // 9  (3 * 3)
 
-let scaleBy: (Int) -> Reader<Config, Int> = { n in Reader { env in n * env.multiplier } }
+let scaleBy: @Sendable (Int) -> Reader<Config, Int> = { n in Reader { env in n * env.multiplier } }
 let scaled2 = scaleBy -<< multiplier   // same result
 
 // Named function
-multiplier.flatMap { n in Reader { env in n * env.multiplier } }
+multiplier.flatMap { n in Reader<Config, Int> { env in n * env.multiplier } }
 ```
 
 ---
@@ -106,15 +108,15 @@ multiplier.flatMap { n in Reader { env in n * env.multiplier } }
 Compose two functions that each return a `Reader`.
 
 ```swift
-let parse:    (String) -> Reader<Config, Int>    = { s in Reader { _ in Int(s) ?? 0 } }
-let scale:    (Int)    -> Reader<Config, Int>    = { n in Reader { env in n * env.multiplier } }
-let display:  (Int)    -> Reader<Config, String> = { n in Reader { _ in "Result: \(n)" } }
+let parse: @Sendable (String) -> Reader<Config, Int> = { s in Reader { _ in Int(s) ?? 0 } }
+let scale: @Sendable (Int) -> Reader<Config, Int> = { n in Reader { env in n * env.multiplier } }
+let display: @Sendable (Int) -> Reader<Config, String> = { n in Reader { _ in "Result: \(n)" } }
 
 let pipeline = parse >=> scale >=> display
 pipeline("6")(Config(multiplier: 7))  // "Result: 42"
 
 // Named function
-Reader.kleisli(parse, scale)("6")(Config(multiplier: 7))  // 42
+Reader<Config, Int>.kleisli(parse, scale)("6")(Config(multiplier: 7))  // 42
 ```
 
 ---
@@ -126,15 +128,15 @@ Reader.kleisli(parse, scale)("6")(Config(multiplier: 7))  // 42
 Reader<Config, Config>.ask(Config(multiplier: 5))  // Config(multiplier: 5)
 
 // asks — reader that projects a field from the environment
-Reader.asks(\.multiplier)(Config(multiplier: 5))   // 5
+Reader<Config, Int>.asks { $0.multiplier }(Config(multiplier: 5))   // 5
 
 // local — run a reader with a modified environment
 let doubled = base.local { Config(multiplier: $0.multiplier * 2) }
 doubled(Config(multiplier: 3))  // 60  (base would give 30, but env is doubled first)
 
 // contramapEnvironment — adapt a reader to a larger environment
-struct AppConfig { let config: Config }
-let appBase = base.contramapEnvironment(\.config)
+struct AppConfig: Sendable { let config: Config }
+let appBase = base.contramapEnvironment { (app: AppConfig) in app.config }
 appBase(AppConfig(config: Config(multiplier: 3)))  // 30
 ```
 
@@ -151,7 +153,7 @@ always42(Config(multiplier: 99))  // 42
 
 // Useful as a default or seed in applicative pipelines:
 let seed = Reader<Config, Int>.pure(0)
-let result = Reader.liftA2({ a, b in a + b })(base, seed)(Config(multiplier: 3))
+let summed = Reader<Config, Int>.liftA2 { (a: Int, b: Int) in a + b }(base, seed)(Config(multiplier: 3))
 // same as base(Config(multiplier: 3)) + 0
 ```
 
@@ -164,7 +166,7 @@ When your environment-dependent computation also has an inner effect (Optional, 
 ```swift
 // Reader<Env, A?>: may not produce a value
 let maybeUser = Reader<Config, Int?> { env in
-    env.multiplier > 0 ? .some(env.multiplier * 10) : nil
+    env.multiplier > 0 ? Optional(env.multiplier * 10) : nil
 }
 
 // map reaches inside the Optional without touching the Reader layer
@@ -173,9 +175,11 @@ userName.rawValue(Config(multiplier: 3))   // Optional("User #30")
 userName.rawValue(Config(multiplier: -1))  // nil
 
 // The operators work the same way on the stack
-{ "User #\($0)" } <£> maybeUser.readerT   // ReaderTOptional<Config, String>, same result
+let label: @Sendable (Int) -> String = { "User #\($0)" }
+label <£> maybeUser.readerT   // ReaderTOptional<Config, String>, same result
 
-// Escape hatch: the whole Reader, e.g. to change the environment (Haskell's mapReaderT)
+// Escape hatch: the whole Reader, e.g. to change the environment
+// (Haskell's `withReaderT` / `local`; the escape hatch takes the whole `Reader`)
 let scoped = userName.mapReaderT { $0.local { (cfg: Config) in Config(multiplier: cfg.multiplier * 2) } }
 
 // Other stacks, same shape:
@@ -193,41 +197,40 @@ let scoped = userName.mapReaderT { $0.local { (cfg: Config) in Config(multiplier
 `Reader` is a **Comonad** when its `Environment` is a `Monoid`. The Monoid identity acts as the "empty" environment, and `combine` merges environments.
 
 ```swift
-struct Config: Monoid {
-    static let identity = Config(multiplier: 1)
-    static func combine(_ a: Config, _ b: Config) -> Config { Config(multiplier: a.multiplier * b.multiplier) }
-    var multiplier: Int
+struct Scale: Monoid {
+    static let identity = Scale(factor: 1)
+    static func combine(_ a: Scale, _ b: Scale) -> Scale { Scale(factor: a.factor * b.factor) }
+    var factor: Int
 }
 
-let base = Reader<Config, Int> { $0.multiplier * 10 }
+let scaledBase = Reader<Scale, Int> { $0.factor * 10 }
 
 // extract — run the reader with the Monoid identity (the "empty" environment)
-base.extract           // 10  (Config.identity.multiplier * 10)
-extract(base)          // 10  (free function version)
+scaledBase.extract     // 10  (Scale.identity.factor * 10)
+extract(scaledBase)    // 10  (free function version)
 
 // extend / coflatMap — map a function over the reader context as a whole
 // Builds a new Reader that, for each environment e, creates a "shifted" reader
 // and applies f to it.
-let extended = base.extend { r in r.extract * 2 }
+let extended = scaledBase.extend { r in r.extract * 2 }
 // Reader that produces extract * 2 for each shifted environment
 
-base.coflatMap { r in r.extract + 1 }
+scaledBase.coflatMap { r in r.extract + 1 }
 // equivalent to extend
 
 // duplicate — wrap the reader in another reader (dual of join)
-base.duplicate
-// Reader<Config, Reader<Config, Int>>
+scaledBase.duplicate
+// Reader<Scale, Reader<Scale, Int>>
 
 // Curried free functions for point-free composition
-extend { r in r.extract * 2 }(base)
-duplicate(base)
+duplicate(scaledBase)
 ```
 
 ---
 
 ## Module
 
-```swift
+```swift-sketch
 import DataStructure          // Reader type + named functions
 import DataStructureOperators // Operators (<£>, <*>, >>-, >=>…)
 ```
