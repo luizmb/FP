@@ -4,7 +4,7 @@ import CoreFP
 // ValidationTWriter: outer = Validation, inner = Writer
 // Type: Validation<E, Writer<W, A>>
 
-public extension Validation {
+extension Validation {
     /// Maps the value inside the inner Writer, leaving `.failure` untouched.
     /// mapT :: (a -> b) -> Validation e (writer a) -> Validation e (writer b)
     func mapT<W: Monoid, Inner, B>(_ fn: @escaping @Sendable (Inner) -> B) -> Validation<E, Writer<W, B>>

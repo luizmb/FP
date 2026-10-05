@@ -4,7 +4,7 @@ import CoreFP
 // ValidationTResult: outer = Validation, inner = Result
 // Type: Validation<E, Result<A, Err>>
 
-public extension Validation {
+extension Validation {
     /// Maps the value inside the inner Result, leaving `.failure` untouched.
     /// mapT :: (a -> b) -> Validation e (result a) -> Validation e (result b)
     func mapT<Inner, B, Err: Error>(_ fn: @escaping @Sendable (Inner) -> B) -> Validation<E, Result<B, Err>>

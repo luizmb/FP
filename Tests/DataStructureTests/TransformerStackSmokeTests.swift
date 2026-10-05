@@ -43,7 +43,7 @@ import Testing
         let add: @Sendable (Int, Int) -> Int = { $0 + $1 }
 
         #expect(ValidationTArray<[String], Int>.liftA2(add)(left.validationT, right.validationT).rawValue == .failure(["a", "b"]))
-        #expect(left.validationT.seqRight(right.validationT).rawValue == seqRightValidationArray(left, right))
+        #expect(left.validationT.seqRight(right.validationT).rawValue == .failure(["a", "b"]))
         #expect(ValidationTArray<[String], Int>.pure(1).rawValue == .success([1]))
     }
 

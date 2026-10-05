@@ -4,7 +4,7 @@ import CoreFP
 // ValidationTNonEmpty: outer = Validation, inner = NonEmpty
 // Type: Validation<E, NonEmpty<A>>
 
-public extension Validation {
+extension Validation {
     /// Maps the value inside the inner NonEmpty, leaving `.failure` untouched.
     /// mapT :: (a -> b) -> Validation e (nonempty a) -> Validation e (nonempty b)
     func mapT<Inner, B>(_ fn: @escaping @Sendable (Inner) -> B) -> Validation<E, NonEmpty<B>>

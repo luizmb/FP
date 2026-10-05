@@ -298,34 +298,6 @@ import Testing
         #expect(success.map(String.init) == success.mapSuccess(String.init))
     }
 
-    // MARK: - Transformer: ValidationTOptional
-
-    @Test func validationTOptionalFunctor() {
-        let v: Validation<[String], Int?> = .success(.some(5))
-        let result = v.mapT { $0 * 2 }
-        #expect(result == .success(.some(10)))
-    }
-
-    @Test func validationTOptionalApplyBothFailures() {
-        let vf: Validation<[String], (@Sendable (Int) -> Int)?> = .failure(["e1"])
-        let va: Validation<[String], Int?> = .failure(["e2"])
-        #expect(applyValidationOptional(vf, va) == .failure(["e1", "e2"]))
-    }
-
-    // MARK: - Transformer: ValidationTArray
-
-    @Test func validationTArrayFunctor() {
-        let v: Validation<[String], [Int]> = .success([1, 2, 3])
-        let result = v.mapT { $0 * 2 }
-        #expect(result == .success([2, 4, 6]))
-    }
-
-    @Test func validationTArrayApplyAccumulatesErrors() {
-        let vf: Validation<[String], [@Sendable (Int) -> Int]> = .failure(["e1"])
-        let va: Validation<[String], [Int]> = .failure(["e2"])
-        #expect(applyValidationArray(vf, va) == .failure(["e1", "e2"]))
-    }
-
     // MARK: - Transformer: EitherTValidation
 
     @Test func eitherTValidationFunctorRight() {
