@@ -4,7 +4,7 @@ import CoreFP
 // StatefulTValidation: outer = Stateful, inner = Validation
 // Type: Stateful<S, Validation<E, A>>
 
-public extension Stateful {
+extension Stateful {
     /// Maps the success value inside the inner Validation, threading the state unchanged.
     /// mapT :: (a -> b) -> Stateful s (Validation e a) -> Stateful s (Validation e b)
     func mapT<E: Semigroup, Inner, B>(_ fn: @escaping @Sendable (Inner) -> B) -> Stateful<S, Validation<E, B>>

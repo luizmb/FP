@@ -99,30 +99,6 @@ public func <=< <S: Sendable, O0: Sendable, A: Sendable, B: Sendable>(
     _ fn1: @escaping @Sendable (O0) -> Stateful<S, A>
 ) -> @Sendable (O0) -> Stateful<S, B> { fn1 >=> fn2 }
 
-/// `func` for `Stateful`.
-public func <=< <S: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Stateful<S, C?>,
-    _ fn1: @escaping @Sendable (A) -> Stateful<S, B?>
-) -> @Sendable (A) -> Stateful<S, C?> { fn1 >=> fn2 }
-
-/// `func` for `Stateful`.
-public func <=< <S: Sendable, L: Sendable, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Stateful<S, Either<L, C>>,
-    _ fn1: @escaping @Sendable (A) -> Stateful<S, Either<L, B>>
-) -> @Sendable (A) -> Stateful<S, Either<L, C>> { fn1 >=> fn2 }
-
-/// `func` for `Stateful`.
-public func <=< <S: Sendable, A: Sendable, B: Sendable, C: Sendable, E: Error>(
-    _ fn2: @escaping @Sendable (B) -> Stateful<S, Result<C, E>>,
-    _ fn1: @escaping @Sendable (A) -> Stateful<S, Result<B, E>>
-) -> @Sendable (A) -> Stateful<S, Result<C, E>> { fn1 >=> fn2 }
-
-/// `func` for `Stateful`.
-public func <=< <S: Sendable, W: Monoid, A: Sendable, B: Sendable, C: Sendable>(
-    _ fn2: @escaping @Sendable (B) -> Stateful<S, Writer<W, C>>,
-    _ fn1: @escaping @Sendable (A) -> Stateful<S, Writer<W, B>>
-) -> @Sendable (A) -> Stateful<S, Writer<W, C>> { fn1 >=> fn2 }
-
 // MARK: - Writer
 
 /// `func` for `Writer`.

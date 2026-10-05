@@ -113,19 +113,19 @@
 
         // MARK: - StatefulTPublisher (Stateful<S, any Publisher<A, E>>)
 
-        @Test func statefulTPublisherMapT() {
+        @Test func statefulTPublisherMap() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
             let stateful = Stateful<Int, any Publisher<Int, TestError>> { s in
                 s += 1
                 return Just(s).setFailureType(to: TestError.self).eraseToAnyPublisher()
             }
 
-            let mapped = stateful.mapT { $0 * 10 }
+            let mapped = StatefulTPublisher(stateful).map { $0 * 10 }
 
             var state = 5
             var cancellables = Set<AnyCancellable>()
             var capturedValue: Int?
-            mapped.run(&state)
+            mapped.rawValue.run(&state)
                 .eraseToAnyPublisher()
                 .sink(receiveCompletion: ignore, receiveValue: { capturedValue = $0 })
                 .store(in: &cancellables)
@@ -134,17 +134,17 @@
             #expect(state == 6)
         }
 
-        @Test func statefulTPublisherFmapTStatic() {
+        @Test func statefulTPublisherFmapStatic() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
             let stateful = Stateful<Int, any Publisher<Int, TestError>> { s in
                 Just(s).setFailureType(to: TestError.self).eraseToAnyPublisher()
             }
-            let fmapT = Stateful<Int, any Publisher<Int, TestError>>.fmapT { $0 + 1 }
+            let fmap = StatefulTPublisher<Int, TestError, Int>.fmap { $0 + 1 }
 
             var state = 5
             var cancellables = Set<AnyCancellable>()
             var capturedValue: Int?
-            fmapT(stateful).run(&state)
+            fmap(StatefulTPublisher(stateful)).rawValue.run(&state)
                 .eraseToAnyPublisher()
                 .sink(receiveCompletion: ignore, receiveValue: { capturedValue = $0 })
                 .store(in: &cancellables)
@@ -154,7 +154,7 @@
 
         @Test func statefulTPublisherApply() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-            let sf = Stateful<Int, any Publisher<(Int) -> Int, TestError>> { s in
+            let sf = Stateful<Int, any Publisher<@Sendable (Int) -> Int, TestError>> { s in
                 let offset = s
                 let addOffset: @Sendable (Int) -> Int = { $0 + offset }
                 return Just(addOffset).setFailureType(to: TestError.self).eraseToAnyPublisher()
@@ -165,7 +165,7 @@
                 Just(10).setFailureType(to: TestError.self).eraseToAnyPublisher()
             }
 
-            let result = applyStatefulPublisher(sf, sa)
+            let result = StatefulTPublisher.apply(StatefulTPublisher(sf), StatefulTPublisher(sa)).rawValue
 
             var state = 5
             var cancellables = Set<AnyCancellable>()
@@ -189,12 +189,12 @@
                 Just(100).setFailureType(to: TestError.self).eraseToAnyPublisher()
             }
 
+            let result = StatefulTPublisher.liftA2 { (a: Int, b: Int) in a + b }(StatefulTPublisher(sa), StatefulTPublisher(sb)).rawValue
+
             var state = 5
             var cancellables = Set<AnyCancellable>()
             var capturedValue: Int?
-            // Kept as one expression: liftA2StatefulPublisher's S/E parameters are only
-            // pinned down once applied to sa/sb.
-            liftA2StatefulPublisher { (a: Int, b: Int) in a + b }(sa, sb).run(&state)
+            result.run(&state)
                 .eraseToAnyPublisher()
                 .sink(receiveCompletion: ignore, receiveValue: { capturedValue = $0 })
                 .store(in: &cancellables)
@@ -214,7 +214,7 @@
                 Just(2).setFailureType(to: TestError.self).eraseToAnyPublisher()
             }
 
-            let result = seqRightStatefulPublisher(sa, sb)
+            let result = StatefulTPublisher(sa).seqRight(StatefulTPublisher(sb)).rawValue
 
             var state = 5
             var cancellables = Set<AnyCancellable>()
@@ -239,7 +239,7 @@
                 Just(2).setFailureType(to: TestError.self).eraseToAnyPublisher()
             }
 
-            let result = seqLeftStatefulPublisher(sa, sb)
+            let result = StatefulTPublisher(sa).seqLeft(StatefulTPublisher(sb)).rawValue
 
             var state = 5
             var cancellables = Set<AnyCancellable>()
@@ -252,7 +252,7 @@
             #expect(capturedValue == 1)
         }
 
-        // Note: StatefulTPublisher has no flatMapT/Monad — Combine's flatMap takes an
+        // Note: StatefulTPublisher has no flatMap/Monad — Combine's flatMap takes an
         // @escaping closure, which cannot capture an `inout` state parameter.
 
         // MARK: - PublisherTWriter (AnyPublisher<Writer<W, A>, E>)

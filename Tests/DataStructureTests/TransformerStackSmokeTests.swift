@@ -57,9 +57,8 @@ import Testing
         let stack = nested.statefulT
         let next: @Sendable (Int) -> StatefulTEither<Int, String, Int> = const(StatefulTEither(Stateful { .right($0 * 10) }))
 
-        var lhsState = 0
-        var rhsState = 0
-        #expect(stack.flatMap(next).rawValue.run(&lhsState) == nested.flatMapT { next($0).rawValue }.run(&rhsState))
-        #expect(lhsState == rhsState)
+        let (value, state) = stack.flatMap(next).rawValue.runStateful(0)
+        #expect(value == .right(10))
+        #expect(state == 1)
     }
 }

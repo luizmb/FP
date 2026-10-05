@@ -78,7 +78,7 @@ public extension StatefulTAsyncStream where S: Sendable, A: Sendable {
     /// - Parameter value: The value to lift.
     /// - Returns: The minimal stack holding `value`.
     static func pure(_ value: A) -> StatefulTAsyncStream<S, A> {
-        StatefulTAsyncStream<S, A>(.pure(AsyncStream.just(value)))
+        StatefulTAsyncStream<S, A>(Stateful<S, A>.pure(value).mapStateful { AsyncStream.just($0) })
     }
 
     /// Applies the functions inside a stack to the values inside another.
@@ -106,7 +106,7 @@ public extension StatefulTAsyncStream where S: Sendable, A: Sendable {
                 Stateful { state in
                     let streamA = lhs.rawValue.run(&state)
                     let streamB = rhs.rawValue.run(&state)
-                    return AsyncStream<A>.mapStream(AsyncStream<(A1, A2)>.zip(streamA, streamB)) { fn($0.0, $0.1) }
+                    return AsyncStream<A>.liftA2(fn)(streamA, streamB)
                 }
             )
         }

@@ -5,61 +5,61 @@ import Testing
 @Suite struct StatefulEitherTests {
     // MARK: - Stateful<S, Either<L, A>> — State as outer, Either as inner
 
-    @Test func mapTRight() {
+    @Test func mapRight() {
         let s = Stateful<Int, Either<String, Int>>.pure(.right(5))
-        let mapped = s.mapT { $0 * 2 }
-        #expect(mapped.eval(0) == .right(10))
+        let mapped = s.statefulT.map { $0 * 2 }
+        #expect(mapped.rawValue.eval(0) == .right(10))
     }
 
-    @Test func mapTLeft() {
+    @Test func mapLeft() {
         let s = Stateful<Int, Either<String, Int>>.pure(.left("error"))
-        let mapped = s.mapT { $0 * 2 }
-        #expect(mapped.eval(0) == .left("error"))
+        let mapped = s.statefulT.map { $0 * 2 }
+        #expect(mapped.rawValue.eval(0) == .left("error"))
     }
 
-    @Test func flatMapTRight() {
+    @Test func flatMapRight() {
         let s = Stateful<Int, Either<String, Int>> { state in
             let v = state
             state += 1
             return .right(v)
         }
-        let result = s.flatMapT { value in
-            Stateful<Int, Either<String, String>> { state in
+        let result = s.statefulT.flatMap { value in
+            StatefulTEither(Stateful<Int, Either<String, String>> { state in
                 state += value
                 return .right("\(value)")
-            }
+            })
         }
-        let (output, finalState) = result.runStateful(5)
+        let (output, finalState) = result.rawValue.runStateful(5)
         #expect(output == .right("5"))
         #expect(finalState == 11)
     }
 
-    @Test func flatMapTLeft() {
+    @Test func flatMapLeft() {
         let s = Stateful<Int, Either<String, Int>>.pure(.left("fail"))
-        let result = s.flatMapT { value in
-            Stateful<Int, Either<String, String>>.pure(.right("\(value)"))
+        let result = s.statefulT.flatMap { value in
+            StatefulTEither(Stateful<Int, Either<String, String>>.pure(.right("\(value)")))
         }
-        #expect(result.eval(0) == .left("fail"))
+        #expect(result.rawValue.eval(0) == .left("fail"))
     }
 
     @Test func applyStatefulEitherRight() {
         let sf = Stateful<Int, Either<String, @Sendable (Int) -> String>>.pure(.right { "\($0)" })
         let sa = Stateful<Int, Either<String, Int>>.pure(.right(42))
-        let result = applyStatefulEither(sf, sa)
+        let result = StatefulTEither.apply(sf.statefulT, sa.statefulT).rawValue
         #expect(result.eval(0) == .right("42"))
     }
 
     @Test func applyStatefulEitherLeft() {
         let sf = Stateful<Int, Either<String, @Sendable (Int) -> String>>.pure(.left("err"))
         let sa = Stateful<Int, Either<String, Int>>.pure(.right(42))
-        let result = applyStatefulEither(sf, sa)
+        let result = StatefulTEither.apply(sf.statefulT, sa.statefulT).rawValue
         #expect(result.eval(0) == .left("err"))
     }
 
     @Test func liftA2StatefulEitherRight() {
         let sa = Stateful<Int, Either<String, Int>>.pure(.right(3))
         let sb = Stateful<Int, Either<String, Int>>.pure(.right(4))
-        let result = liftA2StatefulEither(+)(sa, sb)
+        let result = StatefulTEither.liftA2(+)(sa.statefulT, sb.statefulT).rawValue
         #expect(result.eval(0) == .right(7))
     }
 

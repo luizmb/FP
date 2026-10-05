@@ -12,9 +12,9 @@ import Testing
 
     @Test func mapT() {
         let s = Stateful<Int, Reader<Env, Int>>.pure(Reader { env in env.multiplier })
-        let mapped = s.mapT { $0 * 2 }
+        let mapped = s.statefulT.map { $0 * 2 }
         let env = Env(multiplier: 5)
-        #expect(mapped.eval(0)(env) == 10)
+        #expect(mapped.rawValue.eval(0)(env) == 10)
     }
 
     @Test func mapTThreadsState() {
@@ -23,11 +23,11 @@ import Testing
             state += 1
             return Reader { env in env.multiplier + v }
         }
-        let mapped = s.mapT { "\($0)" }
+        let mapped = s.statefulT.map { "\($0)" }
         let env = Env(multiplier: 10)
         // eval: state starts at 2, run &s → v=2, state becomes 3, returns Reader{env in 10+2=12}
         // mapT applies fn: "12"
-        let (output, finalState) = mapped.runStateful(2)
+        let (output, finalState) = mapped.rawValue.runStateful(2)
         #expect(output(env) == "12")
         #expect(finalState == 3)
     }
@@ -40,7 +40,7 @@ import Testing
         let sa = Stateful<Int, Reader<Env, Int>>.pure(
             Reader { env in env.multiplier }
         )
-        let result = applyStatefulReader(sf, sa)
+        let result = StatefulTReader.apply(sf.statefulT, sa.statefulT).rawValue
         let env = Env(multiplier: 7)
         #expect(result.eval(0)(env) == "7")
     }
@@ -48,7 +48,7 @@ import Testing
     @Test func liftA2StatefulReaderBoth() {
         let sa = Stateful<Int, Reader<Env, Int>>.pure(Reader { env in env.multiplier })
         let sb = Stateful<Int, Reader<Env, Int>>.pure(Reader(const(10)))
-        let result = liftA2StatefulReader(+)(sa, sb)
+        let result = StatefulTReader.liftA2(+)(sa.statefulT, sb.statefulT).rawValue
         let env = Env(multiplier: 5)
         #expect(result.eval(0)(env) == 15)
     }

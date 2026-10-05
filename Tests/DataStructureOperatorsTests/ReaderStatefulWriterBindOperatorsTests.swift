@@ -87,45 +87,45 @@ import Testing
 }
 
 @Suite struct StatefulTWriterBindOperatorsTests {
-    let m = Stateful<Int, Writer<[String], Int>> { s in
+    let m = StatefulTWriter(Stateful<Int, Writer<[String], Int>> { s in
         s += 1
         return Writer(s, ["m"])
-    }
+    })
 
-    let f: @Sendable (Int) -> Stateful<Int, Writer<[String], Int>> = { a in
-        Stateful { s in
+    let f: @Sendable (Int) -> StatefulTWriter<Int, [String], Int> = { a in
+        StatefulTWriter(Stateful { s in
             s *= 10
             return Writer(a + 1, ["f"])
-        }
+        })
     }
 
-    let g: @Sendable (Int) -> Stateful<Int, Writer<[String], String>> = { b in
-        Stateful { s in
+    let g: @Sendable (Int) -> StatefulTWriter<Int, [String], String> = { b in
+        StatefulTWriter(Stateful { s in
             s -= b
             return Writer("\(b)", ["g"])
-        }
+        })
     }
 
     @Test func bindForward() {
-        let (writer, state) = (m >>- f).runStateful(4)
+        let (writer, state) = (m >>- f).rawValue.runStateful(4)
         #expect(writer == Writer(6, ["m", "f"]))
         #expect(state == 50)
     }
 
     @Test func bindFlipped() {
-        let (writer, state) = (f -<< m).runStateful(4)
+        let (writer, state) = (f -<< m).rawValue.runStateful(4)
         #expect(writer == Writer(6, ["m", "f"]))
         #expect(state == 50)
     }
 
     @Test func kleisliForward() {
-        let (writer, state) = (f >=> g)(2).runStateful(1)
+        let (writer, state) = (f >=> g)(2).rawValue.runStateful(1)
         #expect(writer == Writer("3", ["f", "g"]))
         #expect(state == 7)
     }
 
     @Test func kleisliReverse() {
-        let (writer, state) = (g <=< f)(2).runStateful(1)
+        let (writer, state) = (g <=< f)(2).rawValue.runStateful(1)
         #expect(writer == Writer("3", ["f", "g"]))
         #expect(state == 7)
     }

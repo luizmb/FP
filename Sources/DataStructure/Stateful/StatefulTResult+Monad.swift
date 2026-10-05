@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import Foundation
 
-public extension Stateful {
+extension Stateful {
     /// StatefulT + Result — Stateful<S, Result<A, E>>
 
     func flatMapT<Inner, B, E: Error>(
@@ -23,7 +23,7 @@ public extension Stateful {
 
 /// Kleisli composition for `StatefulT + Result` (left-to-right)
 /// (>=>) :: (a -> Stateful<s, Result<b, e>>) -> (b -> Stateful<s, Result<c, e>>) -> a -> Stateful<s, Result<c, e>>
-public func kleisliT<S, A, B, C, E: Error>(
+func kleisliT<S, A, B, C, E: Error>(
     _ fn1: @escaping @Sendable (A) -> Stateful<S, Result<B, E>>,
     _ fn2: @escaping @Sendable (B) -> Stateful<S, Result<C, E>>
 ) -> @Sendable (A) -> Stateful<S, Result<C, E>> {

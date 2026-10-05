@@ -67,7 +67,7 @@ import Testing
         let sf = Stateful<Int, Validation<[String], @Sendable (Int) -> Int>>.pure(.failure(["sf"]))
         let sa = Stateful<Int, Validation<[String], Int>>.pure(.failure(["sa"]))
         var state = 0
-        let result = (sf <*> sa).run(&state)
+        let result = (sf.statefulT <*> sa.statefulT).rawValue.run(&state)
         #expect(result == .failure(["sf", "sa"]))
     }
 

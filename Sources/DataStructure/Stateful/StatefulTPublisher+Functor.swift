@@ -4,7 +4,7 @@
     import CoreFP
     import Foundation
 
-    public extension Stateful {
+    extension Stateful {
         // StatefulT + Publisher — Stateful<S, any Publisher<A, E>>
 
         /// Declaration.

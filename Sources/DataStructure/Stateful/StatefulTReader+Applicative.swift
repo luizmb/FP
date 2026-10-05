@@ -4,7 +4,7 @@ import Foundation
 // StatefulT + Reader — free functions for Stateful<S, Reader<Env, A>>
 
 /// apply for Stateful<S, Reader>
-public func applyStatefulReader<S, Env, A, B>(
+func applyStatefulReader<S, Env, A, B>(
     _ sf: Stateful<S, Reader<Env, @Sendable (A) -> B>>,
     _ sa: Stateful<S, Reader<Env, A>>
 ) -> Stateful<S, Reader<Env, B>> {
@@ -16,7 +16,7 @@ public func applyStatefulReader<S, Env, A, B>(
 }
 
 /// liftA2 for Stateful<S, Reader>
-public func liftA2StatefulReader<S, Env, A, B, C>(
+func liftA2StatefulReader<S, Env, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Stateful<S, Reader<Env, A>>, Stateful<S, Reader<Env, B>>) -> Stateful<S, Reader<Env, C>> {
     { sa, sb in
@@ -27,7 +27,7 @@ public func liftA2StatefulReader<S, Env, A, B, C>(
 }
 
 /// seqRight for Stateful<S, Reader>
-public func seqRightStatefulReader<S, Env, A, B>(
+func seqRightStatefulReader<S, Env, A, B>(
     _ lhs: Stateful<S, Reader<Env, A>>,
     _ rhs: Stateful<S, Reader<Env, B>>
 ) -> Stateful<S, Reader<Env, B>> {
@@ -35,7 +35,7 @@ public func seqRightStatefulReader<S, Env, A, B>(
 }
 
 /// seqLeft for Stateful<S, Reader>
-public func seqLeftStatefulReader<S, Env, A, B>(
+func seqLeftStatefulReader<S, Env, A, B>(
     _ lhs: Stateful<S, Reader<Env, A>>,
     _ rhs: Stateful<S, Reader<Env, B>>
 ) -> Stateful<S, Reader<Env, A>> {

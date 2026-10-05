@@ -372,14 +372,17 @@ let inventory: [Stack] = [
     Stack(.stateful, .array, .applicative),
     Stack(.stateful, .asyncStream, .applicative, [
         .applyViaLiftA2,
-        // The nested `mapT` / `liftA2StatefulAsyncStream` return `AsyncMapSequence`; same zip
-        // semantics, closed over `AsyncStream`.
+        // Closed over `AsyncStream` (the nested `mapT` returns `AsyncMapSequence`). The inner
+        // applicative is AsyncStream's own `liftA2` (`ap`, cartesian, derived from concat bind), not zip.
         .map("rawValue.mapStateful { AsyncStream<B>.mapStream($0, fn) }"),
+        // A fresh stream per run: `Stateful.pure(AsyncStream.just(value))` would share one single-pass
+        // stream across every run of the state computation (empty from the second run on).
+        .pure("Stateful<S, A>.pure(value).mapStateful { AsyncStream.just($0) }"),
         .liftA2("""
         Stateful { state in
             let streamA = lhs.rawValue.run(&state)
             let streamB = rhs.rawValue.run(&state)
-            return AsyncStream<A>.mapStream(AsyncStream<(A1, A2)>.zip(streamA, streamB)) { fn($0.0, $0.1) }
+            return AsyncStream<A>.liftA2(fn)(streamA, streamB)
         }
         """)
     ]),

@@ -5,7 +5,7 @@ import Foundation
 // StatefulT + NonEmpty — free functions for Stateful<S, NonEmpty<A>>
 
 /// apply for Stateful<S, NonEmpty>
-public func applyStatefulNonEmpty<S, A, B>(
+func applyStatefulNonEmpty<S, A, B>(
     _ sf: Stateful<S, NonEmpty<@Sendable (A) -> B>>,
     _ sa: Stateful<S, NonEmpty<A>>
 ) -> Stateful<S, NonEmpty<B>> {
@@ -15,7 +15,7 @@ public func applyStatefulNonEmpty<S, A, B>(
 }
 
 /// liftA2 for Stateful<S, NonEmpty>
-public func liftA2StatefulNonEmpty<S, A, B, C>(
+func liftA2StatefulNonEmpty<S, A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> (Stateful<S, NonEmpty<A>>, Stateful<S, NonEmpty<B>>) -> Stateful<S, NonEmpty<C>> where A: Sendable {
     { sa, sb in
@@ -26,7 +26,7 @@ public func liftA2StatefulNonEmpty<S, A, B, C>(
 }
 
 /// seqRight for Stateful<S, NonEmpty>
-public func seqRightStatefulNonEmpty<S, A, B>(
+func seqRightStatefulNonEmpty<S, A, B>(
     _ lhs: Stateful<S, NonEmpty<A>>,
     _ rhs: Stateful<S, NonEmpty<B>>
 ) -> Stateful<S, NonEmpty<B>> {
@@ -34,7 +34,7 @@ public func seqRightStatefulNonEmpty<S, A, B>(
 }
 
 /// seqLeft for Stateful<S, NonEmpty>
-public func seqLeftStatefulNonEmpty<S, A, B>(
+func seqLeftStatefulNonEmpty<S, A, B>(
     _ lhs: Stateful<S, NonEmpty<A>>,
     _ rhs: Stateful<S, NonEmpty<B>>
 ) -> Stateful<S, NonEmpty<A>> {

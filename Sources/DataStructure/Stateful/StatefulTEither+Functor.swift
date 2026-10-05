@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import Foundation
 
-public extension Stateful {
+extension Stateful {
     /// StatefulT + Either — Stateful<S, Either<L, A>>
 
     func mapT<L, Inner, B>(_ fn: @escaping @Sendable (Inner) -> B) -> Stateful<S, Either<L, B>>

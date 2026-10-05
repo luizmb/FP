@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Apache-2.0
 import Foundation
 
-public extension Stateful {
+extension Stateful {
     /// StatefulT + Reader — Stateful<S, Reader<Env, A>>
 
     func mapT<Env, Inner, B>(_ fn: @escaping @Sendable (Inner) -> B) -> Stateful<S, Reader<Env, B>>

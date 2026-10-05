@@ -12,13 +12,13 @@ import Testing
             state += 1
             return Writer(v, ["outer"])
         }
-        let result = s >>- { (n: Int) in
-            Stateful<Int, Writer<[String], String>> { state in
+        let result = s.statefulT >>- { (n: Int) in
+            StatefulTWriter(Stateful<Int, Writer<[String], String>> { state in
                 state *= 10
                 return Writer("\(n)", ["inner"])
-            }
+            })
         }
-        let (w, finalState) = result.runStateful(5)
+        let (w, finalState) = result.rawValue.runStateful(5)
         #expect(w.value == "5")
         #expect(w.log == ["outer", "inner"])
         #expect(finalState == 60)
@@ -28,8 +28,8 @@ import Testing
         let fn: @Sendable (Int) -> String = { "\($0)" }
         let sf = Stateful<Int, Writer<[String], @Sendable (Int) -> String>>.pure(Writer(fn, ["fn"]))
         let sa = Stateful<Int, Writer<[String], Int>>.pure(Writer(7, ["val"]))
-        let result = sf <*> sa
-        let w = result.eval(0)
+        let result = sf.statefulT <*> sa.statefulT
+        let w = result.rawValue.eval(0)
         #expect(w.value == "7")
         #expect(w.log == ["fn", "val"])
     }
@@ -37,8 +37,8 @@ import Testing
     @Test func statefulTWriterSeqRight() {
         let lhs = Stateful<Int, Writer<[String], Int>>.pure(Writer(1, ["a"]))
         let rhs = Stateful<Int, Writer<[String], String>>.pure(Writer("hello", ["b"]))
-        let result = lhs *> rhs
-        let w = result.eval(0)
+        let result = lhs.statefulT *> rhs.statefulT
+        let w = result.rawValue.eval(0)
         #expect(w.value == "hello")
         #expect(w.log == ["a", "b"])
     }
@@ -46,8 +46,8 @@ import Testing
     @Test func statefulTWriterSeqLeft() {
         let lhs = Stateful<Int, Writer<[String], Int>>.pure(Writer(99, ["a"]))
         let rhs = Stateful<Int, Writer<[String], String>>.pure(Writer("ignored", ["b"]))
-        let result = lhs <* rhs
-        let w = result.eval(0)
+        let result = lhs.statefulT <* rhs.statefulT
+        let w = result.rawValue.eval(0)
         #expect(w.value == 99)
         #expect(w.log == ["a", "b"])
     }

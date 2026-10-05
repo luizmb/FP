@@ -335,7 +335,7 @@ import Testing
         let sf = Stateful<Int, Validation<[String], @Sendable (Int) -> Int>>.pure(.failure(["e1"]))
         let sa = Stateful<Int, Validation<[String], Int>>.pure(.failure(["e2"]))
         var state = 0
-        let result = applyStatefulValidation(sf, sa).run(&state)
+        let result = StatefulTValidation.apply(sf.statefulT, sa.statefulT).rawValue.run(&state)
         #expect(result == .failure(["e1", "e2"]))
     }
 

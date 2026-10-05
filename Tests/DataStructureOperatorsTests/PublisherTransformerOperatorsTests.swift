@@ -55,7 +55,7 @@
 
         @Test func statefulTPublisherApplyOperator() {
             guard #available(iOS 16, macOS 13, tvOS 16, watchOS 9, *) else { return }
-            let sf = Stateful<Int, any Publisher<(Int) -> Int, TestError>> { s in
+            let sf = Stateful<Int, any Publisher<@Sendable (Int) -> Int, TestError>> { s in
                 let offset = s
                 let addOffset: @Sendable (Int) -> Int = { $0 + offset }
                 return Just(addOffset).setFailureType(to: TestError.self).eraseToAnyPublisher()
@@ -66,12 +66,12 @@
                 Just(10).setFailureType(to: TestError.self).eraseToAnyPublisher()
             }
 
-            let result = sf <*> sa
+            let result = StatefulTPublisher(sf) <*> StatefulTPublisher(sa)
 
             var state = 5
             var cancellables = Set<AnyCancellable>()
             var capturedValue: Int?
-            result.run(&state)
+            result.rawValue.run(&state)
                 .eraseToAnyPublisher()
                 .sink(receiveCompletion: ignore, receiveValue: { capturedValue = $0 })
                 .store(in: &cancellables)
@@ -91,12 +91,12 @@
                 Just(2).setFailureType(to: TestError.self).eraseToAnyPublisher()
             }
 
-            let result = sa *> sb
+            let result = StatefulTPublisher(sa) *> StatefulTPublisher(sb)
 
             var state = 5
             var cancellables = Set<AnyCancellable>()
             var capturedValue: Int?
-            result.run(&state)
+            result.rawValue.run(&state)
                 .eraseToAnyPublisher()
                 .sink(receiveCompletion: ignore, receiveValue: { capturedValue = $0 })
                 .store(in: &cancellables)
@@ -116,12 +116,12 @@
                 Just(2).setFailureType(to: TestError.self).eraseToAnyPublisher()
             }
 
-            let result = sa <* sb
+            let result = StatefulTPublisher(sa) <* StatefulTPublisher(sb)
 
             var state = 5
             var cancellables = Set<AnyCancellable>()
             var capturedValue: Int?
-            result.run(&state)
+            result.rawValue.run(&state)
                 .eraseToAnyPublisher()
                 .sink(receiveCompletion: ignore, receiveValue: { capturedValue = $0 })
                 .store(in: &cancellables)

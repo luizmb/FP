@@ -15,7 +15,7 @@ import Testing
             return NonEmpty(head: 1, tail: [2])
         }
         var state = 0
-        let result = applyStatefulNonEmpty(sf, sa).run(&state)
+        let result = StatefulTNonEmpty.apply(sf.statefulT, sa.statefulT).rawValue.run(&state)
         #expect(result == NonEmpty(head: "1a", tail: ["2a", "1b", "2b"]))
         #expect(state == 11)
     }
@@ -32,7 +32,7 @@ import Testing
             return NonEmpty(head: 10, tail: [20])
         }
         var state = 0
-        let result = liftA2StatefulNonEmpty { (a: Int, b: Int) in a + b }(sa, sb).run(&state)
+        let result = StatefulTNonEmpty.liftA2 { (a: Int, b: Int) in a + b }(sa.statefulT, sb.statefulT).rawValue.run(&state)
         #expect(result == NonEmpty(head: 11, tail: [21, 12, 22]))
         #expect(state == 101)
     }
@@ -49,7 +49,7 @@ import Testing
             return NonEmpty(head: "b")
         }
         var state = 0
-        let result = seqRightStatefulNonEmpty(lhs, rhs).run(&state)
+        let result = lhs.statefulT.seqRight(rhs.statefulT).rawValue.run(&state)
         #expect(result == NonEmpty(head: "b"))
         #expect(state == 11)
     }
@@ -64,7 +64,7 @@ import Testing
             return NonEmpty(head: "b")
         }
         var state = 0
-        let result = seqLeftStatefulNonEmpty(lhs, rhs).run(&state)
+        let result = lhs.statefulT.seqLeft(rhs.statefulT).rawValue.run(&state)
         #expect(result == NonEmpty(head: 1))
         #expect(state == 11)
     }

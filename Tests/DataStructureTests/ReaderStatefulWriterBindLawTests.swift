@@ -216,10 +216,14 @@ private func expectSameRS<A: Equatable>(
 
 // MARK: - StatefulTWriter
 
-typealias BindLawSW<A> = Stateful<Int, Writer<[String], A>>
+typealias BindLawSW<A> = StatefulTWriter<Int, [String], A>
 
 private func pureSW<A: Sendable>(_ value: A) -> BindLawSW<A> {
-    BindLawSW<A>.pure(Writer(value, []))
+    BindLawSW<A>(.pure(Writer(value, [])))
+}
+
+private func stepSW<A>(_ run: @escaping @Sendable (inout Int) -> Writer<[String], A>) -> BindLawSW<A> {
+    BindLawSW<A>(Stateful(run))
 }
 
 private func expectSameSW<A: Equatable>(
@@ -228,8 +232,8 @@ private func expectSameSW<A: Equatable>(
     sourceLocation: SourceLocation = #_sourceLocation
 ) {
     for initial in initialStates {
-        let (actualWriter, actualState) = actual.runStateful(initial)
-        let (expectedWriter, expectedState) = expected.runStateful(initial)
+        let (actualWriter, actualState) = actual.rawValue.runStateful(initial)
+        let (expectedWriter, expectedState) = expected.rawValue.runStateful(initial)
         #expect(actualWriter == expectedWriter, sourceLocation: sourceLocation)
         #expect(actualState == expectedState, sourceLocation: sourceLocation)
     }
@@ -237,21 +241,21 @@ private func expectSameSW<A: Equatable>(
 
 @Suite struct StatefulTWriterBindLawTests {
     let ms: [BindLawSW<Int>] = [
-        BindLawSW { s in
+        stepSW { s in
             s += 1
             return Writer(s, ["m"])
         },
-        BindLawSW { s in Writer(s * 2, []) }
+        stepSW { s in Writer(s * 2, []) }
     ]
     let f: @Sendable (Int) -> BindLawSW<Int> = { a in
-        BindLawSW { s in
+        stepSW { s in
             s = s * 3 + a
             return Writer(a - s, ["f\(a)"])
         }
     }
 
     let g: @Sendable (Int) -> BindLawSW<String> = { b in
-        BindLawSW { s in
+        stepSW { s in
             s -= 1
             return Writer("\(b):\(s)", ["g\(b)"])
         }
@@ -259,13 +263,13 @@ private func expectSameSW<A: Equatable>(
 
     @Test func leftIdentity() {
         for a in [0, 1, 7] {
-            expectSameSW(pureSW(a).flatMapT(f), f(a))
+            expectSameSW(pureSW(a).flatMap(f), f(a))
         }
     }
 
     @Test func rightIdentity() {
         for m in ms {
-            expectSameSW(m.flatMapT(pureSW), m)
+            expectSameSW(m.flatMap(pureSW), m)
         }
     }
 
@@ -273,52 +277,52 @@ private func expectSameSW<A: Equatable>(
         let f = f
         let g = g
         for m in ms {
-            expectSameSW(m.flatMapT(f).flatMapT(g), m.flatMapT { a in f(a).flatMapT(g) })
+            expectSameSW(m.flatMap(f).flatMap(g), m.flatMap { a in f(a).flatMap(g) })
         }
     }
 
     @Test func applicativeEqualsAp() {
-        let sf = BindLawSW<@Sendable (Int) -> Int> { s in
+        let sf: BindLawSW<@Sendable (Int) -> Int> = stepSW { s in
             s += 100
             return Writer({ $0 * 2 }, ["fn"])
         }
-        let sb = BindLawSW<String> { s in
+        let sb: BindLawSW<String> = stepSW { s in
             s *= 3
             return Writer("b\(s)", ["rhs"])
         }
         for sa in ms {
-            expectSameSW(applyStatefulWriter(sf, sa), sf.flatMapT { fn in sa.mapT(fn) })
+            expectSameSW(BindLawSW<Int>.apply(sf, sa), sf.flatMap { fn in sa.map(fn) })
             expectSameSW(
-                liftA2StatefulWriter { (a: Int, b: String) in "\(a)\(b)" }(sa, sb),
-                sa.flatMapT { a in sb.mapT { b in "\(a)\(b)" } }
+                BindLawSW<String>.liftA2 { (a: Int, b: String) in "\(a)\(b)" }(sa, sb),
+                sa.flatMap { a in sb.map { b in "\(a)\(b)" } }
             )
-            expectSameSW(seqRightStatefulWriter(sa, sb), sa.flatMapT(const(sb)))
-            expectSameSW(seqLeftStatefulWriter(sa, sb), sa.flatMapT { a in sb.mapT(const(a)) })
+            expectSameSW(sa.seqRight(sb), sa.flatMap(const(sb)))
+            expectSameSW(sa.seqLeft(sb), sa.flatMap { a in sb.map(const(a)) })
         }
     }
 
     @Test func continuationTouchesStateAndLogs() {
-        let m = BindLawSW<Int> { s in
+        let m: BindLawSW<Int> = stepSW { s in
             s += 1
             return Writer(s, ["start"])
         }
-        let result = m.flatMapT { a in
-            BindLawSW<String> { s in
+        let result = m.flatMap { a in
+            stepSW { s in
                 s *= 10
                 return Writer("\(a)", ["state was \(s / 10)"])
             }
         }
-        let (writer, finalState) = result.runStateful(4)
+        let (writer, finalState) = result.rawValue.runStateful(4)
         #expect(writer == Writer("5", ["start", "state was 5"]))
         #expect(finalState == 50)
     }
 
-    @Test func bindTAndKleisliTAgreeWithFlatMapT() {
+    @Test func bindAndKleisliAgreeWithFlatMap() {
         for m in ms {
-            expectSameSW(BindLawSW<Int>.bindT(f)(m), m.flatMapT(f))
+            expectSameSW(BindLawSW<Int>.bind(f)(m), m.flatMap(f))
         }
         for a in [0, 2] {
-            expectSameSW(kleisliT(f, g)(a), f(a).flatMapT(g))
+            expectSameSW(BindLawSW<Int>.kleisli(f, g)(a), f(a).flatMap(g))
         }
     }
 }

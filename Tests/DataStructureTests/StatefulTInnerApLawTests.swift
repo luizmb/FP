@@ -53,7 +53,10 @@ private func expectSameRun<A: Equatable>(
     @Test func applyEqualsAp() {
         for sf in functions {
             for sa in lhs {
-                expectSameRun(applyStatefulEither(sf, sa), sf.flatMapT { f in sa.mapT(f) })
+                expectSameRun(
+                    StatefulTEither.apply(sf.statefulT, sa.statefulT).rawValue,
+                    sf.statefulT.flatMap { f in sa.statefulT.map(f) }.rawValue
+                )
             }
         }
     }
@@ -63,8 +66,8 @@ private func expectSameRun<A: Equatable>(
         for sa in lhs {
             for sb in rhs {
                 expectSameRun(
-                    liftA2StatefulEither(combine)(sa, sb),
-                    sa.flatMapT { a in sb.mapT { b in combine(a, b) } }
+                    StatefulTEither.liftA2(combine)(sa.statefulT, sb.statefulT).rawValue,
+                    sa.statefulT.flatMap { a in sb.statefulT.map { b in combine(a, b) } }.rawValue
                 )
             }
         }
@@ -73,7 +76,7 @@ private func expectSameRun<A: Equatable>(
     @Test func seqRightEqualsBind() {
         for sa in lhs {
             for sb in rhs {
-                expectSameRun(seqRightStatefulEither(sa, sb), sa.flatMapT(const(sb)))
+                expectSameRun(sa.statefulT.seqRight(sb.statefulT).rawValue, sa.statefulT.flatMap(const(sb.statefulT)).rawValue)
             }
         }
     }
@@ -81,7 +84,10 @@ private func expectSameRun<A: Equatable>(
     @Test func seqLeftEqualsBind() {
         for sa in lhs {
             for sb in rhs {
-                expectSameRun(seqLeftStatefulEither(sa, sb), sa.flatMapT { a in sb.mapT(const(a)) })
+                expectSameRun(
+                    sa.statefulT.seqLeft(sb.statefulT).rawValue,
+                    sa.statefulT.flatMap { a in sb.statefulT.map(const(a)) }.rawValue
+                )
             }
         }
     }
@@ -89,7 +95,7 @@ private func expectSameRun<A: Equatable>(
     @Test func leftFunctionSkipsRightStateEffect() {
         let sf: Stateful<Int, Either<String, @Sendable (Int) -> Int>> = step({ $0 + 1 }, .left("e"))
         let sa: Stateful<Int, Either<String, Int>> = step({ $0 + 10 }, .right(1))
-        let (value, state) = applyStatefulEither(sf, sa).runStateful(0)
+        let (value, state) = StatefulTEither.apply(sf.statefulT, sa.statefulT).rawValue.runStateful(0)
         #expect(value == .left("e"))
         #expect(state == 1)
     }
@@ -112,7 +118,10 @@ private func expectSameRun<A: Equatable>(
     @Test func applyEqualsAp() {
         for sf in functions {
             for sa in lhs {
-                expectSameRun(applyStatefulOptional(sf, sa), sf.flatMapT { f in sa.mapT(f) })
+                expectSameRun(
+                    StatefulTOptional.apply(sf.statefulT, sa.statefulT).rawValue,
+                    sf.statefulT.flatMap { f in sa.statefulT.map(f) }.rawValue
+                )
             }
         }
     }
@@ -122,8 +131,8 @@ private func expectSameRun<A: Equatable>(
         for sa in lhs {
             for sb in rhs {
                 expectSameRun(
-                    liftA2StatefulOptional(combine)(sa, sb),
-                    sa.flatMapT { a in sb.mapT { b in combine(a, b) } }
+                    StatefulTOptional.liftA2(combine)(sa.statefulT, sb.statefulT).rawValue,
+                    sa.statefulT.flatMap { a in sb.statefulT.map { b in combine(a, b) } }.rawValue
                 )
             }
         }
@@ -132,7 +141,7 @@ private func expectSameRun<A: Equatable>(
     @Test func seqRightEqualsBind() {
         for sa in lhs {
             for sb in rhs {
-                expectSameRun(seqRightStatefulOptional(sa, sb), sa.flatMapT(const(sb)))
+                expectSameRun(sa.statefulT.seqRight(sb.statefulT).rawValue, sa.statefulT.flatMap(const(sb.statefulT)).rawValue)
             }
         }
     }
@@ -140,7 +149,10 @@ private func expectSameRun<A: Equatable>(
     @Test func seqLeftEqualsBind() {
         for sa in lhs {
             for sb in rhs {
-                expectSameRun(seqLeftStatefulOptional(sa, sb), sa.flatMapT { a in sb.mapT(const(a)) })
+                expectSameRun(
+                    sa.statefulT.seqLeft(sb.statefulT).rawValue,
+                    sa.statefulT.flatMap { a in sb.statefulT.map(const(a)) }.rawValue
+                )
             }
         }
     }
@@ -148,8 +160,8 @@ private func expectSameRun<A: Equatable>(
     @Test func noneSkipsRightStateEffectInEverySequencingFunction() {
         let none: Stateful<Int, Int?> = step({ $0 + 1 }, nil)
         let some: Stateful<Int, String?> = step({ $0 + 10 }, .some("x"))
-        #expect(seqRightStatefulOptional(none, some).runStateful(0) == (nil, 1))
-        #expect(seqLeftStatefulOptional(none, some).runStateful(0) == (nil, 1))
+        #expect(none.statefulT.seqRight(some.statefulT).rawValue.runStateful(0) == (nil, 1))
+        #expect(none.statefulT.seqLeft(some.statefulT).rawValue.runStateful(0) == (nil, 1))
     }
 }
 
@@ -170,7 +182,10 @@ private func expectSameRun<A: Equatable>(
     @Test func applyEqualsAp() {
         for sf in functions {
             for sa in lhs {
-                expectSameRun(applyStatefulResult(sf, sa), sf.flatMapT { f in sa.mapT(f) })
+                expectSameRun(
+                    StatefulTResult.apply(sf.statefulT, sa.statefulT).rawValue,
+                    sf.statefulT.flatMap { f in sa.statefulT.map(f) }.rawValue
+                )
             }
         }
     }
@@ -180,8 +195,8 @@ private func expectSameRun<A: Equatable>(
         for sa in lhs {
             for sb in rhs {
                 expectSameRun(
-                    liftA2StatefulResult(combine)(sa, sb),
-                    sa.flatMapT { a in sb.mapT { b in combine(a, b) } }
+                    StatefulTResult.liftA2(combine)(sa.statefulT, sb.statefulT).rawValue,
+                    sa.statefulT.flatMap { a in sb.statefulT.map { b in combine(a, b) } }.rawValue
                 )
             }
         }
@@ -190,7 +205,7 @@ private func expectSameRun<A: Equatable>(
     @Test func seqRightEqualsBind() {
         for sa in lhs {
             for sb in rhs {
-                expectSameRun(seqRightStatefulResult(sa, sb), sa.flatMapT(const(sb)))
+                expectSameRun(sa.statefulT.seqRight(sb.statefulT).rawValue, sa.statefulT.flatMap(const(sb.statefulT)).rawValue)
             }
         }
     }
@@ -198,7 +213,10 @@ private func expectSameRun<A: Equatable>(
     @Test func seqLeftEqualsBind() {
         for sa in lhs {
             for sb in rhs {
-                expectSameRun(seqLeftStatefulResult(sa, sb), sa.flatMapT { a in sb.mapT(const(a)) })
+                expectSameRun(
+                    sa.statefulT.seqLeft(sb.statefulT).rawValue,
+                    sa.statefulT.flatMap { a in sb.statefulT.map(const(a)) }.rawValue
+                )
             }
         }
     }
@@ -206,7 +224,7 @@ private func expectSameRun<A: Equatable>(
     @Test func failedFunctionDoesNotRunRightHandSide() {
         let sf: Stateful<Int, Result<@Sendable (Int) -> Int, StatefulApError>> = step({ $0 + 1 }, .failure(.function))
         let sa: Stateful<Int, Result<Int, StatefulApError>> = step({ $0 + 10 }, .success(1))
-        let (value, state) = applyStatefulResult(sf, sa).runStateful(0)
+        let (value, state) = StatefulTResult.apply(sf.statefulT, sa.statefulT).rawValue.runStateful(0)
         #expect(value == .failure(.function))
         #expect(state == 1)
     }
