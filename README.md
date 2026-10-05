@@ -2340,7 +2340,7 @@ Every custom operator lives in one of the precedence groups defined in `Sources/
 
 | Level | Operators | Associativity | Precedence group |
 |---|---|---|---|
-| 9.1 | `>>>` | right | `FunctionCompositionForward` |
+| 9.5 | `>>>` | right | `FunctionCompositionForward` |
 | 9 | `<<<` | right | `FunctionCompositionBackwards` |
 | 8.5 | `>>` _(stdlib)_ | left | `BitwiseShiftPrecedence` |
 | 7 | `*`, `/` _(stdlib)_ | left | `MultiplicationPrecedence` |

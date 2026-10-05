@@ -18,7 +18,7 @@ Every operator is sugar over a named function (`<£>` is `map`, `>>-` is `flatMa
 ## How to work
 
 1. Figure out which effect each value lives in (`Optional`, `Result`, `Either`, `Validation`, `Reader`, a stack, …). Most confusion with this library comes from a value being one layer deeper or shallower than the code assumes.
-2. Pick the operator by what you need to do (table below). Some operator families can't be mixed without parentheses, so read `references/operators.md` before writing a chain that mixes them.
+2. Pick the operator by what you need to do (table below). The library's operators form one total precedence order, so they mix freely, but a few mixes with stdlib operators need parentheses, so read `references/operators.md` before writing a long chain.
 3. Prefer composing small named functions over big closures, but only while it stays readable (a short closure is fine, don't force point-free style where it makes the code harder to follow).
 4. Keep everything `Sendable`. The library takes `@Sendable` closures almost everywhere, so a closure stored in a `let` should be typed `@Sendable (A) -> B`.
 
@@ -96,7 +96,7 @@ Some stacks have no lawful monad (anything with `Validation`, a list inside a no
 ## Pitfalls that come up again and again
 
 - `<£>` wants the function on the left. `x <£> f` doesn't compile; write `f <£> x` or `x <&> f`.
-- Several operator families have no defined order between them, and mixing them without parentheses is a compile error ("adjacent operators are in unordered precedence groups"). The two that bite most: `>>-` / `<&>` next to `<£>` / `<*>` (write `(f <£> x) >>- g`), and `|>` next to anything but `|>` / `<|` (write `x |> (f >>> g)`). `references/operators.md` has the full list.
+- The library's operator groups are one total order (`>>>` > `<>` > `<£>` family > `<|>` > `>=>` > `>>-` > `<|` > `|>`), so `f <£> xs >>- g` and `x |> f >>> g` compile and group that way. What's still unordered is a library operator against some stdlib ones: `<|>`, `>>-` / `<&>` and `|>` with `==`, `+` and `??` (write `(a ?? b) |> f`). "adjacent operators are in unordered precedence groups" means that. `references/operators.md` has the full list.
 - `>>-` is left associative (a sequence of effects), `>=>` is right associative (a pipeline of functions), and `>=>` binds tighter than `>>-`.
 - An operator on a nested value acts on the outer layer. After upgrading from 2.x, some nested-value code still compiles with a different meaning (`*>` on a `Stateful<S, Either<L, A>>` no longer skips on `.left`). Wrap in the stack.
 - `Reader` is for dependencies that come from outside the computation (API clients, config, feature flags), not for ordinary parameters. `Reader<Int, X>` is usually a smell.

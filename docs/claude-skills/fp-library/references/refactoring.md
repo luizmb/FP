@@ -71,7 +71,7 @@ func city(of id: String) -> String? {
 let cityOfUser = findUser >=> address >=> city >=> nonEmpty
 ```
 
-(`<&>` shares a precedence group with `>>-`, so a container-first chain mixes them freely; `<£>` would need parentheses.)
+(`<&>` shares a precedence group with `>>-`, so a container-first chain reads left to right; `<£>` binds tighter than `>>-`, so `f <£> x >>- g` is `(f <£> x) >>- g`.)
 
 Several independent optionals, all needed: `zip` or `liftA2` instead of a multi-`guard`:
 

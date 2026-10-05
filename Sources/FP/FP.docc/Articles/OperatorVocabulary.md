@@ -113,6 +113,12 @@ The numbers are only a reading aid, the real ordering is the `higherThan`/`lower
 compiles and groups `>>>` first (`f >>> g <<< h` is `(f >>> g) <<< h`); parenthesise anyway.
 `<>` binds tighter than `+`, and `>=>`/`<=<`/`-<<` bind tighter than `>>-`/`<&>`.
 
+The library's own groups are chained into one total order (each custom group is declared `higherThan` the
+next one in this module, because Swift won't order two groups through another module's), so any two
+library operators mix without parentheses: `f <£> xs >>- g` is `(f <£> xs) >>- g` and `x |> f >>> g` is
+`x |> (f >>> g)`. What stays unordered is a library operator against some stdlib ones, such as `|>`,
+`>>-` or `<|>` next to `==`, `+` or `??`; those need parentheses.
+
 `FunctorOps` and `ComparisonPrecedence` sit at the same numeric level (4) because `FunctorOps` is
 declared `lowerThan: NilCoalescingPrecedence, higherThan: AlternativePrecedence` — the same slot
 Swift's own comparison operators occupy — rather than being ordered directly against them.

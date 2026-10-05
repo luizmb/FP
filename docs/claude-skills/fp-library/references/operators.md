@@ -37,32 +37,29 @@ The DocC article `OperatorVocabulary` (`Sources/FP/FP.docc/Articles/OperatorVoca
 
 ## Precedence: what mixes without parentheses
 
-The groups are meant to follow Haskell's fixities (composition highest, then `<>`, then the functor family, then `<|>`, then bind and Kleisli, then application), and that's the order the DocC article lists. Swift, however, only orders two groups when it can reach one from the other through the relations the groups declare, and several families aren't connected that way. In your code (any module that imports FP) mixing two unconnected groups without parentheses is a compile error, "adjacent operators are in unordered precedence groups". It never silently groups the wrong way, it just refuses.
+The library's groups form one total order that follows Haskell's fixities, highest to lowest: composition (`>>>`, then `<<<`), `<>`, the functor family (`<£>`, `<*>`, `£>`, `<£`, `*>`, `<*`), `<|>`, Kleisli (`>=>`, `<=<`, `-<<`), bind (`>>-`, `<&>`, `->>`), `<|`, and finally `|>`. Any two of them mix without parentheses and group by that order, so `f <£> xs >>- g` is `(f <£> xs) >>- g` and `x |> f >>> g` is `x |> (f >>> g)`. The same order is in the DocC article and the README table.
 
-Checked against the current sources, these mix freely and group as shown:
+The rows below are all the same rule, with the Swift stdlib operators slotted in:
 
 | Combination | Groups as |
 |---|---|
-| `>>>` / `<<<` with `<£>`, `<*>`, `£>`, `*>`, `<>`, `>=>`, `-<<`, `<\|`, `??`, `+`, `==`, `&&` | composition binds tightest |
-| `<>` with `<£>`, `<*>`, `£>`, `*>`, `>=>`, `-<<`, `<\|` | `<>` binds tighter |
+| `>>>` / `<<<` with anything else | composition binds tightest (`>>>` is above `<<<`) |
+| `<>` with the functor family, `<\|>`, Kleisli, bind, application | `<>` binds tighter |
 | `<£>`, `<*>`, `£>`, `<£`, `*>`, `<*` with each other | left to right (`f <£> a <*> b` is `(f <£> a) <*> b`) |
-| `<£>` family with `<\|>`, `>=>`, `-<<`, `<\|`, `+`, `&&` | the functor family binds tighter |
-| `<£>` family with `??` | `??` binds tighter: `f <£> x ?? y` is `f <£> (x ?? y)` |
-| `<\|>` with `>=>`, `-<<`, `<\|`, `&&` | `<\|>` binds tighter |
+| the functor family with `<\|>`, Kleisli, bind, application, `+`, `&&` | the functor family binds tighter |
+| the functor family with `??` | `??` binds tighter: `f <£> x ?? y` is `f <£> (x ?? y)` |
+| `<\|>` with Kleisli, bind, application, `&&` | `<\|>` binds tighter |
+| `>=>`, `<=<`, `-<<` with `>>-`, `<&>` | Kleisli binds tighter: `m >>- f >=> g` is `m >>- (f >=> g)` |
 | `>>-`, `<&>`, `->>` with each other | left to right |
-| `>>-` / `<&>` with `>=>`, `-<<` | `>=>` / `-<<` bind tighter |
-| `>=>`, `<=<`, `-<<` with each other | right associative |
-| `<\|` with everything above | `<\|` binds loosest |
-| `\|>` with `\|>` and `<\|` | left to right, `<\|` tighter |
+| `<\|` with `\|>` | `<\|` binds tighter, and both sit below every other library operator |
 
-And these need parentheses (unordered):
+The only mixes that still need parentheses involve a stdlib group that Swift can't order against the library's:
 
-- `>>-` / `<&>` with anything from the functor family (`<£>`, `<*>`, `£>`, `*>`), with `<|>`, `>>>`, `<>`, `??`, `==`, `+`, `&&`.
-- `|>` with anything except `|>` and `<|` (including `>>>`, `<£>`, `>>-`, `>=>`, `+`).
-- `<|>` with `>>>`, `<>`, `??`, `==`, `+`.
-- `<£>` family with `==`.
+- `<|>`, `>>-` / `<&>` and `|>` with `==`, `+`, `??` (and `&&` for `>>-` and `|>`). For example `a ?? b >>- f` must be `(a ?? b) >>- f` or `a ?? (b >>- f)`.
+- `<|>` with `+`, `==`, `??`.
+- The functor family with `==`.
 
-So a pipeline written as `x |> f >>> g` must be `x |> (f >>> g)`, and a map-then-bind must be `(f <£> x) >>- g`. When a chain gets parenthesized everywhere, that's usually the hint to switch to the named form (`x.map(f).flatMap(g)`) or to give the intermediate step a name.
+If you hit "adjacent operators are in unordered precedence groups", that's the cause. It never silently groups the wrong way, it just refuses. When a chain gets parenthesized everywhere, that's usually the hint to switch to the named form (`x.map(f).flatMap(g)`) or to give the intermediate step a name.
 
 Associativity, where it applies, follows Haskell: `>>-` is left associative (`m >>- f >>- g` runs `m`, then `f`, then `g`), `>=>` is right associative (`f >=> g >=> h` is one function you call later), `<>` and composition are right associative.
 
@@ -71,7 +68,7 @@ Associativity, where it applies, follows Haskell: `>>-` is left associative (`m 
 When asked what a composition does or why it doesn't compile:
 
 1. Write the type of every leaf (each value and each function).
-2. Group by the rules above and write the fully parenthesized form. If two adjacent operators are unordered, that's the bug: say so and add the parentheses.
+2. Group by the rules above and write the fully parenthesized form. If two adjacent operators are in unordered groups (a library operator against a stdlib one, see the list above), that's the bug: say so and add the parentheses.
 3. Evaluate the innermost group first, writing the resulting type after each step.
 4. If it still fails, find the first step where the types disagree. That's nearly always the container on the wrong side of `<£>`, a nested value treated as if it were a stack (or the other way around), or a closure that isn't `@Sendable`.
 5. Offer the fix, and when it helps, the named-function form as a readability check.
@@ -87,13 +84,13 @@ let numbers = [1, 2, 3]
 let double: @Sendable (Int) -> Int = 2 |> curry(*)
 let neighbours: @Sendable (Int) -> [Int] = { [$0, $0 + 1] }
 
-// `<£>` and `>>-` are unordered, so the parentheses are required
+// `<£>` binds tighter than `>>-`, so no parentheses are needed
 // [1, 2, 3]  -> double <£>      -> [2, 4, 6]
 //            -> >>- neighbours  -> [2, 3, 4, 5, 6, 7]
-let expanded = (double <£> numbers) >>- neighbours
+let expanded = double <£> numbers >>- neighbours
 let expandedNamed = numbers.map(double).flatMap(neighbours)
 
-// `<&>` and `>>-` share a group, so a container-first pipeline needs none
+// `<&>` and `>>-` share a group, so a container-first pipeline reads left to right
 let expandedPipeline = numbers <&> double >>- neighbours
 ```
 
@@ -119,10 +116,11 @@ let alsoQuarter = Optional(4) >>- nonZero >=> reciprocal
 
 ```swift
 let increment: @Sendable (Int) -> Int = 1 |> curry(+)
+let double: @Sendable (Int) -> Int = 2 |> curry(*)
 let describe: @Sendable (Int) -> String = { "value: \($0)" }
 
-// `|>` and `>>>` are unordered: compose first, in parentheses
-let described = 5 |> (increment >>> double >>> describe)  // "value: 12"
+// `>>>` binds tighter than `|>`, so the composition happens first
+let described = 5 |> increment >>> double >>> describe  // "value: 12"
 let pipelined = 5 |> increment |> double |> describe  // same, one step at a time
 let applied = describe <| double <| increment <| 5  // <| is right associative
 ```
@@ -132,6 +130,7 @@ let applied = describe <| double <| increment <| 5  // <| is right associative
 ```swift
 struct Point: Sendable { let x: Int; let y: Int }
 
+let parse: @Sendable (String) -> Int? = { Int($0) }
 let makePoint: @Sendable (Int) -> @Sendable (Int) -> Point = { x in { y in Point(x: x, y: y) } }
 
 // (makePoint <£> parse("1")) <*> parse("2"): same group, left associative
@@ -160,11 +159,11 @@ let shouted: Reader<Config, String?> = ({ $0.uppercased() } <£> lookup("1").rea
 
 ## Common errors and fixes
 
-"adjacent operators are in unordered precedence groups": add parentheses around the part that should run first (see the lists above).
+"adjacent operators are in unordered precedence groups": one side is a stdlib operator Swift can't order against a library one (see the list above), so add parentheses around the part that should run first.
 
 ```swift-sketch
-let broken = double <£> numbers >>- neighbours
-let alsoBroken = 5 |> increment >>> double
+let broken = numbers.first ?? 0 |> double
+let fixed = (numbers.first ?? 0) |> double
 ```
 
 Container on the wrong side of `<£>` (doesn't compile):
