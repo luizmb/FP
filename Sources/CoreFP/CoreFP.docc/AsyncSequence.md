@@ -15,11 +15,11 @@ Apply a function to every emitted element. `<£>` puts the function on the left;
 ```swift
 let numbers = AsyncStream<Int> { c in c.yield(1); c.yield(2); c.yield(3); c.finish() }
 
-{ (n: Int) async -> Int in n * 2 } <£> numbers   // emits 2, 4, 6
-numbers <&> { (n: Int) async -> Int in n * 2 }   // emits 2, 4, 6
+_ = { (n: Int) async -> Int in n * 2 } <£> numbers   // emits 2, 4, 6
+_ = numbers <&> { (n: Int) async -> Int in n * 2 }   // emits 2, 4, 6
 
-// Named function — uses AsyncSequence.map under the hood
-numbers.map { $0 * 2 }
+// Named function, uses AsyncSequence.map under the hood
+_ = numbers.map { $0 * 2 }
 ```
 
 ---
@@ -29,8 +29,8 @@ numbers.map { $0 * 2 }
 Replace every emitted element with a constant.
 
 ```swift
-numbers £> "tick"    // emits "tick", "tick", "tick"
-"tick" <£ numbers    // same
+_ = numbers £> "tick"    // emits "tick", "tick", "tick"
+_ = "tick" <£ numbers    // same
 ```
 
 ---
@@ -46,11 +46,11 @@ let fns = AsyncStream<@Sendable (Int) -> Int> { c in
     c.finish()
 }
 
-fns <*> numbers   // emits 2, 3, 4 (each +1), then 10, 20, 30 (each *10)
+_ = fns <*> numbers   // emits 2, 3, 4 (each +1), then 10, 20, 30 (each *10)
 
 // Named functions
-AsyncStream.apply(fns, numbers)
-AsyncStream<Int>.liftA2(+)(numbers, numbers)   // 2, 3, 4, 3, 4, 5, 4, 5, 6
+_ = AsyncStream<Int>.apply(fns, numbers)
+_ = AsyncStream<Int>.liftA2(+)(numbers, numbers)   // 2, 3, 4, 3, 4, 5, 4, 5, 6
 ```
 
 An `AsyncStream` can be iterated only once, but `ap` walks the argument once per function. The argument is therefore drained once into a buffer (when the first function arrives) and replayed for every function: order is kept and nothing is lost, but the argument must be finite. The same mechanism is public as `AsyncStream.replayable(_:)`.
@@ -64,12 +64,12 @@ Derived from bind too: `a *> b = a >>= \_ -> b`, `a <* b = a >>= \x -> fmap (con
 ```swift
 let letters = AsyncStream<String> { c in c.yield("a"); c.yield("b"); c.finish() }
 
-numbers *> letters   // emits "a", "b", "a", "b", "a", "b"
-numbers <* letters   // emits 1, 1, 2, 2, 3, 3
+_ = numbers *> letters   // emits "a", "b", "a", "b", "a", "b"
+_ = numbers <* letters   // emits 1, 1, 2, 2, 3, 3
 
 // Named functions
-AsyncStream<String>.seqRight(numbers, letters)
-AsyncStream<Int>.seqLeft(numbers, letters)
+_ = AsyncStream<String>.seqRight(numbers, letters)
+_ = AsyncStream<Int>.seqLeft(numbers, letters)
 ```
 
 ---
@@ -79,8 +79,8 @@ AsyncStream<Int>.seqLeft(numbers, letters)
 To pair elements positionally (the old `<*>` behaviour), use `zip`. It is a named function only, not the applicative.
 
 ```swift
-AsyncStream<Int>.zip(numbers, letters)   // emits (1, "a"), (2, "b"), stops when either ends
-AsyncStream<Int>.zip(numbers, letters).map { n, s in "\(s)\(n)" }   // zipWith
+_ = AsyncStream<(Int, String)>.zip(numbers, letters)   // emits (1, "a"), (2, "b"), stops when either ends
+_ = AsyncStream<String>.zip(numbers, letters).map { n, s in "\(s)\(n)" }   // zipWith
 ```
 
 ---
@@ -90,10 +90,10 @@ AsyncStream<Int>.zip(numbers, letters).map { n, s in "\(s)\(n)" }   // zipWith
 For each emitted element, produce a new async sequence and flatten the results by ordered concat: each inner sequence runs to completion, in upstream order, before the next upstream element is pulled; nothing is dropped. `>>-` puts the stream on the left; `-<<` puts the function on the left.
 
 ```swift
-numbers >>- { n in AsyncStream<Int> { c in c.yield(n); c.yield(n * 10); c.finish() } }
+_ = numbers >>- { n in AsyncStream<Int> { c in c.yield(n); c.yield(n * 10); c.finish() } }
 // emits 1, 10, 2, 20, 3, 30
 
-{ n in AsyncStream<Int> { c in c.yield(n * 2); c.finish() } } -<< numbers
+_ = { (n: Int) in AsyncStream<Int> { c in c.yield(n * 2); c.finish() } } -<< numbers
 // emits 2, 4, 6
 ```
 
@@ -104,11 +104,11 @@ numbers >>- { n in AsyncStream<Int> { c in c.yield(n); c.yield(n * 10); c.finish
 Compose two functions that each return an `AsyncStream`.
 
 ```swift
-let expand:  (Int) -> AsyncStream<Int> = { n in AsyncStream { c in c.yield(n); c.yield(n + 1); c.finish() } }
-let doubled: (Int) -> AsyncStream<Int> = { n in AsyncStream { c in c.yield(n * 2); c.finish() } }
+let expand: @Sendable (Int) -> AsyncStream<Int> = { n in AsyncStream { c in c.yield(n); c.yield(n + 1); c.finish() } }
+let doubleEach: @Sendable (Int) -> AsyncStream<Int> = { n in AsyncStream { c in c.yield(n * 2); c.finish() } }
 
-let pipeline = expand >=> doubled
-// pipeline(3) emits 6, 8  — expand gives 3 and 4, doubled gives 6 and 8
+let pipeline = expand >=> doubleEach
+// pipeline(3) emits 6, 8: expand gives 3 and 4, doubleEach gives 6 and 8
 ```
 
 ---
@@ -121,9 +121,32 @@ Combine `Reader` and `AsyncStream` to describe environment-dependent async seque
 import DataStructure
 import DataStructureOperators
 
-protocol EventSource {
+struct Event: Sendable {
+    var name: String
+}
+
+protocol EventSource: Sendable {
     func events() -> AsyncStream<Event>
 }
+
+struct LiveEventSource: EventSource {
+    func events() -> AsyncStream<Event> {
+        AsyncStream { c in c.yield(Event(name: "live")); c.finish() }
+    }
+}
+
+struct StubEventSource: EventSource {
+    var stubbed: [Event]
+
+    func events() -> AsyncStream<Event> {
+        AsyncStream { c in
+            stubbed.forEach { c.yield($0) }
+            c.finish()
+        }
+    }
+}
+
+let testEvent = Event(name: "test")
 
 let listen = Reader<any EventSource, AsyncStream<Event>> { source in
     source.events()
@@ -134,10 +157,10 @@ let eventNames = listen.readerT.map { $0.name }
 // ReaderTAsyncStream<any EventSource, String>
 
 // Provide the dependency at the edge (rawValue is the Reader)
-let stream = eventNames.rawValue(LiveEventSource())
+let liveStream = eventNames.rawValue(LiveEventSource())
 
 // Swap for tests
-let testStream = eventNames.rawValue(StubEventSource(events: [testEvent]))
+let testStream = eventNames.rawValue(StubEventSource(stubbed: [testEvent]))
 ```
 
 ---
@@ -156,32 +179,38 @@ AsyncStream emitting optional values. `nil` elements stay `nil`.
 ```swift
 import FP
 
-let stream = AsyncStream<Int?> { c in
+let optStream = AsyncStream<Int?> { c in
     c.yield(1); c.yield(nil); c.yield(3); c.finish()
 }.asyncStreamT   // AsyncStreamTOptional<Int>
 
 // map: transform the inner Optional without affecting the stream layer
-let doubled = stream.map { $0 * 2 }
+let optDoubled = optStream.map { $0 * 2 }
 // emits Optional(2), nil, Optional(6)
 
 // liftA2 (MaybeT ap): each left value over the whole right stream
-let sa = AsyncStream<Int?> { c in c.yield(1); c.yield(nil); c.finish() }.asyncStreamT
-let sb = AsyncStream<Int?> { c in c.yield(10); c.yield(20); c.finish() }.asyncStreamT
-AsyncStreamTOptional<Int>.liftA2(+)(sa, sb)   // emits Optional(11), Optional(21), nil
-AsyncStreamTOptional.apply(fns, sb)           // fns: AsyncStreamTOptional<@Sendable (Int) -> B>
+let optA = AsyncStream<Int?> { c in c.yield(1); c.yield(nil); c.finish() }.asyncStreamT
+let optB = AsyncStream<Int?> { c in c.yield(10); c.yield(20); c.finish() }.asyncStreamT
+_ = AsyncStreamTOptional<Int>.liftA2(+)(optA, optB)   // emits Optional(11), Optional(21), nil
+
+let optFns: AsyncStreamTOptional<@Sendable (Int) -> Int> =
+    AsyncStream<(@Sendable (Int) -> Int)?> { c in c.yield({ $0 + 1 }); c.finish() }.asyncStreamT
+_ = AsyncStreamTOptional<Int>.apply(optFns, optB)
 
 // flatMap: each Optional element produces a new stack
-let bound = stream.flatMap { n in
+let optBound = optStream.flatMap { n in
     AsyncStream<Int?> { $0.yield(Optional(n * 2)); $0.finish() }.asyncStreamT
 }
 // emits Optional(2), nil, Optional(6)
 
 // Operators
-stream >>- { n in AsyncStream<Int?> { $0.yield(n + 1); $0.finish() }.asyncStreamT }
-sa *> sb                 // emits Optional(10), Optional(20), nil
-f >=> g                  // AsyncStreamTOptional.kleisli(f, g), f and g return AsyncStreamTOptional
+_ = optStream >>- { n in AsyncStream<Int?> { $0.yield(n + 1); $0.finish() }.asyncStreamT }
+_ = optA *> optB   // emits Optional(10), Optional(20), nil
 
-bound.rawValue           // AsyncStream<Int?>
+@Sendable func optF(_ n: Int) -> AsyncStreamTOptional<Int> { AsyncStream<Int?> { $0.yield(n + 1); $0.finish() }.asyncStreamT }
+@Sendable func optG(_ n: Int) -> AsyncStreamTOptional<Int> { AsyncStream<Int?> { $0.yield(n * 2); $0.finish() }.asyncStreamT }
+_ = optF >=> optG   // AsyncStreamTOptional.kleisli(optF, optG)
+
+_ = optBound.rawValue   // AsyncStream<Int?>
 ```
 
 `AsyncStreamTOptional`, `AsyncStreamTResult` and `AsyncStreamTEither` are lawful `MaybeT` /
@@ -197,19 +226,19 @@ only.
 ```swift
 import FP
 
-let stream = AsyncStream<[Int]> { c in
+let arrStream = AsyncStream<[Int]> { c in
     c.yield([1, 2]); c.yield([3, 4]); c.finish()
 }.asyncStreamT
 
-stream.map { $0 * 2 }
+_ = arrStream.map { $0 * 2 }
 // emits [2, 4], [6, 8]
 
-// liftA2: each array of sa against every array of sb (ap, not zip), combined with Array.liftA2
-let sa = AsyncStream<[Int]> { $0.yield([1, 2]); $0.finish() }.asyncStreamT
-let sb = AsyncStream<[Int]> { $0.yield([10, 20]); $0.finish() }.asyncStreamT
-AsyncStreamTArray<Int>.liftA2(+)(sa, sb)   // emits [11, 21, 12, 22]
+// liftA2: each array of arrA against every array of arrB (ap, not zip), combined with Array.liftA2
+let arrA = AsyncStream<[Int]> { $0.yield([1, 2]); $0.finish() }.asyncStreamT
+let arrB = AsyncStream<[Int]> { $0.yield([10, 20]); $0.finish() }.asyncStreamT
+_ = AsyncStreamTArray<Int>.liftA2(+)(arrA, arrB)   // emits [11, 21, 12, 22]
 
-{ $0 * 2 } <£> stream   // emits [2, 4], [6, 8]
+_ = { $0 * 2 } <£> arrStream   // emits [2, 4], [6, 8]
 ```
 
 ### `AsyncStreamTResult` (`AsyncStream<Result<A, E>>`)
@@ -219,12 +248,16 @@ AsyncStream emitting Results. `.failure` elements propagate the inner error.
 ```swift
 import FP
 
-let stream = AsyncStream<Result<Int, MyError>> { c in
+enum MyError: Error {
+    case bad
+}
+
+let resStream = AsyncStream<Result<Int, MyError>> { c in
     c.yield(.success(5)); c.yield(.failure(.bad)); c.finish()
 }.asyncStreamT
 
-stream.map { $0 * 2 }  // emits .success(10), .failure(.bad)
-stream.flatMap { n in
+_ = resStream.map { $0 * 2 }  // emits .success(10), .failure(.bad)
+_ = resStream.flatMap { n in
     AsyncStream<Result<String, MyError>> { $0.yield(.success("\(n)")); $0.finish() }.asyncStreamT
 }
 // emits .success("5"), .failure(.bad)
@@ -237,12 +270,12 @@ AsyncStream emitting Either values.
 ```swift
 import DataStructure
 
-let stream = AsyncStream<Either<String, Int>> { c in
+let eitherStream = AsyncStream<Either<String, Int>> { c in
     c.yield(.right(1)); c.yield(.left("err")); c.yield(.right(3)); c.finish()
 }.asyncStreamT
 
-stream.map { $0 * 2 }  // emits .right(2), .left("err"), .right(6)
-stream.flatMap { n in
+_ = eitherStream.map { $0 * 2 }  // emits .right(2), .left("err"), .right(6)
+_ = eitherStream.flatMap { n in
     AsyncStream<Either<String, Int>> { $0.yield(.right(n * 2)); $0.finish() }.asyncStreamT
 }
 // emits .right(2), .left("err"), .right(6)
@@ -259,7 +292,7 @@ the continuation's (`w1 <> w2`). `kleisli` / `>=>` / `<=<` compose such function
 import DataStructure
 
 let steps = AsyncStream<Writer<[String], Int>> { c in c.yield(Writer(1, ["start"])); c.finish() }.asyncStreamT
-steps.flatMap { n in
+_ = steps.flatMap { n in
     AsyncStream { c in c.yield(Writer(n + 1, ["inc"])); c.yield(Writer(n * 2, ["dbl"])); c.finish() }.asyncStreamT
 }
 // emits Writer(2, ["start", "inc"]), Writer(2, ["start", "dbl"])

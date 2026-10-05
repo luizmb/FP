@@ -9,13 +9,13 @@
 ## The problem
 
 ```swift
-struct User  { let id: Int; let name: String }
-struct Order { let id: Int; let userID: Int }
+struct LegacyUser { let id: Int; let name: String }
+struct LegacyOrder { let id: Int; let userID: Int }
 
-func fetchUser(id: Int) -> User { … }
+func fetchLegacyUser(id: Int) -> LegacyUser { LegacyUser(id: id, name: "Alice") }
 
-let order = Order(id: 501, userID: 42)
-fetchUser(id: order.id)       // compiles — but this is the ORDER's id, not the user's!
+let legacyOrder = LegacyOrder(id: 501, userID: 42)
+fetchLegacyUser(id: legacyOrder.id)   // compiles — but this is the ORDER's id, not the user's!
 ```
 
 Nothing here is a type error. `order.id` and `order.userID` are both plain `Int`, so the compiler cannot distinguish "an order identifier" from "a user identifier" — the mistake only surfaces at runtime, if it surfaces at all.
@@ -29,17 +29,17 @@ import DataStructure
 
 enum UserTag {}
 enum OrderTag {}
-typealias UserID  = Newtype<UserTag,  Int>
+typealias UserID = Newtype<UserTag, Int>
 typealias OrderID = Newtype<OrderTag, Int>
 
-struct User  { let id: UserID;  let name: String }
+struct User { let id: UserID; let name: String }
 struct Order { let id: OrderID; let userID: UserID }
 
-func fetchUser(id: UserID) -> User { … }
+func fetchUser(id: UserID) -> User { User(id: id, name: "Alice") }
 
 let order = Order(id: OrderID(501), userID: UserID(42))
 fetchUser(id: order.userID)   // ✅ — a UserID, exactly what fetchUser expects
-fetchUser(id: order.id)       // ❌ compile error — OrderID is not UserID
+// fetchUser(id: order.id)    // ❌ compile error — OrderID is not UserID
 ```
 
 `UserID` and `OrderID` both wrap `Int` and both behave like an `Int` at runtime (there is exactly one stored property, `rawValue`), but `Newtype<UserTag, Int>` and `Newtype<OrderTag, Int>` are different instantiations of the same generic type — Swift treats them as unrelated nominal types, so mixing them is a compile error, not a bug waiting to happen.
@@ -47,8 +47,8 @@ fetchUser(id: order.id)       // ❌ compile error — OrderID is not UserID
 A common convention: skip the separate empty-enum tag and use the owning type itself:
 
 ```swift
-struct User {
-    let id: Newtype<User, Int>
+struct Customer {
+    let id: Newtype<Customer, Int>
     let name: String
 }
 ```
@@ -102,6 +102,7 @@ a < b            // true       — Comparable, delegates to Int's `<`
 Because `FloatingPoint` itself requires `Magnitude == Self` — a constraint `Numeric`'s `Magnitude = RawValue.Magnitude` binding can't satisfy for signed integer raw values — `Newtype` cannot conform to `FloatingPoint` directly. It still recovers the operators you actually reach for (`/`, `squareRoot()`, `rounded(_:)`, `isNaN`, …) as plain extension members when `RawValue: FloatingPoint`:
 
 ```swift
+enum DistanceTag {}
 typealias Meters = Newtype<DistanceTag, Double>
 let distance = Meters(9.0)
 distance.squareRoot()    // Meters(3.0)
@@ -112,10 +113,13 @@ distance.squareRoot()    // Meters(3.0)
 When `RawValue` is a `Sequence`/`Collection`/`BidirectionalCollection`/`RandomAccessCollection`/`RangeReplaceableCollection`, `Newtype` conforms too and iterates/indexes/subscripts straight through:
 
 ```swift
+enum TagListTag {}
 typealias Tags = Newtype<TagListTag, [String]>
 let tags = Tags(["swift", "fp"])
 tags.count           // 2 — via Collection
-for tag in tags { … } // iterates the wrapped Array directly
+for tag in tags {    // iterates the wrapped Array directly
+    print(tag)
+}
 ```
 
 (`MutableCollection` is the one exception — see the source comment in `Newtype+Collection.swift`: the `Collection` subscript witness Swift already committed to can't simultaneously satisfy a settable subscript. Mutate through `.rawValue` instead.)
@@ -125,6 +129,8 @@ for tag in tags { … } // iterates the wrapped Array directly
 Every `ExpressibleBy*Literal` protocol is conditionally conformed, so a `Newtype` can be written as a literal exactly like its raw type — no explicit initializer call:
 
 ```swift
+enum ScoreTag {}
+enum LabelTag {}
 typealias Score = Newtype<ScoreTag, Int>
 let s: Score = 42          // ExpressibleByIntegerLiteral — no `Score(42)` needed
 
@@ -139,6 +145,7 @@ When `RawValue` is a `Semigroup`/`Monoid`, so is `Newtype`, and `<>` (from `Core
 ```swift
 import CoreFPOperators
 
+enum LogTag {}
 typealias Log = Newtype<LogTag, [String]>
 Log(["a"]) <> Log(["b"])    // Log(["a", "b"]) — Array's Semigroup, through the wrapper
 ```
@@ -177,7 +184,7 @@ For background on the underlying idea, see the Haskell Wiki's [Newtype](https://
 
 ## Module
 
-```swift
+```swift-sketch
 import DataStructure   // Newtype type + all retroactive conformances
 import CoreFP           // Newtype.iso (bridge to Iso)
 import CoreFPOperators   // <> for Newtype: Semigroup/Monoid

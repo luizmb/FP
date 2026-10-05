@@ -11,15 +11,15 @@ An `Optional<A>` is either `.some(value)` or `.none`. The operators let you tran
 Apply a function to the wrapped value. `<£>` puts the function on the left; `<&>` puts the optional on the left.
 
 ```swift
-{ $0 * 2 } <£> Optional(5)    // Optional(10)
-{ $0 * 2 } <£> (nil as Int?)  // nil
+let m1 = { $0 * 2 } <£> Optional(5)      // Optional(10)
+let m2 = { $0 * 2 } <£> (nil as Int?)    // nil
 
-Optional(5)       <&> { $0 * 2 }   // Optional(10)
-(nil as Int?)     <&> { $0 * 2 }   // nil
+let m3 = Optional(5) <&> { $0 * 2 }      // Optional(10)
+let m4 = (nil as Int?) <&> { $0 * 2 }    // nil
 
 // Named function
-Optional.fmap { $0 * 2 }(Optional(5))  // Optional(10)
-Optional(5).map { $0 * 2 }             // Optional(10)
+let m5 = Optional.fmap { $0 * 2 }(Optional(5))  // Optional(10)
+let m6 = Optional(5).map { $0 * 2 }             // Optional(10)
 ```
 
 ---
@@ -29,14 +29,14 @@ Optional(5).map { $0 * 2 }             // Optional(10)
 Replace the wrapped value with a constant, keeping the `nil`/non-`nil` structure.
 
 ```swift
-Optional(42) £> "hello"   // Optional("hello")
-(nil as Int?) £> "hello"  // nil
+let c1 = Optional(42) £> "hello"   // Optional("hello")
+let c2 = (nil as Int?) £> "hello"  // nil
 
-"hello" <£ Optional(42)   // Optional("hello")
-"hello" <£ (nil as Int?)  // nil
+let c3 = "hello" <£ Optional(42)   // Optional("hello")
+let c4 = "hello" <£ (nil as Int?)  // nil
 
 // Named function (fmap with const)
-Optional.fmap(const("hello"))(Optional(42))  // Optional("hello")
+let c5 = Optional.fmap(const("hello"))(Optional(42))  // Optional("hello")
 ```
 
 ---
@@ -46,12 +46,15 @@ Optional.fmap(const("hello"))(Optional(42))  // Optional("hello")
 Apply a function that is itself optional to an optional value. Both must be non-`nil`.
 
 ```swift
-Optional({ $0 * 2 }) <*> Optional(5)         // Optional(10)
-Optional({ $0 * 2 }) <*> (nil as Int?)        // nil
-(nil as ((Int) -> Int)?) <*> Optional(5)      // nil
+let double: @Sendable (Int) -> Int = { $0 * 2 }
+let noFunction: (@Sendable (Int) -> Int)? = nil
+
+let a1 = Optional(double) <*> Optional(5)      // Optional(10)
+let a2 = Optional(double) <*> (nil as Int?)    // nil
+let a3 = noFunction <*> Optional(5)            // nil
 
 // Named function
-Optional.apply(Optional({ $0 * 2 }), Optional(5))  // Optional(10)
+let a4 = Optional.apply(Optional(double), Optional(5))  // Optional(10)
 ```
 
 ---
@@ -61,16 +64,16 @@ Optional.apply(Optional({ $0 * 2 }), Optional(5))  // Optional(10)
 Run two optionals in sequence, keeping only one side's value. If either is `nil`, the result is `nil`.
 
 ```swift
-Optional("a") *> Optional("b")        // Optional("b")
-(nil as String?) *> Optional("b")     // nil
-Optional("a") *> (nil as String?)     // nil
+let s1 = Optional("a") *> Optional("b")        // Optional("b")
+let s2 = (nil as String?) *> Optional("b")     // nil
+let s3 = Optional("a") *> (nil as String?)     // nil
 
-Optional("a") <* Optional("b")        // Optional("a")
-Optional("a") <* (nil as String?)     // nil
+let s4 = Optional("a") <* Optional("b")        // Optional("a")
+let s5 = Optional("a") <* (nil as String?)     // nil
 
 // Named functions
-Optional("a").seqRight(Optional("b")) // Optional("b")
-Optional("a").seqLeft(Optional("b"))  // Optional("a")
+let s6 = Optional("a").seqRight(Optional("b")) // Optional("b")
+let s7 = Optional("a").seqLeft(Optional("b"))  // Optional("a")
 ```
 
 ---
@@ -80,20 +83,23 @@ Optional("a").seqLeft(Optional("b"))  // Optional("a")
 Chain operations that each may return `nil`. `>>-` puts the container on the left; `-<<` puts the function on the left.
 
 ```swift
-Optional("42") >>- { Int($0) }                          // Optional(42)
-Optional("??") >>- { Int($0) }                          // nil
-Optional(42) >>- { $0 > 0 ? .some($0 * 2) : nil }      // Optional(84)
-Optional(-1) >>- { $0 > 0 ? .some($0 * 2) : nil }      // nil
+let parseInt: @Sendable (String) -> Int? = { Int($0) }
+let doubleIfPositive: @Sendable (Int) -> Int? = { $0 > 0 ? .some($0 * 2) : nil }
+
+let b1 = Optional("42") >>- parseInt                   // Optional(42)
+let b2 = Optional("??") >>- parseInt                   // nil
+let b3 = Optional(42) >>- doubleIfPositive             // Optional(84)
+let b4 = Optional(-1) >>- doubleIfPositive             // nil
 
 // Chained
-Optional("42") >>- { Int($0) } >>- { $0 > 0 ? .some($0) : nil }  // Optional(42)
+let b5 = Optional("42") >>- parseInt >>- doubleIfPositive  // Optional(84)
 
-{ Int($0) } -<< Optional("42")   // Optional(42)
-{ Int($0) } -<< Optional("??")   // nil
+let b6 = parseInt -<< Optional("42")   // Optional(42)
+let b7 = parseInt -<< Optional("??")   // nil
 
 // Named function
-Optional.bind { Int($0) }(Optional("42"))  // Optional(42)
-Optional("42").flatMap { Int($0) }         // Optional(42)
+let b8 = Optional.bind(parseInt)(Optional("42"))  // Optional(42)
+let b9 = Optional("42").flatMap { Int($0) }       // Optional(42)
 ```
 
 ---
@@ -103,22 +109,21 @@ Optional("42").flatMap { Int($0) }         // Optional(42)
 Compose two functions that each return an `Optional`, producing a single function.
 
 ```swift
-let parseInt:    (String) -> Int? = { Int($0) }
-let toPositive:  (Int)    -> Int? = { $0 > 0 ? $0 : nil }
-let doublePositive: (Int) -> Int? = { $0 > 0 ? $0 * 2 : nil }
+let toPositive: @Sendable (Int) -> Int? = { $0 > 0 ? $0 : nil }
+let doublePositive: @Sendable (Int) -> Int? = { $0 > 0 ? $0 * 2 : nil }
 
 let parsePositive = parseInt >=> toPositive
-parsePositive("42")   // Optional(42)
-parsePositive("-1")   // nil
-parsePositive("??")   // nil
+let k1 = parsePositive("42")   // Optional(42)
+let k2 = parsePositive("-1")   // nil
+let k3 = parsePositive("??")   // nil
 
 // Three-way composition
-let pipeline = parseInt >=> toPositive >=> doublePositive
-pipeline("21")   // Optional(42)
-pipeline("-1")   // nil
+let kleisliPipeline = parseInt >=> toPositive >=> doublePositive
+let k4 = kleisliPipeline("21")   // Optional(42)
+let k5 = kleisliPipeline("-1")   // nil
 
 // Named function
-Optional.kleisli(parseInt, toPositive)("42")  // Optional(42)
+let k6 = Optional.kleisli(parseInt, toPositive)("42")  // Optional(42)
 ```
 
 ---
@@ -128,9 +133,9 @@ Optional.kleisli(parseInt, toPositive)("42")  // Optional(42)
 Return the first non-`nil` value.
 
 ```swift
-(nil as Int?) <|> Optional(3)    // Optional(3)
-Optional(1)   <|> Optional(3)    // Optional(1)
-(nil as Int?) <|> (nil as Int?)  // nil
+let alt1 = (nil as Int?) <|> Optional(3)    // Optional(3)
+let alt2 = Optional(1) <|> Optional(3)     // Optional(1)
+let alt3 = (nil as Int?) <|> (nil as Int?) // nil
 ```
 
 ---
@@ -142,46 +147,46 @@ Optional(1)   <|> Optional(3)    // Optional(1)
 `withDefault` is a curried function for point-free composition. It replaces `nil` with a fallback value:
 
 ```swift
-withDefault(0)(Optional(42))   // 42
-withDefault(0)(nil)            // 0
+let w1 = withDefault(0)(Optional(42))   // 42
+let w2 = withDefault(0)(nil)            // 0
 
-// Curried version — useful in pipelines
-let safeAge: (String) -> Int = { Int($0) } >>> withDefault(0)
-safeAge("25")   // 25
-safeAge("??")   // 0
+// Curried version, useful in pipelines
+let safeAge: @Sendable (String) -> Int = parseInt >>> withDefault(0)
+let w3 = safeAge("25")   // 25
+let w4 = safeAge("??")   // 0
 
-// Two-argument version — provides a chain of fallbacks
-withDefault(nil)(Optional(42))  // Optional(42)
-withDefault(nil)(nil as Int?)   // nil  (fallback is itself nil)
+// Two-argument version, provides a chain of fallbacks
+let w5 = withDefault(nil)(Optional(42))  // Optional(42)
+let w6 = withDefault(nil)(nil as Int?)   // nil  (fallback is itself nil)
 ```
 
 ### `fold` — collapse to a single value
 
 ```swift
-Optional(5).fold(onNone: 0, onSome: { $0 * 2 })    // 10
-(nil as Int?).fold(onNone: 0, onSome: { $0 * 2 })  // 0
+let f1 = Optional(5).fold(onNone: 0, onSome: { $0 * 2 })    // 10
+let f2 = (nil as Int?).fold(onNone: 0, onSome: { $0 * 2 })  // 0
 
 // Static variant for point-free composition
-let describe: (Int?) -> String = Optional.fold(onNone: "nothing", onSome: { "value: \($0)" })
-describe(Optional(42))   // "value: 42"
-describe(nil)            // "nothing"
+let describe: @Sendable (Int?) -> String = Optional<Int>.fold(onNone: "nothing", onSome: { "value: \($0)" })
+let f3 = describe(Optional(42))   // "value: 42"
+let f4 = describe(nil)            // "nothing"
 ```
 
 ### `foldMap` — map to a Monoid, then combine
 
 ```swift
-Optional(3).foldMap { Int.Monoids.Sum($0) }       // Sum(3)
-(nil as Int?).foldMap { Int.Monoids.Sum($0) }     // Sum(0)  — Monoid identity
+let fm1 = Optional(3).foldMap { Int.Monoids.Sum($0) }       // Sum(3)
+let fm2 = (nil as Int?).foldMap { Int.Monoids.Sum($0) }     // Sum(0)  — Monoid identity
 
-Optional("hello").foldMap { [$0] }   // ["hello"]
-(nil as String?).foldMap { [$0] }    // []  — Array identity
+let fm3 = Optional("hello").foldMap { [$0] }   // ["hello"]
+let fm4 = (nil as String?).foldMap { [$0] }    // []  — Array identity
 ```
 
 ### `toList` — zero-or-one element list
 
 ```swift
-Optional(42).toList   // [42]
-(nil as Int?).toList  // []
+let l1 = Optional(42).toList   // [42]
+let l2 = (nil as Int?).toList  // []
 ```
 
 ---
@@ -191,9 +196,9 @@ Optional(42).toList   // [42]
 Applies a predicate. Returns `nil` if the predicate fails:
 
 ```swift
-Optional(5).filter { $0 > 0 }    // Optional(5)
-Optional(-1).filter { $0 > 0 }   // nil
-(nil as Int?).filter { $0 > 0 }  // nil
+let fi1 = Optional(5).filter { $0 > 0 }    // Optional(5)
+let fi2 = Optional(-1).filter { $0 > 0 }   // nil
+let fi3 = (nil as Int?).filter { $0 > 0 }  // nil
 ```
 
 ---
@@ -203,10 +208,10 @@ Optional(-1).filter { $0 > 0 }   // nil
 Run a closure if the optional is non-nil, with an optional fallback for the `nil` case:
 
 ```swift
-Optional(42).then { print("Got \($0)") }           // prints "Got 42", returns Optional(42)
-(nil as Int?).then { print("Got \($0)") }           // nothing printed, returns nil
+let t1 = Optional(42).then { print("Got \($0)") }           // prints "Got 42", returns Optional(42)
+let t2 = (nil as Int?).then { print("Got \($0)") }          // nothing printed, returns nil
 
-Optional(42).then({ print("got: \($0)") }, otherwise: { print("nothing") })
+let t3 = Optional(42).then({ print("got: \($0)") }, otherwise: { print("nothing") })
 // prints "got: 42"
 ```
 
@@ -217,17 +222,17 @@ Optional(42).then({ print("got: \($0)") }, otherwise: { print("nothing") })
 Available when `Wrapped` is a `Collection`:
 
 ```swift
-(nil as [Int]?).isNilOrEmpty      // true
-Optional([]).isNilOrEmpty          // true
-Optional([1, 2, 3]).isNilOrEmpty  // false
+let e1 = (nil as [Int]?).isNilOrEmpty      // true
+let e2 = Optional([] as [Int]).isNilOrEmpty // true
+let e3 = Optional([1, 2, 3]).isNilOrEmpty  // false
 
-(nil as String?).isNilOrEmpty     // true
-Optional("").isNilOrEmpty          // true
-Optional("hello").isNilOrEmpty    // false
+let e4 = (nil as String?).isNilOrEmpty     // true
+let e5 = Optional("").isNilOrEmpty          // true
+let e6 = Optional("hello").isNilOrEmpty    // false
 
 // Optional(ifEmpty:) — wrap a collection, returning nil if empty
-Optional(ifEmpty: [])      // nil
-Optional(ifEmpty: [1, 2])  // Optional([1, 2])
+let e7 = Optional(ifEmpty: [] as [Int])    // nil
+let e8 = Optional(ifEmpty: [1, 2])         // Optional([1, 2])
 ```
 
 ---
@@ -239,16 +244,16 @@ Useful for **inverting nested structures** — turning an `Optional` wrapping an
 
 ```swift
 // sequence :: [a]? -> [a?]   — Optional<Array> into Array<Optional>
-Optional([1, 2, 3]).sequence()  // [Optional(1), Optional(2), Optional(3)]
-(nil as [Int]?).sequence()      // [nil]  (single-element array containing nil)
+let tr1 = Optional([1, 2, 3]).sequence()  // [Optional(1), Optional(2), Optional(3)]
+let tr2 = (nil as [Int]?).sequence()      // [nil]  (single-element array containing nil)
 
 // traverse :: (a -> [b]) -> a? -> [b?]   — map and invert at once
-Optional("hi").traverse { [$0, $0 + "!"] }   // [Optional("hi"), Optional("hi!")]
-(nil as String?).traverse { [$0, $0 + "!"] } // [nil]
+let tr3 = Optional("hi").traverse { [$0, $0 + "!"] }   // [Optional("hi"), Optional("hi!")]
+let tr4 = (nil as String?).traverse { [$0, $0 + "!"] } // [nil]
 
 // sequence :: Result<a,e>? -> Result<a?,e>   — Optional<Result> into Result<Optional>
-Optional(Result<Int, Error>.success(42)).sequence()  // .success(Optional(42))
-(nil as Result<Int, Error>?).sequence()              // .success(nil)
+let tr5 = Optional(Result<Int, Error>.success(42)).sequence()  // .success(Optional(42))
+let tr6 = (nil as Result<Int, Error>?).sequence()              // .success(nil)
 ```
 
 ---
@@ -270,23 +275,23 @@ import FP
 let xs: [Int]? = [1, 2, 3]
 
 // map: map inside the Array
-xs.optionalT.map { $0 * 2 }.rawValue                // Optional([2, 4, 6])
-(nil as [Int]?).optionalT.map { $0 * 2 }.rawValue   // nil
+let ot1 = xs.optionalT.map { $0 * 2 }.rawValue                // Optional([2, 4, 6])
+let ot2 = (nil as [Int]?).optionalT.map { $0 * 2 }.rawValue   // nil
 
 // liftA2: combine two [A]? values
-OptionalTArray<Int>.liftA2(+)(OptionalTArray([1, 2]), OptionalTArray([10, 20])).rawValue
+let ot3 = OptionalTArray<Int>.liftA2(+)(OptionalTArray([1, 2]), OptionalTArray([10, 20])).rawValue
 // Optional([11, 21, 12, 22]) (Array.liftA2 under Optional)
 
 // flatMap: each element produces [B]?; nil in any result collapses to nil
-xs.optionalT.flatMap { n in OptionalTArray([n, n * 10]) }.rawValue   // Optional([1, 10, 2, 20, 3, 30])
-xs.optionalT.flatMap { n in OptionalTArray(n > 1 ? [n, n * 10] : nil) }.rawValue  // nil
+let ot4 = xs.optionalT.flatMap { n in OptionalTArray([n, n * 10]) }.rawValue   // Optional([1, 10, 2, 20, 3, 30])
+let ot5 = xs.optionalT.flatMap { n in OptionalTArray(n > 1 ? [n, n * 10] : nil) }.rawValue  // nil
 
 // Operators
-{ $0 * 2 } <£> xs.optionalT                         // wraps Optional([2, 4, 6])
-xs.optionalT >>- { n in OptionalTArray([n, n * 10]) }
+let ot6 = { $0 * 2 } <£> xs.optionalT                         // wraps Optional([2, 4, 6])
+let ot7 = xs.optionalT >>- { n in OptionalTArray([n, n * 10]) }
 
 // Escape hatch: the whole [Int]? (Compose-like stack, named by the outer layer)
-xs.optionalT.mapOptionalT { $0 ?? [] }
+let ot8 = xs.optionalT.mapOptionalT { $0 ?? [] }
 ```
 
 ### `OptionalTResult` (`Result<A, E>?`)
@@ -296,21 +301,23 @@ Optional wrapping a Result. `nil` propagates; `.some(.failure(e))` also propagat
 ```swift
 import FP
 
-let r: Result<Int, MyError>? = .success(5)
-r.optionalT.map { $0 * 2 }.rawValue      // Optional(.success(10))
+enum MyError: Error { case bad }
 
-let fail: Result<Int, MyError>? = .failure(.bad)
-fail.optionalT.map { $0 * 2 }.rawValue   // Optional(.failure(.bad)), error preserved
+let okResult: Result<Int, MyError>? = .success(5)
+let ot9 = okResult.optionalT.map { $0 * 2 }.rawValue      // Optional(.success(10))
 
-(nil as Result<Int, MyError>?).optionalT.map { $0 * 2 }.rawValue  // nil
+let failResult: Result<Int, MyError>? = .failure(.bad)
+let ot10 = failResult.optionalT.map { $0 * 2 }.rawValue   // Optional(.failure(.bad)), error preserved
+
+let ot11 = (nil as Result<Int, MyError>?).optionalT.map { $0 * 2 }.rawValue  // nil
 
 // flatMap: nil or failure short-circuit
-r.optionalT.flatMap { n in OptionalTResult(n > 0 ? .success(n * 2) : nil) }.rawValue  // Optional(.success(10))
-r.optionalT.flatMap { _ in OptionalTResult<MyError, Int>(nil) }.rawValue            // nil
+let ot12 = okResult.optionalT.flatMap { n in OptionalTResult<MyError, Int>(n > 0 ? .success(n * 2) : nil) }.rawValue  // Optional(.success(10))
+let ot13 = okResult.optionalT.flatMap { _ in OptionalTResult<MyError, Int>(nil) }.rawValue            // nil
 
 // Operators
-{ $0 * 2 } <£> r.optionalT                       // wraps Optional(.success(10))
-r.optionalT >>- { n in .pure("\(n)") }           // wraps Optional(.success("5"))
+let ot14 = { $0 * 2 } <£> okResult.optionalT                       // wraps Optional(.success(10))
+let ot15 = okResult.optionalT >>- { n in OptionalTResult<MyError, String>.pure("\(n)") }  // wraps Optional(.success("5"))
 ```
 
 ### `OptionalTEither` (`Either<L, A>?`)
@@ -320,14 +327,14 @@ Optional wrapping an Either. `nil` propagates; `.some(.left(l))` also propagates
 ```swift
 import DataStructure
 
-let e: Either<String, Int>? = .right(5)
-e.optionalT.map { $0 * 2 }.rawValue                         // Optional(.right(10))
-e.optionalT.flatMap { n in .pure(n * 2) }.rawValue          // Optional(.right(10))
+let rightOpt: Either<String, Int>? = .right(5)
+let ot16 = rightOpt.optionalT.map { $0 * 2 }.rawValue                         // Optional(.right(10))
+let ot17 = rightOpt.optionalT.flatMap { n in .pure(n * 2) }.rawValue          // Optional(.right(10))
 
-(nil as Either<String, Int>?).optionalT.map { $0 * 2 }.rawValue  // nil
+let ot18 = (nil as Either<String, Int>?).optionalT.map { $0 * 2 }.rawValue  // nil
 
-let left: Either<String, Int>? = .left("err")
-left.optionalT.map { $0 * 2 }.rawValue                      // Optional(.left("err"))
+let leftOpt: Either<String, Int>? = .left("err")
+let ot19 = leftOpt.optionalT.map { $0 * 2 }.rawValue                      // Optional(.left("err"))
 ```
 
 The other Optional-outer stacks are `OptionalTWriter` (`Writer<W, A>?`), `OptionalTNonEmpty`

@@ -2,7 +2,7 @@
 
 `Zipper<A>` is a focused, navigable non-empty sequence — the classic "list zipper": a sequence together with a distinguished cursor position (`focus`) and O(1) navigation one step in either direction. It's the canonical data structure for walking back and forth over a sequence with a cursor, keeping every earlier position as a valid value.
 
-```swift
+```swift-sketch
 import DataStructure
 
 public struct Zipper<A> {
@@ -63,7 +63,7 @@ let neighborSums = z.extend { zipper in
 }
 ```
 
-`duplicate()` builds one zipper per position, each sharing the same `elements` buffer and differing only in `focusedIndex` (O(n) total) — no `Monoid` constraint required, since there's nothing to combine, only positions to visit. This is the same shape as `Reader`/`Writer`'s comonad instances, but simpler: those need an inner `Monoid` to accumulate a log or an environment, while `Zipper`'s "context" is just its own left/right neighbors.
+`duplicate()` builds one zipper per position, each sharing the same `elements` buffer and differing only in `focusedIndex` (O(n) total) — no `Monoid` constraint required, since there's nothing to combine, only positions to visit. `Zipper`'s "context" is just its own left/right neighbors. Only the traced comonad (`Reader` with a `Monoid` environment) needs a `Monoid` to combine positions. `Writer` as a comonad is Haskell's `Env` comonad, which needs none (this library still requires `W: Monoid` there).
 
 `coflatMap` is provided as an alias for `extend`, matching the naming some Haskell comonad libraries use alongside the categorically-named `extend`.
 
@@ -73,9 +73,9 @@ A `Zipper` is, structurally, a `NonEmpty` with a cursor. Converting between them
 
 ```swift
 let ne = NonEmpty(head: 1, tail: [2, 3, 4])
-let z = Zipper(ne)   // focus == 1 (the head), rest placed to the right
+let fromNonEmpty = Zipper(ne)   // focus == 1 (the head), rest placed to the right
 
-z.moveRight()?.toNonEmpty()   // NonEmpty(head: 1, tail: [2, 3, 4]) — full sequence,
+fromNonEmpty.moveRight()?.toNonEmpty()   // NonEmpty(head: 1, tail: [2, 3, 4]) — full sequence,
                               // regardless of where the focus currently sits
 ```
 

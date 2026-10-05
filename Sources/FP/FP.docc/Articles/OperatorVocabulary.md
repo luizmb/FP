@@ -8,11 +8,11 @@ short guide to picking the right one.
 ```swift
 import FP
 
-let parsed = "42"
-    |> Int.init        // Optional<Int>
-    <£> { $0 * 2 }      // functor map → Optional<Int>
-    ?? 0                // 84
+let parsed = ({ $0 * 2 } <£> Int("42")) ?? 0   // 84
 ```
+
+The parentheses matter: `??` binds tighter than `<£>`, so without them `{ $0 * 2 } <£> Int("42") ?? 0`
+would parse as `{ $0 * 2 } <£> (Int("42") ?? 0)`.
 
 ---
 
@@ -32,7 +32,7 @@ let parsed = "42"
 | `>=>` | `>=>` | Kleisli composition, left to right | `KleisliCompositionRight` | right |
 | `<=<` | `<=<` | Kleisli composition, right to left | `KleisliCompositionRight` | right |
 | `->>` | `=>>` | Comonad extend/`coflatMap`, container left | `MonadBindLeft` | left |
-| `<<-` | flip of `=>>` | Comonad extend/`coflatMap`, function left | `KleisliCompositionRight` | right |
+| `<<-` | `<<=` | Comonad extend/`coflatMap`, function left | `KleisliCompositionRight` | right |
 | `<>` | `<>` | Semigroup/Monoid append | `ConcatPrecedence` | right |
 | `<\|>` | `<\|>` | Alternative / first-success fallback | `AlternativePrecedence` | left |
 | `>>>` | `>>>` (`Control.Category`) | Function/optic composition, left to right | `FunctionCompositionForward` | right |
@@ -40,7 +40,7 @@ let parsed = "42"
 | `<\|` | `$` | Function application, function on the left | `LowPrecedenceFunctionCallRight` | right |
 | `\|>` | — (F#/Elixir pipeline) | Function application, value on the left (pipeline) | `LowPrecedenceFunctionCallLeft` | left |
 | `^` (prefix) | — | Lift a `KeyPath`/`WritableKeyPath` into a `Lens` (or a `@Sendable` getter) | n/a (prefix) | n/a |
-| `≅` | — | Flipped pattern match / range membership (`value ≅ range`) | `ComparisonPrecedence` (stdlib) | none (non-associative) |
+| `≅` | — | Range membership (`value ≅ range`, the five range types, `T: Comparable`) | `ComparisonPrecedence` (stdlib) | none (non-associative) |
 | `±` / `+/-` | — | Symmetric range construction, `center ± delta` | `RangeFormationPrecedence` (stdlib) | none (non-associative) |
 
 A few things worth calling out explicitly:
@@ -56,14 +56,27 @@ A few things worth calling out explicitly:
   `AdditionPrecedence`, and a second declaration with another precedence group is an
   "ambiguous operator declarations" error, so a power `^` would bind like `+`
   (`2.0 * 3.0 ^ 2 == 36`). Use the named function `power(_:_:)` for every numeric type.
-- **`≅` and `±`/`+/-` are not in Haskell.** `≅` is a flipped alias of Swift's pattern-matching
-  `~=` (`value ≅ range` reads better than `range ~= value` at a call site); `±`/`+/-` build a
+- **`≅` and `±`/`+/-` are not in Haskell.** `≅` is range membership, `value ≅ range`, with
+  overloads for `ClosedRange`, `Range`, `PartialRangeFrom`, `PartialRangeThrough` and
+  `PartialRangeUpTo` (it is not a general alias of `~=`); `±`/`+/-` build a
   `ClosedRange` from a center and a delta (`5.0 ± 0.5` → `4.5...5.5`), generalized over
   `Strideable` so it also works for `Date`.
 - **`•` does not exist.** Some of this library's older internal notes list a third composition
   spelling, `•` (meant to mirror Haskell's `.`), alongside `>>>`/`<<<`. It was never implemented —
   there is no `infix operator •` anywhere in `CoreFPOperators`. Function composition in this
   library is `>>>`/`<<<` only.
+
+### Removed in 3.0
+
+Some operators from 2.x are gone, each with a plain replacement:
+
+| Removed | Use instead |
+|---|---|
+| `a ++ b` | `a <> b` |
+| `f £ x` (infix) | `f <\| x` |
+| `x ^ n` (infix power) | `power(x, n)` |
+| `f <£^> x`, `x <&^> f` | `f <£> x.readerT` (wrap the value in its stack, then use `<£>`) |
+| transformer `£>` / `<£` on a bare nested value | `stack £> v` on the stack struct |
 
 ---
 
@@ -73,11 +86,11 @@ Highest to lowest, with Swift standard-library groups included for context (thei
 fixed and cannot be changed; the custom groups slot around them):
 
 ```
-9     FunctionCompositionForward      >>>                     right
+9.5   FunctionCompositionForward      >>>                     right
 9     FunctionCompositionBackwards    <<<                     right
 8.5   BitwiseShiftPrecedence          (stdlib: >>, <<)
 7     MultiplicationPrecedence        (stdlib: *, /, %)
-6     ConcatPrecedence                <>                      right
+6.5   ConcatPrecedence                <>                      right
 6     AdditionPrecedence              (stdlib: +, -, |, ^)                 left
 4.8   RangeFormationPrecedence        (stdlib: ..., ..<)  ±  +/-
 4.5   CastingPrecedence               (stdlib: as?)
@@ -87,13 +100,18 @@ fixed and cannot be changed; the custom groups slot around them):
 3     AlternativePrecedence           <|>                                  left
 3     LogicalConjunctionPrecedence    (stdlib: &&)
 2     LogicalDisjunctionPrecedence    (stdlib: ||)
-1     KleisliCompositionRight         >=>  <=<  -<<  <<-                   right
+1.5   KleisliCompositionRight         >=>  <=<  -<<  <<-                   right
 1     MonadBindLeft                   >>-  <&>  ->>                        left
 0.5   TernaryPrecedence               (stdlib: ?:)
 0     LowPrecedenceFunctionCallRight  <|                                   right
 0     LowPrecedenceFunctionCallLeft   |>                                   left
 -1    AssignmentPrecedence            (stdlib: =)
 ```
+
+The numbers are only a reading aid, the real ordering is the `higherThan`/`lowerThan` chain in
+`PrecedenceGroups.swift`. Note that `>>>` is higher than `<<<`, so mixing them without parentheses
+compiles and groups `>>>` first (`f >>> g <<< h` is `(f >>> g) <<< h`); parenthesise anyway.
+`<>` binds tighter than `+`, and `>=>`/`<=<`/`-<<` bind tighter than `>>-`/`<&>`.
 
 `FunctorOps` and `ComparisonPrecedence` sit at the same numeric level (4) because `FunctorOps` is
 declared `lowerThan: NilCoalescingPrecedence, higherThan: AlternativePrecedence` — the same slot
@@ -148,7 +166,7 @@ counterpart, `Data.Functor`'s `<$>`) despite both being "functor map."
   `<<<`.
 - **Apply a function to a value with minimal parentheses** → `<|` (function first) or `|>`
   (value first, pipeline style).
-- **Extend a comonadic computation over its whole context** (`Writer`, `Reader` with a `Monoid`
+- **Extend a comonadic computation over its whole context** (`NonEmpty`, `Zipper`, `Writer`, `Reader` with a `Monoid`
   environment) → `->>` / `<<-`.
 - **Check membership without writing `range ~= value` backwards, or build a tolerance range** →
   `≅` / `±` (`+/-`).
@@ -161,6 +179,10 @@ Because this whole article *is* the Haskell mapping (the table above gives the `
 `Control.Applicative` / `Control.Monad` / `Control.Category` equivalent for nearly every symbol),
 the more useful note here is where behavior **diverges** from Haskell rather than where it lines
 up.
+
+**`>>>` and `<<<` bind like Haskell's `.`, not like `Control.Category`.** In Haskell they are
+`infixr 1`, here they are the highest custom precedence (9.5 and 9), the same slot Haskell gives
+`.` (`infixr 9`).
 
 **`&&` and `||` are left-associative here, where Haskell's are right-associative.** Haskell
 declares `infixr 3 &&` and `infixr 2 ||`; Swift's standard library declares

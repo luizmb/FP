@@ -19,15 +19,15 @@ func divide(_ a: Double, by b: Double) -> Either<String, Double> {
 Apply a function to the right value. `<£>` puts the function on the left; `<&>` puts the either on the left.
 
 ```swift
-{ $0 * 2 } <£> Either<String, Int>.right(5)       // .right(10)
-{ $0 * 2 } <£> Either<String, Int>.left("error")  // .left("error")
+let mapped1 = { $0 * 2 } <£> Either<String, Int>.right(5)       // .right(10)
+let mapped2 = { $0 * 2 } <£> Either<String, Int>.left("error")  // .left("error")
 
-Either<String, Int>.right(5)      <&> { $0 * 2 }  // .right(10)
-Either<String, Int>.left("error") <&> { $0 * 2 }  // .left("error")
+let mapped3 = Either<String, Int>.right(5) <&> { $0 * 2 }       // .right(10)
+let mapped4 = Either<String, Int>.left("error") <&> { $0 * 2 }  // .left("error")
 
 // Named function
-Either<String, Int>.fmap { $0 * 2 }(.right(5))  // .right(10)
-Either.right(5).mapRight { $0 * 2 }             // .right(10)
+let mapped5 = Either<String, Int>.fmap { $0 * 2 }(.right(5))  // .right(10)
+let mapped6 = Either<String, Int>.right(5).mapRight { $0 * 2 }  // .right(10)
 ```
 
 ---
@@ -37,10 +37,10 @@ Either.right(5).mapRight { $0 * 2 }             // .right(10)
 Replace the right value with a constant. Left values pass through unchanged.
 
 ```swift
-Either<String, Int>.right(42) £> "done"    // .right("done")
-Either<String, Int>.left("err") £> "done"  // .left("err")
+let replaced1 = Either<String, Int>.right(42) £> "done"    // .right("done")
+let replaced2 = Either<String, Int>.left("err") £> "done"  // .left("err")
 
-"done" <£ Either<String, Int>.right(42)    // .right("done")
+let replaced3 = "done" <£ Either<String, Int>.right(42)    // .right("done")
 ```
 
 ---
@@ -50,12 +50,15 @@ Either<String, Int>.left("err") £> "done"  // .left("err")
 Apply a function in an `Either` to a value in an `Either`. Both must be `.right`.
 
 ```swift
-Either<String, (Int) -> Int>.right({ $0 * 2 }) <*> .right(5)      // .right(10)
-Either<String, (Int) -> Int>.right({ $0 * 2 }) <*> .left("error") // .left("error")
-Either<String, (Int) -> Int>.left("no fn")      <*> .right(5)     // .left("no fn")
+typealias Doubler = @Sendable (Int) -> Int
+let double: Doubler = { $0 * 2 }
+
+let applied1 = Either<String, Doubler>.right(double) <*> Either<String, Int>.right(5)       // .right(10)
+let applied2 = Either<String, Doubler>.right(double) <*> Either<String, Int>.left("error")  // .left("error")
+let applied3 = Either<String, Doubler>.left("no fn") <*> Either<String, Int>.right(5)       // .left("no fn")
 
 // Named function
-Either.apply(.right({ $0 * 2 }), .right(5))  // .right(10)
+let applied4 = Either<String, Int>.apply(.right(double), .right(5))  // .right(10)
 ```
 
 ---
@@ -65,16 +68,16 @@ Either.apply(.right({ $0 * 2 }), .right(5))  // .right(10)
 Run two eithers in sequence, keeping only one side's value. Any left propagates.
 
 ```swift
-Either<String, Int>.right(1) *> .right(2)      // .right(2)
-Either<String, Int>.left("err") *> .right(2)   // .left("err")
-Either<String, Int>.right(1) *> .left("err")   // .left("err")
+let seq1 = Either<String, Int>.right(1) *> Either<String, Int>.right(2)      // .right(2)
+let seq2 = Either<String, Int>.left("err") *> Either<String, Int>.right(2)   // .left("err")
+let seq3 = Either<String, Int>.right(1) *> Either<String, Int>.left("err")   // .left("err")
 
-Either<String, Int>.right(1) <* .right(2)      // .right(1)
-Either<String, Int>.right(1) <* .left("err")   // .left("err")
+let seq4 = Either<String, Int>.right(1) <* Either<String, Int>.right(2)      // .right(1)
+let seq5 = Either<String, Int>.right(1) <* Either<String, Int>.left("err")   // .left("err")
 
 // Named functions
-Either.right(1).seqRight(.right(2))  // .right(2)
-Either.right(1).seqLeft(.right(2))   // .right(1)
+let seq6 = Either<String, Int>.right(1).seqRight(Either<String, Int>.right(2))  // .right(2)
+let seq7 = Either<String, Int>.right(1).seqLeft(Either<String, Int>.right(2))   // .right(1)
 ```
 
 ---
@@ -84,23 +87,23 @@ Either.right(1).seqLeft(.right(2))   // .right(1)
 Chain operations that each may produce a left. `>>-` puts the container on the left; `-<<` puts the function on the left.
 
 ```swift
-func parse(_ s: String) -> Either<String, Int> {
-    Int(s).map(Either.right) ?? .left("Not a number: \(s)")
+@Sendable func parse(_ s: String) -> Either<String, Int> {
+    Int(s).map(Either<String, Int>.right) ?? .left("Not a number: \(s)")
 }
-func validate(_ n: Int) -> Either<String, Int> {
+@Sendable func validate(_ n: Int) -> Either<String, Int> {
     n > 0 ? .right(n) : .left("Must be positive: \(n)")
 }
 
-Either.right("42") >>- parse >>- validate    // .right(42)
-Either.right("-1") >>- parse >>- validate    // .left("Must be positive: -1")
-Either.right("??") >>- parse                 // .left("Not a number: ??")
+let bound1 = Either<String, String>.right("42") >>- parse >>- validate    // .right(42)
+let bound2 = Either<String, String>.right("-1") >>- parse >>- validate    // .left("Must be positive: -1")
+let bound3 = Either<String, String>.right("??") >>- parse                 // .left("Not a number: ??")
 
-validate -<< Either.right(42)   // .right(42)
-validate -<< Either.right(-1)   // .left("Must be positive: -1")
+let bound4 = validate -<< Either<String, Int>.right(42)   // .right(42)
+let bound5 = validate -<< Either<String, Int>.right(-1)   // .left("Must be positive: -1")
 
 // Named function
-Either.right("42").flatMap(parse)  // .right(42)
-Either.bind(validate)(.right(42))  // .right(42)
+let bound6 = Either<String, String>.right("42").flatMap(parse)  // .right(42)
+let bound7 = Either<String, Int>.bind(validate)(.right(42))     // .right(42)
 ```
 
 ---
@@ -111,12 +114,12 @@ Compose two functions that each return an `Either`.
 
 ```swift
 let pipeline = parse >=> validate
-pipeline("42")   // .right(42)
-pipeline("-1")   // .left("Must be positive: -1")
-pipeline("??")   // .left("Not a number: ??")
+let piped1 = pipeline("42")   // .right(42)
+let piped2 = pipeline("-1")   // .left("Must be positive: -1")
+let piped3 = pipeline("??")   // .left("Not a number: ??")
 
 // Named function
-Either.kleisli(parse, validate)("42")  // .right(42)
+let piped4 = Either<String, Int>.kleisli(parse, validate)("42")  // .right(42)
 ```
 
 ---
@@ -126,9 +129,9 @@ Either.kleisli(parse, validate)("42")  // .right(42)
 Return the first `.right`, or the last `.left` if both fail.
 
 ```swift
-Either<String, Int>.left("a") <|> .right(3)    // .right(3)
-Either<String, Int>.right(1)  <|> .right(3)    // .right(1)
-Either<String, Int>.left("a") <|> .left("b")   // .left("b")
+let alt1 = Either<String, Int>.left("a") <|> .right(3)    // .right(3)
+let alt2 = Either<String, Int>.right(1) <|> .right(3)     // .right(1)
+let alt3 = Either<String, Int>.left("a") <|> .left("b")   // .left("b")
 ```
 
 ---
@@ -138,19 +141,19 @@ Either<String, Int>.left("a") <|> .left("b")   // .left("b")
 `Either` supports mapping either side independently.
 
 ```swift
-// mapLeft — transform the left (failure) side
-Either<String, Int>.left("error").mapLeft { $0.uppercased() }  // .left("ERROR")
-Either<String, Int>.right(42).mapLeft { $0.uppercased() }      // .right(42)
+// mapLeft: transform the left (failure) side
+let left1 = Either<String, Int>.left("error").mapLeft { $0.uppercased() }  // .left("ERROR")
+let left2 = Either<String, Int>.right(42).mapLeft { $0.uppercased() }      // .right(42)
 
-// bimap — transform both sides at once
-Either<String, Int>.right(42).bimap(
-    lf: { $0.uppercased() },
-    rf: { $0 * 2 }
+// bimap: transform both sides at once
+let both1 = Either<String, Int>.right(42).bimap(
+    { $0.uppercased() },
+    { $0 * 2 }
 )  // .right(84)
 
-Either<String, Int>.left("error").bimap(
-    lf: { $0.uppercased() },
-    rf: { $0 * 2 }
+let both2 = Either<String, Int>.left("error").bimap(
+    { $0.uppercased() },
+    { $0 * 2 }
 )  // .left("ERROR")
 ```
 
@@ -168,19 +171,19 @@ Either containing an Optional. `.left` propagates; `.right(.none)` stays `.right
 import DataStructure
 import DataStructureOperators
 
-let e: EitherTOptional<String, Int> = Either<String, Int?>.right(.some(5)).eitherT
-e.map { $0 * 2 }.rawValue  // .right(Optional(10))
-e.flatMap { n in EitherTOptional(.right(.some(n * 2))) }.rawValue  // .right(Optional(10))
+let eo: EitherTOptional<String, Int> = Either<String, Int?>.right(.some(5)).eitherT
+let eoMapped = eo.map { $0 * 2 }.rawValue  // .right(Optional(10))
+let eoBound = eo.flatMap { n in EitherTOptional<String, Int>(.right(.some(n * 2))) }.rawValue  // .right(Optional(10))
 
-let none = EitherTOptional<String, Int>(.right(.none))
-none.flatMap { n in EitherTOptional(.right(.some(n * 2))) }.rawValue  // .right(nil), nothing to bind
+let eoNone = EitherTOptional<String, Int>(.right(.none))
+let eoNothing = eoNone.flatMap { n in EitherTOptional<String, Int>(.right(.some(n * 2))) }.rawValue  // .right(nil), nothing to bind
 
-let left = EitherTOptional<String, Int>(.left("err"))
-left.flatMap { n in EitherTOptional(.right(.some(n * 2))) }.rawValue  // .left("err")
+let eoLeft = EitherTOptional<String, Int>(.left("err"))
+let eoErr = eoLeft.flatMap { n in EitherTOptional<String, Int>(.right(.some(n * 2))) }.rawValue  // .left("err")
 
 // Operators
-({ $0 * 2 } <£> e).rawValue   // .right(Optional(10))
-e >>- { n in .pure(n + 1) }    // EitherTOptional wrapping .right(Optional(6))
+let eoOp = ({ $0 * 2 } <£> eo).rawValue   // .right(Optional(10))
+let eoChain = eo >>- { n in EitherTOptional<String, Int>.pure(n + 1) }   // EitherTOptional wrapping .right(Optional(6))
 ```
 
 ### `EitherTArray` (wraps `Either<L, [A]>`, outer = Either, inner = Array)
@@ -193,11 +196,11 @@ there is no `flatMap` / `>>-` for this stack.
 ```swift
 import DataStructure
 
-let e = EitherTArray<String, Int>(.right([1, 2, 3]))
-e.map { $0 * 2 }.rawValue  // .right([2, 4, 6])
-EitherTArray.liftA2(+)(e, EitherTArray(.right([10, 20]))).rawValue  // .right([11, 21, 12, 22, 13, 23])
+let ea = EitherTArray<String, Int>(.right([1, 2, 3]))
+let eaMapped = ea.map { $0 * 2 }.rawValue  // .right([2, 4, 6])
+let eaLifted = EitherTArray<String, Int>.liftA2(+)(ea, EitherTArray<String, Int>(.right([10, 20]))).rawValue  // .right([11, 21, 12, 22, 13, 23])
 
-EitherTArray.liftA2(+)(EitherTArray<String, Int>(.left("err")), e).rawValue  // .left("err")
+let eaErr = EitherTArray<String, Int>.liftA2(+)(EitherTArray<String, Int>(.left("err")), ea).rawValue  // .left("err")
 ```
 
 ### `EitherTResult` (wraps `Either<L, Result<A, E>>`, outer = Either, inner = Result)
@@ -207,13 +210,15 @@ Either containing a Result, two independent error channels. Generic order is `Ei
 ```swift
 import DataStructure
 
-let e = EitherTResult<String, MyError, Int>(.right(.success(5)))
-e.map { $0 * 2 }.rawValue  // .right(.success(10))
-e.flatMap { n in EitherTResult(.right(.success(n * 2))) }.rawValue  // .right(.success(10))
+enum MyError: Error, Sendable { case bad }
+
+let er = EitherTResult<String, MyError, Int>(.right(.success(5)))
+let erMapped = er.map { $0 * 2 }.rawValue  // .right(.success(10))
+let erBound = er.flatMap { n in EitherTResult<String, MyError, Int>(.right(.success(n * 2))) }.rawValue  // .right(.success(10))
 
 // Inner failure preserves outer .right
 let innerFail = EitherTResult<String, MyError, Int>(.right(.failure(.bad)))
-innerFail.flatMap { n in .pure(n) }.rawValue  // .right(.failure(.bad))
+let innerKept = innerFail.flatMap { n in EitherTResult<String, MyError, Int>.pure(n) }.rawValue  // .right(.failure(.bad))
 ```
 
 ### `OptionalTEither` (wraps `Either<L, A>?`, outer = Optional, inner = Either)
@@ -223,14 +228,14 @@ Optional wrapping an Either. `nil` propagates; `.some(.left(l))` also propagates
 ```swift
 import DataStructure
 
-let e: OptionalTEither<String, Int> = Optional(Either<String, Int>.right(5)).optionalT
-e.map { $0 * 2 }.rawValue                               // Optional(.right(10))
-e.flatMap { n in OptionalTEither(.right(n * 2)) }.rawValue  // Optional(.right(10))
+let oe: OptionalTEither<String, Int> = Optional(Either<String, Int>.right(5)).optionalT
+let oeMapped = oe.map { $0 * 2 }.rawValue                                            // Optional(.right(10))
+let oeBound = oe.flatMap { n in OptionalTEither<String, Int>(.right(n * 2)) }.rawValue  // Optional(.right(10))
 
-OptionalTEither<String, Int>(nil).map { $0 * 2 }.rawValue   // nil
+let oeNil = OptionalTEither<String, Int>(nil).map { $0 * 2 }.rawValue   // nil
 
-let left = OptionalTEither<String, Int>(.left("err"))
-left.map { $0 * 2 }.rawValue                            // Optional(.left("err"))
+let oeLeft = OptionalTEither<String, Int>(.left("err"))
+let oeErr = oeLeft.map { $0 * 2 }.rawValue                              // Optional(.left("err"))
 ```
 
 ### `ArrayTEither` (wraps `[Either<L, A>]`, outer = Array, inner = Either)
@@ -241,8 +246,8 @@ Array of Either values. `.left` elements propagate; `.right` elements are transf
 import DataStructure
 
 let es: [Either<String, Int>] = [.right(1), .left("err"), .right(3)]
-es.arrayT.map { $0 * 2 }.rawValue              // [.right(2), .left("err"), .right(6)]
-es.arrayT.flatMap { n in ArrayTEither([.right(n), .right(n * 10)]) }.rawValue
+let esMapped = es.arrayT.map { $0 * 2 }.rawValue  // [.right(2), .left("err"), .right(6)]
+let esBound = es.arrayT.flatMap { n in ArrayTEither<String, Int>([.right(n), .right(n * 10)]) }.rawValue
 // [.right(1), .right(10), .left("err"), .right(3), .right(30)]
 ```
 

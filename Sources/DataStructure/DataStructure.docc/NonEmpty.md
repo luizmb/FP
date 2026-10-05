@@ -12,7 +12,7 @@ let ne  = NonEmpty(head: 1, tail: [2, 3])
 let one = NonEmpty(head: 42)                  // single element
 let fn  = nonEmpty(head: 1, tail: [2, 3])     // free function — same as init
 let opt = nonEmpty([1, 2, 3])                 // NonEmpty<Int>? — nil if array empty
-let nil = nonEmpty([Int]())                   // nil
+let none = nonEmpty([Int]())                  // nil
 
 ne.head    // 1
 ne.tail    // [2, 3]
@@ -26,8 +26,6 @@ ne.toArray // [1, 2, 3]
 ## Primitives
 
 ```swift
-let ne = nonEmpty(head: 1, tail: [2, 3])
-
 ne.prepend(0).toArray             // [0, 1, 2, 3]
 ne.append(4).toArray              // [1, 2, 3, 4]
 ne.append(contentsOf: [4, 5]).toArray  // [1, 2, 3, 4, 5]
@@ -53,8 +51,8 @@ NonEmpty.combine(a, b).toArray  // [1, 2, 3, 4]
 a <> b                          // [1, 2, 3, 4]  (with DataStructureOperators)
 
 // sconcat — reduce a NonEmpty<A: Semigroup> to a single A
-let nested = NonEmpty(head: nonEmpty(head: 1, tail: [2]), tail: [nonEmpty(head: 3)])
-sconcat(nested).toArray  // [1, 2, 3]
+let nestedSemigroup = NonEmpty(head: nonEmpty(head: 1, tail: [2]), tail: [nonEmpty(head: 3)])
+sconcat(nestedSemigroup).toArray  // [1, 2, 3]
 ```
 
 ---
@@ -64,28 +62,26 @@ sconcat(nested).toArray  // [1, 2, 3]
 Transform every element; structure is preserved.
 
 ```swift
-let ne = nonEmpty(head: 1, tail: [2, 3])
-
 ne.map { $0 * 10 }.toArray    // [10, 20, 30]
-ne.fmap { $0 * 10 }.toArray   // [10, 20, 30]  — alias for map
 
 // Operators (require DataStructureOperators)
-{ $0 * 10 } <£> ne   // [10, 20, 30]
-ne <&> { $0 * 10 }   // [10, 20, 30]
+let times10: @Sendable (Int) -> Int = { $0 * 10 }
+times10 <£> ne       // [10, 20, 30]
+ne <&> times10       // [10, 20, 30]
 
 // Replace with constant
 ne £> 0              // [0, 0, 0]
 0 <£ ne              // [0, 0, 0]
 
 // Point-free static form
-let double = NonEmpty<Int>.fmap { $0 * 2 }
+let double = NonEmpty<Int>.fmap { (x: Int) in x * 2 }
 double(ne).toArray   // [2, 4, 6]
 ```
 
 **Functor laws:**
-```swift
-ne.fmap(id) == ne                              // identity
-ne.fmap(compose(f, g)) == ne.fmap(f).fmap(g)  // composition
+```swift-sketch
+ne.map(id) == ne                                // identity
+ne.map(compose(f, g)) == ne.map(f).map(g)       // composition
 ```
 
 ---
@@ -95,13 +91,11 @@ ne.fmap(compose(f, g)) == ne.fmap(f).fmap(g)  // composition
 Cartesian-product semantics: every function applied to every value.
 
 ```swift
-let ne = nonEmpty(head: 1, tail: [2, 3])
-
 // Lift into a singleton
 NonEmpty<Int>.pure(42).toArray  // [42]
 
 // Apply — cartesian product
-let fns = NonEmpty<(Int) -> Int>(head: { $0 + 1 }, tail: [{ $0 * 10 }])
+let fns = NonEmpty<@Sendable (Int) -> Int>(head: { $0 + 1 }, tail: [{ $0 * 10 }])
 NonEmpty.apply(fns, ne).toArray  // [2, 3, 4, 10, 20, 30]
 fns <*> ne                       // same (with DataStructureOperators)
 
@@ -124,8 +118,6 @@ ne <* nonEmpty(head: "x", tail: ["y"])  // [1, 1, 2, 2, 3, 3]
 Map each element to a `NonEmpty`, then concatenate all results. The result is always non-empty.
 
 ```swift
-let ne = nonEmpty(head: 1, tail: [2, 3])
-
 ne.flatMap { n in NonEmpty(head: n, tail: [n * 10]) }.toArray
 // [1, 10, 2, 20, 3, 30]
 
@@ -133,21 +125,20 @@ ne.flatMap { n in NonEmpty(head: n, tail: [n * 10]) }.toArray
 ne >>- { n in NonEmpty(head: n, tail: [n * 10]) }
 
 // Flatten nested NonEmpty
-let nested = NonEmpty(head: nonEmpty(head: 1, tail: [2]), tail: [nonEmpty(head: 3)])
-NonEmpty.join(nested).toArray  // [1, 2, 3]
+NonEmpty.join(nestedSemigroup).toArray  // [1, 2, 3]
 
 // Kleisli composition
-let f: (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 + 1) }
-let g: (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
-let fg = f >=> g   // (3+1)*2 = 8
-fg(3).toArray      // [8]
+let plusOne: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 + 1) }
+let timesTwo: @Sendable (Int) -> NonEmpty<Int> = { NonEmpty(head: $0 * 2) }
+let plusOneThenTwice = plusOne >=> timesTwo   // (3+1)*2 = 8
+plusOneThenTwice(3).toArray                   // [8]
 ```
 
 **Monad laws:**
-```swift
-NonEmpty.pure(x).flatMap(f)  == f(x)             // left identity
-ne.flatMap(NonEmpty.pure)    == ne                // right identity
-ne.flatMap(f).flatMap(g)     == ne.flatMap { f($0).flatMap(g) }  // associativity
+```swift-sketch
+NonEmpty.pure(x).flatMap(f) == f(x)                                // left identity
+ne.flatMap(NonEmpty.pure) == ne                                    // right identity
+ne.flatMap(f).flatMap(g) == ne.flatMap { f($0).flatMap(g) }        // associativity
 ```
 
 ---
@@ -157,8 +148,6 @@ ne.flatMap(f).flatMap(g)     == ne.flatMap { f($0).flatMap(g) }  // associativit
 Reduce elements to a summary value.
 
 ```swift
-let ne = nonEmpty(head: 1, tail: [2, 3])
-
 ne.foldLeft(0, +)   // 6  — left fold: ((0+1)+2)+3
 ne.foldRight(1, *)  // 6  — right fold: 1*(2*(3*1))
 
@@ -173,14 +162,16 @@ ne.toList   // [1, 2, 3]  — standard [A]
 Map elements to a container and flip the nesting. Short-circuits on the first failure.
 
 ```swift
-let ne = nonEmpty(head: "1", tail: ["2", "3"])
+enum ParseError: Error, Sendable, Equatable { case badInput }
+
+let strings = nonEmpty(head: "1", tail: ["2", "3"])
 
 // Optional effect
-ne.traverse { Int($0) }?.toArray         // [1, 2, 3]
-nonEmpty(head: "1", tail: ["x"]).traverse { Int($0) }  // nil
+strings.traverse { Int($0) }?.toArray                       // [1, 2, 3]
+nonEmpty(head: "1", tail: ["x"]).traverse { Int($0) }       // nil
 
 // Result effect
-ne.traverse { s -> Result<Int, MyError> in
+strings.traverse { s -> Result<Int, ParseError> in
     Int(s).map { .success($0) } ?? .failure(.badInput)
 }
 // .success(NonEmpty(head: 1, tail: [2, 3]))
@@ -197,14 +188,14 @@ NonEmpty<Int?>(head: 1, tail: [nil]).sequence()            // nil
 Map or flatMap over the present values while preserving `nil` slots in place. Lift with `.nonEmptyT` (or `NonEmptyTOptional(ne)`), leave with `.rawValue`.
 
 ```swift
-let ne = NonEmpty<Int?>(head: 1, tail: [nil, 3])
+let slots = NonEmpty<Int?>(head: 1, tail: [nil, 3])
 
 // map: only over present values
-ne.nonEmptyT.map { $0 * 10 }.rawValue.toArray         // [Optional(10), nil, Optional(30)]
+slots.nonEmptyT.map { $0 * 10 }.rawValue.toArray      // [Optional(10), nil, Optional(30)]
 
 // flatMap: the continuation returns the whole stack (NonEmptyTOptional<B>);
 //          nil slots stay nil in the result, present slots follow the function
-ne.nonEmptyT.flatMap { n in NonEmptyTOptional(NonEmpty<Int?>(head: n * 2)) }.rawValue.toArray
+slots.nonEmptyT.flatMap { n in NonEmptyTOptional(NonEmpty<Int?>(head: n * 2)) }.rawValue.toArray
 // [Optional(2), nil, Optional(6)]
 ```
 
@@ -215,18 +206,20 @@ ne.nonEmptyT.flatMap { n in NonEmptyTOptional(NonEmpty<Int?>(head: n * 2)) }.raw
 Map or flatMap over success values while preserving failures in place. Generic order is `NonEmptyTResult<E, A>`.
 
 ```swift
-let ne = NonEmpty<Result<Int, MyError>>(
+enum SlotError: Error, Sendable, Equatable { case err }
+
+let results = NonEmpty<Result<Int, SlotError>>(
     head: .success(1),
     tail: [.failure(.err), .success(3)]
 )
 
 // map: over success values
-ne.nonEmptyT.map { $0 * 10 }.rawValue.toArray
+results.nonEmptyT.map { $0 * 10 }.rawValue.toArray
 // [.success(10), .failure(.err), .success(30)]
 
 // flatMap: the continuation returns NonEmptyTResult<E, B>;
 //          failures propagate, successes follow the function
-ne.nonEmptyT.flatMap { n in NonEmptyTResult(NonEmpty<Result<Int, MyError>>(head: .success(n * 2))) }.rawValue.toArray
+results.nonEmptyT.flatMap { n in NonEmptyTResult(NonEmpty<Result<Int, SlotError>>(head: .success(n * 2))) }.rawValue.toArray
 // [.success(2), .failure(.err), .success(6)]
 ```
 
@@ -237,7 +230,6 @@ ne.nonEmptyT.flatMap { n in NonEmptyTResult(NonEmpty<Result<Int, MyError>>(head:
 `Optional<NonEmpty<A>>`, when the whole collection may be absent. Lift with `.optionalT`.
 
 ```swift
-let opt: NonEmpty<Int>? = nonEmpty(head: 1, tail: [2, 3])
 
 // map: inside when present
 opt.optionalT.map { $0 * 10 }.rawValue?.toArray  // [10, 20, 30]
@@ -269,7 +261,7 @@ NonEmpty(head: 2)            >  NonEmpty(head: 1, tail: [9])  // true (head wins
 
 `NonEmpty<A>` lives in the `DataStructure` module. Operator overloads (`<£>`, `>>-`, `<>`, …) are in `DataStructureOperators`.
 
-```swift
+```swift-sketch
 import DataStructure             // named functions only
 import DataStructureOperators    // adds <£>, <&>, >>-, <=<, <>, …
 import FP                        // re-exports both + CoreFP + CoreFPOperators

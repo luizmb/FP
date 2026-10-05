@@ -2,9 +2,7 @@
 
 `SumType2<A, B>` is the shared interface behind every built-in two-case sum type in this library — `Either`, `Result`, and `Optional` all conform. It gives you one `match` eliminator, one pair of optional projections (`.a` / `.b`), and one pair of predicates (`.isA` / `.isB`) that work identically no matter which concrete type you're holding.
 
-```swift
-import CoreFP
-
+```swift-sketch
 public protocol SumType2<A, B>: Sendable {
     associatedtype A
     associatedtype B
@@ -25,7 +23,7 @@ Without a shared interface, a function that needs to fold *any* two-case type in
 func summarizeEither(_ e: Either<String, Int>) -> String {
     e.match(caseLeft: { "error: \($0)" }, caseRight: { "value: \($0)" })
 }
-func summarizeResult(_ r: Result<Int, String>) -> String {
+func summarizeResult(_ r: Result<Int, NSError>) -> String {
     r.match(caseLeft: { "value: \($0)" }, caseRight: { "error: \($0)" })
 }
 ```
@@ -63,16 +61,16 @@ let e: Either<String, Int> = .right(42)
 e.match(caseLeft: { "error: \($0)" }, caseRight: { "value: \($0)" })   // "value: 42"
 e.bifoldMap({ "error: \($0)" }, { "value: \($0)" })   // "value: 42" — same thing, Haskell-flavored name
 
-e.a           // nil
-e.b           // Optional(42)
-e.isA         // false
-e.isB         // true
+let ea = e.a           // nil
+let eb = e.b           // Optional(42)
+let eIsA = e.isA       // false
+let eIsB = e.isB       // true
 
-e.fromLeft("default")    // "default" — .right, so the fallback is used
-e.fromRight(0)            // 42        — .right, so the payload is used
+let fl = e.fromLeft("default")    // "default" — .right, so the fallback is used
+let fr = e.fromRight(0)           // 42        — .right, so the payload is used
 
 // Cross-type bridge — resolves the source's case through match, then rebuilds via `Self`
-let r = Result<Int, String>.from(Either<Int, String>.left(42))   // .success(42)
+let r = Result<Int, NSError>.from(Either<Int, NSError>.left(42))   // .success(42)
 ```
 
 ## Conforming types and their left/right mapping
@@ -88,32 +86,32 @@ Only three built-in types conform to `SumType2` today: `Either`, `Result`, and `
 Note the asymmetry: for `Either`, `.left` is conventionally the failure/error side and `.right` is the "happy path" (the Haskell mnemonic "right is right"). But `Result` and `Optional` map their *success* case (`.success`, `.some`) to `.left`/`A` — the opposite convention. Always check `.isA`/`.isB` against the concrete type's actual conformance (`Result+SumType.swift`, `Optional+SumType.swift`) rather than assuming `.right`/`B` means "success" universally.
 
 ```swift
-Either<String, Int>.right(42).isB     // true  — .right is B for Either
-Result<Int, Error>.success(42).isA    // true  — .success is A for Result, NOT B
-Optional(42).isA                       // true  — .some is A for Optional
-Optional<Int>.none.isB                 // true  — .none is B for Optional
+let i1 = Either<String, Int>.right(42).isB     // true  — .right is B for Either
+let i2 = Result<Int, Error>.success(42).isA    // true  — .success is A for Result, NOT B
+let i3 = Optional(42).isA                       // true  — .some is A for Optional
+let i4 = Optional<Int>.none.isB                 // true  — .none is B for Optional
 ```
 
 [Validation](../../datastructure/validation)`<E, A>` is structurally a two-case type and ships its own `match(caseFailure:caseSuccess:)` with the same shape, but it does **not** conform to `SumType2` — it isn't a `Monad` either, and the library keeps its API surface separate rather than routing it through the shared protocol. To use a `Validation` value with a function generic over `SumType2`, bridge it first:
 
 ```swift
 let v: Validation<String, Int> = .success(42)
-summarize(v.toEither())   // Either<String, Int> conforms to SumType2 — bridge, then call
+let bridged = summarize(v.toEither())   // Either<String, Int> conforms to SumType2 — bridge, then call
 ```
 
 ## Worked example: one function, three concrete types
 
 ```swift
-func describe<S: SumType2>(_ s: S) -> String where S.A: CustomStringConvertible, S.B: CustomStringConvertible {
+func describe<S: SumType2>(_ s: S) -> String {
     s.match(
         caseLeft: { "A: \($0)" },
         caseRight: { "B: \($0)" }
     )
 }
 
-describe(Either<String, Int>.right(42))         // "B: 42"
-describe(Result<Int, NSError>.success(42))       // "A: 42"   — success is A for Result
-describe(42 as Int?)                             // "A: 42"   — Optional conforms implicitly via its extension
+let d1 = describe(Either<String, Int>.right(42))         // "B: 42"
+let d2 = describe(Result<Int, NSError>.success(42))       // "A: 42"   — success is A for Result
+let d3 = describe(42 as Int?)                             // "A: 42"   — Optional conforms via its extension
 ```
 
 The same `describe` function, unmodified, handles all three — the caller doesn't need to know or care which concrete sum type it received.

@@ -2,9 +2,7 @@
 
 An **endomorphism** is a function from a type to itself — `(A) -> A`. `Endo<A>` wraps one, and its defining feature is a `Monoid` instance under composition: any sequence of same-type transformations collapses into a single value via `mconcat`, with the do-nothing function as the identity element.
 
-```swift
-import CoreFP
-
+```swift-sketch
 public struct Endo<A>: FunctionWrapper {
     public let runEndo: @Sendable (A) -> A
     public init(_ fn: @escaping @Sendable (A) -> A) { runEndo = fn }
