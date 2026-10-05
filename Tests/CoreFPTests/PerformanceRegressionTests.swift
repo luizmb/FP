@@ -41,8 +41,8 @@ struct PerformanceRegressionTests {
 
     @Test func optionalTArrayBindConcatenatesInOrderAndStopsAtNil() {
         let chunks: [Int]? = [1, 2]
-        #expect(chunks.flatMapT { [$0, $0 * 10] } == [1, 10, 2, 20])
-        #expect(chunks.flatMapT { $0 == 1 ? nil : [$0] } == nil)
+        #expect(chunks.optionalT.flatMap { OptionalTArray([$0, $0 * 10]) }.rawValue == [1, 10, 2, 20])
+        #expect(chunks.optionalT.flatMap { OptionalTArray($0 == 1 ? nil : [$0]) }.rawValue == nil)
     }
 
     @Test func setSconcatMatchesPairwiseUnion() {

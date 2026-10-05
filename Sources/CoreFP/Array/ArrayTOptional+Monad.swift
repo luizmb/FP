@@ -5,7 +5,7 @@ import Foundation
 // Type: [A?] = Array<Optional<A>>
 // Haskell: MaybeT []
 
-public extension Array {
+extension Array {
     /// flatMapT for [A?]
     /// (>>=) :: [a?] -> (a -> [b?]) -> [b?]
     /// For each element: nil → [nil], .some(a) → fn(a)
@@ -21,7 +21,7 @@ public extension Array {
 
 /// Kleisli composition for `ArrayT + Optional` (left-to-right)
 /// (>=>) :: (a -> [b?]) -> (b -> [c?]) -> a -> [c?]
-public func kleisliT<A, B, C>(
+func kleisliT<A, B, C>(
     _ fn1: @escaping @Sendable (A) -> [B?],
     _ fn2: @escaping @Sendable (B) -> [C?]
 ) -> @Sendable (A) -> [C?] {

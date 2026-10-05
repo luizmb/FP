@@ -11,7 +11,7 @@ import Foundation
 
 /// apply for OptionalTResult: Result<(A->B),E>? -> Result<A,E>? -> Result<B,E>?
 /// (<*>) = ap :: mf >>= \f -> fmap f ma
-public func applyOptionalResult<A: Sendable, B, E: Error>(
+func applyOptionalResult<A: Sendable, B, E: Error>(
     _ fns: Result<@Sendable (A) -> B, E>?,
     _ values: Result<A, E>?
 ) -> Result<B, E>? {
@@ -20,7 +20,7 @@ public func applyOptionalResult<A: Sendable, B, E: Error>(
 
 /// liftA2 for OptionalTResult
 /// liftA2 f ma mb = ma >>= \a -> fmap (f a) mb
-public func liftA2OptionalResult<A: Sendable, B: Sendable, C, E: Error>(
+func liftA2OptionalResult<A: Sendable, B: Sendable, C, E: Error>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> @Sendable (Result<A, E>?, Result<B, E>?) -> Result<C, E>? {
     { lhs, rhs in lhs.flatMapT { a in rhs.mapT { b in fn(a, b) } } }
@@ -28,12 +28,12 @@ public func liftA2OptionalResult<A: Sendable, B: Sendable, C, E: Error>(
 
 /// seqRight for OptionalTResult
 /// ma *> mb = ma >>= \_ -> mb
-public func seqRightOptionalResult<A, B: Sendable, E: Error>(_ lhs: Result<A, E>?, _ rhs: Result<B, E>?) -> Result<B, E>? {
+func seqRightOptionalResult<A, B: Sendable, E: Error>(_ lhs: Result<A, E>?, _ rhs: Result<B, E>?) -> Result<B, E>? {
     lhs.flatMapT(const(rhs))
 }
 
 /// seqLeft for OptionalTResult
 /// ma <* mb = ma >>= \a -> fmap (const a) mb
-public func seqLeftOptionalResult<A: Sendable, B: Sendable, E: Error>(_ lhs: Result<A, E>?, _ rhs: Result<B, E>?) -> Result<A, E>? {
+func seqLeftOptionalResult<A: Sendable, B: Sendable, E: Error>(_ lhs: Result<A, E>?, _ rhs: Result<B, E>?) -> Result<A, E>? {
     lhs.flatMapT { a in rhs.mapT(const(a)) }
 }

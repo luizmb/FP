@@ -5,7 +5,7 @@ import Foundation
 // Type: AsyncStream<Result<A, E>>
 
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public extension AsyncStream {
+extension AsyncStream {
     /// Maps the value inside every emitted Result.
     /// mapT :: (a -> b) -> AsyncStream (result a) -> AsyncStream (result b)
     func mapT<Inner, B: Sendable, E: Error>(_ fn: @escaping @Sendable (Inner) -> B) -> AsyncStream<Result<B, E>>

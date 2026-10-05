@@ -6,7 +6,7 @@ import Foundation
 
 /// `liftA2AsyncStreamArray`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func liftA2AsyncStreamArray<A, B, C>(
+func liftA2AsyncStreamArray<A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> @Sendable (AsyncStream<[A]>, AsyncStream<[B]>) -> AsyncStream<[C]>
 where A: Sendable, B: Sendable, C: Sendable {
@@ -29,7 +29,7 @@ where A: Sendable, B: Sendable, C: Sendable {
 
 /// `seqRightAsyncStreamArray`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func seqRightAsyncStreamArray<A, B>(
+func seqRightAsyncStreamArray<A, B>(
     _ lhs: AsyncStream<[A]>,
     _ rhs: AsyncStream<[B]>
 ) -> AsyncStream<[B]> where A: Sendable, B: Sendable {
@@ -49,7 +49,7 @@ public func seqRightAsyncStreamArray<A, B>(
 
 /// `seqLeftAsyncStreamArray`.
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func seqLeftAsyncStreamArray<A, B>(
+func seqLeftAsyncStreamArray<A, B>(
     _ lhs: AsyncStream<[A]>,
     _ rhs: AsyncStream<[B]>
 ) -> AsyncStream<[A]> where A: Sendable, B: Sendable {

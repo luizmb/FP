@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Apache-2.0
-@testable import CoreFP
+import CoreFP
 
 // swiftlint:disable discouraged_optional_collection
 import Testing
@@ -9,21 +9,21 @@ import Testing
 
     // MARK: - ArrayTOptional: Functor
 
-    @Test func arrayTOptionalMapTAllPresent() {
+    @Test func arrayTOptionalMapAllPresent() {
         let arr: [Int?] = [1, 2, 3]
-        let result = arr.mapT { $0 * 2 }
+        let result = arr.arrayT.map { $0 * 2 }.rawValue
         #expect(result == [2, 4, 6])
     }
 
-    @Test func arrayTOptionalMapTWithNils() {
+    @Test func arrayTOptionalMapWithNils() {
         let arr: [Int?] = [1, nil, 3]
-        let result = arr.mapT { $0 * 2 }
+        let result = arr.arrayT.map { $0 * 2 }.rawValue
         #expect(result == [2, nil, 6])
     }
 
-    @Test func arrayTOptionalFmapTStatic() {
+    @Test func arrayTOptionalFmapStatic() {
         let arr: [Int?] = [1, nil, 3]
-        let result = [Int?].fmapT { (n: Int) in n * 2 }(arr)
+        let result = ArrayTOptional<Int>.fmap { n in n * 2 }(arr.arrayT).rawValue
         #expect(result == [2, nil, 6])
     }
 
@@ -32,7 +32,7 @@ import Testing
     @Test func arrayTOptionalApply() {
         let fns: [(@Sendable (Int) -> Int)?] = [{ $0 + 1 }, nil]
         let values: [Int?] = [10, 20]
-        let result = applyArrayOptional(fns, values)
+        let result = ArrayTOptional.apply(fns.arrayT, values.arrayT).rawValue
         // MaybeT []: a nil function short-circuits to a single nil (<*> = ap)
         #expect(result == [11, 21, nil])
     }
@@ -40,21 +40,21 @@ import Testing
     @Test func arrayTOptionalLiftA2CartesianProduct() {
         let a: [Int?] = [1, 2]
         let b: [Int?] = [10, 20]
-        let result = liftA2ArrayOptional(+)(a, b)
+        let result = ArrayTOptional<Int>.liftA2(+)(a.arrayT, b.arrayT).rawValue
         #expect(result == [11, 21, 12, 22])
     }
 
     @Test func arrayTOptionalLiftA2WithNils() {
         let a: [Int?] = [1, nil]
         let b: [Int?] = [10]
-        let result = liftA2ArrayOptional(+)(a, b)
+        let result = ArrayTOptional<Int>.liftA2(+)(a.arrayT, b.arrayT).rawValue
         #expect(result == [11, nil])
     }
 
     @Test func arrayTOptionalSeqRight() {
         let a: [Int?] = [1, nil]
         let b: [String?] = ["x", nil]
-        let result = seqRightArrayOptional(a, b)
+        let result = a.arrayT.seqRight(b.arrayT).rawValue
         // MaybeT []: nil on the left short-circuits to a single nil
         #expect(result == ["x", nil, nil])
     }
@@ -62,53 +62,53 @@ import Testing
     @Test func arrayTOptionalSeqLeft() {
         let a: [Int?] = [1, nil]
         let b: [String?] = ["x"]
-        let result = seqLeftArrayOptional(a, b)
+        let result = a.arrayT.seqLeft(b.arrayT).rawValue
         #expect(result == [1, nil])
     }
 
     // MARK: - ArrayTOptional: Monad
 
-    @Test func arrayTOptionalFlatMapTAllPresent() {
+    @Test func arrayTOptionalFlatMapAllPresent() {
         let arr: [Int?] = [1, 2, 3]
-        let result = arr.flatMapT { n in [n, n * 10] as [Int?] }
+        let result = arr.arrayT.flatMap { n in ArrayTOptional([n, n * 10]) }.rawValue
         #expect(result == [1, 10, 2, 20, 3, 30])
     }
 
-    @Test func arrayTOptionalFlatMapTNilPropagates() {
+    @Test func arrayTOptionalFlatMapNilPropagates() {
         let arr: [Int?] = [1, nil, 3]
-        let result = arr.flatMapT { n in [n * 2] as [Int?] }
+        let result = arr.arrayT.flatMap { n in ArrayTOptional([n * 2]) }.rawValue
         #expect(result == [2, nil, 6])
     }
 
-    @Test func arrayTOptionalFlatMapTEmpty() {
+    @Test func arrayTOptionalFlatMapEmpty() {
         let arr: [Int?] = []
-        let result = arr.flatMapT { n in [n * 2] as [Int?] }
+        let result = arr.arrayT.flatMap { n in ArrayTOptional([n * 2]) }.rawValue
         #expect(result == [])
     }
 
-    @Test func arrayTOptionalBindTStatic() {
+    @Test func arrayTOptionalBindStatic() {
         let arr: [Int?] = [1, 2]
-        let result = [Int?].bindT { (n: Int) in [n, n + 100] as [Int?] }(arr)
+        let result = ArrayTOptional<Int>.bind { n in ArrayTOptional([n, n + 100]) }(arr.arrayT).rawValue
         #expect(result == [1, 101, 2, 102])
     }
 
     // MARK: - ArrayTResult: Functor
 
-    @Test func arrayTResultMapTAllSuccess() throws {
+    @Test func arrayTResultMapAllSuccess() throws {
         let arr: [Result<Int, Err>] = [.success(1), .success(2), .success(3)]
-        let result = arr.mapT { $0 * 2 }
+        let result = arr.arrayT.map { $0 * 2 }.rawValue
         #expect(try result.map { try $0.get() } == [2, 4, 6])
     }
 
-    @Test func arrayTResultMapTWithFailure() {
+    @Test func arrayTResultMapWithFailure() {
         let arr: [Result<Int, Err>] = [.success(1), .failure(.fail), .success(3)]
-        let result = arr.mapT { $0 * 2 }
+        let result = arr.arrayT.map { $0 * 2 }.rawValue
         #expect(result == [.success(2), .failure(.fail), .success(6)])
     }
 
-    @Test func arrayTResultFmapTStatic() {
+    @Test func arrayTResultFmapStatic() {
         let arr: [Result<Int, Err>] = [.success(1), .failure(.fail)]
-        let result = [Result<Int, Err>].fmapT { (n: Int) in n * 2 }(arr)
+        let result = ArrayTResult<Err, Int>.fmap { n in n * 2 }(arr.arrayT).rawValue
         #expect(result == [.success(2), .failure(.fail)])
     }
 
@@ -117,81 +117,81 @@ import Testing
     @Test func arrayTResultApply() {
         let fns: [Result<@Sendable (Int) -> Int, Err>] = [.success { $0 + 1 }, .failure(.fail)]
         let values: [Result<Int, Err>] = [.success(10)]
-        let result = applyArrayResult(fns, values)
+        let result = ArrayTResult.apply(fns.arrayT, values.arrayT).rawValue
         #expect(result == [.success(11), .failure(.fail)])
     }
 
     @Test func arrayTResultLiftA2CartesianProduct() {
         let a: [Result<Int, Err>] = [.success(1), .success(2)]
         let b: [Result<Int, Err>] = [.success(10), .success(20)]
-        let result = liftA2ArrayResult(+)(a, b)
+        let result = ArrayTResult<Err, Int>.liftA2(+)(a.arrayT, b.arrayT).rawValue
         #expect(result == [.success(11), .success(21), .success(12), .success(22)])
     }
 
     @Test func arrayTResultLiftA2WithFailure() {
         let a: [Result<Int, Err>] = [.success(1), .failure(.fail)]
         let b: [Result<Int, Err>] = [.success(10)]
-        let result = liftA2ArrayResult(+)(a, b)
+        let result = ArrayTResult<Err, Int>.liftA2(+)(a.arrayT, b.arrayT).rawValue
         #expect(result == [.success(11), .failure(.fail)])
     }
 
     @Test func arrayTResultSeqRight() {
         let a: [Result<Int, Err>] = [.success(1), .failure(.fail)]
         let b: [Result<String, Err>] = [.success("x")]
-        let result = seqRightArrayResult(a, b)
+        let result = a.arrayT.seqRight(b.arrayT).rawValue
         #expect(result == [.success("x"), .failure(.fail)])
     }
 
     @Test func arrayTResultSeqLeft() {
         let a: [Result<Int, Err>] = [.success(1), .failure(.fail)]
         let b: [Result<String, Err>] = [.success("x")]
-        let result = seqLeftArrayResult(a, b)
+        let result = a.arrayT.seqLeft(b.arrayT).rawValue
         #expect(result == [.success(1), .failure(.fail)])
     }
 
     // MARK: - ArrayTResult: Monad
 
-    @Test func arrayTResultFlatMapTAllSuccess() {
+    @Test func arrayTResultFlatMapAllSuccess() {
         let arr: [Result<Int, Err>] = [.success(1), .success(2)]
-        let result = arr.flatMapT { n in [.success(n), .success(n * 10)] }
+        let result = arr.arrayT.flatMap { n in ArrayTResult([.success(n), .success(n * 10)]) }.rawValue
         #expect(result == [.success(1), .success(10), .success(2), .success(20)])
     }
 
-    @Test func arrayTResultFlatMapTFailurePropagates() {
+    @Test func arrayTResultFlatMapFailurePropagates() {
         let arr: [Result<Int, Err>] = [.success(1), .failure(.fail), .success(3)]
-        let result = arr.flatMapT { n in [Result<String, Err>.success("\(n)")] }
+        let result = arr.arrayT.flatMap { n in ArrayTResult<Err, String>([.success("\(n)")]) }.rawValue
         #expect(result == [.success("1"), .failure(.fail), .success("3")])
     }
 
-    @Test func arrayTResultFlatMapTEmpty() {
+    @Test func arrayTResultFlatMapEmpty() {
         let arr: [Result<Int, Err>] = []
-        let result = arr.flatMapT { n in [Result<String, Err>.success("\(n)")] }
+        let result = arr.arrayT.flatMap { n in ArrayTResult<Err, String>([.success("\(n)")]) }.rawValue
         #expect(result == [])
     }
 
-    @Test func arrayTResultBindTStatic() {
+    @Test func arrayTResultBindStatic() {
         let arr: [Result<Int, Err>] = [.success(1), .success(2)]
-        let result = [Result<Int, Err>].bindT { (n: Int) in [Result<Int, Err>.success(n * 2)] }(arr)
+        let result = ArrayTResult<Err, Int>.bind { n in ArrayTResult<Err, Int>([.success(n * 2)]) }(arr.arrayT).rawValue
         #expect(result == [.success(2), .success(4)])
     }
 
     // MARK: - OptionalTArray: Functor
 
-    @Test func optionalTArrayMapTSome() {
+    @Test func optionalTArrayMapSome() {
         let opt: [Int]? = [1, 2, 3]
-        let result = opt.mapT { $0 * 2 }
+        let result = opt.optionalT.map { $0 * 2 }.rawValue
         #expect(result == [2, 4, 6])
     }
 
-    @Test func optionalTArrayMapTNone() {
+    @Test func optionalTArrayMapNone() {
         let opt: [Int]? = nil
-        let result = opt.mapT { $0 * 2 }
+        let result = opt.optionalT.map { $0 * 2 }.rawValue
         #expect(result == nil)
     }
 
-    @Test func optionalTArrayFmapTStatic() {
+    @Test func optionalTArrayFmapStatic() {
         let opt: [Int]? = [1, 2, 3]
-        let result = [Int]?.fmapT { (n: Int) in n * 2 }(opt)
+        let result = OptionalTArray<Int>.fmap { n in n * 2 }(opt.optionalT).rawValue
         #expect(result == [2, 4, 6])
     }
 
@@ -200,97 +200,97 @@ import Testing
     @Test func optionalTArrayApply() {
         let fns: [@Sendable (Int) -> Int]? = [{ $0 + 1 }, { $0 + 2 }]
         let values: [Int]? = [10, 20]
-        let result = applyOptionalArray(fns, values)
+        let result = OptionalTArray.apply(fns.optionalT, values.optionalT).rawValue
         #expect(result == [11, 21, 12, 22])
     }
 
     @Test func optionalTArrayApplyNilFns() {
         let fns: [@Sendable (Int) -> Int]? = nil
         let values: [Int]? = [10, 20]
-        let result = applyOptionalArray(fns, values)
+        let result = OptionalTArray.apply(fns.optionalT, values.optionalT).rawValue
         #expect(result == nil)
     }
 
     @Test func optionalTArrayLiftA2BothPresent() {
         let a: [Int]? = [1, 2]
         let b: [Int]? = [10, 20]
-        let result = liftA2OptionalArray(+)(a, b)
+        let result = OptionalTArray<Int>.liftA2(+)(a.optionalT, b.optionalT).rawValue
         #expect(result == [11, 21, 12, 22])
     }
 
     @Test func optionalTArrayLiftA2LeftNil() {
         let a: [Int]? = nil
         let b: [Int]? = [10, 20]
-        let result = liftA2OptionalArray(+)(a, b)
+        let result = OptionalTArray<Int>.liftA2(+)(a.optionalT, b.optionalT).rawValue
         #expect(result == nil)
     }
 
     @Test func optionalTArraySeqRight() {
         let a: [Int]? = [1, 2]
         let b: [String]? = ["x", "y"]
-        let result = seqRightOptionalArray(a, b)
+        let result = a.optionalT.seqRight(b.optionalT).rawValue
         #expect(result == ["x", "y"])
     }
 
     @Test func optionalTArraySeqLeft() {
         let a: [Int]? = [1, 2]
         let b: [String]? = ["x", "y"]
-        let result = seqLeftOptionalArray(a, b)
+        let result = a.optionalT.seqLeft(b.optionalT).rawValue
         #expect(result == [1, 2])
     }
 
     // MARK: - OptionalTArray: Monad
 
-    @Test func optionalTArrayFlatMapTSomeAllSucceed() {
+    @Test func optionalTArrayFlatMapSomeAllSucceed() {
         let opt: [Int]? = [1, 2, 3]
-        let result = opt.flatMapT { n in [n, n * 10] as [Int]? }
+        let result = opt.optionalT.flatMap { n in OptionalTArray([n, n * 10]) }.rawValue
         #expect(result == [1, 10, 2, 20, 3, 30])
     }
 
-    @Test func optionalTArrayFlatMapTSomeOneNil() {
+    @Test func optionalTArrayFlatMapSomeOneNil() {
         let opt: [Int]? = [1, 2, 3]
-        let result = opt.flatMapT { n -> [Int]? in
-            n == 2 ? nil : [n, n * 10]
-        }
+        let result = opt.optionalT.flatMap { n in
+            OptionalTArray(n == 2 ? nil : [n, n * 10])
+        }.rawValue
         #expect(result == nil)
     }
 
-    @Test func optionalTArrayFlatMapTNone() {
+    @Test func optionalTArrayFlatMapNone() {
         let opt: [Int]? = nil
-        let result = opt.flatMapT { n in [n * 2] as [Int]? }
+        let result = opt.optionalT.flatMap { n in OptionalTArray([n * 2]) }.rawValue
         #expect(result == nil)
     }
 
-    @Test func optionalTArrayBindTStatic() {
+    @Test func optionalTArrayBindStatic() {
         let opt: [Int]? = [1, 2]
-        let result = [Int]?.bindT { (n: Int) in [n, n + 100] as [Int]? }(opt)
+        let result = OptionalTArray<Int>.bind { n in OptionalTArray([n, n + 100]) }(opt.optionalT).rawValue
         #expect(result == [1, 101, 2, 102])
     }
 
     // MARK: - OptionalTResult: Functor
 
-    @Test func optionalTResultMapTSomeSuccess() throws {
+    @Test func optionalTResultMapSomeSuccess() throws {
         let opt: Result<Int, Err>? = .success(5)
-        let result = opt.mapT { $0 * 2 }
+        let result = opt.optionalT.map { $0 * 2 }.rawValue
         try #require(result != nil)
         #expect(try result?.get() == 10)
     }
 
-    @Test func optionalTResultMapTSomeFailure() {
+    @Test func optionalTResultMapSomeFailure() {
         let opt: Result<Int, Err>? = .failure(.fail)
-        let result = opt.mapT { $0 * 2 }
+        let result = opt.optionalT.map { $0 * 2 }.rawValue
         #expect(result == .some(.failure(.fail)))
     }
 
-    @Test func optionalTResultMapTNone() {
+    @Test func optionalTResultMapNone() {
         let opt: Result<Int, Err>? = nil
-        let result = opt.mapT { $0 * 2 }
+        let result = opt.optionalT.map { $0 * 2 }.rawValue
         #expect(result == nil)
     }
 
-    @Test func optionalTResultFmapTStatic() throws {
+    @Test func optionalTResultFmapStatic() throws {
         let opt: Result<Int, Err>? = .success(3)
-        let result = Result<Int, Err>?.fmapT { (n: Int) in n * 2 }(opt)
+        let result = OptionalTResult<Err, Int>.fmap { n in n * 2 }(opt.optionalT).rawValue
         #expect(try result?.get() == 6)
     }
 
@@ -299,74 +299,74 @@ import Testing
     @Test func optionalTResultApply() throws {
         let fns: Result<@Sendable (Int) -> Int, Err>? = .success { $0 + 1 }
         let values: Result<Int, Err>? = .success(10)
-        let result = applyOptionalResult(fns, values)
+        let result = OptionalTResult.apply(fns.optionalT, values.optionalT).rawValue
         #expect(try result?.get() == 11)
     }
 
     @Test func optionalTResultLiftA2BothSuccess() throws {
         let a: Result<Int, Err>? = .success(3)
         let b: Result<Int, Err>? = .success(4)
-        let result = liftA2OptionalResult(+)(a, b)
+        let result = OptionalTResult<Err, Int>.liftA2(+)(a.optionalT, b.optionalT).rawValue
         #expect(try result?.get() == 7)
     }
 
     @Test func optionalTResultLiftA2LeftNil() {
         let a: Result<Int, Err>? = nil
         let b: Result<Int, Err>? = .success(4)
-        let result = liftA2OptionalResult(+)(a, b)
+        let result = OptionalTResult<Err, Int>.liftA2(+)(a.optionalT, b.optionalT).rawValue
         #expect(result == nil)
     }
 
     @Test func optionalTResultLiftA2LeftFailure() {
         let a: Result<Int, Err>? = .failure(.fail)
         let b: Result<Int, Err>? = .success(4)
-        let result = liftA2OptionalResult(+)(a, b)
+        let result = OptionalTResult<Err, Int>.liftA2(+)(a.optionalT, b.optionalT).rawValue
         #expect(result == .some(.failure(.fail)))
     }
 
     @Test func optionalTResultSeqRight() throws {
         let a: Result<Int, Err>? = .success(1)
         let b: Result<String, Err>? = .success("x")
-        let result = seqRightOptionalResult(a, b)
+        let result = a.optionalT.seqRight(b.optionalT).rawValue
         #expect(try result?.get() == "x")
     }
 
     @Test func optionalTResultSeqLeft() throws {
         let a: Result<Int, Err>? = .success(1)
         let b: Result<String, Err>? = .success("x")
-        let result = seqLeftOptionalResult(a, b)
+        let result = a.optionalT.seqLeft(b.optionalT).rawValue
         #expect(try result?.get() == 1)
     }
 
     // MARK: - OptionalTResult: Monad
 
-    @Test func optionalTResultFlatMapTSomeSuccess() throws {
+    @Test func optionalTResultFlatMapSomeSuccess() throws {
         let opt: Result<Int, Err>? = .success(5)
-        let result = opt.flatMapT { n in Result<String, Err>.success("\(n)") }
+        let result = opt.optionalT.flatMap { n in OptionalTResult<Err, String>(.success("\(n)")) }.rawValue
         #expect(try result?.get() == "5")
     }
 
-    @Test func optionalTResultFlatMapTSomeFailure() {
+    @Test func optionalTResultFlatMapSomeFailure() {
         let opt: Result<Int, Err>? = .failure(.fail)
-        let result = opt.flatMapT { n in Result<String, Err>.success("\(n)") }
+        let result = opt.optionalT.flatMap { n in OptionalTResult<Err, String>(.success("\(n)")) }.rawValue
         #expect(result == .some(.failure(.fail)))
     }
 
-    @Test func optionalTResultFlatMapTNone() {
+    @Test func optionalTResultFlatMapNone() {
         let opt: Result<Int, Err>? = nil
-        let result = opt.flatMapT { n in Result<String, Err>.success("\(n)") }
+        let result = opt.optionalT.flatMap { n in OptionalTResult<Err, String>(.success("\(n)")) }.rawValue
         #expect(result == nil)
     }
 
-    @Test func optionalTResultFlatMapTFnReturnsNil() {
+    @Test func optionalTResultFlatMapFnReturnsNil() {
         let opt: Result<Int, Err>? = .success(5)
-        let result = opt.flatMapT { _ -> Result<String, Err>? in nil }
+        let result = opt.optionalT.flatMap(const(OptionalTResult<Err, String>(nil))).rawValue
         #expect(result == nil)
     }
 
-    @Test func optionalTResultBindTStatic() throws {
+    @Test func optionalTResultBindStatic() throws {
         let opt: Result<Int, Err>? = .success(5)
-        let result = Result<Int, Err>?.bindT { (n: Int) -> Result<Int, Err>? in .success(n * 2) }(opt)
+        let result = OptionalTResult<Err, Int>.bind { n in OptionalTResult<Err, Int>(.success(n * 2)) }(opt.optionalT).rawValue
         #expect(try result?.get() == 10)
     }
 }

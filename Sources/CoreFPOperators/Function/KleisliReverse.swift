@@ -10,9 +10,7 @@ import CoreFP
 // All overloads delegate to the corresponding >=> overload, which means
 // the semantics (and copy cost) are identical. The overloads here cover
 // the same set of monads as the >=> operator in the adjacent >=> files:
-// the base monads (Optional, Array, Result, Publisher, AsyncSequence) and
-// the CoreFP transformer combos (ArrayTOptional, ArrayTResult,
-// OptionalTArray, OptionalTResult).
+// the base monads (Optional, Array, Result, Publisher, AsyncSequence).
 
 // MARK: - Optional
 
@@ -47,42 +45,6 @@ public func <=< <A0, A, A1, B>(
     _ fn1: @escaping @Sendable (A0) -> Result<A, B>
 ) -> @Sendable (A0) -> Result<A1, B> { fn1 >=> fn2 }
 
-// MARK: - ArrayTOptional
-
-/// `func` for `ArrayT + Optional`.
-public func <=< <A, B, C>(
-    _ fn2: @escaping @Sendable (B) -> [C?],
-    _ fn1: @escaping @Sendable (A) -> [B?]
-) -> @Sendable (A) -> [C?] { fn1 >=> fn2 }
-
-// MARK: - ArrayTResult
-
-/// `func` for `ArrayT + Result`.
-public func <=< <A, B, C, E: Error>(
-    _ fn2: @escaping @Sendable (B) -> [Result<C, E>],
-    _ fn1: @escaping @Sendable (A) -> [Result<B, E>]
-) -> @Sendable (A) -> [Result<C, E>] { fn1 >=> fn2 }
-
-// MARK: - OptionalTArray
-
-// swiftlint:disable discouraged_optional_collection
-
-/// `func` for `OptionalT + Array`.
-public func <=< <A, B, C>(
-    _ fn2: @escaping @Sendable (B) -> [C]?,
-    _ fn1: @escaping @Sendable (A) -> [B]?
-) -> @Sendable (A) -> [C]? { fn1 >=> fn2 }
-
-// swiftlint:enable discouraged_optional_collection
-
-// MARK: - OptionalTResult
-
-/// `func` for `OptionalT + Result`.
-public func <=< <A, B, C, E: Error>(
-    _ fn2: @escaping @Sendable (B) -> Result<C, E>?,
-    _ fn1: @escaping @Sendable (A) -> Result<B, E>?
-) -> @Sendable (A) -> Result<C, E>? { fn1 >=> fn2 }
-
 // MARK: - Publisher
 
 #if canImport(Combine)
@@ -95,20 +57,6 @@ public func <=< <A, B, C, E: Error>(
         _ fn1: @escaping @Sendable (A0) -> P1
     ) -> @Sendable (A0) -> any Publisher<A1, B>
     where P1.Output == A, P1.Failure == B, P2.Output == A1, P2.Failure == B { fn1 >=> fn2 }
-
-    /// `func` for `PublisherT + Optional`.
-    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func <=< <A, B, C, E: Error>(
-        _ fn2: @escaping @Sendable (B) -> AnyPublisher<C?, E>,
-        _ fn1: @escaping @Sendable (A) -> AnyPublisher<B?, E>
-    ) -> @Sendable (A) -> AnyPublisher<C?, E> { fn1 >=> fn2 }
-
-    /// `func` for `PublisherT + Result`.
-    @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-    public func <=< <A, B, C, E: Error, E2: Error>(
-        _ fn2: @escaping @Sendable (B) -> AnyPublisher<Result<C, E2>, E>,
-        _ fn1: @escaping @Sendable (A) -> AnyPublisher<Result<B, E2>, E>
-    ) -> @Sendable (A) -> AnyPublisher<Result<C, E2>, E> { fn1 >=> fn2 }
 
 #endif
 

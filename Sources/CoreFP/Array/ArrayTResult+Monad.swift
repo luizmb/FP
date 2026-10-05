@@ -5,7 +5,7 @@ import Foundation
 // Type: [Result<A,E>] = Array<Result<A,E>>
 // Haskell: ExceptT e []
 
-public extension Array {
+extension Array {
     /// flatMapT for [Result<A,E>]
     /// (>>=) :: [Result<a,e>] -> (a -> [Result<b,e>]) -> [Result<b,e>]
     /// For each element: .failure(e) → [.failure(e)], .success(a) → fn(a)
@@ -32,7 +32,7 @@ public extension Array {
 
 /// Kleisli composition for `ArrayT + Result` (left-to-right)
 /// (>=>) :: (a -> [Result<b,e>]) -> (b -> [Result<c,e>]) -> a -> [Result<c,e>]
-public func kleisliT<A, B, C, E: Error>(
+func kleisliT<A, B, C, E: Error>(
     _ fn1: @escaping @Sendable (A) -> [Result<B, E>],
     _ fn2: @escaping @Sendable (B) -> [Result<C, E>]
 ) -> @Sendable (A) -> [Result<C, E>] {

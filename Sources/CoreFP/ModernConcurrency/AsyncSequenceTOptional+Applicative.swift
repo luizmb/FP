@@ -13,7 +13,7 @@ import Foundation
 /// apply for AsyncStream<A?>
 /// mf <*> ma = mf >>= \f -> fmap f ma
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func applyAsyncStreamOptional<A, B>(
+func applyAsyncStreamOptional<A, B>(
     _ fns: AsyncStream<(@Sendable (A) -> B)?>,
     _ values: AsyncStream<A?>
 ) -> AsyncStream<B?> where A: Sendable, B: Sendable {
@@ -24,7 +24,7 @@ public func applyAsyncStreamOptional<A, B>(
 /// liftA2 for AsyncStream<A?>
 /// liftA2 f ma mb = ma >>= \a -> fmap (f a) mb
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func liftA2AsyncStreamOptional<A, B, C>(
+func liftA2AsyncStreamOptional<A, B, C>(
     _ fn: @escaping @Sendable (A, B) -> C
 ) -> @Sendable (AsyncStream<A?>, AsyncStream<B?>) -> AsyncStream<C?>
 where A: Sendable, B: Sendable, C: Sendable {
@@ -39,7 +39,7 @@ where A: Sendable, B: Sendable, C: Sendable {
 /// seqRight for AsyncStream<A?>
 /// ma *> mb = ma >>= \_ -> mb
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func seqRightAsyncStreamOptional<A, B>(
+func seqRightAsyncStreamOptional<A, B>(
     _ lhs: AsyncStream<A?>,
     _ rhs: AsyncStream<B?>
 ) -> AsyncStream<B?> where A: Sendable, B: Sendable {
@@ -49,7 +49,7 @@ public func seqRightAsyncStreamOptional<A, B>(
 /// seqLeft for AsyncStream<A?>
 /// ma <* mb = ma >>= \a -> fmap (const a) mb
 @available(macOS 10.15, iOS 13.0, tvOS 13.0, watchOS 6.0, *)
-public func seqLeftAsyncStreamOptional<A, B>(
+func seqLeftAsyncStreamOptional<A, B>(
     _ lhs: AsyncStream<A?>,
     _ rhs: AsyncStream<B?>
 ) -> AsyncStream<A?> where A: Sendable, B: Sendable {

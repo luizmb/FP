@@ -31,8 +31,8 @@ struct KleisliChainOperatorsTests {
     }
 
     @Test func arrayTOptionalChain() {
-        let step: @Sendable (Int) -> [Int?] = { [$0 + 1, $0 > 1 ? nil : $0] }
-        let result = (step >=> step >=> step)(0)
+        let step: @Sendable (Int) -> ArrayTOptional<Int> = { ArrayTOptional([$0 + 1, $0 > 1 ? nil : $0]) }
+        let result = (step >=> step >=> step)(0).rawValue
         #expect(result.count == 8)
         #expect(result.contains(nil))
     }

@@ -6,7 +6,7 @@ import Foundation
 // Type: [A]? = Optional<[A]>
 // Haskell: ListT Maybe
 
-public extension Optional {
+extension Optional {
     /// flatMapT for Optional<[A]>
     /// (>>=) :: [a]? -> (a -> [b]?) -> [b]?
     /// nil → nil
@@ -32,7 +32,7 @@ public extension Optional {
 
 /// Kleisli composition for `OptionalT + Array` (left-to-right)
 /// (>=>) :: (a -> [b]?) -> (b -> [c]?) -> a -> [c]?
-public func kleisliT<A, B, C>(
+func kleisliT<A, B, C>(
     _ fn1: @escaping @Sendable (A) -> [B]?,
     _ fn2: @escaping @Sendable (B) -> [C]?
 ) -> @Sendable (A) -> [C]? {
