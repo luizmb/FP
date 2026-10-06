@@ -40,5 +40,6 @@ let parsed = ({ $0 * 2 } <£> Int("42")) ?? 0   // 84
 - <doc:Macros>
 
 ### Concepts
+- <doc:ComingFromHaskell>
 - <doc:MonadTransformers>
 - <doc:OperatorVocabulary>
