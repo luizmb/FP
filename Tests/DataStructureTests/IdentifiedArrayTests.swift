@@ -95,6 +95,47 @@ struct IdentifiedArrayCoreTests {
         #expect(users.position(id: 3) == 1)
     }
 
+    @Test func insertAtEndAppends() {
+        var users = sampleUsers()
+        users.insert(User(id: 10, name: "Zoe"), at: users.count)
+        #expect(users.ids == [1, 2, 3, 10])
+        #expect(users.position(id: 10) == 3)
+        #expect(users[id: 10]?.name == "Zoe")
+    }
+
+    @Test func insertAtEndWithExistingIDReplacesInPlace() {
+        var users = sampleUsers()
+        users.insert(User(id: 1, name: "Ada"), at: users.count)
+        #expect(users.ids == [1, 2, 3])
+        #expect(users[id: 1]?.name == "Ada")
+    }
+
+    @Test func removeLastKeepsOtherLookups() {
+        var users = sampleUsers()
+        let removed = users.remove(at: users.count - 1)
+        #expect(removed == User(id: 3, name: "Carol"))
+        #expect(users.ids == [1, 2])
+        #expect(users[id: 3] == nil)
+        #expect(users.position(id: 1) == 0)
+        #expect(users.position(id: 2) == 1)
+    }
+
+    @Test func removeLastByIDKeepsOtherLookups() {
+        var users = sampleUsers()
+        #expect(users.remove(id: 3) == User(id: 3, name: "Carol"))
+        #expect(users.ids == [1, 2])
+        #expect(users.position(id: 2) == 1)
+    }
+
+    @Test func removeOnlyElementLeavesEmpty() {
+        var users = IdentifiedArray([User(id: 1, name: "Alice")])
+        users.remove(at: 0)
+        #expect(users.isEmpty)
+        #expect(users[id: 1] == nil)
+        users.append(User(id: 1, name: "Again"))
+        #expect(users.position(id: 1) == 0)
+    }
+
     @Test func removeByID() {
         var users = sampleUsers()
         #expect(users.remove(id: 2) == User(id: 2, name: "Bob"))
@@ -253,6 +294,29 @@ struct IdentifiedArrayStressTests {
             if step.isMultiple(of: 50) { check(step) }
         }
         check(2_000)
+    }
+
+    // Stack-like use: pushes through `insert(_:at: count)` and pops the last element,
+    // interleaved, so the tail fast paths run against table growth and deletions.
+    @Test func tailPushPopMatchesReference() {
+        var rng = LCG(state: 0xC0FFEE)
+        var ia = IdentifiedArrayOf<User>()
+        var ref: [User] = []
+        var nextID = 0
+        for step in 0..<3_000 {
+            if ref.isEmpty || rng.next(3) != 0 {
+                let u = User(id: nextID, name: "p\(nextID)")
+                nextID += 1
+                ia.insert(u, at: ia.count)
+                ref.append(u)
+            } else {
+                #expect(ia.remove(at: ia.count - 1) == ref.removeLast(), "pop mismatch at step \(step)")
+            }
+        }
+        #expect(ia.elements == ref)
+        for (i, user) in ref.enumerated() {
+            #expect(ia.position(id: user.id) == i)
+        }
     }
 }
 
