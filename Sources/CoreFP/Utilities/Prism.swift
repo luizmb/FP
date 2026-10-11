@@ -9,15 +9,17 @@
 //
 // ## In-place mutation and enums
 //
-// Swift has no mechanism for `inout` access to an enum's associated value
-// directly (there is no modify coroutine for enum cases). `tryModifyMut`
-// therefore always copies `A` out, passes `inout A` to the closure, then
-// reconstructs `S` via `review`. The outer `S` is kept `inout` throughout,
-// so no CoW copy occurs on `S` itself — only the enum case value is copied.
+// Swift has no `inout` access to an enum's associated value (there is no
+// modify coroutine for enum cases), so `tryModifyMut` extracts `A`, mutates it
+// and rebuilds `S` via `review`. Extracting leaves two owners of the payload:
+// the old `S` and the extracted `A`, so the first write to a CoW payload (an
+// array, a dictionary) would copy its whole buffer.
 //
-// This is the best achievable in safe Swift. In a chain like
-// `stateLens >>> routePrism >>> itemsLens`, the prism is the only link that
-// copies; the lenses on either side remain zero-copy.
+// `review` rebuilds `S` from `A` alone, so the old `S` is not needed once `A`
+// is out. The synthesised `tryModifyMut` moves `S` into a local with
+// `consume` and ends that local's lifetime right after `preview`, leaving `A`
+// as the payload's only owner: the mutation happens in place, in debug builds
+// too. It is the generic form of `self = .none` before re-assigning the case.
 //
 // ## lift and tryModifyMut
 //
@@ -85,9 +87,11 @@
 ///
 /// ## Mutation semantics
 ///
-/// Because Swift has no modify coroutine for enum cases, `tryModifyMut` always copies
-/// `A` once (out of the enum, through the closure, then back via `review`). The outer
-/// `S` is kept `inout` throughout, so no CoW copy occurs on `S` itself.
+/// Swift has no modify coroutine for enum cases, so `tryModifyMut` moves `A` out of the
+/// enum, mutates it and rebuilds `S` via `review`. The old `S` is consumed before the
+/// mutation runs, so a CoW payload (an array, a dictionary) is mutated in place rather
+/// than copied. ``set(_:_:)`` and ``over(_:)`` take `S` as `consuming`: hand over the
+/// value (`consume x`, or a temporary) and they are in place too.
 ///
 /// - Note: For the identity prism (where `S == A`), use ``Prism/id``.
 /// - SeeAlso: ``Lens``, ``AffineTraversal``, ``Iso``, ``EndoMut``
@@ -98,17 +102,22 @@ public struct Prism<S, A>: Sendable {
     /// Applies `f` to the focused value if present, then reconstructs `S`
     /// via `review`. No-op when the focus is absent.
     ///
-    /// Copies the enum case value (`A`) once. The outer `S` is `inout`
-    /// throughout — no CoW copy occurs on `S` itself.
+    /// The synthesised form consumes the old `S` before `f` runs, so `f` mutates
+    /// the payload in place.
     public let tryModifyMut: @Sendable (inout S, (inout A) -> Void) -> Void
 
     /// Standard 2-closure init. `tryModifyMut` is synthesised from
-    /// `preview`+`review`: copies `A` once, keeps `S` as `inout`.
+    /// `preview`+`review` and mutates the payload in place.
     public init(preview: @escaping @Sendable (S) -> A?, review: @escaping @Sendable (A) -> S) {
         self.preview = preview
         self.review = review
         tryModifyMut = { s, f in
-            guard var part = preview(s) else { return }
+            let whole = consume s
+            guard var part = preview(whole) else {
+                s = whole
+                return
+            }
+            _ = consume whole // end `whole` here so `part` is the payload's only owner
             f(&part)
             s = review(part)
         }
@@ -128,13 +137,18 @@ public struct Prism<S, A>: Sendable {
     public func callAsFunction(_ whole: S) -> A? { preview(whole) }
 
     /// Applies a pure transform if the focus is present; returns a new `S`.
-    /// Prefer `lift(_:)` when working with `EndoMut` and large CoW states.
-    public func over(_ transform: @escaping @Sendable (A) -> A) -> @Sendable (S) -> S {
-        { s in preview(s).map { review(transform($0)) } ?? s }
+    /// Runs through `tryModifyMut` on the `S` it is handed, so passing a value the
+    /// caller no longer needs (`consume x`, a temporary) avoids copying it.
+    public func over(_ transform: @escaping @Sendable (A) -> A) -> @Sendable (consuming S) -> S {
+        { (s: consuming S) in
+            var whole = consume s
+            tryModifyMut(&whole) { $0 = transform($0) }
+            return whole
+        }
     }
 
     /// Replaces the focused value if present; no-op otherwise.
-    public func set(_ s: S, _ a: A) -> S {
+    public func set(_ s: consuming S, _ a: A) -> S {
         preview(s) == nil ? s : review(a)
     }
 

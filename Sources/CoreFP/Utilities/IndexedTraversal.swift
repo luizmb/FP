@@ -53,8 +53,13 @@ public struct IndexedTraversal<S, I, A>: Sendable {
     }
 
     /// Applies a pure, index-aware transform to every focus; returns a new `S`.
-    public func over(_ transform: @escaping @Sendable (I, A) -> A) -> @Sendable (S) -> S {
-        { s in var c = s; modifyMut(&c) { idx, a in a = transform(idx, a) }; return c }
+    /// In place when the caller hands the value over (`consume x`, or a temporary).
+    public func over(_ transform: @escaping @Sendable (I, A) -> A) -> @Sendable (consuming S) -> S {
+        { (s: consuming S) in
+            var whole = consume s
+            modifyMut(&whole) { idx, a in a = transform(idx, a) }
+            return whole
+        }
     }
 }
 

@@ -314,10 +314,11 @@ personReducer(&mutablePerson)   // mutates mutablePerson.age in place, zero copi
 ```
 
 When every `Lens` in the chain is `WritableKeyPath`-backed, the whole chain is zero-copy end to
-end via Swift's modify coroutine. A `Prism` in the chain always copies its enum case's associated
-value once (Swift has no modify coroutine for enum payloads) but never copies the outer `S`; an
-`AffineTraversal` built from `ix` on a `MutableCollection` is zero-copy, while `ix` on a
-`Dictionary` copies the `Value` once. Prefer `over` in pure pipelines that need a new `S`; prefer
+end via Swift's modify coroutine. A `Prism` (or `Iso`) in the chain takes its payload out, mutates
+it and rebuilds the whole with `review`; it `consume`s the old whole first, so the payload is never
+shared while it's mutated and a CoW payload changes in place. `ix` on a `MutableCollection` or a
+`Dictionary` is zero-copy. The pure forms (`set`, `over`, `setAll`) take `S` as `consuming`: hand
+the value over (`consume x`, or a temporary) and they write in place too. Prefer `over` in pure pipelines that need a new `S`; prefer
 `lift` when threading `EndoMut` reducers through large CoW state (this is exactly the pattern
 SwiftRex-style reducers use).
 

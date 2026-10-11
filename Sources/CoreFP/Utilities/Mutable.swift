@@ -25,20 +25,23 @@ public protocol Mutable {}
 public extension Mutable where Self: Any {
     /// Returns a mutated copy of `self` by applying the `inout` transform.
     ///
+    /// `self` is `consuming`: when the caller hands the value over (a temporary, or
+    /// `(consume value).mutate { … }`) the transform mutates it in place instead of a copy.
+    ///
     /// ```swift
     /// let frame = CGRect().mutate {
     ///     $0.origin.x = 10
     ///     $0.size.width = 100
     /// }
     /// ```
-    func mutate(_ transform: (inout Self) -> Void) -> Self {
-        var copy = self
-        transform(&copy)
-        return copy
+    consuming func mutate(_ transform: (inout Self) -> Void) -> Self {
+        var result = consume self
+        transform(&result)
+        return result
     }
 
     /// Returns a transformed copy of `self` by applying the pure function.
-    func mutate(_ transform: (Self) -> Self) -> Self {
+    consuming func mutate(_ transform: (Self) -> Self) -> Self {
         transform(self)
     }
 }

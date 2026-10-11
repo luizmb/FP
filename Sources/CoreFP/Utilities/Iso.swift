@@ -78,48 +78,55 @@ public struct Iso<S, A>: Sendable {
     }
 
     /// Apply a transform through the iso: convert to `A`, transform, convert back.
-    public func over(_ transform: @escaping @Sendable (A) -> A) -> @Sendable (S) -> S {
-        { s in reverseGet(transform(get(s))) }
+    public func over(_ transform: @escaping @Sendable (A) -> A) -> @Sendable (consuming S) -> S {
+        { (s: consuming S) in reverseGet(transform(get(s))) }
     }
 
-    /// Lifts an `EndoMut<A>` into an `EndoMut<S>` through this iso.
+    /// Converts `S → A`, runs `f` on `inout A`, then rebuilds `S` with `reverseGet`.
     ///
-    /// Converts `S → A`, applies the mutation to `inout A`, then replaces `S`
-    /// with `reverseGet(a)` — all via `inout S`, so no CoW copy occurs on `S`.
+    /// `reverseGet` needs nothing from the old `S`, so the old `S` is consumed before `f`
+    /// runs: `f` is the only owner of `A` and mutates a CoW payload in place.
+    public func modifyMut(_ s: inout S, _ f: (inout A) -> Void) {
+        let whole = consume s
+        var part = get(whole)
+        _ = consume whole // end `whole` here so `part` is the payload's only owner
+        f(&part)
+        s = reverseGet(part)
+    }
+
+    /// Lifts an `EndoMut<A>` into an `EndoMut<S>` through this iso, mutating in place
+    /// (see ``modifyMut(_:_:)``).
     public func lift(_ f: EndoMut<A>) -> EndoMut<S> {
-        EndoMut { s in
-            var part = get(s)
-            f(&part)
-            s = reverseGet(part)
-        }
+        EndoMut { s in modifyMut(&s) { a in f(&a) } }
     }
 
-    /// View this iso as a `Lens`.
-    ///
-    /// Uses `init(get:setMut:)` so that `modifyMut` keeps `S` as `inout`
-    /// throughout — no CoW copy on `S` during write-back.
+    /// View this iso as a `Lens` whose `modifyMut` mutates in place (see ``modifyMut(_:_:)``).
     public var asLens: Lens<S, A> {
-        Lens(get: get, setMut: { s, a in s = reverseGet(a) })
+        Lens(
+            get: get,
+            set: { _, a in reverseGet(a) },
+            modifyMut: { s, f in modifyMut(&s, f) }
+        )
     }
 
     /// View this iso as a `Prism`. Preview always succeeds; review uses `reverseGet`.
-    ///
-    /// Supplies an explicit `tryModifyMut` that skips the always-succeeding
-    /// `guard` in the synthesised form and keeps `S` as `inout`.
+    /// `tryModifyMut` mutates in place (see ``modifyMut(_:_:)``).
     public var asPrism: Prism<S, A> {
         Prism(
             preview: { .some(get($0)) },
             review: reverseGet,
-            tryModifyMut: { s, f in var part = get(s); f(&part); s = reverseGet(part) }
+            tryModifyMut: { s, f in modifyMut(&s, f) }
         )
     }
 
-    /// View this iso as an `AffineTraversal`.
-    ///
-    /// Uses `init(preview:setMut:)` so that `tryModifyMut` keeps `S` as `inout`
-    /// throughout — no CoW copy on `S` during write-back.
+    /// View this iso as an `AffineTraversal`. The focus is always present;
+    /// `tryModifyMut` mutates in place (see ``modifyMut(_:_:)``).
     public var asAffineTraversal: AffineTraversal<S, A> {
-        AffineTraversal(preview: { .some(get($0)) }, setMut: { s, a in s = reverseGet(a) })
+        AffineTraversal(
+            preview: { .some(get($0)) },
+            set: { _, a in reverseGet(a) },
+            tryModifyMut: { s, f in modifyMut(&s, f) }
+        )
     }
 }
 

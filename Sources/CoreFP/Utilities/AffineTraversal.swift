@@ -15,18 +15,19 @@
 //
 // The copy cost depends on how the optic was constructed:
 //
-//   - `affineTraversal(_ keyPath: WritableKeyPath<S, A?>)`: copies `A` once
-//     (extracted from the optional), then writes back into `inout S`. No CoW
-//     on `S`.
+//   - `affineTraversal(_ keyPath: WritableKeyPath<S, A?>)`: takes `A` out of
+//     the optional (leaving `nil` behind), mutates it, and writes it back. The
+//     payload has one owner throughout, so it mutates in place.
 //
 //   - `[T].ix(index)` / `[T].ix(id:)`: accesses the element directly via
 //     `inout collection[index]` — zero-copy for the collection buffer.
 //
-//   - `[K:V].ix(key:)`: copies `Value` once (extracted from the optional
-//     subscript); no CoW on the dictionary buffer.
+//   - `[K:V].ix(key:)`: mutates the value in place through
+//     `dict.values[index]`, without re-hashing.
 //
 //   - 2-closure init (manual construction): `tryModifyMut` is synthesised
-//     from `preview`+`set`. Copies `A` once; `S` is kept `inout`.
+//     from `preview`+`set`. `preview` extracts `A` while `S` still holds it,
+//     so the first write to a CoW focus copies that focus; `S` is kept `inout`.
 //
 // ## lift and compose
 //
@@ -92,15 +93,17 @@
 ///
 /// The copy cost depends on the backing optic:
 /// - `ix` on `MutableCollection` → zero-copy (direct `inout` access)
-/// - `ix` on `Dictionary` → copies `Value` once
-/// - `WritableKeyPath` to optional → copies `A` once
-/// - Manual construction → copies `A` once via `preview`+`set`
+/// - `ix` on `Dictionary` → zero-copy (in place through `values[index]`)
+/// - `WritableKeyPath` to optional → zero-copy (the focus is taken out, then put back)
+/// - Manual construction → the first write to a CoW focus copies it (`preview` + `set`)
 ///
 /// - Note: For the identity affine traversal (where `S == A`), use ``AffineTraversal/id``.
 /// - SeeAlso: ``Lens``, ``Prism``, ``Iso``, ``EndoMut``
 public struct AffineTraversal<S, A>: Sendable {
     public let preview: @Sendable (S) -> A?
-    public let set: @Sendable (S, A) -> S
+    /// Replaces the focus if present. Takes `S` as `consuming`: when the caller hands
+    /// the value over (`consume x`, or a temporary) the write happens in place.
+    public let set: @Sendable (consuming S, A) -> S
 
     /// Applies `f` to the focused value if present. No-op when the focus is
     /// absent. `S` is kept `inout` throughout; copy cost depends on the
@@ -112,7 +115,7 @@ public struct AffineTraversal<S, A>: Sendable {
     ///
     /// Prefer `init(preview:setMut:)` when the write-back can be expressed as
     /// `(inout S, A) -> Void` — that avoids passing `S` by value to `set`.
-    public init(preview: @escaping @Sendable (S) -> A?, set: @escaping @Sendable (S, A) -> S) {
+    public init(preview: @escaping @Sendable (S) -> A?, set: @escaping @Sendable (consuming S, A) -> S) {
         self.preview = preview
         self.set = set
         tryModifyMut = { s, f in
@@ -126,7 +129,7 @@ public struct AffineTraversal<S, A>: Sendable {
     /// (e.g. `ix` and `affineTraversal(_ keyPath: WritableKeyPath)`).
     public init(
         preview: @escaping @Sendable (S) -> A?,
-        set: @escaping @Sendable (S, A) -> S,
+        set: @escaping @Sendable (consuming S, A) -> S,
         tryModifyMut: @escaping @Sendable (inout S, (inout A) -> Void) -> Void
     ) {
         self.preview = preview
@@ -150,9 +153,11 @@ public struct AffineTraversal<S, A>: Sendable {
     /// ```
     public init(preview: @escaping @Sendable (S) -> A?, setMut: @escaping @Sendable (inout S, A) -> Void) {
         self.preview = preview
-        set = { s, a in
+        set = { (s: consuming S, a: A) in
             guard preview(s) != nil else { return s }
-            var c = s; setMut(&c, a); return c
+            var whole = consume s
+            setMut(&whole, a)
+            return whole
         }
         tryModifyMut = { s, f in
             guard var part = preview(s) else { return }
@@ -164,9 +169,14 @@ public struct AffineTraversal<S, A>: Sendable {
     public func callAsFunction(_ whole: S) -> A? { preview(whole) }
 
     /// Applies a pure transform if the focus is present; returns a new `S`.
-    /// Prefer `lift(_:)` when working with `EndoMut` and large CoW states.
-    public func over(_ transform: @escaping @Sendable (A) -> A) -> @Sendable (S) -> S {
-        { s in preview(s).map { set(s, transform($0)) } ?? s }
+    /// Runs through `tryModifyMut` on the `S` it is handed, so passing a value the
+    /// caller no longer needs (`consume x`, a temporary) avoids copying it.
+    public func over(_ transform: @escaping @Sendable (A) -> A) -> @Sendable (consuming S) -> S {
+        { (s: consuming S) in
+            var whole = consume s
+            tryModifyMut(&whole) { $0 = transform($0) }
+            return whole
+        }
     }
 
     /// Lifts an `EndoMut<A>` into an `EndoMut<S>` focused through this traversal.
@@ -187,8 +197,8 @@ public extension AffineTraversal where S == A {
 /// Preview reads the optional; set replaces the focus only when it is present
 /// (a `nil` property stays `nil`, like every other affine traversal).
 ///
-/// `tryModifyMut` copies `A` once (extracted from the optional) then writes
-/// back into `inout S` — no CoW on `S`.
+/// `tryModifyMut` takes `A` out of the optional (leaving `nil` behind), mutates it and
+/// writes it back, so the focus has a single owner and mutates in place.
 ///
 /// ```swift
 /// affineTraversal(\[Int][safe: 2])  // AffineTraversal<[Int], Int> — same as ix(2)
@@ -196,12 +206,13 @@ public extension AffineTraversal where S == A {
 public func affineTraversal<S: Sendable, A: Sendable>(_ keyPath: WritableKeyPath<S, A?>) -> AffineTraversal<S, A> {
     AffineTraversal(
         preview: { @Sendable s in s[keyPath: keyPath] },
-        set: { @Sendable s, a in
-            guard s[keyPath: keyPath] != nil else { return s }
-            var c = s; c[keyPath: keyPath] = a; return c
+        set: { @Sendable (s: consuming S, a: A) in
+            var whole = consume s
+            if whole[keyPath: keyPath] != nil { whole[keyPath: keyPath] = a }
+            return whole
         },
         tryModifyMut: { @Sendable s, f in
-            guard var value = s[keyPath: keyPath] else { return }
+            guard var value = s[keyPath: keyPath].take() else { return }
             f(&value)
             s[keyPath: keyPath] = value
         }

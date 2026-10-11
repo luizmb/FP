@@ -8,8 +8,8 @@
 //
 //   - `MutableCollection.each` mutates each element via `inout collection[i]`,
 //     which is zero-copy — the buffer is never CoW-copied.
-//   - `Dictionary.eachValue` copies each `Value` once (the subscript has no
-//     in-place mutation path), mirroring `ix(key:)`.
+//   - `Dictionary.eachValue` mutates each value in place through
+//     `dict.values[index]`, mirroring `ix(key:)`.
 
 public extension MutableCollection where Element: Sendable {
     /// A ``Traversal`` focusing on **every** element of the collection.

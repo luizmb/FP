@@ -1272,7 +1272,7 @@ let teamReducer: EndoMut<Team> =
 teamReducer(&team)   // only the one Item is mutated; the [Item] buffer is not copied
 ```
 
-`ix` on `MutableCollection` passes `inout collection[index]` directly to the closure — Swift's subscript modify coroutine makes this genuinely zero-copy. `ix` on `Dictionary` copies the `Value` once (because the dictionary subscript returns `Value?`, not `inout Value`), but the dictionary buffer itself is not copied.
+`ix` on `MutableCollection` passes `inout collection[index]` directly to the closure, and Swift's subscript modify coroutine makes this genuinely zero-copy. `ix` on `Dictionary` is zero-copy too: it finds the key's index once and mutates through `dict.values[index]`, so the value is neither copied nor re-hashed.
 
 **Subscripts vs `ix` — two faces of the same concept**
 
@@ -1520,13 +1520,16 @@ The cost of a composed chain is the sum of its links:
 | Optic | `lift` copy cost |
 |---|---|
 | `lens(\.varProp)` — `WritableKeyPath` | zero-copy (Swift modify coroutine) |
-| `lens(\.letProp) { … }` — computed setter | copies focused value `A` once |
+| `lens(\.letProp) { … }` — computed setter | the first write to a CoW focus copies it (`get` runs while `S` still holds it) |
 | `ix` on `MutableCollection` | zero-copy (direct inout subscript) |
-| `ix` on `Dictionary` | copies `Value` once; dictionary buffer not copied |
-| `Prism` (enum case) | copies associated value once; outer `S` not copied |
-| Composition chain | propagates per link — outer `S` is always `inout` |
+| `ix` on `Dictionary` | zero-copy (through `dict.values[index]`) |
+| `Prism` (enum case) | zero-copy (the old `S` is consumed before the payload is mutated) |
+| `Iso` | zero-copy (same reason as `Prism`) |
+| Composition chain | propagates per link; the outer `S` is always `inout` |
 
-The outer `S` is **always** kept as `inout` throughout the chain — only the focused sub-value at each link is ever extracted and written back.
+The outer `S` is **always** kept as `inout` throughout the chain. A `Prism` can't reach into an enum payload in place (Swift has no modify coroutine for enum cases), so it takes the payload out and writes it back with `review`. Because `review` needs nothing from the old value, the old value is dropped first (`consume`), and the payload is never shared while it's being mutated. It's the same as writing `self = .none` before re-assigning the case by hand.
+
+The pure forms (`set`, `over`, `setAll`, and `mutate` on `Mutable`) take the whole as `consuming`. If you still use the original afterwards, Swift copies it, because the result is a new value. If you hand it over (`model = optic.set(consume model, x)`, or a temporary), the write happens in place.
 
 ### Generating optics (and more) with macros
 
