@@ -8,6 +8,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Performance
+- **`IdentifiedArray` tail operations are O(1)**: removing the last element (`remove(at:)` /
+  `remove(id:)`) no longer scans the whole hash table to reindex positions (nothing follows it),
+  and `insert(_:at: count)` is now an `append`. Stack-like use (push and pop at the end) is
+  constant-time; inserting or removing elsewhere stays O(n).
 - **`Zipper` moves are O(1)** (they were O(n), despite the docs): a zipper is now one shared
   `elements` array plus `focusedIndex`. `moveLeft()`/`moveRight()` stay non-mutating and return a
   new zipper over the same buffer, so old zippers remain valid and copy-on-write never triggers.

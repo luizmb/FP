@@ -56,7 +56,9 @@
 /// ```
 ///
 /// Lookup and in-place update are O(1); append is O(1) amortised; positional
-/// `insert`/`remove` are O(n) because order is preserved and the tail reindexes.
+/// `insert`/`remove` are O(n) because order is preserved and the tail reindexes,
+/// except at the tail: `insert(_:at: count)` is an append and removing the last
+/// element is O(1), so stack-like use stays constant-time.
 ///
 /// - SeeAlso: ``IdentifiedArrayOf``
 public struct IdentifiedArray<ID: Hashable & Sendable, Element: Sendable>: Sendable {
@@ -414,8 +416,13 @@ public extension IdentifiedArray {
 
     /// Inserts `element` at `position`, shifting later elements toward the tail.
     /// If an element with the same id already exists, replaces it in place instead
-    /// (the `position` argument is ignored in that case). O(n).
+    /// (the `position` argument is ignored in that case). O(n); O(1) amortised at the
+    /// tail (`position == count`), which is an ``append(_:)``.
     mutating func insert(_ element: Element, at position: Int) {
+        guard position != storage.count else {
+            append(element)
+            return
+        }
         let key = id(element)
         if let slot = bucketSlot(of: key) {
             storage[Int(buckets[slot])] = element
@@ -428,18 +435,20 @@ public extension IdentifiedArray {
         storage.insert(element, at: position)
     }
 
-    /// Removes and returns the element at `position`, shifting later elements down. O(n).
+    /// Removes and returns the element at `position`, shifting later elements down. O(n);
+    /// O(1) for the last element, where nothing follows to shift or reindex.
     @discardableResult
     mutating func remove(at position: Int) -> Element {
         let removed = storage[position]
         if let slot = bucketSlot(of: keys[position]) { tableRemoveSlot(slot) }
         storage.remove(at: position)
         keys.remove(at: position)
-        shiftPositions(threshold: position &+ 1, by: -1)
+        if position < storage.count { shiftPositions(threshold: position &+ 1, by: -1) }
         return removed
     }
 
-    /// Removes and returns the element with `id`, or `nil` if absent. O(n).
+    /// Removes and returns the element with `id`, or `nil` if absent. O(n); O(1) when it
+    /// is the last element.
     @discardableResult
     mutating func remove(id key: ID) -> Element? {
         guard let position = position(of: key) else { return nil }
