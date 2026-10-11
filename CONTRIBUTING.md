@@ -51,6 +51,23 @@ type you're checking (a scratch file in `Tests/FPMacrosTests` works) and use Xco
 `Tests/FPMacrosTests/MacroExpansionSupport.swift`, which runs the real plugin and returns
 the expanded source. Diff that against the hand-written source.
 
+## Ownership and copies
+
+Optics and other "return a modified copy" APIs must not make the caller pay for a copy it doesn't
+need.
+
+- A pure write (`set`, `over`, `setAll`, `mutate`, `append`…) takes the whole as `consuming` and
+  is derived from the in-place primitive: `var whole = consume s; modifyMut(&whole) { … }; return
+  whole`, not `set(s, f(get(s)))`.
+- When the write-back rebuilds the whole from the focus alone (`review`, `reverseGet`), consume
+  the old whole before running the mutation, and end the local explicitly with
+  `_ = consume whole` (a plain local lives to the end of its scope at `-Onone`, which keeps the
+  payload shared).
+- When the focus sits in an optional property, take it out (`.take()`) rather than copying it.
+- Every such path gets a buffer-address test (`ZeroCopyTests.swift` in each test target): the
+  array's `withUnsafeBufferPointer` base address must be the same before and after. `swift test`
+  builds at `-Onone`, so the test proves the ownership in the source, not an optimiser pass.
+
 ## Transformer stacks
 
 The newtype transformer stacks (`ReaderTArray`, `WriterTOptional`, …) are **generated**. Every file

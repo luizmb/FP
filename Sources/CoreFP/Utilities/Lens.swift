@@ -8,8 +8,10 @@
 // ## Pure FP interface
 //
 // `get` and `set` are the standard lens primitives. `over` applies a pure
-// transform and returns a new `S`. These cost one copy of `S` per call —
-// which is unavoidable when the contract is to return a new value.
+// transform and returns a new `S`. Both take `S` as `consuming`: when the
+// caller still uses the original, Swift copies it (the contract is to return
+// a new value); when the caller hands it over (`consume x`, a temporary, or a
+// last use the optimiser sees) the write happens in place.
 //
 // ## Copy-on-Write and in-place mutation
 //
@@ -121,13 +123,16 @@
 
 public struct Lens<S, A>: Sendable {
     public let get: @Sendable (S) -> A
-    public let set: @Sendable (S, A) -> S
+    /// Replaces the focus. Takes `S` as `consuming`: when the caller hands the value over
+    /// (`consume x`, or a temporary) the write happens in place instead of on a copy.
+    public let set: @Sendable (consuming S, A) -> S
 
     /// Focuses on `A` inside `inout S` without copying `S`.
     ///
     /// For `lens(_ keyPath: WritableKeyPath)`-backed lenses this is zero-copy
-    /// end to end (Swift modify coroutine). For manually constructed lenses it
-    /// copies `A` once via `get`+`set`; `S` itself is never CoW-copied.
+    /// end to end (Swift modify coroutine). For manually constructed lenses `get`
+    /// extracts `A` while `S` still holds it, so the first write to a CoW focus
+    /// copies that focus; `S` itself is never CoW-copied.
     public let modifyMut: @Sendable (inout S, (inout A) -> Void) -> Void
 
     /// Standard 2-closure init. `modifyMut` is synthesised from `get`+`set`:
@@ -135,7 +140,7 @@ public struct Lens<S, A>: Sendable {
     ///
     /// Prefer `init(get:setMut:)` when the write-back can be expressed as
     /// `(inout S, A) -> Void` — that avoids passing `S` by value to `set`.
-    public init(get: @escaping @Sendable (S) -> A, set: @escaping @Sendable (S, A) -> S) {
+    public init(get: @escaping @Sendable (S) -> A, set: @escaping @Sendable (consuming S, A) -> S) {
         self.get = get
         self.set = set
         modifyMut = { s, f in
@@ -159,7 +164,11 @@ public struct Lens<S, A>: Sendable {
     /// ```
     public init(get: @escaping @Sendable (S) -> A, setMut: @escaping @Sendable (inout S, A) -> Void) {
         self.get = get
-        set = { s, a in var c = s; setMut(&c, a); return c }
+        set = { (s: consuming S, a: A) in
+            var whole = consume s
+            setMut(&whole, a)
+            return whole
+        }
         modifyMut = { s, f in
             var part = get(s)
             f(&part)
@@ -171,7 +180,7 @@ public struct Lens<S, A>: Sendable {
     /// (e.g. `lens(_ keyPath: WritableKeyPath)` and optic composition).
     public init(
         get: @escaping @Sendable (S) -> A,
-        set: @escaping @Sendable (S, A) -> S,
+        set: @escaping @Sendable (consuming S, A) -> S,
         modifyMut: @escaping @Sendable (inout S, (inout A) -> Void) -> Void
     ) {
         self.get = get
@@ -181,10 +190,15 @@ public struct Lens<S, A>: Sendable {
 
     public func callAsFunction(_ whole: S) -> A { get(whole) }
 
-    /// Applies a pure transform; returns a new `S`. Costs one copy of `S`.
-    /// Prefer `lift(_:)` when working with `EndoMut` and large CoW values.
-    public func over(_ transform: @escaping @Sendable (A) -> A) -> @Sendable (S) -> S {
-        { s in set(s, transform(get(s))) }
+    /// Applies a pure transform; returns a new `S`. Runs through `modifyMut` on the
+    /// `S` it is handed, so passing a value the caller no longer needs (`consume x`,
+    /// a temporary) avoids copying it.
+    public func over(_ transform: @escaping @Sendable (A) -> A) -> @Sendable (consuming S) -> S {
+        { (s: consuming S) in
+            var whole = consume s
+            modifyMut(&whole) { $0 = transform($0) }
+            return whole
+        }
     }
 
     /// Lifts an `EndoMut<A>` into an `EndoMut<S>` focused through this lens.
@@ -219,7 +233,11 @@ public extension Lens where S == A {
 public func lens<S: Sendable, A: Sendable>(_ keyPath: WritableKeyPath<S, A>) -> Lens<S, A> {
     Lens(
         get: { @Sendable s in s[keyPath: keyPath] },
-        set: { @Sendable s, a in var c = s; c[keyPath: keyPath] = a; return c },
+        set: { @Sendable (s: consuming S, a: A) in
+            var whole = consume s
+            whole[keyPath: keyPath] = a
+            return whole
+        },
         modifyMut: { @Sendable s, f in f(&s[keyPath: keyPath]) }
     )
 }
@@ -233,7 +251,7 @@ public func lens<S: Sendable, A: Sendable>(_ keyPath: WritableKeyPath<S, A>) -> 
 /// ```swift
 /// let nameLens: Lens<Person, String> = lens(\.name) { Person(name: $1, age: $0.age) }
 /// ```
-public func lens<S: Sendable, A: Sendable>(_ keyPath: KeyPath<S, A>, set: @escaping @Sendable (S, A) -> S) -> Lens<S, A> {
+public func lens<S: Sendable, A: Sendable>(_ keyPath: KeyPath<S, A>, set: @escaping @Sendable (consuming S, A) -> S) -> Lens<S, A> {
     Lens(get: { @Sendable s in s[keyPath: keyPath] }, set: set)
 }
 

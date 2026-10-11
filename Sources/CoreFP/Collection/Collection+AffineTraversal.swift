@@ -14,8 +14,8 @@ public extension MutableCollection where Index: Sendable {
     static func ix(_ index: Index) -> AffineTraversal<Self, Element> {
         AffineTraversal(
             preview: { @Sendable in $0[safe: index] },
-            set: { @Sendable collection, element in
-                var copy = collection
+            set: { @Sendable (collection: consuming Self, element: Element) in
+                var copy = consume collection
                 copy[safe: index] = element
                 return copy
             },
@@ -42,10 +42,10 @@ public extension MutableCollection where Index: Sendable, Element: Sendable {
     static func ix<ID: Hashable & Sendable>(id: ID, by identifier: KeyPath<Element, ID>) -> AffineTraversal<Self, Element> {
         AffineTraversal(
             preview: { @Sendable in $0.first(where: { $0[keyPath: identifier] == id }) },
-            set: { @Sendable collection, element in
+            set: { @Sendable (collection: consuming Self, element: Element) in
                 guard let idx = collection.firstIndex(where: { $0[keyPath: identifier] == id })
                 else { return collection }
-                var copy = collection
+                var copy = consume collection
                 copy[idx] = element
                 return copy
             },
@@ -67,10 +67,10 @@ public extension MutableCollection where Index: Sendable, Element: Sendable {
     ) -> AffineTraversal<Self, Element> {
         AffineTraversal(
             preview: { @Sendable in $0.first(where: { identifier($0) == id }) },
-            set: { @Sendable collection, element in
+            set: { @Sendable (collection: consuming Self, element: Element) in
                 guard let idx = collection.firstIndex(where: { identifier($0) == id })
                 else { return collection }
-                var copy = collection
+                var copy = consume collection
                 copy[idx] = element
                 return copy
             },
@@ -97,9 +97,9 @@ public extension MutableCollection where Element: Identifiable, Element.ID: Send
     static func ix(id: Element.ID) -> AffineTraversal<Self, Element> {
         AffineTraversal(
             preview: { @Sendable in $0.first(where: { $0.id == id }) },
-            set: { @Sendable collection, element in
+            set: { @Sendable (collection: consuming Self, element: Element) in
                 guard let idx = collection.firstIndex(where: { $0.id == id }) else { return collection }
-                var copy = collection
+                var copy = consume collection
                 copy[idx] = element
                 return copy
             },
@@ -115,9 +115,8 @@ public extension Dictionary where Key: Sendable {
     /// Returns an `AffineTraversal` focusing on the value for `key`.
     /// Preview returns `nil` when the key is absent; set is a no-op in that case.
     ///
-    /// `tryModifyMut` copies `Value` once (extracted from the optional subscript),
-    /// then writes it back into `inout` dictionary. The dictionary buffer is never
-    /// CoW-copied because the dictionary is passed by exclusive `inout` reference.
+    /// `tryModifyMut` mutates the value in place through `dict.values[index]`: no copy of
+    /// the value and no re-hashing.
     ///
     /// ```swift
     /// [String: Int].ix(key: "a").preview(["a": 1, "b": 2])   // Optional(1)
@@ -127,16 +126,15 @@ public extension Dictionary where Key: Sendable {
     static func ix(key: Key) -> AffineTraversal<[Key: Value], Value> {
         AffineTraversal(
             preview: { @Sendable in $0[key] },
-            set: { @Sendable dict, value in
-                guard dict[key] != nil else { return dict }
-                var copy = dict
-                copy[key] = value
+            set: { @Sendable (dict: consuming [Key: Value], value: Value) in
+                guard let index = dict.index(forKey: key) else { return dict }
+                var copy = consume dict
+                copy.values[index] = value
                 return copy
             },
             tryModifyMut: { @Sendable dict, f in
-                guard var value = dict[key] else { return }
-                f(&value)
-                dict[key] = value
+                guard let index = dict.index(forKey: key) else { return }
+                f(&dict.values[index])
             }
         )
     }

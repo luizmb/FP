@@ -17,12 +17,20 @@
 // This means the chain is as cheap as its most expensive individual link:
 //
 //   - Lens (WritableKeyPath) + Lens (WritableKeyPath) → zero-copy end to end
-//   - Any Prism in the chain → copies the enum case value at that link
+//   - Prism → zero-copy at that link (the old `S` is consumed first)
 //   - ix on MutableCollection → zero-copy at that link
-//   - ix on Dictionary → copies Value at that link
+//   - ix on Dictionary → zero-copy at that link (through `values[index]`)
 //
 // The outer `S` is always `inout` and is never CoW-copied regardless of
-// what appears inside the chain.
+// what appears inside the chain. A Prism link mutates its payload in place
+// (it consumes the old `S` before the mutation runs; see Prism.swift).
+//
+// ## Composed `set`
+//
+// A composed `set` writes through the outer optic's in-place mutation and the
+// inner optic's `set`: `outer.modifyMut(&whole) { a in a = inner.set(consume a, b) }`.
+// Both ends take their value as `consuming`, so a `set` on a value the caller
+// hands over runs in place end to end.
 //
 // ## Composition type table
 //
@@ -43,18 +51,18 @@ public extension Lens {
     func compose<B>(_ other: Lens<A, B>) -> Lens<S, B> {
         Lens<S, B>(
             get: { @Sendable s in other.get(get(s)) },
-            set: { @Sendable s, b in set(s, other.set(get(s), b)) },
+            set: setThrough(modifyMut, other.set),
             modifyMut: { @Sendable s, f in modifyMut(&s) { a in other.modifyMut(&a, f) } }
         )
     }
 
     /// Composes a lens with a prism, yielding an `AffineTraversal<S, B>`.
-    /// The lens part is zero-copy (if `WritableKeyPath`-backed); the prism
-    /// copies the enum case value at its link.
+    /// The lens part is zero-copy (if `WritableKeyPath`-backed); the prism mutates
+    /// its payload in place.
     func compose<B>(_ other: Prism<A, B>) -> AffineTraversal<S, B> {
         AffineTraversal<S, B>(
             preview: { @Sendable s in other.preview(get(s)) },
-            set: { @Sendable s, b in other.preview(get(s)) == nil ? s : set(s, other.review(b)) },
+            set: setThrough(modifyMut) { (a: consuming A, b: B) in other.set(consume a, b) },
             tryModifyMut: { @Sendable s, f in modifyMut(&s) { a in other.tryModifyMut(&a, f) } }
         )
     }
@@ -65,7 +73,7 @@ public extension Lens {
     func compose<B>(_ other: AffineTraversal<A, B>) -> AffineTraversal<S, B> {
         AffineTraversal<S, B>(
             preview: { @Sendable s in other.preview(get(s)) },
-            set: { @Sendable s, b in set(s, other.set(get(s), b)) },
+            set: setThrough(modifyMut, other.set),
             tryModifyMut: { @Sendable s, f in modifyMut(&s) { a in other.tryModifyMut(&a, f) } }
         )
     }
@@ -74,8 +82,7 @@ public extension Lens {
 // MARK: - Prism compositions
 
 public extension Prism {
-    /// Composes two prisms left-to-right. Each link copies its enum case value;
-    /// the outer `S` is `inout` and is never CoW-copied.
+    /// Composes two prisms left-to-right. Each link mutates its payload in place.
     func compose<B>(_ other: Prism<A, B>) -> Prism<S, B> {
         Prism<S, B>(
             preview: { @Sendable s in preview(s).flatMap(other.preview) },
@@ -88,7 +95,7 @@ public extension Prism {
     func compose<B>(_ other: Lens<A, B>) -> AffineTraversal<S, B> {
         AffineTraversal<S, B>(
             preview: { @Sendable s in preview(s).map(other.get) },
-            set: { @Sendable s, b in preview(s).map { a in review(other.set(a, b)) } ?? s },
+            set: setThrough(tryModifyMut, other.set),
             tryModifyMut: { @Sendable s, f in tryModifyMut(&s) { a in other.modifyMut(&a, f) } }
         )
     }
@@ -97,7 +104,7 @@ public extension Prism {
     func compose<B>(_ other: AffineTraversal<A, B>) -> AffineTraversal<S, B> {
         AffineTraversal<S, B>(
             preview: { @Sendable s in preview(s).flatMap(other.preview) },
-            set: { @Sendable s, b in preview(s).map { a in review(other.set(a, b)) } ?? s },
+            set: setThrough(tryModifyMut, other.set),
             tryModifyMut: { @Sendable s, f in tryModifyMut(&s) { a in other.tryModifyMut(&a, f) } }
         )
     }
@@ -110,7 +117,7 @@ public extension AffineTraversal {
     func compose<B>(_ other: Lens<A, B>) -> AffineTraversal<S, B> {
         AffineTraversal<S, B>(
             preview: { @Sendable s in preview(s).map(other.get) },
-            set: { @Sendable s, b in preview(s).map { a in set(s, other.set(a, b)) } ?? s },
+            set: setThrough(tryModifyMut, other.set),
             tryModifyMut: { @Sendable s, f in tryModifyMut(&s) { a in other.modifyMut(&a, f) } }
         )
     }
@@ -119,7 +126,7 @@ public extension AffineTraversal {
     func compose<B>(_ other: Prism<A, B>) -> AffineTraversal<S, B> {
         AffineTraversal<S, B>(
             preview: { @Sendable s in preview(s).flatMap(other.preview) },
-            set: { @Sendable s, b in preview(s).flatMap(other.preview) == nil ? s : set(s, other.review(b)) },
+            set: setThrough(tryModifyMut) { (a: consuming A, b: B) in other.set(consume a, b) },
             tryModifyMut: { @Sendable s, f in tryModifyMut(&s) { a in other.tryModifyMut(&a, f) } }
         )
     }
@@ -128,8 +135,24 @@ public extension AffineTraversal {
     func compose<B>(_ other: AffineTraversal<A, B>) -> AffineTraversal<S, B> {
         AffineTraversal<S, B>(
             preview: { @Sendable s in preview(s).flatMap(other.preview) },
-            set: { @Sendable s, b in preview(s).map { a in set(s, other.set(a, b)) } ?? s },
+            set: setThrough(tryModifyMut, other.set),
             tryModifyMut: { @Sendable s, f in tryModifyMut(&s) { a in other.tryModifyMut(&a, f) } }
         )
+    }
+}
+
+// MARK: - Composed set
+
+/// The `set` of a composed optic: writes `b` through the outer optic's in-place mutation
+/// and the inner optic's `set`. The whole and each focus are moved along, never shared, so
+/// the write is in place whenever the caller hands the whole over.
+private func setThrough<S, A, B>(
+    _ outer: @escaping @Sendable (inout S, (inout A) -> Void) -> Void,
+    _ inner: @escaping @Sendable (consuming A, B) -> A
+) -> @Sendable (consuming S, B) -> S {
+    { (s: consuming S, b: B) in
+        var whole = consume s
+        outer(&whole) { a in a = inner(consume a, b) }
+        return whole
     }
 }

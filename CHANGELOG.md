@@ -21,6 +21,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **In-place optics**: `Lens.traversal`, `Prism.traversal`, `Dictionary.eachValue(Indexed)` and
   `Stateful` `zoom` (Lens, Prism, AffineTraversal) now go through the optic's own
   `modifyMut`/`tryModifyMut`, so key-path optics mutate the focused buffer without copying it.
+- **Prism and Iso mutate their payload in place.** A `Prism` (every `@Prisms` prism and the
+  hand-written ones on `Optional`, `Result`, `Either`, `Validation`, `Loading`) and an `Iso`
+  (`lift`, `asLens`, `asPrism`, `asAffineTraversal`) take the focus out and rebuild the whole with
+  `review` / `reverseGet`. They now `consume` the old whole first, so a CoW payload (`case
+  list([Item])`) is no longer copied on the first write. That was always the case in debug builds,
+  and in release builds whenever the optimiser didn't happen to remove it. `Prism.lift`,
+  `Prism.zoom` and every composed chain with a prism link benefit.
+- **`ix(key:)` on `Dictionary` and `affineTraversal(\.optionalProperty)`** mutate in place (through
+  `dict.values[index]` and `Optional.take()`) instead of copying the value out and back.
+- **Pure optic writes can run in place.** `Lens.set`, `AffineTraversal.set`, `Prism.set`,
+  `Traversal.setAll` and every optic's `over` take the whole as `consuming`, and the composed
+  `set`s write through the in-place path (`outer.modifyMut` + `inner.set`). Handing the value over
+  (`model = optic.set(consume model, x)`, a temporary, or a last use the optimiser sees) writes in
+  place; a caller that keeps using the original still gets a copy, so value semantics are unchanged.
+  Before, `[Int].ix(3).set(xs, 42)` and `(\.items >>> ix(0)).over(f)(model)` copied the whole
+  buffer on every call, even in release builds.
+- **`Mutable.mutate` and `NonEmpty.append(_:)` / `append(contentsOf:)` are `consuming`**:
+  `x.mutate { … }` and `list.append(e)` on a value handed over mutate / grow the existing buffer.
 
 ### Added
 - **Transformer stacks are their own types** (Haskell's `newtype` per transformer). Every stack is
@@ -98,6 +116,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Conversions**: `Either.toValidation()` (when the left side is a `Semigroup`).
 
 ### Changed
+- **Ownership in optic signatures** (source-compatible, ABI-changing): `Lens.set`,
+  `AffineTraversal.set` and their init parameters are `@Sendable (consuming S, A) -> S`; every
+  `over` returns `@Sendable (consuming S) -> S`; `Prism.set` and `Traversal.setAll` take
+  `consuming S`; `Mutable.mutate` and `NonEmpty.append` are `consuming func`. Existing closures
+  convert both ways, so call sites and hand-written optics compile unchanged. New
+  `Iso.modifyMut(_:_:)`, the in-place mutation `lift` and the `as…` views share.
 - **The transformer API is the stack structs.** Wrap a nested value (`.readerT`, `Stack(x)`), work
   with `map` / `flatMap` / the operators, leave with `.rawValue`. The other transformer entries in
   this section (and in Removed) describe semantics using the nested-type names (`mapT`,

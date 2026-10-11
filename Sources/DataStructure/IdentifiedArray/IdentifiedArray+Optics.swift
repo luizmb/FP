@@ -31,9 +31,9 @@ public extension IdentifiedArray where ID: Sendable, Element: Sendable {
     static func ix(id key: ID) -> AffineTraversal<IdentifiedArray, Element> {
         AffineTraversal(
             preview: { @Sendable whole in whole.position(of: key).map { whole.storage[$0] } },
-            set: { @Sendable whole, element in
+            set: { @Sendable (whole: consuming IdentifiedArray, element: Element) in
                 guard let i = whole.position(of: key), whole.id(element) == key else { return whole }
-                var copy = whole
+                var copy = consume whole
                 copy.storage[i] = element
                 return copy
             },
@@ -54,9 +54,9 @@ public extension IdentifiedArray where ID: Sendable, Element: Sendable {
     static func ix(_ position: Int) -> AffineTraversal<IdentifiedArray, Element> {
         AffineTraversal(
             preview: { @Sendable whole in whole.storage.indices.contains(position) ? whole.storage[position] : nil },
-            set: { @Sendable whole, element in
+            set: { @Sendable (whole: consuming IdentifiedArray, element: Element) in
                 guard whole.storage.indices.contains(position) else { return whole }
-                var copy = whole
+                var copy = consume whole
                 let oldKey = copy.keys[position]
                 copy.storage[position] = element
                 copy.rekeyIfNeeded(at: position, previousKey: oldKey)

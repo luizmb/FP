@@ -376,3 +376,31 @@ struct PrismsPayloadTypeTests {
         #expect(FunctionPayload.named(Person(name: "Ada")).named?.name == "Ada")
     }
 }
+
+// MARK: - Zero-copy
+
+@Prisms
+fileprivate enum Feed {
+    case idle
+    case posts([Int])
+}
+
+private func bufferAddress(_ array: [Int]) -> UnsafeRawPointer? {
+    array.withUnsafeBufferPointer { UnsafeRawPointer($0.baseAddress) }
+}
+
+@Suite("@Prisms zero-copy")
+struct PrismsZeroCopyTests {
+    @Test func generatedPrism_mutatesPayloadInPlace() {
+        var feed = Feed.posts(Array(0 ..< 1_000))
+        var before: UnsafeRawPointer?
+        var after: UnsafeRawPointer?
+        Feed.prism.posts.tryModifyMut(&feed) { posts in
+            before = bufferAddress(posts)
+            posts[0] = 99
+            after = bufferAddress(posts)
+        }
+        #expect(before == after)
+        #expect(feed.posts?.first == 99)
+    }
+}

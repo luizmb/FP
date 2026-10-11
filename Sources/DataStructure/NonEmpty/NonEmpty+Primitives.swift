@@ -19,13 +19,26 @@ public extension NonEmpty {
     }
 
     /// Append a single element.
-    func append(_ element: A) -> NonEmpty<A> {
-        NonEmpty(head: head, tail: tail + [element])
+    ///
+    /// `self` is `consuming`: when the caller hands the value over (a temporary, or
+    /// `(consume list).append(x)`) the element is appended to the existing tail buffer
+    /// instead of a copy of it.
+    consuming func append(_ element: A) -> NonEmpty<A> {
+        let first = head
+        var rest = tail
+        _ = consume self // end `self` here so `rest` is the tail buffer's only owner
+        rest.append(element)
+        return NonEmpty(head: first, tail: rest)
     }
 
-    /// Append all elements of a plain array.
-    func append(contentsOf elements: [A]) -> NonEmpty<A> {
-        NonEmpty(head: head, tail: tail + elements)
+    /// Append all elements of a plain array. In place on the tail buffer when the
+    /// caller hands `self` over, as with ``append(_:)``.
+    consuming func append(contentsOf elements: [A]) -> NonEmpty<A> {
+        let first = head
+        var rest = tail
+        _ = consume self // end `self` here so `rest` is the tail buffer's only owner
+        rest.append(contentsOf: elements)
+        return NonEmpty(head: first, tail: rest)
     }
 
     /// Reverse the collection.

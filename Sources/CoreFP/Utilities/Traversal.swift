@@ -58,7 +58,7 @@
 ///
 /// As with ``AffineTraversal``, the write cost depends on the backing optic:
 /// - `[A].each` on a `MutableCollection` → zero-copy (direct `inout` element access)
-/// - `[K: V].eachValue` → copies each `Value` once
+/// - `[K: V].eachValue` → zero-copy (in place through `values[index]`)
 /// - Composition → threads `modifyMut` through each layer
 ///
 /// - Note: For the identity traversal (where `S == A`, a single focus), use ``Traversal/id``.
@@ -84,16 +84,22 @@ public struct Traversal<S, A>: Sendable {
     public func callAsFunction(_ whole: S) -> [A] { getAll(whole) }
 
     /// Applies a pure transform to every focus; returns a new `S`.
-    /// Prefer ``lift(_:)`` when working with `EndoMut` and large CoW states.
-    public func over(_ transform: @escaping @Sendable (A) -> A) -> @Sendable (S) -> S {
-        { s in var c = s; modifyMut(&c) { a in a = transform(a) }; return c }
+    /// Runs through `modifyMut` on the `S` it is handed, so passing a value the
+    /// caller no longer needs (`consume x`, a temporary) avoids copying it.
+    public func over(_ transform: @escaping @Sendable (A) -> A) -> @Sendable (consuming S) -> S {
+        { (s: consuming S) in
+            var whole = consume s
+            modifyMut(&whole) { a in a = transform(a) }
+            return whole
+        }
     }
 
     /// Replaces every focus with `value`; returns a new `S`. (Foci that are absent stay absent.)
-    public func setAll(_ whole: S, _ value: A) -> S {
-        var c = whole
-        modifyMut(&c) { a in a = value }
-        return c
+    /// In place when the caller hands `whole` over (`consume x`, or a temporary).
+    public func setAll(_ whole: consuming S, _ value: A) -> S {
+        var result = consume whole
+        modifyMut(&result) { a in a = value }
+        return result
     }
 
     /// Lifts an `EndoMut<A>` into an `EndoMut<S>` that runs the mutation on every focus.
