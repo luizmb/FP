@@ -194,8 +194,12 @@ func generateLensMembers(
         members.append(makeLensesStruct(
             structName: structName,
             access: structAccess,
-            lensProps: lensProps
+            lensProps: lensProps,
+            initParams: initParams
         ))
+        if lensProps.contains(where: \.isLet) {
+            members.append(makeFieldsIso(structName: structName, initParams: initParams))
+        }
         members.append(DeclSyntax(stringLiteral: "\(structAccess.prefix)static var lens: Lenses { Lenses() }"))
         members.append(makeWithFunc(
             structName: structName,
@@ -259,21 +263,52 @@ private func makeInit(access: AccessLevel, structAccess: AccessLevel, params: [S
 /// properties all have defaults). The host's access propagates to the struct and its
 /// fields so external callers can read `Host.lens.propertyName` at the appropriate level;
 /// a field whose property restricts its setter is capped to that setter's access.
+///
+/// A `let` property can't be written through a key path, so its lens rebuilds the host. `set`
+/// goes through `with(...)`; `modifyMut` goes through `__fieldsIso`, whose `modifyMut` gives up
+/// the old value before the focus is mutated, so a CoW focus (Array, String, …) is mutated in place.
 private func makeLensesStruct(
     structName: String,
     access: AccessLevel,
-    lensProps: [StoredProperty]
+    lensProps: [StoredProperty],
+    initParams: [StoredProperty]
 ) -> DeclSyntax {
     let fields = lensProps
         .map { prop -> String in
             let typeAnn = "CoreFP.Lens<\(structName), \(prop.type)>"
             let body = prop.isLet
-                ? "CoreFP.lens(\\\(structName).\(prop.name)) { s, a in s.with(\(prop.name): a) }"
+                ? reconstructionLens(structName: structName, prop: prop, initParams: initParams)
                 : "CoreFP.lens(\\\(structName).\(prop.name))"
             return "\(lensAccess(of: prop, structAccess: access).prefix)let \(prop.name): \(typeAnn) = \(body)"
         }
         .joined(separator: "; ")
     return DeclSyntax(stringLiteral: "\(access.prefix)struct Lenses: Sendable { \(fields) }")
+}
+
+/// The lens of a `let` property. Its in-place write is `__fieldsIso.modifyMut` narrowed to the field.
+private func reconstructionLens(structName: String, prop: StoredProperty, initParams: [StoredProperty]) -> String {
+    let focus = initParams.count > 1 ? "$0.\(prop.name)" : "$0"
+    return "CoreFP.Lens(get: { $0.\(prop.name) }, set: { s, a in s.with(\(prop.name): a) }, "
+        + "modifyMut: { s, f in \(structName).__fieldsIso.modifyMut(&s) { f(&\(focus)) } })"
+}
+
+/// Generates `__fieldsIso`, the host as a tuple of its init parameters (or the single parameter
+/// itself), rebuilt through the same init `with(...)` uses. `Iso.modifyMut` consumes the old host
+/// before the caller mutates the tuple, so each field has one owner and nothing is CoW-copied.
+/// The `consume` lives in `Iso` rather than in generated code because Swift rejects reassigning an
+/// `inout` after `consume` when the host is a trivial type (all `Double`s, say), while a generic
+/// `S` compiles for every host.
+private func makeFieldsIso(structName: String, initParams: [StoredProperty]) -> DeclSyntax {
+    let (fieldsType, get, reverseGet) = initParams.count > 1
+        ? (
+            "(\(initParams.map { "\($0.name): \($0.type)" }.joined(separator: ", ")))",
+            "(\(initParams.map { "\($0.name): $0.\($0.name)" }.joined(separator: ", ")))",
+            initParams.map { "\($0.name): $0.\($0.name)" }.joined(separator: ", ")
+        )
+        : (initParams.map(\.type).joined(), initParams.map { "$0.\($0.name)" }.joined(), initParams.map { "\($0.name): $0" }.joined())
+    return DeclSyntax(stringLiteral:
+        "private static var __fieldsIso: CoreFP.Iso<\(structName), \(fieldsType)> { "
+            + "CoreFP.Iso(get: { \(get) }, reverseGet: { \(structName)(\(reverseGet)) }) }")
 }
 
 /// Generates the `with(...)` helper.

@@ -1547,7 +1547,7 @@ import FPMacros
 
 | Property | In generated `init`? | Gets a `Lens`? | Lens kind |
 |---|---|---|---|
-| `let name: T` | yes — required | yes | reconstruction (calls `init` via the generated `with(...)`) |
+| `let name: T` | yes — required | yes | reconstruction (`set` calls `with(...)`, in-place writes go through a private fields `Iso`) |
 | `let version = 1` | no | no | immutable constant |
 | `var port: Int` | yes — required | yes | `WritableKeyPath` |
 | `var timeout = 30` | yes — default `= 30` | yes | `WritableKeyPath` |
@@ -1580,11 +1580,22 @@ public struct AppConfig {
     }
 
     public struct Lenses: Sendable {
-        public let host:    Lens<AppConfig, String> = CoreFP.lens(\AppConfig.host) { s, a in s.with(host: a) }
+        public let host:    Lens<AppConfig, String> = CoreFP.Lens(
+            get: { $0.host },
+            set: { s, a in s.with(host: a) },
+            modifyMut: { s, f in AppConfig.__fieldsIso.modifyMut(&s) { f(&$0.host) } }
+        )
         public let port:    Lens<AppConfig, Int>    = CoreFP.lens(\AppConfig.port)
         public let timeout: Lens<AppConfig, Int>    = CoreFP.lens(\AppConfig.timeout)
     }
     public static var lens: Lenses { Lenses() }
+
+    private static var __fieldsIso: Iso<AppConfig, (host: String, port: Int, timeout: Int)> {
+        Iso(
+            get: { (host: $0.host, port: $0.port, timeout: $0.timeout) },
+            reverseGet: { AppConfig(host: $0.host, port: $0.port, timeout: $0.timeout) }
+        )
+    }
 
     public func with(host: String? = nil, port: Int? = nil, timeout: Int? = nil) -> AppConfig {
         AppConfig(
@@ -1597,7 +1608,7 @@ public struct AppConfig {
 extension AppConfig: Sendable {}
 ```
 
-The `Lens<AppConfig, String>` for `host` (a `let` property) calls `s.with(host: a)` rather than inlining all field references — the `with(...)` helper is the single source of truth for reconstruction, keeping the codegen O(N) in the number of properties instead of O(N²).
+The `Lens<AppConfig, String>` for `host` (a `let` property) can't write through a key path, so it rebuilds the struct. `set` calls `s.with(host: a)`. `modifyMut` goes through `__fieldsIso`, generated once per struct: `Iso.modifyMut` gives up the old value before the field is mutated, so a `let items: [Item]` is mutated in place instead of copied. Both helpers are shared by every `let` lens, which keeps the generated code O(N) in the number of properties instead of O(N²).
 
 `lens` is always computed: Swift forbids `static let` in any generic context, which includes generic hosts (`Container<T>`) and structs nested in a generic type (which the macro can't see). Building `Lenses()` is cheap. A generic host gets `extension Container: Sendable where T: Sendable {}` for the generic parameters its stored properties use.
 
