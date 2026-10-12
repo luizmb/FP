@@ -43,6 +43,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   buffer on every call, even in release builds.
 - **`Mutable.mutate` and `NonEmpty.append(_:)` / `append(contentsOf:)` are `consuming`**:
   `x.mutate { … }` and `list.append(e)` on a value handed over mutate / grow the existing buffer.
+- **`@Lenses` lenses on `let` properties mutate in place.** Their `modifyMut` (and so `lift`,
+  `zoom` and composed chains) used to rebuild the struct while the old value still held the
+  focused field, so a CoW field (`let items: [Item]`) was copied on every write, in debug and
+  release. The macro now emits a private `__fieldsIso` (the struct as a tuple of its init
+  parameters, rebuilt through the same init `with(...)` uses) and each `let` lens writes through
+  `Iso.modifyMut`, which gives up the old struct first. `@ApplyOptics` gets the same lenses.
 
 ### Added
 - **Transformer stacks are their own types** (Haskell's `newtype` per transformer). Every stack is

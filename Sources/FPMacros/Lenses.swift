@@ -33,7 +33,8 @@
 ///
 /// ## Property rules
 ///
-/// - `let name: T`      → required init parameter + reconstruction `Lens`
+/// - `let name: T`      → required init parameter + reconstruction `Lens` (in-place `modifyMut`
+///   through a private `__fieldsIso`, so a CoW field isn't copied)
 /// - `let name = value` → excluded from init, no `Lens` (immutable constant)
 /// - `var name: T`      → required init parameter + `WritableKeyPath`-based `Lens`
 /// - `var name: T = v`  → init parameter with default `v` + `WritableKeyPath`-based `Lens`

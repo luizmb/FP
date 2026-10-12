@@ -361,3 +361,84 @@ struct LensesFunctionPropertyTests {
         #expect(Handlers.lens.lookup.get(handlers)(2) == "2")
     }
 }
+
+// MARK: - Zero-copy let lenses
+
+@Lenses(init: .internal)
+fileprivate struct Board {
+    let items: [Int]
+    let cells: [Int]
+    var title: String
+}
+
+@Lenses(init: .internal)
+fileprivate struct Bag {
+    let items: [Int]
+}
+
+@Lenses(init: .internal)
+fileprivate struct Shelf<Item: Sendable> {
+    let items: [Item]
+    let label: String
+}
+
+private func bufferAddress(_ array: [Int]) -> UnsafeRawPointer? {
+    array.withUnsafeBufferPointer { UnsafeRawPointer($0.baseAddress) }
+}
+
+@Suite("@Lenses zero-copy let lenses")
+struct LensesZeroCopyTests {
+    private let longTitle = "a title long enough to live on the heap"
+
+    @Test func let_lens_mutates_array_in_place() {
+        var board = Board(items: Array(0 ..< 1_000), cells: [1, 2, 3], title: longTitle)
+        let before = bufferAddress(board.items)
+        Board.lens.items.modifyMut(&board) { $0[0] = 99 }
+        #expect(bufferAddress(board.items) == before)
+        #expect(board.items.first == 99)
+        #expect(board.cells == [1, 2, 3])
+        #expect(board.title == longTitle)
+    }
+
+    @Test func let_lens_keeps_the_other_let_buffer() {
+        var board = Board(items: Array(0 ..< 1_000), cells: Array(0 ..< 1_000), title: longTitle)
+        let cellsBefore = bufferAddress(board.cells)
+        Board.lens.items.modifyMut(&board) { $0.append(1_000) }
+        #expect(bufferAddress(board.cells) == cellsBefore)
+        #expect(board.items.count == 1_001)
+    }
+
+    @Test func let_lens_lift_mutates_in_place() {
+        var board = Board(items: Array(0 ..< 1_000), cells: [], title: longTitle)
+        let before = bufferAddress(board.items)
+        Board.lens.items.lift(EndoMut { $0[1] = 42 })(&board)
+        #expect(bufferAddress(board.items) == before)
+        #expect(board.items[1] == 42)
+    }
+
+    @Test func single_field_let_lens_mutates_in_place() {
+        var bag = Bag(items: Array(0 ..< 1_000))
+        let before = bufferAddress(bag.items)
+        Bag.lens.items.modifyMut(&bag) { $0[0] = 7 }
+        #expect(bufferAddress(bag.items) == before)
+        #expect(bag.items.first == 7)
+    }
+
+    @Test func generic_host_let_lens_mutates_in_place() {
+        var shelf = Shelf(items: Array(0 ..< 1_000), label: longTitle)
+        let before = bufferAddress(shelf.items)
+        Shelf<Int>.lens.items.modifyMut(&shelf) { $0[0] = 5 }
+        #expect(bufferAddress(shelf.items) == before)
+        #expect(shelf.items.first == 5)
+        #expect(shelf.label == longTitle)
+    }
+
+    @Test func let_lens_keeps_value_semantics_when_shared() {
+        var board = Board(items: Array(0 ..< 1_000), cells: [], title: longTitle)
+        let original = board
+        Board.lens.items.modifyMut(&board) { $0[0] = 99 }
+        #expect(bufferAddress(board.items) != bufferAddress(original.items))
+        #expect(original.items.first == 0)
+        #expect(board.items.first == 99)
+    }
+}
