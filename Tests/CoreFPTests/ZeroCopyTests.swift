@@ -208,6 +208,13 @@ struct TraversalZeroCopyTests {
         #expect(values.allSatisfy { $0 == 0 })
     }
 
+    @Test func isoTraversal_modifyMut_isInPlace() {
+        var wrapper = Wrapper(values: bigArray())
+        let seen = probe { f in wrapperIso.traversal.modifyMut(&wrapper) { f(&$0) } }
+        #expect(seen.before == seen.after)
+        #expect(wrapper.values.first == 99)
+    }
+
     @Test func eachIndexedOver_isInPlace() {
         var values = bigArray()
         let before = address(values)

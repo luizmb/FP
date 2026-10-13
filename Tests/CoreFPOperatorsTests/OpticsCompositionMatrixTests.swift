@@ -134,3 +134,37 @@ struct OpticsCompositionMatrixTests {
         #expect(Bool(true))
     }
 }
+
+// MARK: - Traversal fold through the operators
+
+private func visited<S, A>(_ traversal: Traversal<S, A>, _ whole: S) -> [A] {
+    var all: [A] = []
+    traversal.forEach(whole) { all.append($0) }
+    return all
+}
+
+@Suite("Traversal fold through >>> and <<<")
+struct TraversalFoldOperatorTests {
+    @Test func forEachMatchesGetAllWithTraversalOnTheRight() {
+        for chain in [i >>> t, l >>> t, p >>> t, a >>> t, t >>> t] {
+            #expect(chain.getAll(5) == [5])
+            #expect(visited(chain, 5) == [5])
+        }
+    }
+
+    @Test func forEachMatchesGetAllWithTraversalOnTheLeft() {
+        for chain in [t >>> i, t >>> l, t >>> p, t >>> a] {
+            #expect(chain.getAll(5) == [5])
+            #expect(visited(chain, 5) == [5])
+        }
+    }
+
+    @Test func nestedEachChainFoldsInOrder() {
+        let cells = [[Int]].each >>> [Int].each >>> l
+        let grid = [[1, 2], [], [3]]
+        #expect(visited(cells, grid) == [1, 2, 3])
+        #expect(cells.reduce(grid, into: 0) { $0 += $1 } == 6)
+        #expect(cells.count(grid) == 3)
+        #expect(visited(l <<< [Int].each <<< [[Int]].each, grid) == [1, 2, 3])
+    }
+}

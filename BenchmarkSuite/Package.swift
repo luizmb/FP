@@ -24,6 +24,17 @@ let package = Package(
             plugins: [
                 .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
             ]
+        ),
+        .executableTarget(
+            name: "OpticsBenchmarks",
+            dependencies: [
+                .product(name: "CoreFP", package: "FP"),
+                .product(name: "Benchmark", package: "package-benchmark")
+            ],
+            path: "Benchmarks/OpticsBenchmarks",
+            plugins: [
+                .plugin(name: "BenchmarkPlugin", package: "package-benchmark")
+            ]
         )
     ]
 )

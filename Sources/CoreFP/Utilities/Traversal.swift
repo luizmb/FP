@@ -67,25 +67,88 @@ public struct Traversal<S, A>: Sendable {
     /// Extracts every focused value from `S`, in traversal order.
     public let getAll: @Sendable (S) -> [A]
 
+    /// Feeds every focused value to `body`, in traversal order, without collecting them.
+    ///
+    /// This is the fold primitive (Haskell's `foldMapOf`, written in continuation-passing style
+    /// because a stored Swift closure can't be generic over the accumulator). Composition nests
+    /// it, so a chain of any depth visits the leaves in one pass and builds no intermediate
+    /// arrays. ``reduce(_:into:_:)``, ``foldMap(_:_:)`` and ``count(_:)`` are built on it, and a
+    /// composed traversal's ``getAll`` collects through it into a single array.
+    public let forEach: @Sendable (S, (A) -> Void) -> Void
+
     /// Applies `f` to every focused value in place. `S` is kept `inout` throughout; copy cost
     /// depends on the specific traversal — see the file-level comment.
     public let modifyMut: @Sendable (inout S, (inout A) -> Void) -> Void
 
-    /// Full init. Supply both the read path (`getAll`) and the in-place write path (`modifyMut`).
+    /// Full init. Supply the bulk read (`getAll`), the fold (`forEach`) and the in-place write
+    /// (`modifyMut`). Use it when `getAll` has a faster path than collecting `forEach` (e.g.
+    /// `Array($0)` shares the buffer).
+    public init(
+        getAll: @escaping @Sendable (S) -> [A],
+        forEach: @escaping @Sendable (S, (A) -> Void) -> Void,
+        modifyMut: @escaping @Sendable (inout S, (inout A) -> Void) -> Void
+    ) {
+        self.getAll = getAll
+        self.forEach = forEach
+        self.modifyMut = modifyMut
+    }
+
+    /// Fold-first init: `getAll` collects `forEach` into one array.
+    public init(
+        forEach: @escaping @Sendable (S, (A) -> Void) -> Void,
+        modifyMut: @escaping @Sendable (inout S, (inout A) -> Void) -> Void
+    ) {
+        self.init(
+            getAll: { s in
+                var all: [A] = []
+                forEach(s) { all.append($0) }
+                return all
+            },
+            forEach: forEach,
+            modifyMut: modifyMut
+        )
+    }
+
+    /// Array-first init: `forEach` walks the array `getAll` returns. Prefer
+    /// ``init(forEach:modifyMut:)`` when the foci can be visited without building that array.
     public init(
         getAll: @escaping @Sendable (S) -> [A],
         modifyMut: @escaping @Sendable (inout S, (inout A) -> Void) -> Void
     ) {
-        self.getAll = getAll
-        self.modifyMut = modifyMut
+        self.init(
+            getAll: getAll,
+            forEach: { s, body in
+                for a in getAll(s) {
+                    body(a)
+                }
+            },
+            modifyMut: modifyMut
+        )
     }
 
-    /// Returns every focused value. Same as ``getAll``, enabling call syntax: `traversal(whole)`.
+    /// Returns every focus. Same as ``getAll``, enabling call syntax: `traversal(whole)`.
     public func callAsFunction(_ whole: S) -> [A] { getAll(whole) }
 
+    /// Folds every focus into `initial`, mutating the accumulator in place. Builds no array.
+    public func reduce<R>(_ whole: S, into initial: R, _ combine: (inout R, A) -> Void) -> R {
+        var result = initial
+        forEach(whole) { combine(&result, $0) }
+        return result
+    }
+
+    /// Maps every focus into a ``Monoid`` and combines them in order (Haskell's `foldMapOf`).
+    /// Builds no array; returns ``Monoid/identity`` when there are no foci.
+    public func foldMap<M: Monoid>(_ whole: S, _ transform: (A) -> M) -> M {
+        reduce(whole, into: M.identity) { acc, a in acc = M.combine(acc, transform(a)) }
+    }
+
+    /// The number of foci (Haskell's `lengthOf`). Builds no array.
+    public func count(_ whole: S) -> Int {
+        reduce(whole, into: 0) { n, _ in n += 1 }
+    }
+
     /// Applies a pure transform to every focus; returns a new `S`.
-    /// Runs through `modifyMut` on the `S` it is handed, so passing a value the
-    /// caller no longer needs (`consume x`, a temporary) avoids copying it.
+    /// Prefer ``lift(_:)`` when working with `EndoMut` and large CoW states.
     public func over(_ transform: @escaping @Sendable (A) -> A) -> @Sendable (consuming S) -> S {
         { (s: consuming S) in
             var whole = consume s
@@ -112,7 +175,7 @@ public struct Traversal<S, A>: Sendable {
 public extension Traversal where S == A {
     /// The identity traversal: a single focus that is the whole value itself.
     static var id: Traversal<S, S> {
-        Traversal(getAll: { [$0] }, modifyMut: { s, f in f(&s) })
+        Traversal(getAll: { [$0] }, forEach: { s, body in body(s) }, modifyMut: { s, f in f(&s) })
     }
 }
 
@@ -123,7 +186,7 @@ public extension Lens {
     /// `modifyMut`, so a key-path lens stays zero-copy (`^\S.items >>> [Item].each` mutates
     /// the array in place).
     var traversal: Traversal<S, A> {
-        Traversal(getAll: { [get($0)] }, modifyMut: modifyMut)
+        Traversal(getAll: { [get($0)] }, forEach: { s, body in body(get(s)) }, modifyMut: modifyMut)
     }
 }
 
@@ -132,6 +195,7 @@ public extension Prism {
     var traversal: Traversal<S, A> {
         Traversal(
             getAll: { preview($0).map { [$0] } ?? [] },
+            forEach: { s, body in if let a = preview(s) { body(a) } },
             modifyMut: tryModifyMut
         )
     }
@@ -140,7 +204,7 @@ public extension Prism {
 public extension Iso {
     /// Widens this iso to a single-focus ``Traversal``.
     var traversal: Traversal<S, A> {
-        Traversal(getAll: { [get($0)] }, modifyMut: { s, f in var a = get(s); f(&a); s = reverseGet(a) })
+        Traversal(getAll: { [get($0)] }, forEach: { s, body in body(get(s)) }, modifyMut: { s, f in modifyMut(&s, f) })
     }
 }
 
@@ -149,6 +213,7 @@ public extension AffineTraversal {
     var traversal: Traversal<S, A> {
         Traversal(
             getAll: { preview($0).map { [$0] } ?? [] },
+            forEach: { s, body in if let a = preview(s) { body(a) } },
             modifyMut: { s, f in tryModifyMut(&s, f) }
         )
     }

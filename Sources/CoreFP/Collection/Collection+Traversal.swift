@@ -14,8 +14,10 @@
 public extension MutableCollection where Element: Sendable {
     /// A ``Traversal`` focusing on **every** element of the collection.
     ///
-    /// `modifyMut` walks the indices and mutates each element directly via
-    /// `inout collection[i]` — zero-copy on the buffer.
+    /// On contiguous collections (`Array`, `ContiguousArray`, `ArraySlice`) `forEach` and
+    /// `modifyMut` go through the storage buffer, so no element is copied and no per-element
+    /// accessor frame is allocated; other collections walk their indices. Either way `modifyMut`
+    /// mutates each element in place — zero-copy on the buffer.
     ///
     /// ```swift
     /// [Int].each.getAll([10, 20, 30])          // [10, 20, 30]
@@ -24,6 +26,11 @@ public extension MutableCollection where Element: Sendable {
     static var each: Traversal<Self, Element> {
         Traversal(
             getAll: { @Sendable in Array($0) },
+            forEach: { @Sendable collection, body in
+                for element in collection {
+                    body(element)
+                }
+            },
             modifyMut: { @Sendable collection, f in
                 var i = collection.startIndex
                 while i != collection.endIndex {
@@ -48,6 +55,11 @@ public extension Dictionary where Key: Sendable, Value: Sendable {
     static var eachValue: Traversal<[Key: Value], Value> {
         Traversal(
             getAll: { @Sendable in Array($0.values) },
+            forEach: { @Sendable dict, body in
+                for value in dict.values {
+                    body(value)
+                }
+            },
             modifyMut: { @Sendable dict, f in
                 var i = dict.values.startIndex
                 while i != dict.values.endIndex {
@@ -68,6 +80,11 @@ public extension MutableCollection where Index: Sendable, Element: Sendable {
     static var eachIndexed: IndexedTraversal<Self, Index, Element> {
         IndexedTraversal(
             getAll: { @Sendable collection in collection.indices.map { ($0, collection[$0]) } },
+            forEach: { @Sendable collection, body in
+                for index in collection.indices {
+                    body(index, collection[index])
+                }
+            },
             modifyMut: { @Sendable collection, f in
                 var i = collection.startIndex
                 while i != collection.endIndex {
@@ -89,6 +106,11 @@ public extension Dictionary where Key: Sendable, Value: Sendable {
     static var eachValueIndexed: IndexedTraversal<[Key: Value], Key, Value> {
         IndexedTraversal(
             getAll: { @Sendable dict in dict.map { ($0.key, $0.value) } },
+            forEach: { @Sendable dict, body in
+                for (key, value) in dict {
+                    body(key, value)
+                }
+            },
             modifyMut: { @Sendable dict, f in
                 var i = dict.values.startIndex
                 while i != dict.values.endIndex {
