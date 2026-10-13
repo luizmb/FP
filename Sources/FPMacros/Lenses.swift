@@ -7,7 +7,7 @@
 /// By default (`@Lenses` or `@Lenses(.all)`) the macro emits:
 /// - `init(...)` — a memberwise initializer.
 /// - `Foo.Lenses` — a `Sendable` struct holding one `Lens<Foo, Property>` per stored
-///   property as a stored field with a default value.
+///   property as a get-only computed member, so reading one lens builds only that lens.
 /// - `Foo.lens` — a computed `static var` returning the `Lenses` instance (computed, so it
 ///   also works on generic structs and on structs nested in a generic type). Access via
 ///   `Foo.lens.property`.

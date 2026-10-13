@@ -5,20 +5,26 @@ import Foundation
 //
 // `Optional<Wrapped>` is generic, so the static `prism` accessor is a computed
 // `static var` returning a fresh `Prisms()` per access.
+// Each prism is a computed member, so `Prisms()` is empty and an access builds only the
+// prism asked for (the per-case properties below read one prism, not all of them).
 //
 // `Prismatic` conformance unlocks `\.case` key paths; payload extraction goes through the
 // prism (`Optional.prism.some.preview(x)`), `\.some`, or the plain `optional.some` property.
 
 public extension Optional {
     struct Prisms: Sendable {
-        public let some: CoreFP.Prism<Wrapped?, Wrapped> = CoreFP.prism(
-            preview: { (s: Wrapped?) in s },
-            review: Optional.some
-        )
-        public let none: CoreFP.Prism<Wrapped?, Void> = CoreFP.prism(
-            preview: { (s: Wrapped?) in if case .none = s { () } else { nil } },
-            review: { (_: Void) in .none }
-        )
+        public var some: CoreFP.Prism<Wrapped?, Wrapped> {
+            CoreFP.prism(
+                preview: { (s: Wrapped?) in s },
+                review: Optional.some
+            )
+        }
+        public var none: CoreFP.Prism<Wrapped?, Void> {
+            CoreFP.prism(
+                preview: { (s: Wrapped?) in if case .none = s { () } else { nil } },
+                review: { (_: Void) in .none }
+            )
+        }
     }
 
     /// The `prism` property.

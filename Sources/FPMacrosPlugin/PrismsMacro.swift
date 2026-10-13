@@ -236,11 +236,12 @@ private func accessPrefix(_ access: String) -> String {
 
 // MARK: - Code generation
 
-/// The `Prisms` struct holds one `Prism` per case as a stored property with a default
-/// value. Using default values lets `Prisms()` work as a no-arg init regardless of the
-/// host's access level (Swift synthesises `init()` for structs whose stored properties
-/// all have defaults). The host's access propagates to the struct and its fields so
-/// external callers can read `Host.prism.caseName` at the appropriate level.
+/// The `Prisms` struct holds one `Prism` per case as a get-only computed property, so it has no
+/// stored properties and `Prisms()` is free: reading `Host.prism.caseName` (or a case accessor,
+/// which delegates here) builds only that case's prism, not every case's. Key paths into the
+/// struct (`\Prisms.caseName`) work the same as with stored fields. The host's access propagates
+/// to the struct and its members so external callers can read `Host.prism.caseName` at the
+/// appropriate level.
 private func makePrismsStruct(enumName: String, access: String, cases: [CaseInfo]) -> DeclSyntax {
     let prefix = accessPrefix(access)
     let fields = cases
@@ -248,7 +249,7 @@ private func makePrismsStruct(enumName: String, access: String, cases: [CaseInfo
             let preview = "{ \(info.previewBody(enumName: enumName)) }"
             let review = info.reviewExpr(enumName: enumName)
             let typeAnn = "CoreFP.Prism<\(enumName), \(info.focusType)>"
-            return "\(prefix)let \(info.name): \(typeAnn) = CoreFP.prism(preview: \(preview), review: \(review))"
+            return "\(prefix)var \(info.name): \(typeAnn) { CoreFP.prism(preview: \(preview), review: \(review)) }"
         }
         .joined(separator: "; ")
     return DeclSyntax(stringLiteral: "\(prefix)struct Prisms: Sendable { \(fields) }")

@@ -50,6 +50,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   parameters, rebuilt through the same init `with(...)` uses) and each `let` lens writes through
   `Iso.modifyMut`, which gives up the old struct first. `@ApplyOptics` gets the same lenses.
 
+- **`@Lenses` / `@Prisms` namespaces build only the optic you read.** The `Lenses` and `Prisms`
+  structs held every optic as a stored field, and `static var lens` / `prism` is computed (a
+  `static let` isn't allowed in generic contexts), so `Board.lens.items` built every lens of
+  `Board`, and a case accessor (`feed.posts`, which reads `Self.prism.posts`) built every prism of
+  the enum. The members are now get-only computed properties: same call syntax and key paths
+  (`\Lenses.items`, the `@dynamicMemberLookup` subscript), and `Lenses()` / `Prisms()` are empty.
+  About 6× faster per access on a 10-field struct in release builds. The hand-written `Prisms` of
+  `Optional`, `Result`, `Either`, `Validation` and `Loading` follow the same shape.
+
 ### Added
 - **Transformer stacks are their own types** (Haskell's `newtype` per transformer). Every stack is
   now a concrete struct named `OuterTInner` wrapping the whole nested value, 74 in total:

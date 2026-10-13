@@ -257,12 +257,12 @@ private func makeInit(access: AccessLevel, structAccess: AccessLevel, params: [S
     return DeclSyntax(stringLiteral: "\(prefix)init(\(paramList)) { \(body) }")
 }
 
-/// The `Lenses` struct holds one `Lens` per stored property as a stored field with a
-/// default value. Using default values lets `Lenses()` work as a no-arg init regardless
-/// of the host's access level (Swift synthesises `init()` for structs whose stored
-/// properties all have defaults). The host's access propagates to the struct and its
-/// fields so external callers can read `Host.lens.propertyName` at the appropriate level;
-/// a field whose property restricts its setter is capped to that setter's access.
+/// The `Lenses` struct holds one `Lens` per stored property as a get-only computed property, so
+/// it has no stored properties and `Lenses()` is free: reading `Host.lens.propertyName` builds
+/// only that lens, not every property's. Key paths into the struct (`\Lenses.propertyName`) work
+/// the same as with stored fields. The host's access propagates to the struct and its members so
+/// external callers can read `Host.lens.propertyName` at the appropriate level; a member whose
+/// property restricts its setter is capped to that setter's access.
 ///
 /// A `let` property can't be written through a key path, so its lens rebuilds the host. `set`
 /// goes through `with(...)`; `modifyMut` goes through `__fieldsIso`, whose `modifyMut` gives up
@@ -279,7 +279,7 @@ private func makeLensesStruct(
             let body = prop.isLet
                 ? reconstructionLens(structName: structName, prop: prop, initParams: initParams)
                 : "CoreFP.lens(\\\(structName).\(prop.name))"
-            return "\(lensAccess(of: prop, structAccess: access).prefix)let \(prop.name): \(typeAnn) = \(body)"
+            return "\(lensAccess(of: prop, structAccess: access).prefix)var \(prop.name): \(typeAnn) { \(body) }"
         }
         .joined(separator: "; ")
     return DeclSyntax(stringLiteral: "\(access.prefix)struct Lenses: Sendable { \(fields) }")

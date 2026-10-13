@@ -5,6 +5,8 @@ import Foundation
 //
 // `Result<Success, Failure>` is generic, so the static `prism` accessor is a computed
 // `static var` returning a fresh `Prisms()` per access.
+// Each prism is a computed member, so `Prisms()` is empty and an access builds only the
+// prism asked for (the per-case properties below read one prism, not all of them).
 //
 // `Prismatic` conformance unlocks `\.case` key paths; payload extraction goes through the
 // prism (`Result.prism.success.preview(x)`), `\.success`, or the plain `result.success`
@@ -12,14 +14,18 @@ import Foundation
 
 public extension Result {
     struct Prisms: Sendable {
-        public let success: CoreFP.Prism<Result, Success> = CoreFP.prism(
-            preview: { (s: Result) in if case let .success(v) = s { v } else { nil } },
-            review: Result.success
-        )
-        public let failure: CoreFP.Prism<Result, Failure> = CoreFP.prism(
-            preview: { (s: Result) in if case let .failure(e) = s { e } else { nil } },
-            review: Result.failure
-        )
+        public var success: CoreFP.Prism<Result, Success> {
+            CoreFP.prism(
+                preview: { (s: Result) in if case let .success(v) = s { v } else { nil } },
+                review: Result.success
+            )
+        }
+        public var failure: CoreFP.Prism<Result, Failure> {
+            CoreFP.prism(
+                preview: { (s: Result) in if case let .failure(e) = s { e } else { nil } },
+                review: Result.failure
+            )
+        }
     }
 
     /// The `prism` property.

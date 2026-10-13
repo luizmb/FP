@@ -193,10 +193,10 @@ struct RestrictedSetterTests {
             public var name: String
         }
         """).source
-        #expect(expanded.contains("fileprivate let total: CoreFP.Lens<Ledger, Int>"))
-        #expect(expanded.contains("let entries: CoreFP.Lens<Ledger, Int>"))
-        #expect(!expanded.contains("public let entries"))
-        #expect(expanded.contains("public let name: CoreFP.Lens<Ledger, String>"))
+        #expect(expanded.contains("fileprivate var total: CoreFP.Lens<Ledger, Int>"))
+        #expect(expanded.contains("var entries: CoreFP.Lens<Ledger, Int>"))
+        #expect(!expanded.contains("public var entries"))
+        #expect(expanded.contains("public var name: CoreFP.Lens<Ledger, String>"))
         // `with(...)` is public, so it must not take the restricted-setter properties.
         #expect(expanded.contains("public func with(name: String? = nil) -> Ledger"))
     }
