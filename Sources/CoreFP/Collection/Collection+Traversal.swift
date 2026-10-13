@@ -27,11 +27,30 @@ public extension MutableCollection where Element: Sendable {
         Traversal(
             getAll: { @Sendable in Array($0) },
             forEach: { @Sendable collection, body in
+                // Contiguous storage (Array, ContiguousArray, ArraySlice) is read through its buffer
+                // pointer: called from code that can't be specialised, `Collection`'s subscript and
+                // iterator go through protocol witnesses whose accessor frames are heap-allocated,
+                // which costs a malloc per element. The buffer subscript is a direct addressor.
+                let visited: Void? = collection.withContiguousStorageIfAvailable { buffer in
+                    for element in buffer {
+                        body(element)
+                    }
+                }
+                guard visited == nil else { return }
                 for element in collection {
                     body(element)
                 }
             },
             modifyMut: { @Sendable collection, f in
+                // Same reason as `forEach`: write through the contiguous buffer when there is one.
+                // The buffer is the collection's own (made unique first, as any write would), so
+                // this is still in place.
+                let mutated: Void? = collection.withContiguousMutableStorageIfAvailable { buffer in
+                    for i in buffer.indices {
+                        f(&buffer[i])
+                    }
+                }
+                guard mutated == nil else { return }
                 var i = collection.startIndex
                 while i != collection.endIndex {
                     f(&collection[i])
