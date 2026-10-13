@@ -5,7 +5,7 @@
 ///
 /// By default (`@Prisms` or `@Prisms(.all)`) the macro emits:
 /// - `MyEnum.Prisms` — a `Sendable` struct holding one `Prism<MyEnum, AssociatedValue>`
-///   per case as a stored property with a default value.
+///   per case as a get-only computed member, so reading one prism builds only that prism.
 /// - `MyEnum.prism` — a computed `static var` returning the `Prisms` instance (computed, so it
 ///   also works on generic enums and enums nested in a generic type). Access via
 ///   `MyEnum.prism.caseName`.

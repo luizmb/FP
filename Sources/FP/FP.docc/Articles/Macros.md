@@ -55,12 +55,24 @@ public struct Config {
     }
 
     public struct Lenses: Sendable {
-        public let host: CoreFP.Lens<Config, String> =
-            CoreFP.lens(\Config.host) { s, a in s.with(host: a) }
-        public let port: CoreFP.Lens<Config, Int> = CoreFP.lens(\Config.port)
-        public let timeout: CoreFP.Lens<Config, Int> = CoreFP.lens(\Config.timeout)
+        public var host: CoreFP.Lens<Config, String> {
+            CoreFP.Lens(
+                get: { $0.host },
+                set: { s, a in s.with(host: a) },
+                modifyMut: { s, f in Config.__fieldsIso.modifyMut(&s) { f(&$0.host) } }
+            )
+        }
+        public var port: CoreFP.Lens<Config, Int> { CoreFP.lens(\Config.port) }
+        public var timeout: CoreFP.Lens<Config, Int> { CoreFP.lens(\Config.timeout) }
     }
     public static var lens: Lenses { Lenses() }
+
+    private static var __fieldsIso: CoreFP.Iso<Config, (host: String, port: Int, timeout: Int)> {
+        CoreFP.Iso(
+            get: { (host: $0.host, port: $0.port, timeout: $0.timeout) },
+            reverseGet: { Config(host: $0.host, port: $0.port, timeout: $0.timeout) }
+        )
+    }
 
     public func with(host: String? = nil, port: Int? = nil, timeout: Int? = nil) -> Config {
         Config(host: host ?? self.host, port: port ?? self.port, timeout: timeout ?? self.timeout)
@@ -111,18 +123,24 @@ public enum Shape {
     case empty
 
     public struct Prisms: Sendable {
-        public let circle: CoreFP.Prism<Shape, Double> = CoreFP.prism(
-            preview: { (_ s: Shape) in guard case .circle(let a) = s else { return nil }; return a },
-            review: Shape.circle
-        )
-        public let rectangle: CoreFP.Prism<Shape, (Double, Double)> = CoreFP.prism(
-            preview: { (_ s: Shape) in guard case .rectangle(let v0, let v1) = s else { return nil }; return (v0, v1) },
-            review: { (t: (Double, Double)) in Shape.rectangle(t.0, t.1) }
-        )
-        public let empty: CoreFP.Prism<Shape, Void> = CoreFP.prism(
-            preview: { (_ s: Shape) in guard case .empty = s else { return nil }; return () },
-            review: { (_: Void) in Shape.empty }
-        )
+        public var circle: CoreFP.Prism<Shape, Double> {
+            CoreFP.prism(
+                preview: { (_ s: Shape) in guard case .circle(let a) = s else { return nil }; return a },
+                review: Shape.circle
+            )
+        }
+        public var rectangle: CoreFP.Prism<Shape, (Double, Double)> {
+            CoreFP.prism(
+                preview: { (_ s: Shape) in guard case .rectangle(let v0, let v1) = s else { return nil }; return (v0, v1) },
+                review: { (t: (Double, Double)) in Shape.rectangle(t.0, t.1) }
+            )
+        }
+        public var empty: CoreFP.Prism<Shape, Void> {
+            CoreFP.prism(
+                preview: { (_ s: Shape) in guard case .empty = s else { return nil }; return () },
+                review: { (_: Void) in Shape.empty }
+            )
+        }
     }
     public static var prism: Prisms { Prisms() }
 

@@ -6,6 +6,8 @@ import CoreFP
 // Because `Validation<E, A>` is generic, Swift forbids `static let` in its scope, so the
 // static `prism` accessor is a computed `static var` returning a fresh `Prisms()` per
 // access — matching what the macro emits for any generic host.
+// Each prism is a computed member, so `Prisms()` is empty and an access builds only the
+// prism asked for (the per-case properties below read one prism, not all of them).
 //
 // `Prismatic` conformance unlocks `\.case` key paths; payload extraction goes through the
 // prism (`Validation.prism.success.preview(x)`), `\.success`, or the plain `validation.success`
@@ -13,14 +15,19 @@ import CoreFP
 
 public extension Validation {
     struct Prisms: Sendable {
-        public let failure: CoreFP.Prism<Validation, E> = CoreFP.prism(
-            preview: { (s: Validation) in guard case let .failure(e) = s else { return nil }; return e },
-            review: Validation.failure
-        )
-        public let success: CoreFP.Prism<Validation, A> = CoreFP.prism(
-            preview: { (s: Validation) in guard case let .success(a) = s else { return nil }; return a },
-            review: Validation.success
-        )
+        public var failure: CoreFP.Prism<Validation, E> {
+            CoreFP.prism(
+                preview: { (s: Validation) in guard case let .failure(e) = s else { return nil }; return e },
+                review: Validation.failure
+            )
+        }
+
+        public var success: CoreFP.Prism<Validation, A> {
+            CoreFP.prism(
+                preview: { (s: Validation) in guard case let .success(a) = s else { return nil }; return a },
+                review: Validation.success
+            )
+        }
     }
 
     /// The `prism` property.

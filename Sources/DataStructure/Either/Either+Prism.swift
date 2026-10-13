@@ -7,20 +7,27 @@ import Foundation
 // Because `Either<A, B>` is generic, Swift forbids `static let` in its scope, so the
 // static `prism` accessor is a computed `static var` returning a fresh `Prisms()` per
 // access — matching what the macro emits for any generic host.
+// Each prism is a computed member, so `Prisms()` is empty and an access builds only the
+// prism asked for (the per-case properties below read one prism, not all of them).
 //
 // `Prismatic` conformance unlocks `\.case` key paths; payload extraction goes through the
 // prism (`Either.prism.left.preview(x)`), `\.left`, or the plain `either.left` property.
 
 public extension Either {
     struct Prisms: Sendable {
-        public let left: CoreFP.Prism<Either, A> = CoreFP.prism(
-            preview: { (s: Either) in guard case let .left(a) = s else { return nil }; return a },
-            review: Either.left
-        )
-        public let right: CoreFP.Prism<Either, B> = CoreFP.prism(
-            preview: { (s: Either) in guard case let .right(b) = s else { return nil }; return b },
-            review: Either.right
-        )
+        public var left: CoreFP.Prism<Either, A> {
+            CoreFP.prism(
+                preview: { (s: Either) in guard case let .left(a) = s else { return nil }; return a },
+                review: Either.left
+            )
+        }
+
+        public var right: CoreFP.Prism<Either, B> {
+            CoreFP.prism(
+                preview: { (s: Either) in guard case let .right(b) = s else { return nil }; return b },
+                review: Either.right
+            )
+        }
     }
 
     /// The `prism` property.
