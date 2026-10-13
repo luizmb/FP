@@ -356,6 +356,18 @@ struct IdentifiedArrayOpticsTests {
         #expect(IdentifiedArrayOf<User>.traversed.getAll(sampleUsers()).count == 3)
     }
 
+    @Test func traversedFoldsWithoutBuildingAnArray() {
+        var names: [String] = []
+        IdentifiedArrayOf<User>.traversed.forEach(sampleUsers()) { names.append($0.name) }
+        #expect(names == ["Alice", "Bob", "Carol"])
+        #expect(IdentifiedArrayOf<User>.traversed.count(sampleUsers()) == 3)
+    }
+
+    @Test func traversedWhereFoldsOnlyTheIncludedFoci() {
+        let optic = IdentifiedArrayOf<User>.traversed { !$0.id.isMultiple(of: 2) }
+        #expect(optic.reduce(sampleUsers(), into: []) { $0.append($1.id) } == [1, 3])
+    }
+
     @Test func traversedWhereFiltersFoci() {
         let optic = IdentifiedArrayOf<User>.traversed { !$0.id.isMultiple(of: 2) }
         let users = optic.over { User(id: $0.id, name: $0.name + "*") }(sampleUsers())

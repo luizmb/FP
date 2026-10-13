@@ -208,6 +208,37 @@ struct TraversalZeroCopyTests {
         #expect(values.allSatisfy { $0 == 0 })
     }
 
+    @Test func isoTraversal_modifyMut_isInPlace() {
+        var wrapper = Wrapper(values: bigArray())
+        let seen = probe { f in wrapperIso.traversal.modifyMut(&wrapper) { f(&$0) } }
+        #expect(seen.before == seen.after)
+        #expect(wrapper.values.first == 99)
+    }
+
+    @Test func eachModifyMut_writesTheBufferInPlace() {
+        var values = bigArray()
+        let before = address(values)
+        [Int].each.modifyMut(&values) { $0 += 1 }
+        #expect(address(values) == before)
+        #expect(values[999] == 1_000)
+    }
+
+    @Test func eachModifyMut_onArraySliceWritesTheRightElements() {
+        var slice = bigArray()[10 ..< 20]
+        [Int].SubSequence.each.modifyMut(&slice) { $0 = -$0 }
+        #expect(slice.startIndex == 10)
+        #expect(Array(slice) == (10 ..< 20).map { -$0 })
+    }
+
+    @Test func eachModifyMut_onSharedArrayCopiesAndLeavesTheOriginal() {
+        let original = bigArray()
+        var values = original
+        [Int].each.modifyMut(&values) { $0 += 1 }
+        #expect(address(values) != address(original))
+        #expect(original[0] == 0)
+        #expect(values[0] == 1)
+    }
+
     @Test func eachIndexedOver_isInPlace() {
         var values = bigArray()
         let before = address(values)

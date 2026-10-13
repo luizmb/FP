@@ -34,7 +34,7 @@ there and whether the whole/part relationship is reversible:
 | `Lens` | exactly one `A`, always present | `get`, `set`, `modifyMut` | struct fields |
 | `Prism` | zero or one `A` | `preview`, `review`, `tryModifyMut` | enum cases |
 | `AffineTraversal` | zero or one `A` | `preview`, `set`, `tryModifyMut` | a struct field that's itself an optional case (Lens ∘ Prism) |
-| `Traversal` | zero, one, or many `A`s | `getAll`, `modifyMut` | every element of a collection field |
+| `Traversal` | zero, one, or many `A`s | `getAll`, `forEach`, `modifyMut` | every element of a collection field |
 
 `Iso` is the strongest — a total, invertible conversion. `Traversal` is the weakest and most
 general — every other optic widens to it. Composing any two optics in the table always yields
@@ -217,6 +217,20 @@ struct Company: Sendable { var employees: [Employee] }
 
 let allCityNames: Traversal<Company, String> =
     ^\Company.employees >>> [Employee].each >>> ^\Employee.city
+```
+
+Every traversal also carries `forEach`, a fold that hands each focus to a closure without
+collecting them. Composition nests it, so a chain of any depth visits its leaves in one pass and
+builds no intermediate arrays (a composed `getAll` collects through it into a single array). When
+you need one result rather than the foci themselves, fold instead of calling `getAll`:
+
+```swift
+let company = Company(employees: [Employee(city: "Lisbon"), Employee(city: "Porto")])
+
+_ = allCityNames.count(company)                                    // 2
+_ = allCityNames.reduce(company, into: "") { $0 += $1.prefix(1) }  // "LP"
+_ = allCityNames.foldMap(company) { Int.Monoids.Sum($0.count) }    // Sum(11)
+allCityNames.forEach(company) { print($0) }                        // Lisbon, Porto
 ```
 
 `IndexedTraversal<S, I, A>` is the indexed variant — `getAll` returns `(index, focus)` pairs, so

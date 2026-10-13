@@ -29,16 +29,64 @@ public struct IndexedTraversal<S, I, A>: Sendable {
     /// Extracts every `(index, focus)` pair from `S`, in traversal order.
     public let getAll: @Sendable (S) -> [(I, A)]
 
+    /// Feeds every `(index, focus)` pair to `body`, in traversal order, without collecting them.
+    /// The fold primitive, as ``Traversal/forEach``: composition nests it, so no intermediate
+    /// arrays are built.
+    public let forEach: @Sendable (S, (I, A) -> Void) -> Void
+
     /// Applies `f` to every focus in place, passing each focus's index alongside.
     public let modifyMut: @Sendable (inout S, (I, inout A) -> Void) -> Void
 
-    /// Full init. Supply the indexed read path (`getAll`) and the indexed in-place write path.
+    /// Full init. Supply the indexed bulk read (`getAll`), the indexed fold (`forEach`) and the
+    /// indexed in-place write path.
+    public init(
+        getAll: @escaping @Sendable (S) -> [(I, A)],
+        forEach: @escaping @Sendable (S, (I, A) -> Void) -> Void,
+        modifyMut: @escaping @Sendable (inout S, (I, inout A) -> Void) -> Void
+    ) {
+        self.getAll = getAll
+        self.forEach = forEach
+        self.modifyMut = modifyMut
+    }
+
+    /// Fold-first init: `getAll` collects `forEach` into one array.
+    public init(
+        forEach: @escaping @Sendable (S, (I, A) -> Void) -> Void,
+        modifyMut: @escaping @Sendable (inout S, (I, inout A) -> Void) -> Void
+    ) {
+        self.init(
+            getAll: { s in
+                var all: [(I, A)] = []
+                forEach(s) { all.append(($0, $1)) }
+                return all
+            },
+            forEach: forEach,
+            modifyMut: modifyMut
+        )
+    }
+
+    /// Array-first init: `forEach` walks the array `getAll` returns.
     public init(
         getAll: @escaping @Sendable (S) -> [(I, A)],
         modifyMut: @escaping @Sendable (inout S, (I, inout A) -> Void) -> Void
     ) {
-        self.getAll = getAll
-        self.modifyMut = modifyMut
+        self.init(
+            getAll: getAll,
+            forEach: { s, body in
+                for (index, a) in getAll(s) {
+                    body(index, a)
+                }
+            },
+            modifyMut: modifyMut
+        )
+    }
+
+    /// Folds every `(index, focus)` pair into `initial`, mutating the accumulator in place.
+    /// Builds no array.
+    public func reduce<R>(_ whole: S, into initial: R, _ combine: (inout R, I, A) -> Void) -> R {
+        var result = initial
+        forEach(whole) { combine(&result, $0, $1) }
+        return result
     }
 
     /// Returns every `(index, focus)` pair. Same as ``getAll``, enabling call syntax.
@@ -48,6 +96,7 @@ public struct IndexedTraversal<S, I, A>: Sendable {
     public var traversal: Traversal<S, A> {
         Traversal(
             getAll: { getAll($0).map(\.1) },
+            forEach: { s, body in forEach(s) { _, a in body(a) } },
             modifyMut: { s, f in modifyMut(&s) { _, a in f(&a) } }
         )
     }
@@ -75,7 +124,7 @@ public extension IndexedTraversal {
     /// Deepens the focus through `other` while preserving each focus's index.
     func compose<B>(_ other: Traversal<A, B>) -> IndexedTraversal<S, I, B> {
         IndexedTraversal<S, I, B>(
-            getAll: { s in getAll(s).flatMap { idx, a in other.getAll(a).map { (idx, $0) } } },
+            forEach: { s, body in forEach(s) { idx, a in other.forEach(a) { b in body(idx, b) } } },
             modifyMut: { s, f in modifyMut(&s) { idx, a in other.modifyMut(&a) { b in f(idx, &b) } } }
         )
     }

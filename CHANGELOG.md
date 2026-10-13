@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Performance
+- **Traversal reads build no intermediate arrays.** Every `Traversal` and `IndexedTraversal`
+  carries a fold primitive, `forEach`, which composition nests, so a chain visits its leaves in one
+  pass. A composed `getAll` collects into a single array instead of one array per focus per link
+  (`[Team].each >>> \.members >>> [Member].each >>> \.name` used to allocate a one-element array for
+  every member). `lens >>> each` returns the inner collection's own array. On a 7-link chain over
+  10k foci, `getAll` is 57% faster with 39% fewer allocations.
+- **`each` reads and writes contiguous collections through their buffer.** Called from code that
+  isn't specialised (any app calling into FP), `Collection`'s subscript went through protocol
+  witnesses that heap-allocate their accessor frame, a malloc per element read or written. `each`
+  on `Array`, `ContiguousArray` and `ArraySlice` now uses `withContiguous(Mutable)StorageIfAvailable`,
+  and falls back to indices for other collections. `modifyMut` through a 7-link chain over 10k
+  elements went from 11,100 mallocs to 0 (84% faster); `getAll` from 22K mallocs to 14.
+- **`Iso.traversal` mutates in place** through `Iso.modifyMut` instead of copying the focus.
 - **`IdentifiedArray` tail operations are O(1)**: removing the last element (`remove(at:)` /
   `remove(id:)`) no longer scans the whole hash table to reindex positions (nothing follows it),
   and `insert(_:at: count)` is now an `append`. Stack-like use (push and pop at the end) is
@@ -60,6 +73,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Optional`, `Result`, `Either`, `Validation` and `Loading` follow the same shape.
 
 ### Added
+- **Traversal folds**: `forEach` on `Traversal` (and `IndexedTraversal`), plus `reduce(_:into:_:)`,
+  `foldMap(_:_:)` (Haskell's `foldMapOf`) and `count(_:)` (`lengthOf`) built on it. None of them
+  builds an array: summing a field over a 7-link chain is 90% faster than `getAll(...).reduce`
+  was. New inits: `Traversal(forEach:modifyMut:)` derives `getAll`, and
+  `Traversal(getAll:forEach:modifyMut:)` takes all three; `Traversal(getAll:modifyMut:)` still
+  works and derives `forEach` from the array. Same for `IndexedTraversal`.
 - **Transformer stacks are their own types** (Haskell's `newtype` per transformer). Every stack is
   now a concrete struct named `OuterTInner` wrapping the whole nested value, 74 in total:
   `ReaderTArray<Env, A>` around `Reader<Env, [A]>`, `StatefulTEither<S, L, A>` around

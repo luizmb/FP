@@ -79,6 +79,11 @@ public extension IdentifiedArray where ID: Sendable, Element: Sendable {
     static var traversed: Traversal<IdentifiedArray, Element> {
         Traversal(
             getAll: { @Sendable whole in whole.storage },
+            forEach: { @Sendable whole, body in
+                for element in whole.storage {
+                    body(element)
+                }
+            },
             modifyMut: { @Sendable whole, f in
                 for i in whole.storage.indices {
                     f(&whole.storage[i])
@@ -95,6 +100,11 @@ public extension IdentifiedArray where ID: Sendable, Element: Sendable {
     ) -> Traversal<IdentifiedArray, Element> {
         Traversal(
             getAll: { @Sendable whole in whole.storage.filter(isIncluded) },
+            forEach: { @Sendable whole, body in
+                for element in whole.storage where isIncluded(element) {
+                    body(element)
+                }
+            },
             modifyMut: { @Sendable whole, f in
                 for i in whole.storage.indices where isIncluded(whole.storage[i]) {
                     f(&whole.storage[i])
