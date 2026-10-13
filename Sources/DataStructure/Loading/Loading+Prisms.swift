@@ -19,18 +19,21 @@ public extension Loading {
                 review: { (_: Void) in Loading.idle }
             )
         }
+
         public var loading: CoreFP.Prism<Loading, Success?> {
             CoreFP.prism(
                 preview: { (s: Loading) in guard case let .loading(a) = s else { return nil }; return a },
                 review: Loading.loading
             )
         }
+
         public var loaded: CoreFP.Prism<Loading, Success> {
             CoreFP.prism(
                 preview: { (s: Loading) in guard case let .loaded(a) = s else { return nil }; return a },
                 review: Loading.loaded
             )
         }
+
         public var failed: CoreFP.Prism<Loading, (Failure, Success?)> {
             CoreFP.prism(
                 preview: { (s: Loading) in guard case let .failed(v0, v1) = s else { return nil }; return (v0, v1) },

@@ -20,6 +20,7 @@ public extension Result {
                 review: Result.success
             )
         }
+
         public var failure: CoreFP.Prism<Result, Failure> {
             CoreFP.prism(
                 preview: { (s: Result) in if case let .failure(e) = s { e } else { nil } },

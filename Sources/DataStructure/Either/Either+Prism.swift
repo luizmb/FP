@@ -21,6 +21,7 @@ public extension Either {
                 review: Either.left
             )
         }
+
         public var right: CoreFP.Prism<Either, B> {
             CoreFP.prism(
                 preview: { (s: Either) in guard case let .right(b) = s else { return nil }; return b },

@@ -21,6 +21,7 @@ public extension Validation {
                 review: Validation.failure
             )
         }
+
         public var success: CoreFP.Prism<Validation, A> {
             CoreFP.prism(
                 preview: { (s: Validation) in guard case let .success(a) = s else { return nil }; return a },
