@@ -363,6 +363,17 @@ struct IdentifiedArrayOpticsTests {
         #expect(IdentifiedArrayOf<User>.traversed.count(sampleUsers()) == 3)
     }
 
+    @Test func traversedModifyMutWritesTheBufferInPlace() {
+        var users = sampleUsers()
+        let address = { (users: IdentifiedArrayOf<User>) in
+            users.elements.withUnsafeBufferPointer { UnsafeRawPointer($0.baseAddress) }
+        }
+        let before = address(users)
+        IdentifiedArrayOf<User>.traversed.modifyMut(&users) { $0.name += "!" }
+        #expect(address(users) == before)
+        #expect(users[id: 2]?.name == "Bob!")
+    }
+
     @Test func traversedWhereFoldsOnlyTheIncludedFoci() {
         let optic = IdentifiedArrayOf<User>.traversed { !$0.id.isMultiple(of: 2) }
         #expect(optic.reduce(sampleUsers(), into: []) { $0.append($1.id) } == [1, 3])

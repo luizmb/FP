@@ -1,5 +1,6 @@
 import Benchmark
 import CoreFP
+import DataStructure
 
 // Optic read/write paths through composed chains, measured in time, instructions, mallocs and
 // retains/releases. Compare a change with `swift package benchmark baseline update <name>` before
@@ -195,6 +196,126 @@ let benchmarks: @Sendable () -> Void = {
         benchmark.startMeasurement()
         for _ in benchmark.scaledIterations {
             firstTeamLeadAge.tryModifyMut(&whole) { $0 &+= 1 }
+        }
+        benchmark.stopMeasurement()
+        blackHole(whole)
+    }
+
+    // Element-level traversals other than `each`: indexed, dictionary values, single index,
+    // IdentifiedArray. Each is read with a fold (no result array) and written in place, so the
+    // numbers are the traversal's own per-element cost.
+    let eachIndexedInts = [Int].eachIndexed
+    Benchmark("fold — [Int].eachIndexed reduce (10k)", configuration: config()) { benchmark in
+        for _ in benchmark.scaledIterations {
+            blackHole(eachIndexedInts.reduce(ints, into: 0) { $0 &+= $1 &* $2 })
+        }
+    }
+    Benchmark("getAll — [Int].eachIndexed (10k)", configuration: config()) { benchmark in
+        for _ in benchmark.scaledIterations {
+            blackHole(eachIndexedInts.getAll(ints))
+        }
+    }
+    Benchmark("modifyMut — [Int].eachIndexed, in place (10k)", configuration: config()) { benchmark in
+        var whole = ints
+        benchmark.startMeasurement()
+        for _ in benchmark.scaledIterations {
+            eachIndexedInts.modifyMut(&whole) { i, x in x &+= i }
+        }
+        benchmark.stopMeasurement()
+        blackHole(whole)
+    }
+    let sliceIndexed = ArraySlice<Int>.eachIndexed
+    Benchmark("modifyMut — ArraySlice.eachIndexed, in place (10k)", configuration: config()) { benchmark in
+        var whole = Array(0 ..< 20_000)[5_000 ..< 15_000]
+        benchmark.startMeasurement()
+        for _ in benchmark.scaledIterations {
+            sliceIndexed.modifyMut(&whole) { i, x in x &+= i }
+        }
+        benchmark.stopMeasurement()
+        blackHole(whole)
+    }
+
+    let table = Dictionary(uniqueKeysWithValues: (0 ..< 10_000).map { ("key-\($0)", $0) })
+    let eachValue = [String: Int].eachValue
+    let eachValueIndexed = [String: Int].eachValueIndexed
+    Benchmark("fold — Dictionary.eachValue reduce (10k)", configuration: config()) { benchmark in
+        for _ in benchmark.scaledIterations {
+            blackHole(eachValue.reduce(table, into: 0) { $0 &+= $1 })
+        }
+    }
+    Benchmark("modifyMut — Dictionary.eachValue, in place (10k)", configuration: config()) { benchmark in
+        var whole = table
+        benchmark.startMeasurement()
+        for _ in benchmark.scaledIterations {
+            eachValue.modifyMut(&whole) { $0 &+= 1 }
+        }
+        benchmark.stopMeasurement()
+        blackHole(whole)
+    }
+    Benchmark("fold — Dictionary.eachValueIndexed reduce (10k)", configuration: config()) { benchmark in
+        for _ in benchmark.scaledIterations {
+            blackHole(eachValueIndexed.reduce(table, into: 0) { acc, key, value in acc &+= key.utf8.count &+ value })
+        }
+    }
+    Benchmark("modifyMut — Dictionary.eachValueIndexed, in place (10k)", configuration: config()) { benchmark in
+        var whole = table
+        benchmark.startMeasurement()
+        for _ in benchmark.scaledIterations {
+            eachValueIndexed.modifyMut(&whole) { key, value in value &+= key.utf8.count }
+        }
+        benchmark.stopMeasurement()
+        blackHole(whole)
+    }
+
+    let middle = [Int].ix(5_000)
+    Benchmark("preview — [Int].ix(i)", configuration: config()) { benchmark in
+        for _ in benchmark.scaledIterations {
+            blackHole(middle.preview(ints))
+        }
+    }
+    Benchmark("tryModifyMut — [Int].ix(i), in place", configuration: config()) { benchmark in
+        var whole = ints
+        benchmark.startMeasurement()
+        for _ in benchmark.scaledIterations {
+            middle.tryModifyMut(&whole) { $0 &+= 1 }
+        }
+        benchmark.stopMeasurement()
+        blackHole(whole)
+    }
+    let sliceMiddle = ArraySlice<Int>.ix(10_000)
+    Benchmark("tryModifyMut — ArraySlice.ix(i), in place", configuration: config()) { benchmark in
+        var whole = Array(0 ..< 20_000)[5_000 ..< 15_000]
+        benchmark.startMeasurement()
+        for _ in benchmark.scaledIterations {
+            sliceMiddle.tryModifyMut(&whole) { $0 &+= 1 }
+        }
+        benchmark.stopMeasurement()
+        blackHole(whole)
+    }
+
+    struct Row: Identifiable, Sendable { let id: Int; var value: Int }
+    let rows = IdentifiedArray((0 ..< 10_000).map { Row(id: $0, value: $0) })
+    let traversed = IdentifiedArray<Int, Row>.traversed
+    Benchmark("fold — IdentifiedArray.traversed reduce (10k)", configuration: config()) { benchmark in
+        for _ in benchmark.scaledIterations {
+            blackHole(traversed.reduce(rows, into: 0) { $0 &+= $1.value })
+        }
+    }
+    Benchmark("modifyMut — IdentifiedArray.traversed, in place (10k)", configuration: config()) { benchmark in
+        var whole = rows
+        benchmark.startMeasurement()
+        for _ in benchmark.scaledIterations {
+            traversed.modifyMut(&whole) { $0.value &+= 1 }
+        }
+        benchmark.stopMeasurement()
+        blackHole(whole)
+    }
+    let evens = IdentifiedArray<Int, Row>.traversed { $0.id.isMultiple(of: 2) }
+    Benchmark("modifyMut — IdentifiedArray.traversed(where:), in place (5k of 10k)", configuration: config()) { benchmark in
+        var whole = rows
+        benchmark.startMeasurement()
+        for _ in benchmark.scaledIterations {
+            evens.modifyMut(&whole) { $0.value &+= 1 }
         }
         benchmark.stopMeasurement()
         blackHole(whole)

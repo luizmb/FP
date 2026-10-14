@@ -80,13 +80,17 @@ public extension IdentifiedArray where ID: Sendable, Element: Sendable {
         Traversal(
             getAll: { @Sendable whole in whole.storage },
             forEach: { @Sendable whole, body in
-                for element in whole.storage {
-                    body(element)
+                whole.storage.withUnsafeBufferPointer { buffer in
+                    for element in buffer {
+                        body(element)
+                    }
                 }
             },
             modifyMut: { @Sendable whole, f in
-                for i in whole.storage.indices {
-                    f(&whole.storage[i])
+                whole.storage.withUnsafeMutableBufferPointer { buffer in
+                    for i in buffer.indices {
+                        f(&buffer[i])
+                    }
                 }
                 whole.rebuildIndex()
             }
@@ -101,13 +105,17 @@ public extension IdentifiedArray where ID: Sendable, Element: Sendable {
         Traversal(
             getAll: { @Sendable whole in whole.storage.filter(isIncluded) },
             forEach: { @Sendable whole, body in
-                for element in whole.storage where isIncluded(element) {
-                    body(element)
+                whole.storage.withUnsafeBufferPointer { buffer in
+                    for element in buffer where isIncluded(element) {
+                        body(element)
+                    }
                 }
             },
             modifyMut: { @Sendable whole, f in
-                for i in whole.storage.indices where isIncluded(whole.storage[i]) {
-                    f(&whole.storage[i])
+                whole.storage.withUnsafeMutableBufferPointer { buffer in
+                    for i in buffer.indices where isIncluded(buffer[i]) {
+                        f(&buffer[i])
+                    }
                 }
                 whole.rebuildIndex()
             }
