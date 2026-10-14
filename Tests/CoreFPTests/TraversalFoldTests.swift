@@ -237,6 +237,40 @@ struct IndexedTraversalFoldTests {
         #expect(pairs.map(\.1) == ["a", "b"])
     }
 
+    @Test func eachIndexedOnArraySliceVisitsTheSliceIndices() {
+        let slice = Array(0 ..< 10)[4 ..< 7]
+        let pairs = visitedIndexed(ArraySlice<Int>.eachIndexed, slice)
+        #expect(pairs.map(\.0) == [4, 5, 6])
+        #expect(pairs.map(\.1) == [4, 5, 6])
+    }
+
+    @Test func eachIndexedOnContiguousArrayVisitsPositions() {
+        let pairs = visitedIndexed(ContiguousArray<String>.eachIndexed, ["a", "b"])
+        #expect(pairs.map(\.0) == [0, 1])
+        #expect(pairs.map(\.1) == ["a", "b"])
+    }
+
+    @Test func eachIndexedFromGenericCodeMatchesTheRangeOverload() {
+        // A generic caller sees only `MutableCollection`, so it gets the index-walking version.
+        func generic<C: MutableCollection>(_: C.Type) -> IndexedTraversal<C, C.Index, C.Element>
+        where C.Index: Sendable, C.Element: Sendable {
+            C.eachIndexed
+        }
+        let values = [3, 1, 2]
+        #expect(visitedIndexed(generic([Int].self), values).map(\.0) == visitedIndexed([Int].eachIndexed, values).map(\.0))
+        var walked = values
+        generic([Int].self).modifyMut(&walked) { index, value in value += index }
+        #expect(walked == [3, 2, 4])
+    }
+
+    @Test func eachIndexedOnNonContiguousCollectionWalksIndices() {
+        var table = ["a": 1, "b": 2]
+        let values = [String: Int].Values.eachIndexed
+        #expect(visitedIndexed(values, table.values).map(\.1) == Array(table.values))
+        values.modifyMut(&table.values) { _, value in value *= 10 }
+        #expect(table == ["a": 10, "b": 20])
+    }
+
     @Test func eachValueIndexedVisitsKeys() {
         let table = ["a": 1, "b": 2]
         let pairs = visitedIndexed([String: Int].eachValueIndexed, table)

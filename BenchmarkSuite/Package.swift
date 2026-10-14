@@ -29,6 +29,7 @@ let package = Package(
             name: "OpticsBenchmarks",
             dependencies: [
                 .product(name: "CoreFP", package: "FP"),
+                .product(name: "DataStructure", package: "FP"),
                 .product(name: "Benchmark", package: "package-benchmark")
             ],
             path: "Benchmarks/OpticsBenchmarks",

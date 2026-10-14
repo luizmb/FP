@@ -4,7 +4,9 @@ public extension MutableCollection where Index: Sendable {
     /// Preview returns `nil` when `index` is out of bounds; set is a no-op in that case.
     ///
     /// `tryModifyMut` accesses the element directly via `inout collection[index]`,
-    /// which is zero-copy — the collection buffer is never CoW-copied.
+    /// which is zero-copy — the collection buffer is never CoW-copied. `Array`,
+    /// `ContiguousArray` and `ArraySlice` get the `Indices == Range<Int>` overload, which
+    /// goes through their buffer.
     ///
     /// ```swift
     /// [Int].ix(1).preview([10, 20, 30])        // Optional(20)
@@ -21,6 +23,39 @@ public extension MutableCollection where Index: Sendable {
             },
             tryModifyMut: { @Sendable collection, f in
                 guard collection.indices.contains(index) else { return }
+                f(&collection[index])
+            }
+        )
+    }
+}
+
+public extension MutableCollection where Indices == Range<Int> {
+    /// ``ix(_:)`` for collections indexed by a plain `Int` range (`Array`, `ContiguousArray`,
+    /// `ArraySlice`): contiguous storage is read and written through its buffer at offset
+    /// `index - startIndex`, so neither goes through `Collection`'s subscript (whose accessor
+    /// frame is heap-allocated when called from unspecialised code).
+    ///
+    /// ```swift
+    /// [Int].ix(1).preview([10, 20, 30])                    // Optional(20)
+    /// ArraySlice<Int>.ix(5).preview([0, 1, 2, 3, 4, 5][4...]) // Optional(5)
+    /// ```
+    static func ix(_ index: Int) -> AffineTraversal<Self, Element> {
+        AffineTraversal(
+            preview: { @Sendable collection in
+                guard collection.indices.contains(index) else { return nil }
+                let offset = index &- collection.startIndex
+                return collection.withContiguousStorageIfAvailable { $0[offset] } ?? collection[index]
+            },
+            set: { @Sendable (collection: consuming Self, element: Element) in
+                var copy = consume collection
+                copy[safe: index] = element
+                return copy
+            },
+            tryModifyMut: { @Sendable collection, f in
+                guard collection.indices.contains(index) else { return }
+                let offset = index &- collection.startIndex
+                let mutated: Void? = collection.withContiguousMutableStorageIfAvailable { f(&$0[offset]) }
+                guard mutated == nil else { return }
                 f(&collection[index])
             }
         )

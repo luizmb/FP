@@ -20,6 +20,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on `Array`, `ContiguousArray` and `ArraySlice` now uses `withContiguous(Mutable)StorageIfAvailable`,
   and falls back to indices for other collections. `modifyMut` through a 7-link chain over 10k
   elements went from 11,100 mallocs to 0 (84% faster); `getAll` from 22K mallocs to 14.
+- **`eachIndexed`, `ix(_:)` and `IdentifiedArray.traversed` go through the buffer too.** On
+  collections indexed by `Range<Int>` (`Array`, `ContiguousArray`, `ArraySlice`), `eachIndexed`
+  and `ix(_:)` read and write contiguous storage at offset `index - startIndex`; other collections,
+  and generic code that only knows `MutableCollection`, keep walking indices. Over 10k elements,
+  `eachIndexed` folds 98% faster (30,000 mallocs to 1) and `modifyMut` 97% faster (10,000 mallocs
+  to 2); `ix(_:)` reads and writes without allocating (2 mallocs to 0). `IdentifiedArray.traversed`
+  folds 45% faster and mutates 80% faster with no per-element retain/release.
+- **`Dictionary.eachValue` mutates through one `values` access** instead of re-entering
+  `dict.values` per value: 54% faster, 75% fewer retains/releases.
 - **`Iso.traversal` mutates in place** through `Iso.modifyMut` instead of copying the focus.
 - **`IdentifiedArray` tail operations are O(1)**: removing the last element (`remove(at:)` /
   `remove(id:)`) no longer scans the whole hash table to reindex positions (nothing follows it),

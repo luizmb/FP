@@ -8,8 +8,10 @@
 //
 //   - `MutableCollection.each` mutates each element via `inout collection[i]`,
 //     which is zero-copy — the buffer is never CoW-copied.
-//   - `Dictionary.eachValue` mutates each value in place through
-//     `dict.values[index]`, mirroring `ix(key:)`.
+//   - `Dictionary.eachValue` mutates each value in place through one `inout`
+//     access to `dict.values`, mirroring `ix(key:)`.
+//   - `each`, and `eachIndexed` on `Range<Int>`-indexed collections, go through
+//     the contiguous buffer when there is one (see `each` for why).
 
 public extension MutableCollection where Element: Sendable {
     /// A ``Traversal`` focusing on **every** element of the collection.
@@ -64,8 +66,9 @@ public extension MutableCollection where Element: Sendable {
 public extension Dictionary where Key: Sendable, Value: Sendable {
     /// A ``Traversal`` focusing on **every** value of the dictionary.
     ///
-    /// `modifyMut` mutates each value in place through `values`' own subscript: no per-value
-    /// copy (a `[String: [Int]]` doesn't copy its arrays) and no re-hashing. Key order follows
+    /// `modifyMut` mutates each value in place through `values`' own subscript, entered once for
+    /// the whole loop: no per-value copy (a `[String: [Int]]` doesn't copy its arrays) and no
+    /// re-hashing. Key order follows
     /// the dictionary's own iteration order.
     ///
     /// ```swift
@@ -80,18 +83,29 @@ public extension Dictionary where Key: Sendable, Value: Sendable {
                 }
             },
             modifyMut: { @Sendable dict, f in
-                var i = dict.values.startIndex
-                while i != dict.values.endIndex {
-                    f(&dict.values[i])
-                    dict.values.formIndex(after: &i)
-                }
+                modifyEachValue(&dict.values, f)
             }
         )
     }
 }
 
+/// Mutates every value through one `inout` access to `values`, rather than re-entering
+/// `dict.values` for each one. `Dictionary.values`' modify accessor hands its storage over
+/// without retaining it, so the values are still uniquely referenced and written in place.
+private func modifyEachValue<Key, Value>(_ values: inout Dictionary<Key, Value>.Values, _ f: (inout Value) -> Void) {
+    var i = values.startIndex
+    while i != values.endIndex {
+        f(&values[i])
+        values.formIndex(after: &i)
+    }
+}
+
 public extension MutableCollection where Index: Sendable, Element: Sendable {
     /// An ``IndexedTraversal`` focusing on every element, tagged with its collection index.
+    ///
+    /// `Array`, `ContiguousArray` and `ArraySlice` get the `Indices == Range<Int>` overload, which
+    /// goes through their buffer. This one walks the indices, for every other collection and for
+    /// generic code that only knows `MutableCollection`.
     ///
     /// ```swift
     /// [String].eachIndexed.getAll(["a", "b"])   // [(0, "a"), (1, "b")]
@@ -109,6 +123,44 @@ public extension MutableCollection where Index: Sendable, Element: Sendable {
                 while i != collection.endIndex {
                     f(i, &collection[i])
                     i = collection.index(after: i)
+                }
+            }
+        )
+    }
+}
+
+public extension MutableCollection where Indices == Range<Int>, Element: Sendable {
+    /// ``eachIndexed`` for collections indexed by a plain `Int` range (`Array`, `ContiguousArray`,
+    /// `ArraySlice`). Their contiguous storage is read and written through its buffer, as ``each``
+    /// does, and the index of the element at buffer offset `k` is `startIndex + k`.
+    ///
+    /// ```swift
+    /// [String].eachIndexed.getAll(["a", "b"])   // [(0, "a"), (1, "b")]
+    /// ```
+    static var eachIndexed: IndexedTraversal<Self, Int, Element> {
+        IndexedTraversal(
+            forEach: { @Sendable collection, body in
+                let start = collection.startIndex
+                let visited: Void? = collection.withContiguousStorageIfAvailable { buffer in
+                    for offset in buffer.indices {
+                        body(start &+ offset, buffer[offset])
+                    }
+                }
+                guard visited == nil else { return }
+                for index in collection.indices {
+                    body(index, collection[index])
+                }
+            },
+            modifyMut: { @Sendable collection, f in
+                let start = collection.startIndex
+                let mutated: Void? = collection.withContiguousMutableStorageIfAvailable { buffer in
+                    for offset in buffer.indices {
+                        f(start &+ offset, &buffer[offset])
+                    }
+                }
+                guard mutated == nil else { return }
+                for index in collection.indices {
+                    f(index, &collection[index])
                 }
             }
         )

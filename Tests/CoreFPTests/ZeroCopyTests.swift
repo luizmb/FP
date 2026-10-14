@@ -246,6 +246,68 @@ struct TraversalZeroCopyTests {
         #expect(address(values) == before)
         #expect(values[3] == 6)
     }
+
+    @Test func eachIndexedModifyMut_writesTheBufferInPlace() {
+        var values = bigArray()
+        let before = address(values)
+        [Int].eachIndexed.modifyMut(&values) { index, value in value += index }
+        #expect(address(values) == before)
+        #expect(values[999] == 1_998)
+    }
+
+    @Test func eachIndexedModifyMut_onArraySlicePassesTheSliceIndices() {
+        var slice = bigArray()[10 ..< 20]
+        var seen: [Int] = []
+        ArraySlice<Int>.eachIndexed.modifyMut(&slice) { index, value in
+            seen.append(index)
+            value = -index
+        }
+        #expect(seen == Array(10 ..< 20))
+        #expect(Array(slice) == (10 ..< 20).map { -$0 })
+    }
+
+    @Test func eachIndexedModifyMut_onSharedArrayCopiesAndLeavesTheOriginal() {
+        let original = bigArray()
+        var values = original
+        [Int].eachIndexed.modifyMut(&values) { _, value in value += 1 }
+        #expect(address(values) != address(original))
+        #expect(original[0] == 0)
+        #expect(values[0] == 1)
+    }
+
+    @Test func dictionaryEachValueModifyMut_isInPlace() {
+        var table = ["a": bigArray()]
+        let seen = probe { f in [String: [Int]].eachValue.modifyMut(&table, f) }
+        #expect(seen.before == seen.after)
+        #expect(table["a"]?.first == 99)
+    }
+
+    @Test func ixTryModifyMut_writesTheBufferInPlace() {
+        var values = bigArray()
+        let before = address(values)
+        [Int].ix(500).tryModifyMut(&values) { $0 = -1 }
+        #expect(address(values) == before)
+        #expect(values[500] == -1)
+    }
+
+    @Test func ixOnArraySliceUsesTheSliceIndex() {
+        var slice = bigArray()[10 ..< 20]
+        #expect(ArraySlice<Int>.ix(12).preview(slice) == 12)
+        #expect(ArraySlice<Int>.ix(5).preview(slice) == nil)
+        #expect(ArraySlice<Int>.ix(20).preview(slice) == nil)
+        ArraySlice<Int>.ix(12).tryModifyMut(&slice) { $0 = -1 }
+        ArraySlice<Int>.ix(5).tryModifyMut(&slice) { $0 = -1 }
+        #expect(Array(slice) == [10, 11, -1, 13, 14, 15, 16, 17, 18, 19])
+    }
+
+    @Test func ixOutOfBoundsIsANoOp() {
+        var values = [1, 2, 3]
+        [Int].ix(3).tryModifyMut(&values) { $0 = 0 }
+        [Int].ix(-1).tryModifyMut(&values) { $0 = 0 }
+        #expect(values == [1, 2, 3])
+        #expect([Int].ix(3).preview(values) == nil)
+        #expect([Int].ix(3).set(values, 0) == [1, 2, 3])
+    }
 }
 
 // MARK: - Mutable
