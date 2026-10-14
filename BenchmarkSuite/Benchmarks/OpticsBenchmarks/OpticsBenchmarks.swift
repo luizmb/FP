@@ -8,6 +8,9 @@ import DataStructure
 // their `getAll +` twins do the same work through an array.
 //
 // The org fixture is 100 departments × 10 teams × 10 members = 10_000 leaf foci.
+//
+// Write benchmarks start from a uniquely owned value (`ints.map { $0 }`, not `ints`): a copy that
+// still shares the fixture's buffer would make the first write of every sample copy it.
 
 struct Member: Sendable { var name: String; var age: Int }
 struct Team: Sendable { var members: [Member]; var lead: Member? }
@@ -216,7 +219,7 @@ let benchmarks: @Sendable () -> Void = {
         }
     }
     Benchmark("modifyMut — [Int].eachIndexed, in place (10k)", configuration: config()) { benchmark in
-        var whole = ints
+        var whole = ints.map { $0 }
         benchmark.startMeasurement()
         for _ in benchmark.scaledIterations {
             eachIndexedInts.modifyMut(&whole) { i, x in x &+= i }
@@ -244,7 +247,7 @@ let benchmarks: @Sendable () -> Void = {
         }
     }
     Benchmark("modifyMut — Dictionary.eachValue, in place (10k)", configuration: config()) { benchmark in
-        var whole = table
+        var whole = table.mapValues { $0 }
         benchmark.startMeasurement()
         for _ in benchmark.scaledIterations {
             eachValue.modifyMut(&whole) { $0 &+= 1 }
@@ -258,7 +261,7 @@ let benchmarks: @Sendable () -> Void = {
         }
     }
     Benchmark("modifyMut — Dictionary.eachValueIndexed, in place (10k)", configuration: config()) { benchmark in
-        var whole = table
+        var whole = table.mapValues { $0 }
         benchmark.startMeasurement()
         for _ in benchmark.scaledIterations {
             eachValueIndexed.modifyMut(&whole) { key, value in value &+= key.utf8.count }
@@ -274,7 +277,7 @@ let benchmarks: @Sendable () -> Void = {
         }
     }
     Benchmark("tryModifyMut — [Int].ix(i), in place", configuration: config()) { benchmark in
-        var whole = ints
+        var whole = ints.map { $0 }
         benchmark.startMeasurement()
         for _ in benchmark.scaledIterations {
             middle.tryModifyMut(&whole) { $0 &+= 1 }
@@ -294,7 +297,58 @@ let benchmarks: @Sendable () -> Void = {
     }
 
     struct Row: Identifiable, Sendable { let id: Int; var value: Int }
-    let rows = IdentifiedArray((0 ..< 10_000).map { Row(id: $0, value: $0) })
+    let rowArray = (0 ..< 10_000).map { Row(id: $0, value: $0) }
+    let byID = [Row].ix(id: 5_000)
+    let byKeyPath = [Row].ix(id: 5_000, by: \Row.id)
+    let byClosure = [Row].ix(id: 5_000) { @Sendable row in row.id }
+    Benchmark("preview — [Row].ix(id:), match halfway (10k)", configuration: config()) { benchmark in
+        for _ in benchmark.scaledIterations {
+            blackHole(byID.preview(rowArray))
+        }
+    }
+    Benchmark("tryModifyMut — [Row].ix(id:), match halfway (10k)", configuration: config()) { benchmark in
+        var whole = rowArray.map { $0 }
+        benchmark.startMeasurement()
+        for _ in benchmark.scaledIterations {
+            byID.tryModifyMut(&whole) { $0.value &+= 1 }
+        }
+        benchmark.stopMeasurement()
+        blackHole(whole)
+    }
+    Benchmark("tryModifyMut — [Row].ix(id:by: keyPath), match halfway (10k)", configuration: config()) { benchmark in
+        var whole = rowArray.map { $0 }
+        benchmark.startMeasurement()
+        for _ in benchmark.scaledIterations {
+            byKeyPath.tryModifyMut(&whole) { $0.value &+= 1 }
+        }
+        benchmark.stopMeasurement()
+        blackHole(whole)
+    }
+    Benchmark("tryModifyMut — [Row].ix(id:by: closure), match halfway (10k)", configuration: config()) { benchmark in
+        var whole = rowArray.map { $0 }
+        benchmark.startMeasurement()
+        for _ in benchmark.scaledIterations {
+            byClosure.tryModifyMut(&whole) { $0.value &+= 1 }
+        }
+        benchmark.stopMeasurement()
+        blackHole(whole)
+    }
+    let tableKey = [String: Int].ix(key: "key-5000")
+    Benchmark("preview — Dictionary.ix(key:)", configuration: config()) { benchmark in
+        for _ in benchmark.scaledIterations {
+            blackHole(tableKey.preview(table))
+        }
+    }
+    Benchmark("tryModifyMut — Dictionary.ix(key:), in place", configuration: config()) { benchmark in
+        var whole = table.mapValues { $0 }
+        benchmark.startMeasurement()
+        for _ in benchmark.scaledIterations {
+            tableKey.tryModifyMut(&whole) { $0 &+= 1 }
+        }
+        benchmark.stopMeasurement()
+        blackHole(whole)
+    }
+    let rows = IdentifiedArray(rowArray)
     let traversed = IdentifiedArray<Int, Row>.traversed
     Benchmark("fold — IdentifiedArray.traversed reduce (10k)", configuration: config()) { benchmark in
         for _ in benchmark.scaledIterations {
@@ -302,7 +356,7 @@ let benchmarks: @Sendable () -> Void = {
         }
     }
     Benchmark("modifyMut — IdentifiedArray.traversed, in place (10k)", configuration: config()) { benchmark in
-        var whole = rows
+        var whole = IdentifiedArray(rowArray)
         benchmark.startMeasurement()
         for _ in benchmark.scaledIterations {
             traversed.modifyMut(&whole) { $0.value &+= 1 }
@@ -312,7 +366,7 @@ let benchmarks: @Sendable () -> Void = {
     }
     let evens = IdentifiedArray<Int, Row>.traversed { $0.id.isMultiple(of: 2) }
     Benchmark("modifyMut — IdentifiedArray.traversed(where:), in place (5k of 10k)", configuration: config()) { benchmark in
-        var whole = rows
+        var whole = IdentifiedArray(rowArray)
         benchmark.startMeasurement()
         for _ in benchmark.scaledIterations {
             evens.modifyMut(&whole) { $0.value &+= 1 }

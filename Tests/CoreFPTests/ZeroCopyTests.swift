@@ -15,6 +15,15 @@ private func address(_ array: [Int]) -> UnsafeRawPointer? {
 
 private func bigArray() -> [Int] { Array(0 ..< 1_000) }
 
+private struct Row: Identifiable, Equatable, Sendable {
+    let id: Int
+    var value: Int
+}
+
+private func rowsAddress(_ rows: [Row]) -> UnsafeRawPointer? {
+    rows.withUnsafeBufferPointer { UnsafeRawPointer($0.baseAddress) }
+}
+
 private enum Route {
     case home
     case list([Int])
@@ -275,6 +284,13 @@ struct TraversalZeroCopyTests {
         #expect(values[0] == 1)
     }
 
+    @Test func dictionaryEachValueIndexedModifyMut_isInPlace() {
+        var table = ["a": bigArray()]
+        let seen = probe { f in [String: [Int]].eachValueIndexed.modifyMut(&table) { _, value in f(&value) } }
+        #expect(seen.before == seen.after)
+        #expect(table["a"]?.first == 99)
+    }
+
     @Test func dictionaryEachValueModifyMut_isInPlace() {
         var table = ["a": bigArray()]
         let seen = probe { f in [String: [Int]].eachValue.modifyMut(&table, f) }
@@ -298,6 +314,56 @@ struct TraversalZeroCopyTests {
         ArraySlice<Int>.ix(12).tryModifyMut(&slice) { $0 = -1 }
         ArraySlice<Int>.ix(5).tryModifyMut(&slice) { $0 = -1 }
         #expect(Array(slice) == [10, 11, -1, 13, 14, 15, 16, 17, 18, 19])
+    }
+
+    @Test func ixIdTryModifyMut_writesTheBufferInPlace() {
+        var rows = (0 ..< 1_000).map { Row(id: $0, value: 0) }
+        let before = rowsAddress(rows)
+        [Row].ix(id: 500).tryModifyMut(&rows) { $0.value = 7 }
+        #expect(rowsAddress(rows) == before)
+        #expect(rows[500].value == 7)
+        #expect(rows.filter { $0.value == 7 }.count == 1)
+    }
+
+    @Test func ixIdMissOnSharedArrayLeavesItShared() {
+        let original = (0 ..< 1_000).map { Row(id: $0, value: 0) }
+        var rows = original
+        [Row].ix(id: 5_000).tryModifyMut(&rows) { $0.value = 7 }
+        #expect(rowsAddress(rows) == rowsAddress(original))
+    }
+
+    @Test func ixIdHitOnSharedArrayCopiesAndLeavesTheOriginal() {
+        let original = (0 ..< 1_000).map { Row(id: $0, value: 0) }
+        var rows = original
+        [Row].ix(id: 3).tryModifyMut(&rows) { $0.value = 7 }
+        #expect(rowsAddress(rows) != rowsAddress(original))
+        #expect(original[3].value == 0)
+        #expect(rows[3].value == 7)
+    }
+
+    @Test func ixIdOnArraySliceFindsByIdNotPosition() {
+        var slice = (0 ..< 20).map { Row(id: $0, value: 0) }[10 ..< 20]
+        #expect([Row].SubSequence.ix(id: 12).preview(slice)?.id == 12)
+        #expect([Row].SubSequence.ix(id: 2).preview(slice) == nil)
+        [Row].SubSequence.ix(id: 12).tryModifyMut(&slice) { $0.value = 7 }
+        #expect(slice[12].value == 7)
+        slice = [Row].SubSequence.ix(id: 15, by: \Row.id).set(slice, Row(id: 15, value: 9))
+        #expect(slice[15].value == 9)
+    }
+
+    @Test func ixIdByClosureOnNonContiguousCollectionWalksIndices() {
+        var table = ["a": 1, "b": 2]
+        let two = [String: Int].Values.ix(id: 2) { @Sendable value in value }
+        #expect(two.preview(table.values) == 2)
+        two.tryModifyMut(&table.values) { $0 = 20 }
+        #expect(table == ["a": 1, "b": 20])
+        #expect([String: Int].Values.ix(id: 9) { @Sendable value in value }.preview(table.values) == nil)
+    }
+
+    @Test func ixIdSetOnAMissReturnsTheCollectionUnchanged() {
+        let rows = (0 ..< 3).map { Row(id: $0, value: 0) }
+        #expect([Row].ix(id: 9).set(rows, Row(id: 9, value: 1)) == rows)
+        #expect([Row].ix(id: 1).set(rows, Row(id: 1, value: 1))[1].value == 1)
     }
 
     @Test func ixOutOfBoundsIsANoOp() {

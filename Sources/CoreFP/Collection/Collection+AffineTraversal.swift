@@ -67,29 +67,16 @@ public extension MutableCollection where Index: Sendable, Element: Sendable {
     /// equals `id`. Use this when the element type is not `Identifiable` but has a stable
     /// `Hashable` field that uniquely identifies each element.
     ///
-    /// `tryModifyMut` locates the element by linear search and then mutates it directly via
-    /// `inout collection[idx]` — the collection buffer is never CoW-copied.
+    /// `tryModifyMut` locates the element by linear search and then mutates it in place — the
+    /// collection buffer is never CoW-copied. Contiguous collections are searched and written
+    /// through their buffer, without a malloc per element scanned.
     ///
     /// ```swift
     /// struct Project { let slug: String; var title: String }
     /// [Project].ix(id: "auth", by: \.slug).preview(projects)?.title   // "Auth Module"
     /// ```
     static func ix<ID: Hashable & Sendable>(id: ID, by identifier: KeyPath<Element, ID>) -> AffineTraversal<Self, Element> {
-        AffineTraversal(
-            preview: { @Sendable in $0.first(where: { $0[keyPath: identifier] == id }) },
-            set: { @Sendable (collection: consuming Self, element: Element) in
-                guard let idx = collection.firstIndex(where: { $0[keyPath: identifier] == id })
-                else { return collection }
-                var copy = consume collection
-                copy[idx] = element
-                return copy
-            },
-            tryModifyMut: { @Sendable collection, f in
-                guard let idx = collection.firstIndex(where: { $0[keyPath: identifier] == id })
-                else { return }
-                f(&collection[idx])
-            }
-        )
+        firstMatch { $0[keyPath: identifier] == id }
     }
 
     /// Returns an `AffineTraversal` focusing on the first element whose identifier closure
@@ -100,21 +87,7 @@ public extension MutableCollection where Index: Sendable, Element: Sendable {
         id: ID,
         by identifier: @escaping @Sendable (Element) -> ID
     ) -> AffineTraversal<Self, Element> {
-        AffineTraversal(
-            preview: { @Sendable in $0.first(where: { identifier($0) == id }) },
-            set: { @Sendable (collection: consuming Self, element: Element) in
-                guard let idx = collection.firstIndex(where: { identifier($0) == id })
-                else { return collection }
-                var copy = consume collection
-                copy[idx] = element
-                return copy
-            },
-            tryModifyMut: { @Sendable collection, f in
-                guard let idx = collection.firstIndex(where: { identifier($0) == id })
-                else { return }
-                f(&collection[idx])
-            }
-        )
+        firstMatch { identifier($0) == id }
     }
 }
 
@@ -122,28 +95,66 @@ public extension MutableCollection where Element: Identifiable, Element.ID: Send
     /// Returns an `AffineTraversal` focusing on the first element whose `id` matches.
     /// Preview returns `nil` when no element with that `id` exists; set is a no-op in that case.
     ///
-    /// `tryModifyMut` accesses the element directly via `inout collection[idx]` after
-    /// a linear search — the collection buffer is never CoW-copied.
+    /// `tryModifyMut` mutates the element in place after a linear search — the collection
+    /// buffer is never CoW-copied. Contiguous collections are searched and written through
+    /// their buffer, without a malloc per element scanned.
     ///
     /// ```swift
     /// [Item].ix(id: 2).preview(items)?.name   // "B"
     /// [Item].ix(id: 99).preview(items)        // nil
     /// ```
     static func ix(id: Element.ID) -> AffineTraversal<Self, Element> {
+        firstMatch { $0.id == id }
+    }
+}
+
+extension MutableCollection where Index: Sendable {
+    /// The affine traversal behind the `ix(id:)` family: the first element satisfying `isMatch`.
+    ///
+    /// Contiguous storage is searched, read and written through its buffer: called from code that
+    /// can't be specialised, `Collection`'s subscript goes through a protocol witness whose accessor
+    /// frame is heap-allocated, which `first(where:)` / `firstIndex(where:)` would pay for every
+    /// element they scan. The search is read-only, so a miss never makes shared storage unique.
+    static func firstMatch(_ isMatch: @escaping @Sendable (Element) -> Bool) -> AffineTraversal<Self, Element> {
         AffineTraversal(
-            preview: { @Sendable in $0.first(where: { $0.id == id }) },
+            preview: { @Sendable collection in
+                collection.withContiguousStorageIfAvailable { buffer in firstOffset(in: buffer, where: isMatch).map { buffer[$0] } }
+                    ?? collection.first(where: isMatch)
+            },
             set: { @Sendable (collection: consuming Self, element: Element) in
-                guard let idx = collection.firstIndex(where: { $0.id == id }) else { return collection }
                 var copy = consume collection
-                copy[idx] = element
+                copy.modifyFirst(where: isMatch) { $0 = element }
                 return copy
             },
             tryModifyMut: { @Sendable collection, f in
-                guard let idx = collection.firstIndex(where: { $0.id == id }) else { return }
-                f(&collection[idx])
+                collection.modifyFirst(where: isMatch, f)
             }
         )
     }
+
+    private mutating func modifyFirst(where isMatch: (Element) -> Bool, _ f: (inout Element) -> Void) {
+        if let found = withContiguousStorageIfAvailable({ buffer in firstOffset(in: buffer, where: isMatch) }) {
+            guard let offset = found else { return }
+            let mutated: Void? = withContiguousMutableStorageIfAvailable { f(&$0[offset]) }
+            guard mutated == nil else { return }
+            f(&self[index(startIndex, offsetBy: offset)])
+            return
+        }
+        guard let i = firstIndex(where: isMatch) else { return }
+        f(&self[i])
+    }
+}
+
+/// `buffer.firstIndex(where:)` as a plain loop: from unspecialised code the library method goes
+/// through `Collection`'s subscript witness (a malloc per element), the loop through the buffer's
+/// own subscript.
+private func firstOffset<Element>(in buffer: UnsafeBufferPointer<Element>, where isMatch: (Element) -> Bool) -> Int? {
+    var offset = 0
+    while offset < buffer.count {
+        if isMatch(buffer[offset]) { return offset }
+        offset &+= 1
+    }
+    return nil
 }
 
 public extension Dictionary where Key: Sendable {
