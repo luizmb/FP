@@ -2042,9 +2042,19 @@ let w = MemoryRepo(store: ["a": 1]).witness   // RepositoryWitness<Int, RepoErro
 
 ### Performance: copies, allocations and how to avoid them
 
-Swift's `Array`, `Dictionary`, `Set` and `String` keep their contents in a shared buffer and copy it the moment they're written while another value still points at it (copy-on-write). Most hidden costs in update code come from that: a whole-buffer copy to change one element. The optics in this library are built so that the in-place path is always available.
+Optics aren't only shorter to write than the update code they replace. Where everyday Swift quietly copies, the optics here update in place, and the common cases are covered by the macros.
 
-**A `let` property can still be updated in place.** Swift gives a `let` property only a read-only `KeyPath`, never a `WritableKeyPath`, so neither `x[keyPath:]` nor `lens(\.prop)` can write it. Updating it by hand means calling the init again, and while the old value is alive its array is shared, so changing the array copies all of it. A `@Lenses` lens recovers write access to the `let` and mutates it in place: it gives up the old value before writing, so the array is changed in its own buffer:
+The copies come from copy-on-write. `Array`, `Dictionary`, `Set` and `String` keep their contents in a shared buffer and copy all of it the moment they're written while another value still points at it. Three everyday patterns hit this, and the optics avoid it in each:
+
+| Everyday Swift | What it costs | With optics |
+|---|---|---|
+| A `let` property: rebuild the struct with its init | the field's array is copied while the old struct still holds it | a `@Lenses` lens writes the `let` in place |
+| An enum payload: `if case var .x(v)`, change `v`, assign `.x(v)` back | the payload is copied, even in optimised builds | a prism (`@Prisms`) changes it in place |
+| Find by id: `firstIndex(where:)` on an array | O(n) per lookup | `IdentifiedArray.ix(id:)` is O(1) |
+
+Every claim on this page is checked by comparing the array's buffer address before and after the update, in debug and in optimised (`-O`) builds. A reducer that updates state through `inout` copies in both builds when written by hand. For a plain local variable, the optimiser can sometimes remove the `let` copy by itself; the enum copy it never removes. The optic versions are in place in every case.
+
+**A `let` property, updated in place.** Swift gives a `let` property only a read-only `KeyPath`, never a `WritableKeyPath`, so neither `x[keyPath:]` nor `lens(\.prop)` can write it, and the usual way out is calling the init again with the new value. A `@Lenses` lens recovers write access to the `let`, and gives up the old value before writing, so the array is changed in its own buffer:
 
 ```swift
 @Lenses
@@ -2056,6 +2066,7 @@ struct Invoice: Sendable {
 var invoice = Invoice(id: 1, lines: Array(0 ..< 10_000))
 
 // By hand: `invoice` still holds `lines`, so appending copies all 10 000 elements
+// (always in a debug build or an `inout` reducer; for a local like this one, -O may avoid it)
 var lines = invoice.lines
 lines.append(42)
 invoice = Invoice(id: invoice.id, lines: lines)
@@ -2064,9 +2075,38 @@ invoice = Invoice(id: invoice.id, lines: lines)
 Invoice.lens.lines.lift(EndoMut { $0.append(42) })(&invoice)
 ```
 
+**An enum payload, updated in place.** Swift has no way to mutate an associated value where it sits: `if case var` binds a copy, and while the enum still holds the original, changing that copy copies the whole payload. The hand-written fix is to overwrite the enum with a placeholder case before mutating, which few people remember to do. A prism does it for you: it takes the payload out, drops the old value, mutates the payload and puts it back:
+
+```swift
+@Prisms
+enum Feed: Sendable {
+    case idle
+    case loaded([Int])
+}
+
+var feed = Feed.loaded(Array(0 ..< 10_000))
+
+// By hand: `feed` still holds the array, so appending copies all 10 000 elements
+if case var .loaded(items) = feed {
+    items.append(42)
+    feed = .loaded(items)
+}
+
+// By hand, done right: clear `feed` first so `items` is the only owner
+if case var .loaded(items) = feed {
+    feed = .idle
+    items.append(42)
+    feed = .loaded(items)
+}
+
+// Through the prism: the second version, written once for you (and a no-op on `.idle`)
+Feed.prism.loaded.lift(EndoMut { $0.append(42) })(&feed)
+```
+
+The same holds through a composed chain (`lens >>> prism >>> lens` and so on): each link is in place, so the whole update is.
+
 | You write | Cost |
 |---|---|
-| `x = Model(a: x.a, items: x.items + [e])` (by hand) | builds a new array every time |
 | `optic.lift(EndoMut { … })(&x)` or `optic.modifyMut(&x) { … }` | in place, no copy, for every optic kind |
 | `x = optic.set(consume x, v)` | the whole isn't copied: the old value is handed over and `v` replaces the focus |
 | `x = optic.over(f)(consume x)` | the whole isn't copied, but `f` returns a new focus: a pure function can't change an array in place, so use `lift` for that |
@@ -2075,7 +2115,7 @@ Invoice.lens.lines.lift(EndoMut { $0.append(42) })(&invoice)
 
 **Points worth knowing**
 
-- **Prisms and isos write in place too.** A prism takes the payload out of the enum case, drops the old value, mutates the payload and puts it back, so an array inside a case isn't copied.
+- **Isos write in place too**, the same way prisms do.
 - **Fold instead of `getAll` when you want one answer.** `count`, `reduce`, `foldMap` and `forEach` visit the foci without building an array. `getAll` builds exactly one array for the whole chain, never one per level.
 - **Arrays are walked through their storage.** `each`, `eachIndexed`, `ix(_:)` and `ix(id:)` on `Array`, `ContiguousArray` and `ArraySlice` read and write the buffer directly: no allocation per element. Other collections (and code that is generic over `MutableCollection`) go through the collection's subscript, which allocates once per element visited.
 - **`ix(id:)` on an array is a linear search.** For lookups by id in a hot path, use `IdentifiedArray`, whose `ix(id:)` is O(1).
