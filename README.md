@@ -2049,10 +2049,22 @@ The copies come from copy-on-write. `Array`, `Dictionary`, `Set` and `String` ke
 | Everyday Swift | What it costs | With optics |
 |---|---|---|
 | A `let` property: rebuild the struct with its init | the field's array is copied while the old struct still holds it | a `@Lenses` lens writes the `let` in place |
-| An enum payload: `if case var .x(v)`, change `v`, assign `.x(v)` back | the payload is copied, even in optimised builds | a prism (`@Prisms`) changes it in place |
+| An enum payload: `if case var .x(v)`, change `v`, assign `.x(v)` back | the payload is copied (in optimised builds too, unless the enum is the whole state) | a prism (`@Prisms`) changes it in place |
 | Find by id: `firstIndex(where:)` on an array | O(n) per lookup | `IdentifiedArray.ix(id:)` is O(1) |
 
-Every claim on this page is checked by comparing the array's buffer address before and after the update, in debug and in optimised (`-O`) builds. A reducer that updates state through `inout` copies in both builds when written by hand. For a plain local variable, the optimiser can sometimes remove the `let` copy by itself; the enum copy it never removes. The optic versions are in place in every case.
+Every claim on this page is checked by comparing the array's buffer address before and after the update, in debug and in optimised (`-O`) builds. Written by hand, both patterns copy in debug. With `-O`, whether the copy survives depends on the surrounding code: a `let` field or an enum one level down in the state (`state.screen`, `state.session`) is still copied, while a simple local variable, or an enum that is the whole state, can be optimised into an in-place write. The optic versions are in place in every case, in both builds.
+
+In a reducer shaped like SwiftRex's, `(Action) -> EndoMut<State>`, appending one element to an array of 10 000 measured, with `-O`:
+
+| State shape | By hand | With optics |
+|---|---|---|
+| `let` array field, rebuilt with the init | copies, 1.57 µs | in place, 0.19 µs |
+| enum in a struct field (`if case var` on `state.screen`) | copies, 1.55 µs | in place, 0.69 µs |
+| struct → enum → `let [Team]` → `[Member]` (100 × 1 000) | copies both arrays, 12.7 µs | in place, 0.54 µs |
+| `var` array field (`state.items.append`) | in place, 0.07 µs | in place, 0.24 µs |
+| enum that is the whole state | in place, 0.07 µs | in place, 0.23 µs |
+
+The copy grows with the array, the optic's cost doesn't. Where the hand-written code is already in place (a `var` field, or a simple enum the optimiser can see through), the optic adds a fixed fraction of a microsecond for building and calling its closures.
 
 **A `let` property, updated in place.** Swift gives a `let` property only a read-only `KeyPath`, never a `WritableKeyPath`, so neither `x[keyPath:]` nor `lens(\.prop)` can write it, and the usual way out is calling the init again with the new value. A `@Lenses` lens recovers write access to the `let`, and gives up the old value before writing, so the array is changed in its own buffer:
 
