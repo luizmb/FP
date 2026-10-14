@@ -39,11 +39,13 @@ You don't need any background in functional programming. This README starts with
   - [Enums: Prism](#enums-prism)
   - [Paths that may not exist: AffineTraversal](#paths-that-may-not-exist-affinetraversal)
   - [Collections: `ix`](#collections-ix)
+  - [Every element: Traversal](#every-element-traversal)
   - [Two-way conversions: Iso](#two-way-conversions-iso)
   - [Identity optics (`.id`)](#identity-optics-id)
   - [Chaining transformations (Endo)](#chaining-transformations-endo)
   - [Updating in place without copies (EndoMut)](#updating-in-place-without-copies-endomut)
   - [Generating optics (and more) with macros](#generating-optics-and-more-with-macros)
+  - [Performance: copies, allocations and how to avoid them](#performance-copies-allocations-and-how-to-avoid-them)
 - [5. Effects as values](#5-effects-as-values)
   - [Dependencies: Reader](#dependencies-reader)
   - [State: Stateful](#state-stateful)
@@ -956,7 +958,7 @@ Lenses also compose with Prisms — see [Paths that may not exist](#paths-that-m
 
 **`lift` — in-place mutation with `EndoMut`**
 
-`over` returns a new `S` — it always copies. When `S` contains a large CoW buffer (an `Array`, `Dictionary`, etc.), even touching one element triggers an O(n) heap copy.
+`over` returns a new `S`. It takes `S` as `consuming`, so when you hand the value over (`person = f(consume person)`, or a temporary) the write happens in place. When you keep using the original afterwards, Swift has to copy it, and with a large CoW buffer inside (an `Array`, a `Dictionary`) even touching one element copies the whole buffer.
 
 `lift` converts an `EndoMut<A>` (an in-place mutation of the focused value) into an `EndoMut<S>` (an in-place mutation of the whole) without copying `S`:
 
@@ -968,7 +970,7 @@ var person = Person(name: "Alice", age: 30)
 personReducer(&person)   // person.age is now 31 — zero copies of Person
 ```
 
-For `WritableKeyPath`-backed lenses (those created with `lens(\.property)`), the entire operation is zero-copy — Swift's modify coroutine provides direct `inout` access to the field. For manually constructed lenses the focused value is copied once; `S` itself is never CoW-copied. See [Lifting `EndoMut` through optics](#lifting-endomut-through-optics) for the full story.
+For `WritableKeyPath`-backed lenses (those created with `lens(\.property)`) and `@Lenses` lenses (including `let` properties), the entire operation is zero-copy — Swift's modify coroutine provides direct `inout` access to the field. For a lens with a hand-written setter (`lens(\.letProp, set: …)`), the focused value is copied once; `S` itself is never CoW-copied. See [Lifting `EndoMut` through optics](#lifting-endomut-through-optics) for the full story.
 
 **Identity lens**
 
@@ -1065,7 +1067,7 @@ var rect = Shape.rectangle(3, 4)
 shapeReducer(&rect)    // Shape.rectangle(3, 4) — no-op, no copies
 ```
 
-Because Swift has no `inout` access to enum case values, the associated value is always copied once. The outer `Shape` (or whatever `S` is) is kept `inout` and is never CoW-copied.
+Swift has no `inout` access to enum case values, so a prism takes the associated value out, mutates it and rebuilds the case with `review`. It drops the old `Shape` first, so the associated value is never shared while it's mutated: a CoW payload (an array, say) changes in place, with no copy. The outer `S` is kept `inout` throughout.
 
 Prisms compose with other prisms and with lenses — see [Paths that may not exist](#paths-that-may-not-exist-affinetraversal) for the full story.
 
@@ -1272,11 +1274,48 @@ let teamReducer: EndoMut<Team> =
 teamReducer(&team)   // only the one Item is mutated; the [Item] buffer is not copied
 ```
 
-`ix` on `MutableCollection` passes `inout collection[index]` directly to the closure, and Swift's subscript modify coroutine makes this genuinely zero-copy. `ix` on `Dictionary` is zero-copy too: it finds the key's index once and mutates through `dict.values[index]`, so the value is neither copied nor re-hashed.
+`ix` on `MutableCollection` mutates the element in place: `Array`, `ContiguousArray` and `ArraySlice` through their storage buffer, other collections through `inout collection[index]`. `ix(id:)` searches the buffer the same way, without allocating per element scanned. `ix` on `Dictionary` is zero-copy too: it finds the key's index once and mutates through `dict.values[index]`, so the value is neither copied nor re-hashed.
 
 **Subscripts vs `ix` — two faces of the same concept**
 
 For concrete collection types, `[Int].ix(2)` is equivalent to `affineTraversal(\[Int][safe: 2])`, and `[User].ix(id: 2)` mirrors `[User][id: 2]` for the replace-in-place case. Use the subscripts (`[safe:]`, `[id:]`) for direct element access; use `ix` when you need an optic you can compose. `ix(id:)` is limited to replace-in-place semantics — for the add-or-remove behaviour, use the `[id:]` subscript directly.
+
+### Every element: Traversal
+
+An `AffineTraversal` focuses on zero or one value. A `Traversal` focuses on any number of them: every element of an array, every value of a dictionary, every member of every team. The usual source is a collection's `each`. When you need one answer rather than the values themselves, fold (`count`, `reduce`, `foldMap`, `forEach`) instead of calling `getAll`: a fold visits the values one by one and never builds an array.
+
+```swift
+struct Sailor: Sendable { var name: String; var age: Int }
+struct Crew: Sendable { var sailors: [Sailor] }
+
+let crews = [
+    Crew(sailors: [Sailor(name: "Ana", age: 30), Sailor(name: "Bo", age: 25)]),
+    Crew(sailors: [Sailor(name: "Cy", age: 41)])
+]
+
+let sailorAges: Traversal<[Crew], Int> = [Crew].each
+    .compose(lens(\Crew.sailors))
+    .compose([Sailor].each)
+    .compose(lens(\Sailor.age))
+
+sailorAges.getAll(crews)                    // [30, 25, 41]
+sailorAges.over { $0 + 1 }(crews)           // every sailor one year older
+
+// Folds: one answer, no array built, however deep the chain
+sailorAges.count(crews)                                    // 3
+sailorAges.reduce(crews, into: 0) { $0 += $1 }             // 96
+sailorAges.foldMap(crews) { Int.Monoids.Max($0) }          // Max(41)
+sailorAges.forEach(crews) { print($0) }                    // 30, 25, 41
+```
+
+`eachIndexed` also passes each element's position, and `Dictionary` has `eachValue` / `eachValueIndexed` (the latter with the key):
+
+```swift
+[String].eachIndexed.getAll(["a", "b"])                         // [(0, "a"), (1, "b")]
+[String: Int].eachValue.over { $0 * 10 }(["a": 1, "b": 2])      // ["a": 10, "b": 20]
+```
+
+Writes (`over`, `setAll`, `modifyMut`) change every focus in place. On `Array`, `ContiguousArray` and `ArraySlice`, reads and writes go through the storage buffer, so a traversal over 10 000 elements costs no allocation per element.
 
 ### Two-way conversions: Iso
 
@@ -1520,8 +1559,9 @@ The cost of a composed chain is the sum of its links:
 | Optic | `lift` copy cost |
 |---|---|
 | `lens(\.varProp)` — `WritableKeyPath` | zero-copy (Swift modify coroutine) |
-| `lens(\.letProp) { … }` — computed setter | the first write to a CoW focus copies it (`get` runs while `S` still holds it) |
-| `ix` on `MutableCollection` | zero-copy (direct inout subscript) |
+| `@Lenses` on a `let` property | zero-copy (through a private fields `Iso`) |
+| `lens(\.letProp, set: …)` — computed setter | the first write to a CoW focus copies it (`get` runs while `S` still holds it) |
+| `ix` on `MutableCollection` | zero-copy (storage buffer, or inout subscript) |
 | `ix` on `Dictionary` | zero-copy (through `dict.values[index]`) |
 | `Prism` (enum case) | zero-copy (the old `S` is consumed before the payload is mutated) |
 | `Iso` | zero-copy (same reason as `Prism`) |
@@ -1541,7 +1581,7 @@ import FPMacros
 
 #### `@Lenses` — struct lenses
 
-`@Lenses(_:init:)` generates a memberwise initializer, a `Lenses` struct + `static var lens` accessor holding one `Lens` per stored property, a `with(...)` copy-with-overrides helper, and `Sendable` conformance when the struct doesn't declare it (`CoreFP.lens` needs a `Sendable` host, and a `public` struct never gets one implicitly).
+`@Lenses(_:init:)` generates a memberwise initializer, a `Lenses` struct + `static var lens` accessor with one computed `Lens` per stored property (reading one builds only that one), a `with(...)` copy-with-overrides helper, and `Sendable` conformance when the struct doesn't declare it (`CoreFP.lens` needs a `Sendable` host, and a `public` struct never gets one implicitly).
 
 **Property rules:**
 
@@ -1999,6 +2039,100 @@ let w = MemoryRepo(store: ["a": 1]).witness   // RepositoryWitness<Int, RepoErro
 ```
 
 `{ get set }` properties become a getter thunk plus a `set<Name>` closure; because the protocol setter is `mutating`, the from-instance `init` and `.witness` convenience are gated to `where …: AnyObject` whenever a settable member exists. Protocol inheritance composes by name (`ChildWitness` gains a `parent: ParentWitness` field, provided the parent is also `@Witness`); marker and stdlib parents (`Sendable & AnyObject`, `Equatable`, `Codable`, …) aren't composed, and a parent with `{ get set }` requirements needs a class-bound child (`protocol Child: AnyObject, Parent`). Typed `throws(E)` and `{ get async throws }` getters are preserved. Requirements mentioning `Self`, `rethrows` requirements, variadic parameters, non-erasable generics and `private` protocols are diagnosed.
+
+### Performance: copies, allocations and how to avoid them
+
+Optics aren't only shorter to write than the update code they replace. Where everyday Swift quietly copies, the optics here update in place, and the common cases are covered by the macros.
+
+The copies come from copy-on-write. `Array`, `Dictionary`, `Set` and `String` keep their contents in a shared buffer and copy all of it the moment they're written while another value still points at it. Three everyday patterns hit this, and the optics avoid it in each:
+
+| Everyday Swift | What it costs | With optics |
+|---|---|---|
+| A `let` property: rebuild the struct with its init | the field's array is copied while the old struct still holds it | a `@Lenses` lens writes the `let` in place |
+| An enum payload: `if case var .x(v)`, change `v`, assign `.x(v)` back | the payload is copied (in optimised builds too, unless the enum is the whole state) | a prism (`@Prisms`) changes it in place |
+| Find by id: `firstIndex(where:)` on an array | O(n) per lookup | `IdentifiedArray.ix(id:)` is O(1) |
+
+Every claim on this page is checked by comparing the array's buffer address before and after the update, in debug and in optimised (`-O`) builds. Written by hand, both patterns copy in debug. With `-O`, whether the copy survives depends on the surrounding code: a `let` field or an enum one level down in the state (`state.screen`, `state.session`) is still copied, while a simple local variable, or an enum that is the whole state, can be optimised into an in-place write. The optic versions are in place in every case, in both builds.
+
+In a reducer shaped like SwiftRex's, `(Action) -> EndoMut<State>`, appending one element to an array of 10 000 measured, with `-O`:
+
+| State shape | By hand | With optics |
+|---|---|---|
+| `let` array field, rebuilt with the init | copies, 1.57 µs | in place, 0.19 µs |
+| enum in a struct field (`if case var` on `state.screen`) | copies, 1.55 µs | in place, 0.69 µs |
+| struct → enum → `let [Team]` → `[Member]` (100 × 1 000) | copies both arrays, 12.7 µs | in place, 0.54 µs |
+| `var` array field (`state.items.append`) | in place, 0.07 µs | in place, 0.24 µs |
+| enum that is the whole state | in place, 0.07 µs | in place, 0.23 µs |
+
+The copy grows with the array, the optic's cost doesn't. Where the hand-written code is already in place (a `var` field, or a simple enum the optimiser can see through), the optic adds a fixed fraction of a microsecond for building and calling its closures.
+
+**A `let` property, updated in place.** Swift gives a `let` property only a read-only `KeyPath`, never a `WritableKeyPath`, so neither `x[keyPath:]` nor `lens(\.prop)` can write it, and the usual way out is calling the init again with the new value. A `@Lenses` lens recovers write access to the `let`, and gives up the old value before writing, so the array is changed in its own buffer:
+
+```swift
+@Lenses
+struct Invoice: Sendable {
+    let id: Int
+    let lines: [Int]
+}
+
+var invoice = Invoice(id: 1, lines: Array(0 ..< 10_000))
+
+// By hand: `invoice` still holds `lines`, so appending copies all 10 000 elements
+// (always in a debug build or an `inout` reducer; for a local like this one, -O may avoid it)
+var lines = invoice.lines
+lines.append(42)
+invoice = Invoice(id: invoice.id, lines: lines)
+
+// Through the lens: no copy, the append goes into the existing buffer
+Invoice.lens.lines.lift(EndoMut { $0.append(42) })(&invoice)
+```
+
+**An enum payload, updated in place.** Swift has no way to mutate an associated value where it sits: `if case var` binds a copy, and while the enum still holds the original, changing that copy copies the whole payload. The hand-written fix is to overwrite the enum with a placeholder case before mutating, which few people remember to do. A prism does it for you: it takes the payload out, drops the old value, mutates the payload and puts it back:
+
+```swift
+@Prisms
+enum Feed: Sendable {
+    case idle
+    case loaded([Int])
+}
+
+var feed = Feed.loaded(Array(0 ..< 10_000))
+
+// By hand: `feed` still holds the array, so appending copies all 10 000 elements
+if case var .loaded(items) = feed {
+    items.append(42)
+    feed = .loaded(items)
+}
+
+// By hand, done right: clear `feed` first so `items` is the only owner
+if case var .loaded(items) = feed {
+    feed = .idle
+    items.append(42)
+    feed = .loaded(items)
+}
+
+// Through the prism: the second version, written once for you (and a no-op on `.idle`)
+Feed.prism.loaded.lift(EndoMut { $0.append(42) })(&feed)
+```
+
+The same holds through a composed chain (`lens >>> prism >>> lens` and so on): each link is in place, so the whole update is.
+
+| You write | Cost |
+|---|---|
+| `optic.lift(EndoMut { … })(&x)` or `optic.modifyMut(&x) { … }` | in place, no copy, for every optic kind |
+| `x = optic.set(consume x, v)` | the whole isn't copied: the old value is handed over and `v` replaces the focus |
+| `x = optic.over(f)(consume x)` | the whole isn't copied, but `f` returns a new focus: a pure function can't change an array in place, so use `lift` for that |
+| `let y = optic.set(x, v)`, then keep using `x` | one copy, because both values must exist |
+| `lens(\.letProp, set: …)` (hand-written setter) | the focus is copied on its first write; `@Lenses` avoids this |
+
+**Points worth knowing**
+
+- **Isos write in place too**, the same way prisms do.
+- **Fold instead of `getAll` when you want one answer.** `count`, `reduce`, `foldMap` and `forEach` visit the foci without building an array. `getAll` builds exactly one array for the whole chain, never one per level.
+- **Arrays are walked through their storage.** `each`, `eachIndexed`, `ix(_:)` and `ix(id:)` on `Array`, `ContiguousArray` and `ArraySlice` read and write the buffer directly: no allocation per element. Other collections (and code that is generic over `MutableCollection`) go through the collection's subscript, which allocates once per element visited.
+- **`ix(id:)` on an array is a linear search.** For lookups by id in a hot path, use `IdentifiedArray`, whose `ix(id:)` is O(1).
+- **Dictionaries are updated in place, without re-hashing.** `ix(key:)` and `eachValue` write straight into the stored value. `eachValueIndexed` copies the keys into one array first, so it costs one allocation.
+- **Build an optic once, use it many times.** Creating or composing an optic allocates a few small closures. Keep a composed chain in a `let` (or a static property) instead of composing it inside a loop. `@Lenses` / `@Prisms` namespaces build only the optic you read.
 
 ## 5. Effects as values
 

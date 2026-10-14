@@ -70,7 +70,7 @@ let mutating2 = pure2.toEndoMut()     // free, no allocation
 | Use when | small, value-semantic types, or you need a pure `(A) -> A` API | large types with Copy-on-Write internals (`Array`, `Dictionary`, `String`) |
 | Bridgeable | `.toEndoMut()` (free) | `.toEndo()` (one copy) |
 
-`Lens.lift(_:)`, `Prism.lift(_:)`, and `AffineTraversal.lift(_:)` all accept an `EndoMut` for the focus and produce an `EndoMut` for the whole, preserving the zero-copy guarantee whenever the lens is `WritableKeyPath`-backed — the idiomatic way to write reducers over large states without ever triggering a CoW copy of the outer type.
+`Lens.lift(_:)`, `Prism.lift(_:)`, and `AffineTraversal.lift(_:)` all accept an `EndoMut` for the focus and produce an `EndoMut` for the whole, preserving the zero-copy guarantee whenever each link is zero-copy (`WritableKeyPath` and `@Lenses` lenses, prisms, isos, `ix`) — the idiomatic way to write reducers over large states without ever triggering a CoW copy of the outer type.
 
 ## For Haskell developers
 
