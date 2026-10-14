@@ -311,9 +311,9 @@ let perms: AffineTraversal<Workspace, Permissions> = AffineTraversal(\.member.ro
 
 ## Zero-copy mutation — `EndoMut` and `lift`
 
-`over` always returns a new `S` — one copy per call, unavoidable given its contract. When `S`
-holds a copy-on-write buffer (`Array`, `Dictionary`, `String`), even a single-element change can
-trigger an O(n) heap copy if the buffer's refcount was bumped by passing `S` around by value.
+`over` returns a new `S`. It takes `S` as `consuming`, so handing the value over writes in place,
+but when the caller keeps the original, `S` is copied, and if it holds a copy-on-write buffer
+(`Array`, `Dictionary`, `String`) even a single-element change copies the whole buffer.
 
 Every optic exposes `lift(_:)`, which converts an `EndoMut<A>` (an in-place mutation of the
 focus) into an `EndoMut<S>` (an in-place mutation of the whole), threading `inout` all the way
@@ -330,8 +330,9 @@ personReducer(&mutablePerson)   // mutates mutablePerson.age in place, zero copi
 When every `Lens` in the chain is `WritableKeyPath`-backed, the whole chain is zero-copy end to
 end via Swift's modify coroutine. A `Prism` (or `Iso`) in the chain takes its payload out, mutates
 it and rebuilds the whole with `review`; it `consume`s the old whole first, so the payload is never
-shared while it's mutated and a CoW payload changes in place. `ix` on a `MutableCollection` or a
-`Dictionary` is zero-copy. The pure forms (`set`, `over`, `setAll`) take `S` as `consuming`: hand
+shared while it's mutated and a CoW payload changes in place. `ix`, `each` and `eachIndexed` on a `MutableCollection`, and
+`ix(key:)` / `eachValue` on a `Dictionary`, are zero-copy (`Array`, `ContiguousArray` and
+`ArraySlice` go through their storage buffer, with no allocation per element). The pure forms (`set`, `over`, `setAll`) take `S` as `consuming`: hand
 the value over (`consume x`, or a temporary) and they write in place too. Prefer `over` in pure pipelines that need a new `S`; prefer
 `lift` when threading `EndoMut` reducers through large CoW state (this is exactly the pattern
 SwiftRex-style reducers use).

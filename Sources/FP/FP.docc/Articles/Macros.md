@@ -25,7 +25,7 @@ import FPMacros
 
 Applied to a struct, `@Lenses` generates:
 - a memberwise `init(...)` (unless the struct already declares a conflicting one),
-- a nested `Lenses: Sendable` struct holding one `Lens<Host, Property>` per stored property, plus a computed `static var lens` accessor (computed, so generic hosts and hosts nested in a generic type work too),
+- a nested `Lenses: Sendable` struct with one computed `Lens<Host, Property>` member per stored property (reading one builds only that lens), plus a computed `static var lens` accessor (computed, so generic hosts and hosts nested in a generic type work too),
 - a `with(...)` copy-with-overrides method,
 - `extension Host: Sendable {}` when the struct doesn't declare `Sendable` already. `CoreFP.lens` needs a `Sendable` host and a `public` struct never gets one implicitly, so without it the example below wouldn't compile.
 
@@ -98,7 +98,7 @@ Properties whose type is `T?` get a double-Optional parameter in `with(...)` (`T
 `@attached(member, names: arbitrary)` + `@attached(extension, conformances: Prismatic)`
 
 Applied to an enum, `@Prisms` generates:
-- a nested `Prisms: Sendable` struct holding one `Prism<Host, Payload>` per case, plus a computed `static var prism` (works for generic enums and enums nested in a generic type),
+- a nested `Prisms: Sendable` struct with one computed `Prism<Host, Payload>` member per case, plus a computed `static var prism` (works for generic enums and enums nested in a generic type),
 - `Prismatic` conformance, which unlocks `Prism(\.caseName)` — composable case key paths,
 - one plain property per case (`value.caseName`), typed `Payload?`, delegating to the `Prism` above,
 - a nested `Cases: CoreFP.CaseMatchable` enum mirroring the case *names* (no payloads), plus `value.is(.caseName)`.
