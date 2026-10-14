@@ -271,6 +271,12 @@ struct IndexedTraversalFoldTests {
         #expect(table == ["a": 10, "b": 20])
     }
 
+    @Test func eachValueIndexedModifyMutPairsEveryValueWithItsKey() {
+        var table = Dictionary(uniqueKeysWithValues: (0 ..< 200).map { ("k\($0)", 0) })
+        [String: Int].eachValueIndexed.modifyMut(&table) { key, value in value = Int(key.dropFirst()) ?? -1 }
+        #expect(table.allSatisfy { key, value in key == "k\(value)" })
+    }
+
     @Test func eachValueIndexedVisitsKeys() {
         let table = ["a": 1, "b": 2]
         let pairs = visitedIndexed([String: Int].eachValueIndexed, table)

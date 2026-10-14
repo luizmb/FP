@@ -170,6 +170,10 @@ public extension MutableCollection where Indices == Range<Int>, Element: Sendabl
 public extension Dictionary where Key: Sendable, Value: Sendable {
     /// An ``IndexedTraversal`` focusing on every value, tagged with its key.
     ///
+    /// `modifyMut` mutates each value in place through one access to `values`, like
+    /// ``eachValue``. The keys are copied into an array first, since they can't be read while
+    /// `values` is held for writing: one allocation, instead of re-entering both views per value.
+    ///
     /// ```swift
     /// [String: Int].eachValueIndexed.over { key, v in key == "a" ? v : 0 }(["a": 1, "b": 2])
     /// // ["a": 1, "b": 0]
@@ -183,12 +187,25 @@ public extension Dictionary where Key: Sendable, Value: Sendable {
                 }
             },
             modifyMut: { @Sendable dict, f in
-                var i = dict.values.startIndex
-                while i != dict.values.endIndex {
-                    f(dict.keys[i], &dict.values[i])
-                    dict.values.formIndex(after: &i)
-                }
+                // The keys can't be read while `values` is held for writing, so they are copied out
+                // first: one array of keys buys a single `values` access for the whole loop.
+                modifyEachValue(&dict.values, keys: Array(dict.keys), f)
             }
         )
+    }
+}
+
+/// ``modifyEachValue(_:_:)`` with each value's key, from `keys` (in `values`' order).
+private func modifyEachValue<Key, Value>(
+    _ values: inout Dictionary<Key, Value>.Values,
+    keys: [Key],
+    _ f: (Key, inout Value) -> Void
+) {
+    var i = values.startIndex
+    var k = 0
+    while i != values.endIndex {
+        f(keys[k], &values[i])
+        values.formIndex(after: &i)
+        k &+= 1
     }
 }

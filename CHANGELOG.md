@@ -20,15 +20,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   on `Array`, `ContiguousArray` and `ArraySlice` now uses `withContiguous(Mutable)StorageIfAvailable`,
   and falls back to indices for other collections. `modifyMut` through a 7-link chain over 10k
   elements went from 11,100 mallocs to 0 (84% faster); `getAll` from 22K mallocs to 14.
-- **`eachIndexed`, `ix(_:)` and `IdentifiedArray.traversed` go through the buffer too.** On
+- **`eachIndexed`, `ix` and `IdentifiedArray.traversed` go through the buffer too.** On
   collections indexed by `Range<Int>` (`Array`, `ContiguousArray`, `ArraySlice`), `eachIndexed`
   and `ix(_:)` read and write contiguous storage at offset `index - startIndex`; other collections,
-  and generic code that only knows `MutableCollection`, keep walking indices. Over 10k elements,
-  `eachIndexed` folds 98% faster (30,000 mallocs to 1) and `modifyMut` 97% faster (10,000 mallocs
-  to 2); `ix(_:)` reads and writes without allocating (2 mallocs to 0). `IdentifiedArray.traversed`
-  folds 45% faster and mutates 80% faster with no per-element retain/release.
-- **`Dictionary.eachValue` mutates through one `values` access** instead of re-entering
-  `dict.values` per value: 54% faster, 75% fewer retains/releases.
+  and generic code that only knows `MutableCollection`, keep walking indices. `ix(id:)`,
+  `ix(id:by:)` (key path and closure) search contiguous storage through its buffer, read-only, so a
+  miss never makes shared storage unique. Over 10k elements: `eachIndexed` folds 98% faster (30,000
+  mallocs to 1) and mutates 97% faster (10,000 to 1); `ix(id:)` matching halfway is 83–87% faster
+  (10,002 mallocs to 0); `ix(_:)` no longer allocates; `IdentifiedArray.traversed` folds 46% faster
+  and mutates 81% faster with no per-element retain/release.
+- **`Dictionary.eachValue` and `eachValueIndexed` mutate through one `values` access** instead of
+  re-entering `dict.values` per value: `eachValue` 53% faster, `eachValueIndexed` 49% faster,
+  75–80% fewer retains/releases. `eachValueIndexed` copies the keys into one array first (one
+  allocation), because they can't be read while `values` is held for writing.
 - **`Iso.traversal` mutates in place** through `Iso.modifyMut` instead of copying the focus.
 - **`IdentifiedArray` tail operations are O(1)**: removing the last element (`remove(at:)` /
   `remove(id:)`) no longer scans the whole hash table to reindex positions (nothing follows it),
