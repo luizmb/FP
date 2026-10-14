@@ -45,6 +45,7 @@ You don't need any background in functional programming. This README starts with
   - [Chaining transformations (Endo)](#chaining-transformations-endo)
   - [Updating in place without copies (EndoMut)](#updating-in-place-without-copies-endomut)
   - [Generating optics (and more) with macros](#generating-optics-and-more-with-macros)
+  - [Performance: copies, allocations and how to avoid them](#performance-copies-allocations-and-how-to-avoid-them)
 - [5. Effects as values](#5-effects-as-values)
   - [Dependencies: Reader](#dependencies-reader)
   - [State: Stateful](#state-stateful)
@@ -2038,6 +2039,48 @@ let w = MemoryRepo(store: ["a": 1]).witness   // RepositoryWitness<Int, RepoErro
 ```
 
 `{ get set }` properties become a getter thunk plus a `set<Name>` closure; because the protocol setter is `mutating`, the from-instance `init` and `.witness` convenience are gated to `where …: AnyObject` whenever a settable member exists. Protocol inheritance composes by name (`ChildWitness` gains a `parent: ParentWitness` field, provided the parent is also `@Witness`); marker and stdlib parents (`Sendable & AnyObject`, `Equatable`, `Codable`, …) aren't composed, and a parent with `{ get set }` requirements needs a class-bound child (`protocol Child: AnyObject, Parent`). Typed `throws(E)` and `{ get async throws }` getters are preserved. Requirements mentioning `Self`, `rethrows` requirements, variadic parameters, non-erasable generics and `private` protocols are diagnosed.
+
+### Performance: copies, allocations and how to avoid them
+
+Swift's `Array`, `Dictionary`, `Set` and `String` keep their contents in a shared buffer and copy it the moment they're written while another value still points at it (copy-on-write). Most hidden costs in update code come from that: a whole-buffer copy to change one element. The optics in this library are built so that the in-place path is always available.
+
+**A `let` property can still be updated in place.** Swift gives a `let` property only a read-only `KeyPath`, never a `WritableKeyPath`, so neither `x[keyPath:]` nor `lens(\.prop)` can write it. Updating it by hand means calling the init again, and while the old value is alive its array is shared, so changing the array copies all of it. A `@Lenses` lens recovers write access to the `let` and mutates it in place: it gives up the old value before writing, so the array is changed in its own buffer:
+
+```swift
+@Lenses
+struct Invoice: Sendable {
+    let id: Int
+    let lines: [Int]
+}
+
+var invoice = Invoice(id: 1, lines: Array(0 ..< 10_000))
+
+// By hand: `invoice` still holds `lines`, so appending copies all 10 000 elements
+var lines = invoice.lines
+lines.append(42)
+invoice = Invoice(id: invoice.id, lines: lines)
+
+// Through the lens: no copy, the append goes into the existing buffer
+Invoice.lens.lines.lift(EndoMut { $0.append(42) })(&invoice)
+```
+
+| You write | Cost |
+|---|---|
+| `x = Model(a: x.a, items: x.items + [e])` (by hand) | builds a new array every time |
+| `optic.lift(EndoMut { … })(&x)` or `optic.modifyMut(&x) { … }` | in place, no copy, for every optic kind |
+| `x = optic.set(consume x, v)` | the whole isn't copied: the old value is handed over and `v` replaces the focus |
+| `x = optic.over(f)(consume x)` | the whole isn't copied, but `f` returns a new focus: a pure function can't change an array in place, so use `lift` for that |
+| `let y = optic.set(x, v)`, then keep using `x` | one copy, because both values must exist |
+| `lens(\.letProp, set: …)` (hand-written setter) | the focus is copied on its first write; `@Lenses` avoids this |
+
+**Points worth knowing**
+
+- **Prisms and isos write in place too.** A prism takes the payload out of the enum case, drops the old value, mutates the payload and puts it back, so an array inside a case isn't copied.
+- **Fold instead of `getAll` when you want one answer.** `count`, `reduce`, `foldMap` and `forEach` visit the foci without building an array. `getAll` builds exactly one array for the whole chain, never one per level.
+- **Arrays are walked through their storage.** `each`, `eachIndexed`, `ix(_:)` and `ix(id:)` on `Array`, `ContiguousArray` and `ArraySlice` read and write the buffer directly: no allocation per element. Other collections (and code that is generic over `MutableCollection`) go through the collection's subscript, which allocates once per element visited.
+- **`ix(id:)` on an array is a linear search.** For lookups by id in a hot path, use `IdentifiedArray`, whose `ix(id:)` is O(1).
+- **Dictionaries are updated in place, without re-hashing.** `ix(key:)` and `eachValue` write straight into the stored value. `eachValueIndexed` copies the keys into one array first, so it costs one allocation.
+- **Build an optic once, use it many times.** Creating or composing an optic allocates a few small closures. Keep a composed chain in a `let` (or a static property) instead of composing it inside a loop. `@Lenses` / `@Prisms` namespaces build only the optic you read.
 
 ## 5. Effects as values
 
